@@ -1,0 +1,27 @@
+name: Python application
+
+on:
+  pull_request:
+    types: [assigned, opened, synchronize, reopened, merged]
+  push:
+  pull_request_review:
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python 3.7
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.7
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -r requirements-dev.txt
+    - name: Test with nose
+      run: |
+        python run_tests.py
