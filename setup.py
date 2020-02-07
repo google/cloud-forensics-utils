@@ -45,6 +45,15 @@ description = (
     ' cloud platforms.'
 )
 
+requirements = [
+    str(req.req) for req in parse_requirements(
+        'requirements.txt', session=PipSession())
+]
+requirements_dev = [
+    str(req.req) for req in parse_requirements(
+        'requirements-dev.txt', session=PipSession())
+]
+
 setup(
     name='libcloudforensics',
     version=libcloudforensics.__version__,
@@ -63,11 +72,8 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     zip_safe=False,
-    install_requires=[str(req.req) for req in parse_requirements(
-        'requirements.txt', session=PipSession())
-    ],
+    install_requires=requirements,
     extras_require={
-        'dev': ['mock', 'nose', 'yapf', 'coverage'],
+        'dev': requirements_dev,
     }
 )
-

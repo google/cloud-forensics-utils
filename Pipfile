@@ -8,6 +8,7 @@ nose = "*"
 mock = "*"
 pylint = "*"
 coverage = "*"
+yapf = "*"
 
 [packages]
 google-api-core = "*"
