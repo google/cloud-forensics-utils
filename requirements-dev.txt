@@ -1,9 +1,10 @@
 -i https://pypi.org/simple
 astroid==2.3.3
+coverage==5.0.3
 isort==4.3.21
 lazy-object-proxy==1.4.3
 mccabe==0.6.1
-mock==4.0.0
+mock==4.0.1
 nose==1.3.7
 pylint==2.4.4
 six==1.14.0
