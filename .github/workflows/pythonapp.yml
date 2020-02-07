@@ -21,6 +21,7 @@ jobs:
       run: |
         python -m pip install --upgrade pipenv
         pipenv install --dev
+        pip freeze
     - name: Test with nose
       run: |
         nosetests -vv --with-coverage --cover-package=libcloudforensics --exe
