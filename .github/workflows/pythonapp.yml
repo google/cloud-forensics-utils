@@ -23,4 +23,4 @@ jobs:
         pipenv install --dev
     - name: Test with nose
       run: |
-        python run_tests.py
+        nosetests -vv --with-coverage --cover-package=libcloudforensics --exe
