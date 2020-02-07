@@ -1,4 +1,4 @@
-name: Package libcloudforensics - install / test
+name: Install and test
 
 on:
   pull_request:
