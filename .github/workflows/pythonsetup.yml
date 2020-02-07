@@ -1,0 +1,23 @@
+name: Test setup.py bundle
+
+on:
+  pull_request:
+    types: [assigned, opened, synchronize, reopened, merged]
+  push:
+  pull_request_review:
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python 3.7
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.7
+    - name: Install dependencies through setup.py
+      run: python setup.py install
+    - name: Test through setup.py
+      run: python setup.py test
