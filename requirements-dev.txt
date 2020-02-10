@@ -1,6 +1,6 @@
 -i https://pypi.org/simple
-nose = "*"
-mock = "*"
-pylint = "*"
-coverage = "*"
-yapf = "*"
+nose="*"
+mock="*"
+pylint="*"
+coverage="*"
+yapf="*"
