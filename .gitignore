@@ -3,3 +3,7 @@
 *.egg-info
 __pycache__
 .noseids
+
+# Python packaging
+build/
+dist/

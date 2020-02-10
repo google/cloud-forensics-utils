@@ -60,7 +60,7 @@ setup(
     description=description,
     long_description=description,
     license='Apache License, Version 2.0',
-    url='http://github.com/google/cloud-forensics-utils/libcloudforensics/',
+    url='http://github.com/google/cloud-forensics-utils/',
     maintainer='Cloud-forensics-utils development team',
     maintainer_email='cloud-forensics-utils-dev@googlegroups.com',
     classifiers=[
