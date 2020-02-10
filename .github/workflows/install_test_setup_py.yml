@@ -1,4 +1,4 @@
-name: Installation and tests
+name: Install and test (setup.py)
 
 on:
   pull_request:
@@ -17,10 +17,7 @@ jobs:
       uses: actions/setup-python@v1
       with:
         python-version: 3.7
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pipenv
-        pipenv install --dev
-    - name: Test with nose
-      run: |
-        pipenv run nosetests -vv --with-coverage --cover-package=libcloudforensics
+    - name: Install dependencies through setup.py
+      run: python setup.py install
+    - name: Test through setup.py
+      run: python setup.py test
