@@ -59,28 +59,28 @@ def create_service(service_name, api_version):
     credentials = GoogleCredentials.get_application_default()
   except ApplicationDefaultCredentialsError as error:
     raise RuntimeError(
-        'Could not get application default credentials: {0!s}\n'
-        'Have you run $ gcloud auth application-default login?'.format(error))
+      'Could not get application default credentials: {0!s}\n'
+      'Have you run $ gcloud auth application-default login?'.format(error))
 
   service_built = False
   for retry in range(RETRY_MAX):
     try:
       service = build(
-          service_name, api_version, credentials=credentials,
-          cache_discovery=False)
+        service_name, api_version, credentials=credentials,
+        cache_discovery=False)
       service_built = True
     except socket.timeout:
       log.info(
-          'Timeout trying to build service {0:s} (try {1:s} of {2:s})'.format(
-              service_name, retry, RETRY_MAX))
+        'Timeout trying to build service {0:s} (try {1:s} of {2:s})'.format(
+          service_name, retry, RETRY_MAX))
 
     if service_built:
       break
 
   if not service_built:
     raise RuntimeError(
-        'Failures building service {0:s} caused by multiple timeouts'.format(
-            service_name))
+      'Failures building service {0:s} caused by multiple timeouts'.format(
+        service_name))
 
   return service
 
@@ -116,7 +116,7 @@ class GoogleCloudProject(object):
       service: API service resource (apiclient.discovery.Resource).
       operation: API operation to be executed.
       zone: GCP zone to execute the operation in. None means GlobalZone.
-      block: Boolean indicating if the opearation should block before return.
+      block: Boolean indicating if the operation should block before return.
 
     Returns:
       Operation result in JSON format.
@@ -130,11 +130,11 @@ class GoogleCloudProject(object):
     while True:
       if zone:
         result = service.zoneOperations().get(
-            project=self.project_id, zone=zone,
-            operation=operation['name']).execute()
+          project=self.project_id, zone=zone,
+          operation=operation['name']).execute()
       else:
         result = service.globalOperations().get(
-            project=self.project_id, operation=operation['name']).execute()
+          project=self.project_id, operation=operation['name']).execute()
 
       if 'error' in result:
         raise RuntimeError(result['error'])
@@ -188,10 +188,10 @@ class GoogleCloudProject(object):
     while not have_all_tokens:
       if page_token:
         operation = self.gce_api().instances().aggregatedList(
-            project=self.project_id, pageToken=page_token).execute()
+          project=self.project_id, pageToken=page_token).execute()
       else:
         operation = self.gce_api().instances().aggregatedList(
-            project=self.project_id).execute()
+          project=self.project_id).execute()
       result = self.gce_operation(operation, zone=self.default_zone)
       page_token = result.get('nextPageToken')
       if not page_token:
@@ -219,10 +219,10 @@ class GoogleCloudProject(object):
     while not have_all_tokens:
       if page_token:
         operation = self.gce_api().disks().aggregatedList(
-            project=self.project_id, pageToken=page_token).execute()
+          project=self.project_id, pageToken=page_token).execute()
       else:
         operation = self.gce_api().disks().aggregatedList(
-            project=self.project_id).execute()
+          project=self.project_id).execute()
       result = self.gce_operation(operation, zone=self.default_zone)
       page_token = result.get('nextPageToken')
       if not page_token:
@@ -254,7 +254,7 @@ class GoogleCloudProject(object):
     instance = instances.get(instance_name)
     if not instance:
       error = 'Instance {0:s} was not found in project {1:s}'.format(
-          instance_name, self.project_id)
+        instance_name, self.project_id)
       raise RuntimeError(error)
 
     if not zone:
@@ -278,8 +278,8 @@ class GoogleCloudProject(object):
     disk = disks.get(disk_name)
     if not disk:
       raise RuntimeError(
-          'Disk {0:s} was not found in project {1:s}'.format(
-              disk_name, self.project_id))
+        'Disk {0:s} was not found in project {1:s}'.format(
+          disk_name, self.project_id))
 
     if not zone:
       zone = disk['zone']
@@ -305,27 +305,27 @@ class GoogleCloudProject(object):
     project_id = snapshot.project.project_id
     disk_id = project_id + snapshot.disk.name
     disk_id_crc32 = '{0:08x}'.format(
-        binascii.crc32(disk_id.encode()) & 0xffffffff)
+      binascii.crc32(disk_id.encode()) & 0xffffffff)
     truncate_at = 62 - len(disk_id_crc32) - len('-copy') - len(project_id)
     if disk_name_prefix:
       disk_name_prefix += '-'
       truncate_at -= len(disk_name_prefix)
     if not disk_name:
       disk_name = '{0:s}{1:s}-{2:s}-copy'.format(
-          disk_name_prefix, disk_id_crc32, snapshot.name[:truncate_at])
+        disk_name_prefix, disk_id_crc32, snapshot.name[:truncate_at])
     body = dict(name=disk_name, sourceSnapshot=snapshot.get_source_string())
     try:
       operation = self.gce_api().disks().insert(
-          project=self.project_id, zone=self.default_zone, body=body).execute()
+        project=self.project_id, zone=self.default_zone, body=body).execute()
     except HttpError as exception:
       if exception.resp.status == 409:
         raise RuntimeError('Disk {0:s} already exists'.format(disk_name))
       raise RuntimeError(
-          'Unknown error (status: {0:d}) occurred when creating '
-          'disk from snapshot:\n{1!s}'.format(exception.resp.status, exception))
+        'Unknown error (status: {0:d}) occurred when creating '
+        'disk from snapshot:\n{1!s}'.format(exception.resp.status, exception))
     self.gce_operation(operation, zone=self.default_zone, block=True)
     return GoogleComputeDisk(
-        project=self, zone=self.default_zone, name=disk_name)
+      project=self, zone=self.default_zone, name=disk_name)
 
   def get_or_create_analysis_vm(
       self, vm_name, boot_disk_size, cpu_cores=4,
@@ -360,27 +360,27 @@ class GoogleCloudProject(object):
     gift_ppa_track = 'stable'
 
     machine_type = 'zones/{0}/machineTypes/n1-standard-{1:d}'.format(
-        self.default_zone, cpu_cores)
+      self.default_zone, cpu_cores)
     get_image_operation = self.gce_api().images().getFromFamily(
-        project=image_project, family=image_family).execute()
+      project=image_project, family=image_family).execute()
     ubuntu_image = self.gce_operation(get_image_operation, block=False)
     source_disk_image = ubuntu_image['selfLink']
 
     # Analysis software to install.
     # yapf: disable
     packages_to_install = [
-        'binutils',
-        'docker-explorer-tools',
-        'htop',
-        'jq',
-        'libbde-tools',
-        'libfsapfs-tools',
-        'libfvde-tools',
-        'ncdu',
-        'plaso-tools',
-        'sleuthkit',
-        'upx-ucl',
-        'xmount']
+      'binutils',
+      'docker-explorer-tools',
+      'htop',
+      'jq',
+      'libbde-tools',
+      'libfsapfs-tools',
+      'libfvde-tools',
+      'ncdu',
+      'plaso-tools',
+      'sleuthkit',
+      'upx-ucl',
+      'xmount']
 
     # yapf: enable
 
@@ -396,44 +396,43 @@ class GoogleCloudProject(object):
         done
         """.format(gift_ppa_track, ' '.join(packages_to_install))
     config = {
-        'name': vm_name,
-        'machineType': machine_type,
-        'disks': [{
-            'boot': True,
-            'autoDelete': True,
-            'initializeParams': {
-                'sourceImage': source_disk_image,
-                'diskSizeGb': boot_disk_size,
-            }
-        }],
-        'networkInterfaces': [{
-            'network':
-                'global/networks/default',
-            'accessConfigs': [{
-                'type': 'ONE_TO_ONE_NAT',
-                'name': 'External NAT'
-            }]
-        }],
-        'serviceAccounts': [{
-            'email':
-                'default',
-            'scopes': [
-                'https://www.googleapis.com/auth/devstorage.read_write',
-                'https://www.googleapis.com/auth/logging.write'
-            ]
-        }],
-        'metadata': {
-            'items': [{
-                'key': 'startup-script',
-                'value': startup_script
-            }]
+      'name': vm_name,
+      'machineType': machine_type,
+      'disks': [{
+        'boot': True,
+        'autoDelete': True,
+        'initializeParams': {
+          'sourceImage': source_disk_image,
+          'diskSizeGb': boot_disk_size,
         }
+      }],
+      'networkInterfaces': [{
+        'network': 'global/networks/default',
+        'accessConfigs': [{
+          'type': 'ONE_TO_ONE_NAT',
+          'name': 'External NAT'
+        }]
+      }],
+      'serviceAccounts': [{
+        'email':
+          'default',
+        'scopes': [
+          'https://www.googleapis.com/auth/devstorage.read_write',
+          'https://www.googleapis.com/auth/logging.write'
+        ]
+      }],
+      'metadata': {
+        'items': [{
+          'key': 'startup-script',
+          'value': startup_script
+        }]
+      }
     }
     operation = self.gce_api().instances().insert(
-        project=self.project_id, zone=self.default_zone, body=config).execute()
+      project=self.project_id, zone=self.default_zone, body=config).execute()
     self.gce_operation(operation, zone=self.default_zone, block=True)
     instance = GoogleComputeInstance(
-        project=self, zone=self.default_zone, name=vm_name)
+      project=self, zone=self.default_zone, name=vm_name)
     created = True
     return instance, created
 
@@ -455,7 +454,7 @@ class GoogleCloudProject(object):
 
     instance_service_object = self.gce_api().instances()
     return self.__list_by_label(
-        labels_filter, instance_service_object, filter_union)
+      labels_filter, instance_service_object, filter_union)
 
   def list_disk_by_labels(self, labels_filter, filter_union=True):
     """List Disks in a project with one/all of the provided labels.
@@ -475,7 +474,7 @@ class GoogleCloudProject(object):
 
     disk_service_object = self.gce_api().disks()
     return self.__list_by_label(
-        labels_filter, disk_service_object, filter_union)
+      labels_filter, disk_service_object, filter_union)
 
   def __list_by_label(self, labels_filter, service_object, filter_union):
     """List Disks/VMs in a project with one/all of the provided labels.
@@ -494,19 +493,19 @@ class GoogleCloudProject(object):
     """
     if not isinstance(filter_union, bool):
       raise RuntimeError((
-          'filter_union parameter must be of Type boolean'
-          ' {0:s} is an invalid argument.').format(filter_union))
+                           'filter_union parameter must be of Type boolean'
+                           ' {0:s} is an invalid argument.').format(filter_union))
 
     resource_dict = dict()
     filter_expression = ''
     operation = 'AND' if filter_union else 'OR'
     for key, value in labels_filter.items():
       filter_expression += 'labels.{0:s}={1:s} {2:s} '.format(
-          key, value, operation)
+        key, value, operation)
     filter_expression = filter_expression[:-(len(operation) + 1)]
 
     request = service_object.aggregatedList(
-        project=self.project_id, filter=filter_expression)
+      project=self.project_id, filter=filter_expression)
     while request is not None:
       response = request.execute()
       result = self.gce_operation(response, zone=self.default_zone)
@@ -520,14 +519,14 @@ class GoogleCloudProject(object):
           # called either with a service object Instances or Disks
           for resource in resource_scoped_list.get('instances', []):
             resource_dict[resource['name']] = dict(
-                zone=zone, labels=resource['labels'])
+              zone=zone, labels=resource['labels'])
 
           for resource in resource_scoped_list.get('disks', []):
             resource_dict[resource['name']] = dict(
-                zone=zone, labels=resource['labels'])
+              zone=zone, labels=resource['labels'])
 
       request = service_object.aggregatedList_next(
-          previous_request=request, previous_response=response)
+        previous_request=request, previous_response=response)
     return resource_dict
 
 
@@ -557,7 +556,7 @@ class GoogleCloudFunction(GoogleCloudProject):
       A Google Cloud Function service object.
     """
     return self._create_service(
-        'cloudfunctions', self.CLOUD_FUNCTIONS_API_VERSION)
+      'cloudfunctions', self.CLOUD_FUNCTIONS_API_VERSION)
 
   def execute_function(self, function_name, args):
     """Executes a Google Cloud Function.
@@ -580,24 +579,24 @@ class GoogleCloudFunction(GoogleCloudProject):
       json_args = json.dumps(args)
     except TypeError as e:
       raise RuntimeError(
-          'Cloud function args [{0:s}] could not be serialized: {1!s}'.format(
-              str(args), e))
+        'Cloud function args [{0:s}] could not be serialized: {1!s}'.format(
+          str(args), e))
 
     function_path = 'projects/{0:s}/locations/{1:s}/functions/{2:s}'.format(
-        self.project_id, self.region, function_name)
+      self.project_id, self.region, function_name)
 
     log.debug(
-        'Calling Cloud Function [{0:s}] with args [{1!s}]'.format(
-            function_name, args))
+      'Calling Cloud Function [{0:s}] with args [{1!s}]'.format(
+        function_name, args))
     try:
       function_return = cloud_function.call(
-          name=function_path, body={
-              'data': json_args
-          }).execute()
+        name=function_path, body={
+          'data': json_args
+        }).execute()
     except (HttpError, ssl.SSLError) as e:
       raise RuntimeError(
-          'Error calling cloud function [{0:s}]: {1!s}'.format(
-              function_name, e))
+        'Error calling cloud function [{0:s}]: {1!s}'.format(
+          function_name, e))
 
     return function_return
 
@@ -673,16 +672,16 @@ class GoogleComputeBaseResource(object):
 
     Raises RuntimeError:
       If resource type is not defined as a type which extends the
-      GoogleGomputeBaseResource class.
+      GoogleComputeBaseResource class.
     """
     resource_type = self.get_resource_type()
     module = None
     if resource_type not in ['compute#instance', 'compute#snapshot',
                              'compute#disk']:
       raise RuntimeError((
-          'Compute resource Type {0:s} is not one of the defined types in '
-          'libcloudforensics library (Instance, Disk or Snapshot) '
-      ).format(resource_type))
+                           'Compute resource Type {0:s} is not one of the defined types in '
+                           'libcloudforensics library (Instance, Disk or Snapshot) '
+                         ).format(resource_type))
     if resource_type == 'compute#instance':
       module = self.project.gce_api().instances()
     elif resource_type == 'compute#disk':
@@ -718,38 +717,38 @@ class GoogleComputeBaseResource(object):
     """
 
     get_operation = self.get_operation().execute()
-    labelFingerprint = get_operation['labelFingerprint']
+    label_fingerprint = get_operation['label_fingerprint']
 
-    exisitng_labels_dict = dict()
+    existing_labels_dict = dict()
     if self.get_labels() is not None:
-      exisitng_labels_dict = self.get_labels()
-    exisitng_labels_dict.update(new_labels_dict)
-    labels_dict = exisitng_labels_dict
-    request_body = {'labels': labels_dict, 'labelFingerprint': labelFingerprint}
+      existing_labels_dict = self.get_labels()
+    existing_labels_dict.update(new_labels_dict)
+    labels_dict = existing_labels_dict
+    request_body = {'labels': labels_dict, 'label_fingerprint': label_fingerprint}
 
     resource_type = self.get_resource_type()
     operation = None
     if resource_type not in ['compute#instance', 'compute#snapshot',
                              'compute#disk']:
       raise RuntimeError((
-          'Compute resource Type {0:s} is not one of the defined types in '
-          'libcloudforensics library (Instance, Disk or Snapshot) '
-      ).format(resource_type))
+                           'Compute resource Type {0:s} is not one of the defined types in '
+                           'libcloudforensics library (Instance, Disk or Snapshot) '
+                         ).format(resource_type))
     if resource_type == 'compute#instance':
       operation = self.form_operation('setLabels')(
-          instance=self.name, project=self.project.project_id, zone=self.zone,
-          body=request_body).execute()
+        instance=self.name, project=self.project.project_id, zone=self.zone,
+        body=request_body).execute()
     elif resource_type == 'compute#disk':
       operation = self.form_operation('setLabels')(
-          resource=self.name, project=self.project.project_id, zone=self.zone,
-          body=request_body).execute()
+        resource=self.name, project=self.project.project_id, zone=self.zone,
+        body=request_body).execute()
     elif resource_type == 'compute#snapshot':
       operation = self.form_operation('setLabels')(
-          resource=self.name, project=self.project.project_id,
-          body=request_body).execute()
+        resource=self.name, project=self.project.project_id,
+        body=request_body).execute()
 
     return self.project.gce_operation(
-        operation, zone=self.zone, block=blocking_call)
+      operation, zone=self.zone, block=blocking_call)
 
 
 class GoogleComputeInstance(GoogleComputeBaseResource):
@@ -762,7 +761,7 @@ class GoogleComputeInstance(GoogleComputeBaseResource):
        An API operation object for a Google Compute Engine virtual machine.
     """
     operation = self.project.gce_api().instances().get(
-        instance=self.name, project=self.project.project_id, zone=self.zone)
+      instance=self.name, project=self.project.project_id, zone=self.zone)
     return operation
 
   def get_boot_disk(self):
@@ -808,8 +807,8 @@ class GoogleComputeInstance(GoogleComputeBaseResource):
     """Create an SSH connection to the virtual machine."""
     devnull = open(os.devnull, 'w')
     subprocess.check_call([
-        'gcloud', 'compute', '--project', self.project.project_id, 'ssh',
-        '--zone', self.zone, self.name
+      'gcloud', 'compute', '--project', self.project.project_id, 'ssh',
+      '--zone', self.zone, self.name
     ], stderr=devnull)
 
   def ssh(self):
@@ -818,7 +817,7 @@ class GoogleComputeInstance(GoogleComputeBaseResource):
     retries = 0
 
     log.info(
-        self.project.format_log_message('Connecting to analysis VM over SSH'))
+      self.project.format_log_message('Connecting to analysis VM over SSH'))
 
     while retries < max_retries:
       try:
@@ -840,19 +839,19 @@ class GoogleComputeInstance(GoogleComputeBaseResource):
       mode = 'READ_WRITE'
 
     log.info(
-        self.project.format_log_message(
-            'Attaching {0} to VM {1} in {2} mode'.format(
-                disk.name, self.name, mode)))
+      self.project.format_log_message(
+        'Attaching {0} to VM {1} in {2} mode'.format(
+          disk.name, self.name, mode)))
 
     operation_config = {
-        'mode': mode,
-        'source': disk.get_source_string(),
-        'boot': False,
-        'autoDelete': False,
+      'mode': mode,
+      'source': disk.get_source_string(),
+      'boot': False,
+      'autoDelete': False,
     }
     operation = self.project.gce_api().instances().attachDisk(
-        instance=self.name, project=self.project.project_id, zone=self.zone,
-        body=operation_config).execute()
+      instance=self.name, project=self.project.project_id, zone=self.zone,
+      body=operation_config).execute()
     self.project.gce_operation(operation, zone=self.zone, block=True)
 
 
@@ -866,7 +865,7 @@ class GoogleComputeDisk(GoogleComputeBaseResource):
        An API operation object for a Google Compute Engine disk.
     """
     operation = self.project.gce_api().disks().get(
-        disk=self.name, project=self.project.project_id, zone=self.zone)
+      disk=self.name, project=self.project.project_id, zone=self.zone)
     return operation
 
   def snapshot(self, snapshot_name=None):
@@ -884,12 +883,12 @@ class GoogleComputeDisk(GoogleComputeBaseResource):
     truncate_at = 63 - len(timestamp) - 1
     snapshot_name = '{0}-{1}'.format(snapshot_name[:truncate_at], timestamp)
     log.info(
-        self.project.format_log_message(
-            'New snapshot: {0}'.format(snapshot_name)))
+      self.project.format_log_message(
+        'New snapshot: {0}'.format(snapshot_name)))
     operation_config = dict(name=snapshot_name)
     operation = self.project.gce_api().disks().createSnapshot(
-        disk=self.name, project=self.project.project_id, zone=self.zone,
-        body=operation_config).execute()
+      disk=self.name, project=self.project.project_id, zone=self.zone,
+      body=operation_config).execute()
     self.project.gce_operation(operation, zone=self.zone, block=True)
     return GoogleComputeSnapshot(disk=self, name=snapshot_name)
 
@@ -909,7 +908,7 @@ class GoogleComputeSnapshot(GoogleComputeBaseResource):
       name: Name of the snapshot.
     """
     super(GoogleComputeSnapshot, self).__init__(
-        project=disk.project, zone=None, name=name)
+      project=disk.project, zone=None, name=name)
     self.disk = disk
 
   def get_operation(self):
@@ -919,16 +918,16 @@ class GoogleComputeSnapshot(GoogleComputeBaseResource):
        An API operation object for a Google Compute Engine snapshot.
     """
     operation = self.project.gce_api().snapshots().get(
-        snapshot=self.name, project=self.project.project_id)
+      snapshot=self.name, project=self.project.project_id)
     return operation
 
   def delete(self):
     """Delete a snapshot."""
     log.info(
-        self.project.format_log_message(
-            'Deleted snapshot: {0}'.format(self.name)))
+      self.project.format_log_message(
+        'Deleted snapshot: {0}'.format(self.name)))
     operation = self.project.gce_api().snapshots().delete(
-        project=self.project.project_id, snapshot=self.name).execute()
+      project=self.project.project_id, snapshot=self.name).execute()
     self.project.gce_operation(operation, block=True)
 
 
@@ -961,32 +960,32 @@ def create_disk_copy(src_proj, dst_proj, instance_name, zone, disk_name=None):
     log.info('Disk copy of {0:s} started...'.format(disk_to_copy.name))
     snapshot = disk_to_copy.snapshot()
     new_disk = dst_proj.create_disk_from_snapshot(
-        snapshot, disk_name_prefix='evidence')
+      snapshot, disk_name_prefix='evidence')
     snapshot.delete()
     log.info(
-        'Disk {0:s} successfully copied to {1:s}'.format(
-            disk_to_copy.name, new_disk.name))
+      'Disk {0:s} successfully copied to {1:s}'.format(
+        disk_to_copy.name, new_disk.name))
 
   except AccessTokenRefreshError as exception:
     raise RuntimeError(
-        'Something is wrong with your gcloud access token: {0:s}.'.format(
-            exception))
+      'Something is wrong with your gcloud access token: {0:s}.'.format(
+        exception))
   except ApplicationDefaultCredentialsError as exception:
     raise RuntimeError(
-        'Something is wrong with your Application Default Credentials. '
-        'Try running:\n  $ gcloud auth application-default login')
+      'Something is wrong with your Application Default Credentials. '
+      'Try running:\n  $ gcloud auth application-default login')
   except HttpError as exception:
     if exception.resp.status == 403:
       raise RuntimeError(
-          'Make sure you have the appropriate permissions on the project')
+        'Make sure you have the appropriate permissions on the project')
     if exception.resp.status == 404:
       raise RuntimeError(
-          'GCP resource not found. Maybe a typo in the project / instance / '
-          'disk name?')
+        'GCP resource not found. Maybe a typo in the project / instance / '
+        'disk name?')
     raise RuntimeError(exception, critical=True)
   except RuntimeError as exception:
     raise RuntimeError(
-        'Error copying disk "{0:s}": {1!s}'.format(disk_name, exception))
+      'Error copying disk "{0:s}": {1!s}'.format(disk_name, exception))
 
   return new_disk
 
@@ -1012,7 +1011,7 @@ def start_analysis_vm(
   """
   project = GoogleCloudProject(project, default_zone=zone)
   analysis_vm, created = project.get_or_create_analysis_vm(
-      vm_name, boot_disk_size, cpu_cores, image_project, image_family)
+    vm_name, boot_disk_size, cpu_cores, image_project, image_family)
   if attach_disk:
     analysis_vm.attach_disk(attach_disk)
   return analysis_vm, created

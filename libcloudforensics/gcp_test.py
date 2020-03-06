@@ -41,3 +41,7 @@ class GoogleCloudProjectTest(unittest.TestCase):
     self.assertEqual(
         formatted_msg, u'project:{0:s} {1:s}'.format(
             self.project.project_id, msg))
+
+
+if __name__ == '__main__':
+  unittest.main()
