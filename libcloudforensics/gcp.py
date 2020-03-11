@@ -58,9 +58,9 @@ def create_service(service_name, api_version):
   try:
     credentials = GoogleCredentials.get_application_default()
   except ApplicationDefaultCredentialsError as error:
-    raise RuntimeError(
-      'Could not get application default credentials: {0!s}\n'
-      'Have you run $ gcloud auth application-default login?'.format(error))
+    error_msg = 'Could not get application default credentials: ' \
+                'Have you run $ gcloud auth application-default login?'
+    raise RuntimeError(error_msg)
 
   service_built = False
   for retry in range(RETRY_MAX):
@@ -78,14 +78,13 @@ def create_service(service_name, api_version):
       break
 
   if not service_built:
-    raise RuntimeError(
-      'Failures building service {0:s} caused by multiple timeouts'.format(
-        service_name))
+    error_msg = 'Failures building service {0:s} caused by multiple timeouts'.format(service_name)
+    raise RuntimeError(error_msg)
 
   return service
 
 
-class GoogleCloudProject(object):
+class GoogleCloudProject():
   """Class representing a Google Cloud Project.
 
   Attributes:
@@ -253,9 +252,8 @@ class GoogleCloudProject(object):
     instances = self.list_instances()
     instance = instances.get(instance_name)
     if not instance:
-      error = 'Instance {0:s} was not found in project {1:s}'.format(
-        instance_name, self.project_id)
-      raise RuntimeError(error)
+      error_msg = 'Instance {0:s} was not found in project {1:s}'.format(instance_name, self.project_id)
+      raise RuntimeError(error_msg)
 
     if not zone:
       zone = instance['zone']
@@ -277,9 +275,8 @@ class GoogleCloudProject(object):
     disks = self.list_disks()
     disk = disks.get(disk_name)
     if not disk:
-      raise RuntimeError(
-        'Disk {0:s} was not found in project {1:s}'.format(
-          disk_name, self.project_id))
+      error_msg = 'Disk {0:s} was not found in project {1:s}'.format(disk_name, self.project_id)
+      raise RuntimeError(error_msg)
 
     if not zone:
       zone = disk['zone']
@@ -319,10 +316,11 @@ class GoogleCloudProject(object):
         project=self.project_id, zone=self.default_zone, body=body).execute()
     except HttpError as exception:
       if exception.resp.status == 409:
-        raise RuntimeError('Disk {0:s} already exists'.format(disk_name))
-      raise RuntimeError(
-        'Unknown error (status: {0:d}) occurred when creating '
-        'disk from snapshot:\n{1!s}'.format(exception.resp.status, exception))
+        error_msg = 'Disk {0:s} already exists'.format(disk_name)
+        raise RuntimeError(error_msg)
+      error_msg = 'Unknown error (status: {0:d}) occurred when creating disk ' \
+                  'from snapshot:\n{1!s}'.format(exception.resp.status, exception)
+      raise RuntimeError(error_msg)
     self.gce_operation(operation, zone=self.default_zone, block=True)
     return GoogleComputeDisk(
       project=self, zone=self.default_zone, name=disk_name)
@@ -492,9 +490,8 @@ class GoogleCloudProject(object):
       ex: {'instance-1': {'zone': 'us-central1-a', 'labels': {'id': '123'}}
     """
     if not isinstance(filter_union, bool):
-      raise RuntimeError((
-                           'filter_union parameter must be of Type boolean'
-                           ' {0:s} is an invalid argument.').format(filter_union))
+      error_msg = 'filter_union parameter must be of Type boolean {0:s} is an invalid argument.'.format(filter_union)
+      raise RuntimeError(error_msg)
 
     resource_dict = dict()
     filter_expression = ''
@@ -578,9 +575,8 @@ class GoogleCloudFunction(GoogleCloudProject):
     try:
       json_args = json.dumps(args)
     except TypeError as e:
-      raise RuntimeError(
-        'Cloud function args [{0:s}] could not be serialized: {1!s}'.format(
-          str(args), e))
+      error_msg = 'Cloud function args [{0:s}] could not be serialized: {1!s}'.format(str(args), e)
+      raise RuntimeError(error_msg)
 
     function_path = 'projects/{0:s}/locations/{1:s}/functions/{2:s}'.format(
       self.project_id, self.region, function_name)
@@ -594,14 +590,13 @@ class GoogleCloudFunction(GoogleCloudProject):
           'data': json_args
         }).execute()
     except (HttpError, ssl.SSLError) as e:
-      raise RuntimeError(
-        'Error calling cloud function [{0:s}]: {1!s}'.format(
-          function_name, e))
+      error_msg = 'Error calling cloud function [{0:s}]: {1!s}'.format(function_name, e)
+      raise RuntimeError(error_msg)
 
     return function_return
 
 
-class GoogleComputeBaseResource(object):
+class GoogleComputeBaseResource():
   """Base class representing a Computer Engine resource.
 
   Attributes:
@@ -678,10 +673,9 @@ class GoogleComputeBaseResource(object):
     module = None
     if resource_type not in ['compute#instance', 'compute#snapshot',
                              'compute#disk']:
-      raise RuntimeError((
-                           'Compute resource Type {0:s} is not one of the defined types in '
-                           'libcloudforensics library (Instance, Disk or Snapshot) '
-                         ).format(resource_type))
+      error_msg = 'Compute resource Type {0:s} is not one of the defined types in libcloudforensics library ' \
+                  '(Instance, Disk or Snapshot) '.format(resource_type)
+      raise RuntimeError(error_msg)
     if resource_type == 'compute#instance':
       module = self.project.gce_api().instances()
     elif resource_type == 'compute#disk':
@@ -730,10 +724,9 @@ class GoogleComputeBaseResource(object):
     operation = None
     if resource_type not in ['compute#instance', 'compute#snapshot',
                              'compute#disk']:
-      raise RuntimeError((
-                           'Compute resource Type {0:s} is not one of the defined types in '
-                           'libcloudforensics library (Instance, Disk or Snapshot) '
-                         ).format(resource_type))
+      error_msg = 'Compute resource Type {0:s} is not one of the defined types in libcloudforensics library ' \
+                  '(Instance, Disk or Snapshot) '.format(resource_type)
+      raise RuntimeError(error_msg)
     if resource_type == 'compute#instance':
       operation = self.form_operation('setLabels')(
         instance=self.name, project=self.project.project_id, zone=self.zone,
@@ -793,7 +786,8 @@ class GoogleComputeInstance(GoogleComputeBaseResource):
     for disk in self.get_value('disks'):
       if disk['source'].split('/')[-1] == disk_name:
         return self.project.get_disk(disk_name=disk_name)
-    raise RuntimeError('Disk name "{0:s}" not attached to instance')
+    error_msg = 'Disk name "{0:s}" not attached to instance'.format(disk_name)
+    raise RuntimeError(error_msg)
 
   def list_disks(self):
     """List all disks for the virtual machine.
@@ -967,25 +961,21 @@ def create_disk_copy(src_proj, dst_proj, instance_name, zone, disk_name=None):
         disk_to_copy.name, new_disk.name))
 
   except AccessTokenRefreshError as exception:
-    raise RuntimeError(
-      'Something is wrong with your gcloud access token: {0:s}.'.format(
-        exception))
+    error_msg = 'Something is wrong with your gcloud access token: {0:s}.'.format(exception)
+    raise RuntimeError(error_msg)
   except ApplicationDefaultCredentialsError as exception:
-    raise RuntimeError(
-      'Something is wrong with your Application Default Credentials. '
-      'Try running:\n  $ gcloud auth application-default login')
+    error_msg = 'Something is wrong with your Application Default Credentials. '\
+                'Try running:\n  $ gcloud auth application-default login'
+    raise RuntimeError(error_msg)
   except HttpError as exception:
     if exception.resp.status == 403:
-      raise RuntimeError(
-        'Make sure you have the appropriate permissions on the project')
+      raise RuntimeError('Make sure you have the appropriate permissions on the project')
     if exception.resp.status == 404:
-      raise RuntimeError(
-        'GCP resource not found. Maybe a typo in the project / instance / '
-        'disk name?')
+      raise RuntimeError('GCP resource not found. Maybe a typo in the project / instance / disk name?')
     raise RuntimeError(exception, critical=True)
   except RuntimeError as exception:
-    raise RuntimeError(
-      'Error copying disk "{0:s}": {1!s}'.format(disk_name, exception))
+    error_msg = 'Error copying disk "{0:s}": {1!s}'.format(disk_name, exception)
+    raise RuntimeError(error_msg)
 
   return new_disk
 
