@@ -58,8 +58,8 @@ def create_service(service_name, api_version):
   try:
     credentials = GoogleCredentials.get_application_default()
   except ApplicationDefaultCredentialsError as error:
-    error_msg = 'Could not get application default credentials: ' \
-                'Have you run $ gcloud auth application-default login?'
+    error_msg = 'Could not get application default credentials: {0!s}\n' \
+                'Have you run $ gcloud auth application-default login?'.format(error)
     raise RuntimeError(error_msg)
 
   service_built = False
