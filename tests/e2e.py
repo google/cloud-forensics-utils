@@ -46,16 +46,19 @@ class EndToEndTest(unittest.TestCase):
     self.disk_to_forensic_copy = None
     self.analysis_vm = None
     self.analysis_vm_name = 'new-vm-for-analysis'
-    with open('project.info') as json_file:
-      data = json.load(json_file)
-      self.project_id = data['project_id']
-      self.instance_to_analyse = data['instance']
-      # Optional: test a disk other than the boot disk
-      if 'disk' in data:
-        self.disk_to_forensic = data['disk']
-      else:
-        self.disk_to_forensic = None
-      self.zone = data['zone']
+    try:
+      with open('project.info') as json_file:
+        data = json.load(json_file)
+        self.project_id = data['project_id']
+        self.instance_to_analyse = data['instance']
+        # Optional: test a disk other than the boot disk
+        if 'disk' in data:
+          self.disk_to_forensic = data['disk']
+        else:
+          self.disk_to_forensic = None
+        self.zone = data['zone']
+    except IOError as exception:
+      raise unittest.SkipTest('Could not set up end to end test: {0:s}'.format(str(exception)))
 
   def test_end_to_end(self):
     """End to end test on GCP.
