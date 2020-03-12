@@ -711,14 +711,14 @@ class GoogleComputeBaseResource():
     """
 
     get_operation = self.get_operation().execute()
-    label_fingerprint = get_operation['label_fingerprint']
+    label_fingerprint = get_operation['labelFingerprint']
 
     existing_labels_dict = dict()
     if self.get_labels() is not None:
       existing_labels_dict = self.get_labels()
     existing_labels_dict.update(new_labels_dict)
     labels_dict = existing_labels_dict
-    request_body = {'labels': labels_dict, 'label_fingerprint': label_fingerprint}
+    request_body = {'labels': labels_dict, 'labelFingerprint': label_fingerprint}
 
     resource_type = self.get_resource_type()
     operation = None
