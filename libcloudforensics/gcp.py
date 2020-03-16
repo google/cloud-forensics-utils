@@ -59,7 +59,8 @@ def create_service(service_name, api_version):
     credentials = GoogleCredentials.get_application_default()
   except ApplicationDefaultCredentialsError as error:
     error_msg = 'Could not get application default credentials: {0!s}\n' \
-                'Have you run $ gcloud auth application-default login?'.format(error)
+                'Have you run $ gcloud auth application-default '\
+                'login?'.format(error)
     raise RuntimeError(error_msg)
 
   service_built = False
@@ -78,13 +79,14 @@ def create_service(service_name, api_version):
       break
 
   if not service_built:
-    error_msg = 'Failures building service {0:s} caused by multiple timeouts'.format(service_name)
+    error_msg = 'Failures building service {0:s} caused by multiple '\
+                'timeouts'.format(service_name)
     raise RuntimeError(error_msg)
 
   return service
 
 
-class GoogleCloudProject():
+class GoogleCloudProject:
   """Class representing a Google Cloud Project.
 
   Attributes:
@@ -252,7 +254,8 @@ class GoogleCloudProject():
     instances = self.list_instances()
     instance = instances.get(instance_name)
     if not instance:
-      error_msg = 'Instance {0:s} was not found in project {1:s}'.format(instance_name, self.project_id)
+      error_msg = 'Instance {0:s} was not found in project {1:s}'.format(
+        instance_name, self.project_id)
       raise RuntimeError(error_msg)
 
     if not zone:
@@ -275,7 +278,8 @@ class GoogleCloudProject():
     disks = self.list_disks()
     disk = disks.get(disk_name)
     if not disk:
-      error_msg = 'Disk {0:s} was not found in project {1:s}'.format(disk_name, self.project_id)
+      error_msg = 'Disk {0:s} was not found in project {1:s}'.format(
+        disk_name, self.project_id)
       raise RuntimeError(error_msg)
 
     if not zone:
@@ -283,7 +287,7 @@ class GoogleCloudProject():
     return GoogleComputeDisk(self, zone, disk_name)
 
   def create_disk_from_snapshot(
-      self, snapshot, disk_name=None, disk_name_prefix=''):
+    self, snapshot, disk_name=None, disk_name_prefix=''):
     """Create a new disk based on a snapshot.
 
     Args:
@@ -319,15 +323,16 @@ class GoogleCloudProject():
         error_msg = 'Disk {0:s} already exists'.format(disk_name)
         raise RuntimeError(error_msg)
       error_msg = 'Unknown error (status: {0:d}) occurred when creating disk ' \
-                  'from snapshot:\n{1!s}'.format(exception.resp.status, exception)
+                  'from snapshot:\n{1!s}'.format(
+        exception.resp.status, exception)
       raise RuntimeError(error_msg)
     self.gce_operation(operation, zone=self.default_zone, block=True)
     return GoogleComputeDisk(
       project=self, zone=self.default_zone, name=disk_name)
 
   def get_or_create_analysis_vm(
-      self, vm_name, boot_disk_size, cpu_cores=4,
-      image_project='ubuntu-os-cloud', image_family='ubuntu-1804-lts'):
+    self, vm_name, boot_disk_size, cpu_cores=4,
+    image_project='ubuntu-os-cloud', image_family='ubuntu-1804-lts'):
     """Get or create a new virtual machine for analysis purposes.
 
     Args:
@@ -490,7 +495,8 @@ class GoogleCloudProject():
       ex: {'instance-1': {'zone': 'us-central1-a', 'labels': {'id': '123'}}
     """
     if not isinstance(filter_union, bool):
-      error_msg = 'filter_union parameter must be of Type boolean {0:s} is an invalid argument.'.format(filter_union)
+      error_msg = 'filter_union parameter must be of Type boolean {0:s} is an '\
+                  'invalid argument.'.format(filter_union)
       raise RuntimeError(error_msg)
 
     resource_dict = dict()
@@ -575,7 +581,8 @@ class GoogleCloudFunction(GoogleCloudProject):
     try:
       json_args = json.dumps(args)
     except TypeError as e:
-      error_msg = 'Cloud function args [{0:s}] could not be serialized: {1!s}'.format(str(args), e)
+      error_msg = 'Cloud function args [{0:s}] could not be serialized:' \
+                  ' {1!s}'.format(str(args), e)
       raise RuntimeError(error_msg)
 
     function_path = 'projects/{0:s}/locations/{1:s}/functions/{2:s}'.format(
@@ -590,13 +597,14 @@ class GoogleCloudFunction(GoogleCloudProject):
           'data': json_args
         }).execute()
     except (HttpError, ssl.SSLError) as e:
-      error_msg = 'Error calling cloud function [{0:s}]: {1!s}'.format(function_name, e)
+      error_msg = 'Error calling cloud function [{0:s}]: {1!s}'.format(
+        function_name, e)
       raise RuntimeError(error_msg)
 
     return function_return
 
 
-class GoogleComputeBaseResource():
+class GoogleComputeBaseResource:
   """Base class representing a Computer Engine resource.
 
   Attributes:
@@ -673,7 +681,8 @@ class GoogleComputeBaseResource():
     module = None
     if resource_type not in ['compute#instance', 'compute#snapshot',
                              'compute#disk']:
-      error_msg = 'Compute resource Type {0:s} is not one of the defined types in libcloudforensics library ' \
+      error_msg = 'Compute resource Type {0:s} is not one of the defined ' \
+                  'types in libcloudforensics library ' \
                   '(Instance, Disk or Snapshot) '.format(resource_type)
       raise RuntimeError(error_msg)
     if resource_type == 'compute#instance':
@@ -718,13 +727,15 @@ class GoogleComputeBaseResource():
       existing_labels_dict = self.get_labels()
     existing_labels_dict.update(new_labels_dict)
     labels_dict = existing_labels_dict
-    request_body = {'labels': labels_dict, 'labelFingerprint': label_fingerprint}
+    request_body = {'labels': labels_dict,
+                    'labelFingerprint': label_fingerprint}
 
     resource_type = self.get_resource_type()
     operation = None
     if resource_type not in ['compute#instance', 'compute#snapshot',
                              'compute#disk']:
-      error_msg = 'Compute resource Type {0:s} is not one of the defined types in libcloudforensics library ' \
+      error_msg = 'Compute resource Type {0:s} is not one of the defined ' \
+                  'types in libcloudforensics library ' \
                   '(Instance, Disk or Snapshot) '.format(resource_type)
       raise RuntimeError(error_msg)
     if resource_type == 'compute#instance':
@@ -961,17 +972,22 @@ def create_disk_copy(src_proj, dst_proj, instance_name, zone, disk_name=None):
         disk_to_copy.name, new_disk.name))
 
   except AccessTokenRefreshError as exception:
-    error_msg = 'Something is wrong with your gcloud access token: {0:s}.'.format(exception)
+    error_msg = 'Something is wrong with your gcloud access token: ' \
+                '{0:s}.'.format(exception)
     raise RuntimeError(error_msg)
   except ApplicationDefaultCredentialsError as exception:
-    error_msg = 'Something is wrong with your Application Default Credentials. '\
+    error_msg = 'Something is wrong with your Application Default ' \
+                'Credentials. ' \
                 'Try running:\n  $ gcloud auth application-default login'
     raise RuntimeError(error_msg)
   except HttpError as exception:
     if exception.resp.status == 403:
-      raise RuntimeError('Make sure you have the appropriate permissions on the project')
+      raise RuntimeError(
+        'Make sure you have the appropriate permissions on the project')
     if exception.resp.status == 404:
-      raise RuntimeError('GCP resource not found. Maybe a typo in the project / instance / disk name?')
+      raise RuntimeError(
+        'GCP resource not found. Maybe a typo in the project / instance / '
+        'disk name?')
     raise RuntimeError(exception, critical=True)
   except RuntimeError as exception:
     error_msg = 'Error copying disk "{0:s}": {1!s}'.format(disk_name, exception)
@@ -981,8 +997,8 @@ def create_disk_copy(src_proj, dst_proj, instance_name, zone, disk_name=None):
 
 
 def start_analysis_vm(
-    project, vm_name, zone, boot_disk_size, cpu_cores, attach_disk=None,
-    image_project='ubuntu-os-cloud', image_family='ubuntu-1804-lts'):
+  project, vm_name, zone, boot_disk_size, cpu_cores, attach_disk=None,
+  image_project='ubuntu-os-cloud', image_family='ubuntu-1804-lts'):
   """Start a virtual machine for analysis purposes.
 
   Args:
