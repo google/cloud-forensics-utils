@@ -187,6 +187,8 @@ class EndToEndTest(unittest.TestCase):
     project = gcp.GoogleCloudProject(project_id=self.project_id,
                                      default_zone=self.zone)
 
+    disks = self.analysis_vm.list_disks()
+
     # delete the created forensics VMs
     log.info('Deleting analysis instance: {0:s}.'.format(
       self.analysis_vm.name))
@@ -207,50 +209,34 @@ class EndToEndTest(unittest.TestCase):
       self.analysis_vm.name))
 
     # delete the copied disks
-    log.info('Deleting disk: {0:s}.'.format(
-      self.boot_disk_copy.name))
-    while True:
-      try:
-        operation = project.gce_api().disks().delete(
-          project=project.project_id,
-          zone=self.zone,
-          disk=self.boot_disk_copy.name
-        ).execute()
-        project.gce_operation(operation, block=True)
-        break
-      except HttpError as exception:
-        # The gce api will throw a 400 until the analysis vm's deletion is
-        # correctly propagated. When the disk is finally deleted, it will
-        # throw a 404 not found if it looped one more time after deletion.
-        if exception.resp.status == 404:
+    # we ignore the disk that was created for the analysis VM (disks[0]) as
+    # it is deleted in the previous operation
+    for disk in disks[1:]:
+      log.info('Deleting disk: {0:s}.'.format(disk))
+      while True:
+        try:
+          operation = project.gce_api().disks().delete(
+            project=project.project_id,
+            zone=self.zone,
+            disk=disk
+          ).execute()
+          project.gce_operation(operation, block=True)
           break
-        elif exception.resp.status != 400:
-          log.warning('Could not delete the disk {0:s}: {1:s}'.format(
-            self.boot_disk_copy.name, str(exception)
-          ))
-        # Throttle the requests to one every 10 seconds
-        time.sleep(10)
+        except HttpError as exception:
+          # The gce api will throw a 400 until the analysis vm's deletion is
+          # correctly propagated. When the disk is finally deleted, it will
+          # throw a 404 not found if it looped one more time after deletion.
+          if exception.resp.status == 404:
+            break
+          elif exception.resp.status != 400:
+            log.warning('Could not delete the disk {0:s}: {1:s}'.format(
+              disk, str(exception)
+            ))
+          # Throttle the requests to one every 10 seconds
+          time.sleep(10)
 
-    log.info('Disk {0:s} successfully deleted.'.format(
-      self.boot_disk_copy.name))
-
-    if self.disk_to_forensic is None:
-      return
-
-    log.info('Deleting disk: {0:s}.'.format(
-      self.disk_to_forensic_copy.name))
-
-    operation = project.gce_api().disks().delete(
-      project=project.project_id,
-      zone=self.zone,
-      disk=self.disk_to_forensic_copy.name
-    ).execute()
-    try:
-      project.gce_operation(operation, block=True)
-    except HttpError:
-      pass
-    log.info('Disk {0:s} successfully deleted.'.format(
-      self.disk_to_forensic_copy.name))
+      log.info('Disk {0:s} successfully deleted.'.format(
+        disk))
 
 
 if __name__ == '__main__':
