@@ -53,7 +53,6 @@ class EndToEndTest(unittest.TestCase):
   """
 
   def setUp(self):
-    super(EndToEndTest, self).setUp()
     self.boot_disk_copy = None
     self.disk_to_forensic_copy = None
     self.analysis_vm = None
@@ -142,7 +141,6 @@ class EndToEndTest(unittest.TestCase):
                       self.boot_disk_copy.name])
 
     if self.disk_to_forensic is None:
-      self.__clean()
       return
 
     # Make a copy of another disk of the instance to analyse
@@ -181,9 +179,8 @@ class EndToEndTest(unittest.TestCase):
                      ['new-vm-for-analysis',
                       self.boot_disk_copy.name,
                       self.disk_to_forensic_copy.name])
-    self.__clean()
 
-  def __clean(self):
+  def tearDown(self):
     project = gcp.GoogleCloudProject(project_id=self.project_id,
                                      default_zone=self.zone)
 
