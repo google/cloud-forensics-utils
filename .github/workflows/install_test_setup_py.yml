@@ -23,3 +23,13 @@ jobs:
       run: python setup.py install
     - name: Test through setup.py
       run: python setup.py test
+    - name: Install coverage
+      run: pip install coverage
+    - name: Create coverage report
+      run: coverage run --omit '/usr/*' ./setup.py test && coverage xml
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v1
+      with:
+        file: ./coverage.xml
+        flags: setup
+        name: codecov-umbrella
