@@ -1,4 +1,4 @@
-name: Install and test
+name: Install, test and get code coverage
 
 on:
   pull_request:
@@ -8,17 +8,13 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest]
-        python-version: [3.6, 3.7, 3.8]
 
     steps:
     - uses: actions/checkout@v2
-    - name: Set up Python ${{ matrix.python-version }}
+    - name: Set up Python 3.7
       uses: actions/setup-python@v1
       with:
-        python-version: ${{ matrix.python-version }}
+        python-version: 3.7
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
@@ -26,4 +22,10 @@ jobs:
         pip install -r requirements-dev.txt
     - name: Test with nose
       run: |
-        nosetests -vv --with-coverage --cover-package=libcloudforensics
+        nosetests -vv --with-coverage --cover-xml --cover-package=libcloudforensics
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v1
+      with:
+        file: ./coverage.xml
+        flags: nosetests
+        name: codecov-umbrella
