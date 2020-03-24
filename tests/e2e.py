@@ -52,33 +52,31 @@ class EndToEndTest(unittest.TestCase):
   file: "user@terminal:~$ export PROJECT_INFO='absolute/path/project_info.json'"
   """
 
-  def setUp(self):
-    super(EndToEndTest, self).setUp()
-    self.boot_disk_copy = None
-    self.disk_to_forensic_copy = None
-    self.analysis_vm = None
-    self.analysis_vm_name = 'new-vm-for-analysis'
-
+  def __init__(self, *args, **kwargs):
+    super(EndToEndTest, self).__init__(*args, **kwargs)
     project_info = os.environ.get('PROJECT_INFO')
 
     if project_info is None:
-      raise unittest.SkipTest('Error: please make sure that you defined the '
-                              '"PROJECT_INFO" environment variable pointing '
-                              'to your project settings.')
+      self.error_msg = 'Error: please make sure that you defined the ' \
+                       '"PROJECT_INFO" environment variable pointing ' \
+                       'to your project settings.'
+      return
     try:
       file = open(project_info)
       project_info = json.load(file)
       file.close()
     except ValueError as exception:
-      raise unittest.SkipTest('Error: cannot parse JSON file. {0:s}'.format(
-        str(exception)))
+      self.error_msg = 'Error: cannot parse JSON file. {0:s}'.format(
+        str(exception))
+      return
 
     if not all(key in project_info for key in ['project_id', 'instance',
                                                'zone']):
-      raise unittest.SkipTest('Error: please make sure that your JSON file '
-                              'has the required entries. The file should '
-                              'contain at least the following: ["project_id", '
-                              '"instance", "zone"].')
+      self.error_msg = 'Error: please make sure that your JSON file ' \
+                       'has the required entries. The file should ' \
+                       'contain at least the following: ["project_id", ' \
+                       '"instance", "zone"].'
+      return
 
     self.project_id = project_info['project_id']
     self.instance_to_analyse = project_info['instance']
@@ -89,19 +87,24 @@ class EndToEndTest(unittest.TestCase):
       self.disk_to_forensic = None
     self.zone = project_info['zone']
 
-  def test_end_to_end(self):
+  def setUp(self):
+    if hasattr(self, 'error_msg'):
+      raise unittest.SkipTest(self.error_msg)
+    self.boot_disk_copy = None
+    self.disk_to_forensic_copy = None
+    self.analysis_vm = None
+    self.analysis_vm_name = 'new-vm-for-analysis'
+
+  def test_end_to_end_boot_disk(self):
     """End to end test on GCP.
 
       This end-to-end test runs directly on GCP and tests that:
         1. The gcp.py module connects to the target instance and makes a
-        snapshot
-        of the boot disk (by default) or of the disk passed in parameter to the
-        gcp.create_disk_copy() method.
+        snapshot of the boot disk.
         2. A new disk is created from the taken snapshot.
         3. If an analysis VM already exists, the module will attach the disk
         copy to the VM. Otherwise, it will create a new GCP instance for
-        analysis
-        purpose and attach the disk copy to it.
+        analysis purpose and attach the boot disk copy to it.
     """
 
     # Make a copy of the boot disk of the instance to analyse
@@ -135,15 +138,22 @@ class EndToEndTest(unittest.TestCase):
     self.assertIsInstance(self.analysis_vm, gcp.GoogleComputeInstance)
     self.assertTrue(created)
     self.assertEqual(self.analysis_vm.name, 'new-vm-for-analysis')
-
-    disks = self.analysis_vm.list_disks()
-    self.assertEqual(disks,
+    self.assertEqual(self.analysis_vm.list_disks(),
                      ['new-vm-for-analysis',
                       self.boot_disk_copy.name])
 
-    if self.disk_to_forensic is None:
-      self.__clean()
-      return
+  def test_end_to_end_other_disk(self):
+    """End to end test on GCP.
+
+      This end-to-end test runs directly on GCP and tests that:
+        1. The gcp.py module connects to the target instance and makes a
+        snapshot of disk passed to the 'disk_name' parameter in the
+        create_disk_copy() method.
+        2. A new disk is created from the taken snapshot.
+        3. If an analysis VM already exists, the module will attach the disk
+        copy to the VM. Otherwise, it will create a new GCP instance for
+        analysis purpose and attach the boot disk copy to it.
+    """
 
     # Make a copy of another disk of the instance to analyse
     log.info('{0:s} disk copy started for instance: {1:s}.'.format(
@@ -161,7 +171,7 @@ class EndToEndTest(unittest.TestCase):
     self.assertTrue(self.disk_to_forensic_copy.name.startswith('evidence-'))
     self.assertTrue(self.disk_to_forensic_copy.name.endswith('-copy'))
 
-    # Use existing forensics VM and attach the other disk
+    # Create and start the analysis VM and attach the disk to forensic
     log.info('Attaching disk {0:s} to existing instance {1:s}.'.format(
       self.disk_to_forensic_copy.name, self.analysis_vm_name))
     self.analysis_vm, created = gcp.start_analysis_vm(
@@ -173,19 +183,17 @@ class EndToEndTest(unittest.TestCase):
       attach_disk=self.disk_to_forensic_copy
     )
     self.assertIsInstance(self.analysis_vm, gcp.GoogleComputeInstance)
-    self.assertFalse(created)
+    self.assertTrue(created)
     self.assertEqual(self.analysis_vm.name, 'new-vm-for-analysis')
-
-    disks = self.analysis_vm.list_disks()
-    self.assertEqual(disks,
+    self.assertEqual(self.analysis_vm.list_disks(),
                      ['new-vm-for-analysis',
-                      self.boot_disk_copy.name,
                       self.disk_to_forensic_copy.name])
-    self.__clean()
 
-  def __clean(self):
+  def tearDown(self):
     project = gcp.GoogleCloudProject(project_id=self.project_id,
                                      default_zone=self.zone)
+
+    disks = self.analysis_vm.list_disks()
 
     # delete the created forensics VMs
     log.info('Deleting analysis instance: {0:s}.'.format(
@@ -207,50 +215,34 @@ class EndToEndTest(unittest.TestCase):
       self.analysis_vm.name))
 
     # delete the copied disks
-    log.info('Deleting disk: {0:s}.'.format(
-      self.boot_disk_copy.name))
-    while True:
-      try:
-        operation = project.gce_api().disks().delete(
-          project=project.project_id,
-          zone=self.zone,
-          disk=self.boot_disk_copy.name
-        ).execute()
-        project.gce_operation(operation, block=True)
-        break
-      except HttpError as exception:
-        # The gce api will throw a 400 until the analysis vm's deletion is
-        # correctly propagated. When the disk is finally deleted, it will
-        # throw a 404 not found if it looped one more time after deletion.
-        if exception.resp.status == 404:
+    # we ignore the disk that was created for the analysis VM (disks[0]) as
+    # it is deleted in the previous operation
+    for disk in disks[1:]:
+      log.info('Deleting disk: {0:s}.'.format(disk))
+      while True:
+        try:
+          operation = project.gce_api().disks().delete(
+            project=project.project_id,
+            zone=self.zone,
+            disk=disk
+          ).execute()
+          project.gce_operation(operation, block=True)
           break
-        elif exception.resp.status != 400:
-          log.warning('Could not delete the disk {0:s}: {1:s}'.format(
-            self.boot_disk_copy.name, str(exception)
-          ))
-        # Throttle the requests to one every 10 seconds
-        time.sleep(10)
+        except HttpError as exception:
+          # The gce api will throw a 400 until the analysis vm's deletion is
+          # correctly propagated. When the disk is finally deleted, it will
+          # throw a 404 not found if it looped one more time after deletion.
+          if exception.resp.status == 404:
+            break
+          elif exception.resp.status != 400:
+            log.warning('Could not delete the disk {0:s}: {1:s}'.format(
+              disk, str(exception)
+            ))
+          # Throttle the requests to one every 10 seconds
+          time.sleep(10)
 
-    log.info('Disk {0:s} successfully deleted.'.format(
-      self.boot_disk_copy.name))
-
-    if self.disk_to_forensic is None:
-      return
-
-    log.info('Deleting disk: {0:s}.'.format(
-      self.disk_to_forensic_copy.name))
-
-    operation = project.gce_api().disks().delete(
-      project=project.project_id,
-      zone=self.zone,
-      disk=self.disk_to_forensic_copy.name
-    ).execute()
-    try:
-      project.gce_operation(operation, block=True)
-    except HttpError:
-      pass
-    log.info('Disk {0:s} successfully deleted.'.format(
-      self.disk_to_forensic_copy.name))
+      log.info('Disk {0:s} successfully deleted.'.format(
+        disk))
 
 
 if __name__ == '__main__':
