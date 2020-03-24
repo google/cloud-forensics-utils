@@ -54,38 +54,17 @@ class EndToEndTest(unittest.TestCase):
 
   def __init__(self, *args, **kwargs):
     super(EndToEndTest, self).__init__(*args, **kwargs)
-    project_info = os.environ.get('PROJECT_INFO')
-
-    if project_info is None:
-      self.error_msg = 'Error: please make sure that you defined the ' \
-                       '"PROJECT_INFO" environment variable pointing ' \
-                       'to your project settings.'
-      return
     try:
-      file = open(project_info)
-      project_info = json.load(file)
-      file.close()
-    except ValueError as exception:
-      self.error_msg = 'Error: cannot parse JSON file. {0:s}'.format(
-        str(exception))
+      project_info = ReadProjectInfo()
+    except (OSError, RuntimeError, ValueError) as exception:
+      self.error_msg = str(exception)
       return
-
-    if not all(key in project_info for key in ['project_id', 'instance',
-                                               'zone']):
-      self.error_msg = 'Error: please make sure that your JSON file ' \
-                       'has the required entries. The file should ' \
-                       'contain at least the following: ["project_id", ' \
-                       '"instance", "zone"].'
-      return
-
     self.project_id = project_info['project_id']
     self.instance_to_analyse = project_info['instance']
     # Optional: test a disk other than the boot disk
-    if 'disk' in project_info:
-      self.disk_to_forensic = project_info['disk']
-    else:
-      self.disk_to_forensic = None
+    self.disk_to_forensic = project_info.get('disk', None)
     self.zone = project_info['zone']
+    self.gcp = gcp.GoogleCloudProject(self.project_id, self.zone)
 
   def setUp(self):
     if hasattr(self, 'error_msg'):
@@ -98,33 +77,33 @@ class EndToEndTest(unittest.TestCase):
   def test_end_to_end_boot_disk(self):
     """End to end test on GCP.
 
-      This end-to-end test runs directly on GCP and tests that:
-        1. The gcp.py module connects to the target instance and makes a
-        snapshot of the boot disk.
-        2. A new disk is created from the taken snapshot.
-        3. If an analysis VM already exists, the module will attach the disk
-        copy to the VM. Otherwise, it will create a new GCP instance for
-        analysis purpose and attach the boot disk copy to it.
+    This end-to-end test runs directly on GCP and tests that:
+      1. The gcp.py module connects to the target instance and makes a
+      snapshot of the boot disk.
+      2. A new disk is created from the taken snapshot.
+      3. If an analysis VM already exists, the module will attach the disk
+      copy to the VM. Otherwise, it will create a new GCP instance for
+      analysis purpose and attach the boot disk copy to it.
     """
 
     # Make a copy of the boot disk of the instance to analyse
-    log.info('Boot disk copy started for instance: {0:s}.'.format(
-      self.instance_to_analyse))
     self.boot_disk_copy = gcp.create_disk_copy(
       src_proj=self.project_id,
       dst_proj=self.project_id,
       instance_name=self.instance_to_analyse,
-      zone=self.zone
+      zone=self.zone,
+      # disk_name=None by default, boot disk will be copied
     )
-    log.info('Boot disk successfully copied: {0:s}.'.format(
-      self.boot_disk_copy.name))
-    self.assertIsInstance(self.boot_disk_copy, gcp.GoogleComputeDisk)
-    self.assertTrue(self.boot_disk_copy.name.startswith('evidence-'))
-    self.assertTrue(self.boot_disk_copy.name.endswith('-copy'))
+
+    # The disk copy should be attached to the analysis project
+    operation = self.gcp.gce_api().disks().get(
+      project=self.project_id,
+      zone=self.zone,
+      disk=self.boot_disk_copy.name).execute()
+    result = self.gcp.gce_operation(operation, zone=self.zone)
+    self.assertEqual(result['name'], self.boot_disk_copy.name)
 
     # Create and start the analysis VM and attach the boot disk
-    log.info('Starting a new instance: {0:s} for forensics analysis.'.format(
-      self.analysis_vm_name))
     self.analysis_vm, created = gcp.start_analysis_vm(
       project=self.project_id,
       vm_name=self.analysis_vm_name,
@@ -133,31 +112,37 @@ class EndToEndTest(unittest.TestCase):
       cpu_cores=4,
       attach_disk=self.boot_disk_copy
     )
-    log.info('Instance {0:s} started.'.format(
-      self.analysis_vm_name))
-    self.assertIsInstance(self.analysis_vm, gcp.GoogleComputeInstance)
-    self.assertTrue(created)
-    self.assertEqual(self.analysis_vm.name, 'new-vm-for-analysis')
-    self.assertEqual(self.analysis_vm.list_disks(),
-                     ['new-vm-for-analysis',
-                      self.boot_disk_copy.name])
+
+    # The forensic instance should be live in the analysis GCP project and
+    # the disk should be attached
+    operation = self.gcp.gce_api().instances().get(
+      project=self.project_id,
+      zone=self.zone,
+      instance=self.analysis_vm_name).execute()
+    result = self.gcp.gce_operation(operation, zone=self.zone)
+    self.assertEqual(result['name'], self.analysis_vm_name)
+
+    for disk in result['disks']:
+      if disk['source'].split("/")[-1] == self.boot_disk_copy.name:
+        return
+    self.fail('Error: could not find the disk {0:s} in instance {1:s}'.format(
+      self.boot_disk_copy.name, self.analysis_vm_name
+    ))
 
   def test_end_to_end_other_disk(self):
     """End to end test on GCP.
 
-      This end-to-end test runs directly on GCP and tests that:
-        1. The gcp.py module connects to the target instance and makes a
-        snapshot of disk passed to the 'disk_name' parameter in the
-        create_disk_copy() method.
-        2. A new disk is created from the taken snapshot.
-        3. If an analysis VM already exists, the module will attach the disk
-        copy to the VM. Otherwise, it will create a new GCP instance for
-        analysis purpose and attach the boot disk copy to it.
+    This end-to-end test runs directly on GCP and tests that:
+      1. The gcp.py module connects to the target instance and makes a
+      snapshot of disk passed to the 'disk_name' parameter in the
+      create_disk_copy() method.
+      2. A new disk is created from the taken snapshot.
+      3. If an analysis VM already exists, the module will attach the disk
+      copy to the VM. Otherwise, it will create a new GCP instance for
+      analysis purpose and attach the boot disk copy to it.
     """
 
     # Make a copy of another disk of the instance to analyse
-    log.info('{0:s} disk copy started for instance: {1:s}.'.format(
-      self.disk_to_forensic, self.instance_to_analyse))
     self.disk_to_forensic_copy = gcp.create_disk_copy(
       src_proj=self.project_id,
       dst_proj=self.project_id,
@@ -165,15 +150,16 @@ class EndToEndTest(unittest.TestCase):
       zone=self.zone,
       disk_name=self.disk_to_forensic
     )
-    log.info('{0:s} disk successfully copied: {1:s}.'.format(
-      self.disk_to_forensic, self.disk_to_forensic_copy.name))
-    self.assertIsInstance(self.disk_to_forensic_copy, gcp.GoogleComputeDisk)
-    self.assertTrue(self.disk_to_forensic_copy.name.startswith('evidence-'))
-    self.assertTrue(self.disk_to_forensic_copy.name.endswith('-copy'))
+
+    # The disk copy should be attached to the analysis project
+    operation = self.gcp.gce_api().disks().get(
+      project=self.project_id,
+      zone=self.zone,
+      disk=self.disk_to_forensic_copy.name).execute()
+    result = self.gcp.gce_operation(operation, zone=self.zone)
+    self.assertEqual(result['name'], self.disk_to_forensic_copy.name)
 
     # Create and start the analysis VM and attach the disk to forensic
-    log.info('Attaching disk {0:s} to existing instance {1:s}.'.format(
-      self.disk_to_forensic_copy.name, self.analysis_vm_name))
     self.analysis_vm, created = gcp.start_analysis_vm(
       project=self.project_id,
       vm_name=self.analysis_vm_name,
@@ -182,12 +168,22 @@ class EndToEndTest(unittest.TestCase):
       cpu_cores=4,
       attach_disk=self.disk_to_forensic_copy
     )
-    self.assertIsInstance(self.analysis_vm, gcp.GoogleComputeInstance)
-    self.assertTrue(created)
-    self.assertEqual(self.analysis_vm.name, 'new-vm-for-analysis')
-    self.assertEqual(self.analysis_vm.list_disks(),
-                     ['new-vm-for-analysis',
-                      self.disk_to_forensic_copy.name])
+
+    # The forensic instance should be live in the analysis GCP project and
+    # the disk should be attached
+    operation = self.gcp.gce_api().instances().get(
+      project=self.project_id,
+      zone=self.zone,
+      instance=self.analysis_vm_name).execute()
+    result = self.gcp.gce_operation(operation, zone=self.zone)
+    self.assertEqual(result['name'], self.analysis_vm_name)
+
+    for disk in result['disks']:
+      if disk['source'].split("/")[-1] == self.disk_to_forensic_copy.name:
+        return
+    self.fail('Error: could not find the disk {0:s} in instance {1:s}'.format(
+      self.disk_to_forensic_copy.name, self.analysis_vm_name
+    ))
 
   def tearDown(self):
     project = gcp.GoogleCloudProject(project_id=self.project_id,
@@ -243,6 +239,45 @@ class EndToEndTest(unittest.TestCase):
 
       log.info('Disk {0:s} successfully deleted.'.format(
         disk))
+
+
+def ReadProjectInfo():
+  """ Read project information to run e2e test.
+
+  Returns:
+    dict: A dict with the project information.
+
+  Raises:
+    OSError: if the file cannot be found, opened or closed.
+    RuntimeError: if the json file cannot be parsed.
+    ValueError: if the json file does not have the required properties.
+  """
+  project_info = os.environ.get('PROJECT_INFO')
+  if project_info is None:
+    raise OSError('Error: please make sure that you defined the '
+                  '"PROJECT_INFO" environment variable pointing '
+                  'to your project settings.')
+  try:
+    json_file = open(project_info)
+    try:
+      project_info = json.load(json_file)
+    except ValueError as exception:
+      raise RuntimeError('Error: cannot parse JSON file. {0:s}'.format(
+          str(exception)))
+    json_file.close()
+  except OSError as exception:
+    raise OSError('Error: could not open/close file {0:s}: {1:s}'.format(
+        project_info, str(exception)
+    ))
+
+  if not all(key in project_info for key in ['project_id', 'instance',
+                                             'zone']):
+    raise ValueError('Error: please make sure that your JSON file '
+                     'has the required entries. The file should '
+                     'contain at least the following: ["project_id", '
+                     '"instance", "zone"].')
+
+  return project_info
 
 
 if __name__ == '__main__':
