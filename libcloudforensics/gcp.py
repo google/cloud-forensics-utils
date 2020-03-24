@@ -25,6 +25,7 @@ import datetime
 import json
 import logging
 import os
+import re
 import socket
 import ssl
 import subprocess
@@ -39,6 +40,7 @@ from oauth2client.client import ApplicationDefaultCredentialsError
 log = logging.getLogger()
 
 RETRY_MAX = 10
+REGEX_DISK_NAME = re.compile('^(?=.{1,63}$)[a-z]([-a-z0-9]*[a-z0-9])?$')
 
 
 def create_service(service_name, api_version):
@@ -302,18 +304,8 @@ class GoogleCloudProject:
       RuntimeError: If the disk exists already.
     """
 
-    # Max length of disk names in GCP is 63 characters
-    project_id = snapshot.project.project_id
-    disk_id = project_id + snapshot.disk.name
-    disk_id_crc32 = '{0:08x}'.format(
-      binascii.crc32(disk_id.encode()) & 0xffffffff)
-    truncate_at = 62 - len(disk_id_crc32) - len('-copy') - len(project_id)
-    if disk_name_prefix:
-      disk_name_prefix += '-'
-      truncate_at -= len(disk_name_prefix)
     if not disk_name:
-      disk_name = '{0:s}{1:s}-{2:s}-copy'.format(
-        disk_name_prefix, disk_id_crc32, snapshot.name[:truncate_at])
+      disk_name = generate_disk_name(snapshot, disk_name_prefix)
     body = dict(name=disk_name, sourceSnapshot=snapshot.get_source_string())
     try:
       operation = self.gce_api().disks().insert(
@@ -876,6 +868,13 @@ class GoogleComputeDisk(GoogleComputeBaseResource):
   def snapshot(self, snapshot_name=None):
     """Create snapshot of the disk.
 
+    The snapshot name must comply with the following RegEx:
+      - ^(?=.{1,63}$)[a-z]([-a-z0-9]*[a-z0-9])?$
+
+    i.e., it must be between 1 and 63 chars, the first character must be a
+    lowercase letter, and all following characters must be a dash, lowercase
+    letter, or digit, except the last character, which cannot be a dash.
+
     Args:
       snapshot_name: Name of the snapshot.
 
@@ -887,6 +886,9 @@ class GoogleComputeDisk(GoogleComputeBaseResource):
       snapshot_name = self.name
     truncate_at = 63 - len(timestamp) - 1
     snapshot_name = '{0}-{1}'.format(snapshot_name[:truncate_at], timestamp)
+    if not REGEX_DISK_NAME.match(snapshot_name):
+      raise ValueError('Error: snapshot name {0:s} does not comply with '
+                       '{1:s}'.format(snapshot_name, REGEX_DISK_NAME.pattern))
     log.info(
       self.project.format_log_message(
         'New snapshot: {0}'.format(snapshot_name)))
@@ -1021,3 +1023,46 @@ def start_analysis_vm(
   if attach_disk:
     analysis_vm.attach_disk(attach_disk)
   return analysis_vm, created
+
+
+def generate_disk_name(snapshot, disk_name_prefix=None):
+  """Generate a new disk name for the disk to be created from the snapshot.
+
+  The disk name must comply with the following RegEx:
+      - ^(?=.{1,63}$)[a-z]([-a-z0-9]*[a-z0-9])?$
+
+  i.e., it must be between 1 and 63 chars, the first character must be a
+  lowercase letter, and all following characters must be a dash, lowercase
+  letter, or digit, except the last character, which cannot be a dash.
+
+  Args:
+    snapshot: a disk's snapshot (instance of GoogleComputeSnapshot)
+    disk_name_prefix: an optional prefix for the disk name (string)
+
+  Returns:
+    A name for the disk (string)
+  """
+
+  # Max length of disk names in GCP is 63 characters
+  project_id = snapshot.project.project_id
+  disk_id = project_id + snapshot.disk.name
+  disk_id_crc32 = '{0:08x}'.format(
+    binascii.crc32(disk_id.encode()) & 0xffffffff)
+  truncate_at = 63 - len(disk_id_crc32) - len('-copy') - 1
+  if disk_name_prefix:
+    disk_name_prefix += '-'
+    if len(disk_name_prefix) > truncate_at:
+      # The disk name prefix is too long
+      disk_name_prefix = disk_name_prefix[:truncate_at]
+    truncate_at -= len(disk_name_prefix)
+    disk_name = '{0:s}{1:s}-{2:s}-copy'.format(
+      disk_name_prefix, snapshot.name[:truncate_at], disk_id_crc32)
+  else:
+    disk_name = '{0:s}-{1:s}-copy'.format(
+      snapshot.name[:truncate_at], disk_id_crc32)
+
+  if not REGEX_DISK_NAME.match(disk_name):
+    raise ValueError('Error: disk name {0:s} does not comply with '
+                     '{1:s}'.format(disk_name, REGEX_DISK_NAME.pattern))
+
+  return disk_name
