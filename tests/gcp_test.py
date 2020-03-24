@@ -16,7 +16,6 @@
 
 from __future__ import unicode_literals
 
-import binascii
 import unittest
 
 from googleapiclient.errors import HttpError
@@ -25,6 +24,7 @@ from libcloudforensics import gcp
 
 import mock
 import six
+import re
 
 # For the forensics analysis
 FAKE_ANALYSIS_PROJECT = gcp.GoogleCloudProject(
@@ -60,6 +60,10 @@ FAKE_BOOT_DISK = gcp.GoogleComputeDisk(
 FAKE_SNAPSHOT = gcp.GoogleComputeSnapshot(
   FAKE_DISK,
   'fake-snapshot'
+)
+FAKE_SNAPSHOT_LONG_NAME = gcp.GoogleComputeSnapshot(
+  FAKE_DISK,
+  'this-is-a-kind-of-long-fake-snapshot-name-and-is-definitely-over-63-chars'
 )
 FAKE_DISK_COPY = gcp.GoogleComputeDisk(
   FAKE_SOURCE_PROJECT,
@@ -185,6 +189,9 @@ MOCK_GCE_OPERATION_INSTANCES_GET = {
   ]
 }
 
+# See: https://cloud.google.com/compute/docs/reference/rest/v1/disks
+REGEX_DISK_NAME = re.compile('^(?=.{1,63}$)[a-z]([-a-z0-9]*[a-z0-9])?$')
+
 
 class GoogleCloudProjectTest(unittest.TestCase):
   """Test Google Cloud project class."""
@@ -268,7 +275,8 @@ class GoogleCloudProjectTest(unittest.TestCase):
     self.assertIsInstance(
       disk_from_snapshot, gcp.GoogleComputeDisk)
     self.assertEqual(
-      disk_from_snapshot.name, self.__get_disk_name_for_snapshot(FAKE_SNAPSHOT))
+      disk_from_snapshot.name, gcp.generate_disk_name(
+        FAKE_SNAPSHOT))
 
     # create_disk_from_snapshot(snapshot=FAKE_SNAPSHOT,
     # disk_name='new-forensics-disk', disk_name_prefix='')
@@ -279,8 +287,7 @@ class GoogleCloudProjectTest(unittest.TestCase):
     self.assertIsInstance(disk_from_snapshot, gcp.GoogleComputeDisk)
     self.assertEqual(
       disk_from_snapshot.name,
-      self.__get_disk_name_for_snapshot(
-        FAKE_SNAPSHOT, disk_name='new-forensics-disk')
+      'new-forensics-disk'
     )
 
     # create_disk_from_snapshot(snapshot=FAKE_SNAPSHOT, disk_name=None,
@@ -292,7 +299,7 @@ class GoogleCloudProjectTest(unittest.TestCase):
     self.assertIsInstance(disk_from_snapshot, gcp.GoogleComputeDisk)
     self.assertEqual(
       disk_from_snapshot.name,
-      self.__get_disk_name_for_snapshot(
+      gcp.generate_disk_name(
         FAKE_SNAPSHOT, disk_name_prefix='prefix')
     )
 
@@ -306,9 +313,7 @@ class GoogleCloudProjectTest(unittest.TestCase):
     self.assertIsInstance(disk_from_snapshot, gcp.GoogleComputeDisk)
     self.assertEqual(
       disk_from_snapshot.name,
-      self.__get_disk_name_for_snapshot(
-        FAKE_SNAPSHOT, disk_name='new-forensics-disk',
-        disk_name_prefix='prefix')
+      'new-forensics-disk'
     )
 
     # create_disk_from_snapshot(snapshot=FAKE_SNAPSHOT,
@@ -320,9 +325,9 @@ class GoogleCloudProjectTest(unittest.TestCase):
       )
     with self.assertRaises(RuntimeError) as context:
       _ = FAKE_ANALYSIS_PROJECT.create_disk_from_snapshot(
-        FAKE_SNAPSHOT, FAKE_DISK.name)
+        FAKE_SNAPSHOT, disk_name=FAKE_DISK.name)
     self.assertEqual(str(context.exception), 'Disk {0:s} already exists'.format(
-      self.__get_disk_name_for_snapshot(FAKE_SNAPSHOT, disk_name=FAKE_DISK.name)
+      'fake-disk'
     ))
 
     # other network issue should fail the disk creation
@@ -414,32 +419,6 @@ class GoogleCloudProjectTest(unittest.TestCase):
     instances = FAKE_ANALYSIS_PROJECT.list_disk_by_labels(
       labels_filter={'id': '123'})
     self.assertEqual(len(instances), 0)
-
-  @staticmethod
-  def __get_disk_name_for_snapshot(snapshot,
-                                   disk_name=None,
-                                   disk_name_prefix=''):
-    """Create a new disk name.
-    Args:
-      snapshot: a snapshot of a disk (instance of GoogleComputeSnapshot).
-      disk_name: an optional name for the disk.
-      disk_name_prefix: an optional prefix for the disk name.
-    Returns:
-      A disk name for the given snapshot.
-    """
-    # Max length of disk names in GCP is 63 characters
-    project_id = snapshot.project.project_id
-    disk_id = project_id + snapshot.disk.name
-    disk_id_crc32 = '{0:08x}'.format(
-      binascii.crc32(disk_id.encode()) & 0xffffffff)
-    truncate_at = 62 - len(disk_id_crc32) - len('-copy') - len(project_id)
-    if disk_name_prefix:
-      disk_name_prefix += '-'
-      truncate_at -= len(disk_name_prefix)
-    if not disk_name:
-      disk_name = '{0:s}{1:s}-{2:s}-copy'.format(
-        disk_name_prefix, disk_id_crc32, snapshot.name[:truncate_at])
-    return disk_name
 
 
 class GoogleComputeBaseResourceTest(unittest.TestCase):
@@ -537,6 +516,9 @@ class GoogleComputeDiskTest(unittest.TestCase):
     self.assertIsInstance(snapshot, gcp.GoogleComputeSnapshot)
     self.assertTrue(snapshot.name.startswith('my-snapshot'))
 
+    # snapshot(snapshot_name='Non-compliant-name'). Should raise a ValueError
+    self.assertRaises(ValueError, FAKE_DISK.snapshot, 'Non-compliant-name')
+
 
 class GCPTest(unittest.TestCase):
   """Test the gcp.py public methods."""
@@ -624,6 +606,73 @@ class GCPTest(unittest.TestCase):
                       instance_name='non-existent-instance',
                       zone=FAKE_INSTANCE.zone,
                       disk_name='')
+
+  def test_generate_disk_name(self):
+    """Test that the generated disk name is always within GCP boundaries.
+
+    The disk name must comply with the following RegEx:
+      - ^(?=.{1,63}$)[a-z]([-a-z0-9]*[a-z0-9])?$
+
+    i.e., it must be between 1 and 63 chars, the first character must be a
+    lowercase letter, and all following characters must be a dash, lowercase
+    letter, or digit, except the last character, which cannot be a dash.
+    """
+
+    disk_name = gcp.generate_disk_name(
+      FAKE_SNAPSHOT
+    )
+    self.assertEqual(disk_name, 'fake-snapshot-857c0b16-copy')
+    self.assertTrue(REGEX_DISK_NAME.match(disk_name))
+
+    disk_name = gcp.generate_disk_name(
+      FAKE_SNAPSHOT_LONG_NAME
+    )
+    self.assertEqual(
+      disk_name,
+      'this-is-a-kind-of-long-fake-snapshot-name-and-is--857c0b16-copy')
+    self.assertTrue(REGEX_DISK_NAME.match(disk_name))
+
+    disk_name = gcp.generate_disk_name(
+      FAKE_SNAPSHOT,
+      disk_name_prefix='some-not-so-long-disk-name-prefix'
+    )
+    self.assertEqual(
+      disk_name,
+      'some-not-so-long-disk-name-prefix-fake-snapshot-857c0b16-copy')
+    self.assertTrue(REGEX_DISK_NAME.match(disk_name))
+
+    disk_name = gcp.generate_disk_name(
+      FAKE_SNAPSHOT_LONG_NAME,
+      disk_name_prefix='some-not-so-long-disk-name-prefix'
+    )
+    self.assertEqual(
+      disk_name,
+      'some-not-so-long-disk-name-prefix-this-is-a-kind--857c0b16-copy')
+    self.assertTrue(REGEX_DISK_NAME.match(disk_name))
+
+    disk_name = gcp.generate_disk_name(
+      FAKE_SNAPSHOT,
+      disk_name_prefix='some-really-really-really-really-really-really-long'
+                       '-disk-name-prefix'
+    )
+    self.assertEqual(
+      disk_name,
+      'some-really-really-really-really-really-really-lo-857c0b16-copy')
+    self.assertTrue(REGEX_DISK_NAME.match(disk_name))
+
+    disk_name = gcp.generate_disk_name(
+      FAKE_SNAPSHOT_LONG_NAME,
+      disk_name_prefix='some-really-really-really-really-really-really-long'
+                       '-disk-name-prefix'
+    )
+    self.assertEqual(
+      disk_name,
+      'some-really-really-really-really-really-really-lo-857c0b16-copy')
+    self.assertTrue(REGEX_DISK_NAME.match(disk_name))
+
+    # Disk prefix cannot start with a capital letter
+    self.assertRaises(ValueError, gcp.generate_disk_name, FAKE_SNAPSHOT,
+                      'Some-prefix-that-starts-with-a-capital-letter')
 
 
 if __name__ == '__main__':
