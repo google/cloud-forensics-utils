@@ -14,15 +14,15 @@
 # limitations under the License.
 """End to end test for the gcp module."""
 
-from googleapiclient.errors import HttpError
-
-from libcloudforensics import gcp
-
 import unittest
 import logging
 import json
 import time
 import os
+
+from googleapiclient.errors import HttpError
+
+from libcloudforensics import gcp
 
 log = logging.getLogger()
 
@@ -87,46 +87,46 @@ class EndToEndTest(unittest.TestCase):
     """
 
     # Make a copy of the boot disk of the instance to analyse
-    self.boot_disk_copy = gcp.create_disk_copy(
-      src_proj=self.project_id,
-      dst_proj=self.project_id,
-      instance_name=self.instance_to_analyse,
-      zone=self.zone,
-      # disk_name=None by default, boot disk will be copied
+    self.boot_disk_copy = gcp.CreateDiskCopy(
+        src_proj=self.project_id,
+        dst_proj=self.project_id,
+        instance_name=self.instance_to_analyse,
+        zone=self.zone,
+        # disk_name=None by default, boot disk will be copied
     )
 
     # The disk copy should be attached to the analysis project
-    operation = self.gcp.gce_api().disks().get(
-      project=self.project_id,
-      zone=self.zone,
-      disk=self.boot_disk_copy.name).execute()
-    result = self.gcp.gce_operation(operation, zone=self.zone)
+    operation = self.gcp.GceApi().disks().get(
+        project=self.project_id,
+        zone=self.zone,
+        disk=self.boot_disk_copy.name).execute()
+    result = self.gcp.GceOperation(operation, zone=self.zone)
     self.assertEqual(result['name'], self.boot_disk_copy.name)
 
     # Create and start the analysis VM and attach the boot disk
-    self.analysis_vm, created = gcp.start_analysis_vm(
-      project=self.project_id,
-      vm_name=self.analysis_vm_name,
-      zone=self.zone,
-      boot_disk_size=10,
-      cpu_cores=4,
-      attach_disk=self.boot_disk_copy
+    self.analysis_vm, _ = gcp.StartAnalysisVm(
+        project=self.project_id,
+        vm_name=self.analysis_vm_name,
+        zone=self.zone,
+        boot_disk_size=10,
+        cpu_cores=4,
+        attach_disk=self.boot_disk_copy
     )
 
     # The forensic instance should be live in the analysis GCP project and
     # the disk should be attached
-    operation = self.gcp.gce_api().instances().get(
-      project=self.project_id,
-      zone=self.zone,
-      instance=self.analysis_vm_name).execute()
-    result = self.gcp.gce_operation(operation, zone=self.zone)
+    operation = self.gcp.GceApi().instances().get(
+        project=self.project_id,
+        zone=self.zone,
+        instance=self.analysis_vm_name).execute()
+    result = self.gcp.GceOperation(operation, zone=self.zone)
     self.assertEqual(result['name'], self.analysis_vm_name)
 
     for disk in result['disks']:
       if disk['source'].split("/")[-1] == self.boot_disk_copy.name:
         return
     self.fail('Error: could not find the disk {0:s} in instance {1:s}'.format(
-      self.boot_disk_copy.name, self.analysis_vm_name
+        self.boot_disk_copy.name, self.analysis_vm_name
     ))
 
   def test_end_to_end_other_disk(self):
@@ -143,72 +143,72 @@ class EndToEndTest(unittest.TestCase):
     """
 
     # Make a copy of another disk of the instance to analyse
-    self.disk_to_forensic_copy = gcp.create_disk_copy(
-      src_proj=self.project_id,
-      dst_proj=self.project_id,
-      instance_name=self.instance_to_analyse,
-      zone=self.zone,
-      disk_name=self.disk_to_forensic
+    self.disk_to_forensic_copy = gcp.CreateDiskCopy(
+        src_proj=self.project_id,
+        dst_proj=self.project_id,
+        instance_name=self.instance_to_analyse,
+        zone=self.zone,
+        disk_name=self.disk_to_forensic
     )
 
     # The disk copy should be attached to the analysis project
-    operation = self.gcp.gce_api().disks().get(
-      project=self.project_id,
-      zone=self.zone,
-      disk=self.disk_to_forensic_copy.name).execute()
-    result = self.gcp.gce_operation(operation, zone=self.zone)
+    operation = self.gcp.GceApi().disks().get(
+        project=self.project_id,
+        zone=self.zone,
+        disk=self.disk_to_forensic_copy.name).execute()
+    result = self.gcp.GceOperation(operation, zone=self.zone)
     self.assertEqual(result['name'], self.disk_to_forensic_copy.name)
 
     # Create and start the analysis VM and attach the disk to forensic
-    self.analysis_vm, created = gcp.start_analysis_vm(
-      project=self.project_id,
-      vm_name=self.analysis_vm_name,
-      zone=self.zone,
-      boot_disk_size=10,
-      cpu_cores=4,
-      attach_disk=self.disk_to_forensic_copy
+    self.analysis_vm, _ = gcp.StartAnalysisVm(
+        project=self.project_id,
+        vm_name=self.analysis_vm_name,
+        zone=self.zone,
+        boot_disk_size=10,
+        cpu_cores=4,
+        attach_disk=self.disk_to_forensic_copy
     )
 
     # The forensic instance should be live in the analysis GCP project and
     # the disk should be attached
-    operation = self.gcp.gce_api().instances().get(
-      project=self.project_id,
-      zone=self.zone,
-      instance=self.analysis_vm_name).execute()
-    result = self.gcp.gce_operation(operation, zone=self.zone)
+    operation = self.gcp.GceApi().instances().get(
+        project=self.project_id,
+        zone=self.zone,
+        instance=self.analysis_vm_name).execute()
+    result = self.gcp.GceOperation(operation, zone=self.zone)
     self.assertEqual(result['name'], self.analysis_vm_name)
 
     for disk in result['disks']:
       if disk['source'].split("/")[-1] == self.disk_to_forensic_copy.name:
         return
     self.fail('Error: could not find the disk {0:s} in instance {1:s}'.format(
-      self.disk_to_forensic_copy.name, self.analysis_vm_name
+        self.disk_to_forensic_copy.name, self.analysis_vm_name
     ))
 
   def tearDown(self):
     project = gcp.GoogleCloudProject(project_id=self.project_id,
                                      default_zone=self.zone)
 
-    disks = self.analysis_vm.list_disks()
+    disks = self.analysis_vm.ListDisks()
 
     # delete the created forensics VMs
     log.info('Deleting analysis instance: {0:s}.'.format(
-      self.analysis_vm.name))
-    operation = project.gce_api().instances().delete(
-      project=project.project_id,
-      zone=self.zone,
-      instance=self.analysis_vm.name
+        self.analysis_vm.name))
+    operation = project.GceApi().instances().delete(
+        project=project.project_id,
+        zone=self.zone,
+        instance=self.analysis_vm.name
     ).execute()
     try:
-      project.gce_operation(operation, block=True)
+      project.GceOperation(operation, block=True)
     except HttpError:
-      # gce_operation triggers a while(True) loop that checks on the
+      # GceOperation triggers a while(True) loop that checks on the
       # operation ID. Sometimes it loops one more time right when the
       # operation has finished and thus the associated ID doesn't exists
       # anymore, throwing an HttpError. We can ignore this.
       pass
     log.info('Instance {0:s} successfully deleted.'.format(
-      self.analysis_vm.name))
+        self.analysis_vm.name))
 
     # delete the copied disks
     # we ignore the disk that was created for the analysis VM (disks[0]) as
@@ -217,12 +217,12 @@ class EndToEndTest(unittest.TestCase):
       log.info('Deleting disk: {0:s}.'.format(disk))
       while True:
         try:
-          operation = project.gce_api().disks().delete(
-            project=project.project_id,
-            zone=self.zone,
-            disk=disk
+          operation = project.GceApi().disks().delete(
+              project=project.project_id,
+              zone=self.zone,
+              disk=disk
           ).execute()
-          project.gce_operation(operation, block=True)
+          project.GceOperation(operation, block=True)
           break
         except HttpError as exception:
           # The gce api will throw a 400 until the analysis vm's deletion is
@@ -230,15 +230,15 @@ class EndToEndTest(unittest.TestCase):
           # throw a 404 not found if it looped one more time after deletion.
           if exception.resp.status == 404:
             break
-          elif exception.resp.status != 400:
+          if exception.resp.status != 400:
             log.warning('Could not delete the disk {0:s}: {1:s}'.format(
-              disk, str(exception)
+                disk, str(exception)
             ))
           # Throttle the requests to one every 10 seconds
           time.sleep(10)
 
       log.info('Disk {0:s} successfully deleted.'.format(
-        disk))
+          disk))
 
 
 def ReadProjectInfo():
