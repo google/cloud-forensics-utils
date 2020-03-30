@@ -356,8 +356,6 @@ class GoogleCloudProject:
     except RuntimeError:
       pass
 
-    gift_ppa_track = 'stable'
-
     machine_type = 'zones/{0}/machineTypes/n1-standard-{1:d}'.format(
         self.default_zone, cpu_cores)
     get_image_operation = self.GceApi().images().getFromFamily(
@@ -365,35 +363,6 @@ class GoogleCloudProject:
     ubuntu_image = self.GceOperation(get_image_operation, block=False)
     source_disk_image = ubuntu_image['selfLink']
 
-    # Analysis software to install.
-    # yapf: disable
-    packages_to_install = [
-        'binutils',
-        'docker-explorer-tools',
-        'htop',
-        'jq',
-        'libbde-tools',
-        'libfsapfs-tools',
-        'libfvde-tools',
-        'ncdu',
-        'plaso-tools',
-        'sleuthkit',
-        'upx-ucl',
-        'xmount']
-
-    # yapf: enable
-
-    startup_script = """
-        #!/bin/bash
-        function install_packages(){{
-          add-apt-repository -y -u ppa:gift/{0} && apt -y install {1}
-        }}
-
-        while ! install_packages ; do
-          logger "Failed to install forensics packages, retrying in 3 seconds."
-          sleep 3
-        done
-        """.format(gift_ppa_track, ' '.join(packages_to_install))
     config = {
         'name': vm_name,
         'machineType': machine_type,
@@ -423,7 +392,8 @@ class GoogleCloudProject:
         'metadata': {
             'items': [{
                 'key': 'startup-script',
-                'value': startup_script
+                # Analysis software to install.
+                'value': self._ReadStartupScript()
             }]
         }
     }
@@ -533,6 +503,35 @@ class GoogleCloudProject:
       request = service_object.aggregatedList_next(
           previous_request=request, previous_response=response)
     return resource_dict
+
+  @staticmethod
+  def _ReadStartupScript():
+    """Read and return the startup script that is to be run on the forensics VM.
+
+    Users can either write their own script to install custom packages,
+    or use the provided one. To use your own script, export a STARTUP_SCRIPT
+    environment variable with the absolute path to it:
+    "user@terminal:~$ export STARTUP_SCRIPT='absolute/path/script.sh'"
+
+    Returns:
+      str: the script to run
+
+    Raises:
+      OSError: If the script cannot be opened, read or closed.
+    """
+    try:
+      startup_script = os.environ.get('STARTUP_SCRIPT')
+      if not startup_script:
+        # Use the provided script
+        startup_script = os.path.dirname(os.path.realpath(__file__)) + \
+                         '/../scripts/startup.sh'
+      startup_script = open(startup_script)
+      script = startup_script.read()
+      startup_script.close()
+      return script
+    except OSError as exception:
+      raise OSError('Could not open/read/close the startup script {0:s}: '
+                    '{1:s}'.format(startup_script, str(exception)))
 
 
 class GoogleCloudFunction(GoogleCloudProject):

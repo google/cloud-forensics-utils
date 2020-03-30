@@ -16,6 +16,7 @@
 
 from __future__ import unicode_literals
 
+import os
 import unittest
 import re
 
@@ -417,6 +418,35 @@ class GoogleCloudProjectTest(unittest.TestCase):
     instances = FAKE_ANALYSIS_PROJECT.ListDiskByLabels(
         labels_filter={'id': '123'})
     self.assertEqual(len(instances), 0)
+
+  def testReadStartupScript(self):
+    """Test that the startup script is correctly read."""
+    # No environment variable set, reading default script
+    # pylint: disable=protected-access
+    script = FAKE_SOURCE_PROJECT._ReadStartupScript()
+    self.assertTrue(script.startswith('#!/bin/bash'))
+    self.assertTrue(script.endswith('(exit ${exit_code})\n'))
+
+    # Bogus environment variable, should raise an exception
+    os.environ['STARTUP_SCRIPT'] = '/bogus/path'
+    self.assertRaises(OSError, FAKE_SOURCE_PROJECT._ReadStartupScript)
+
+    # Environment variable set to custom script
+    file = """#!/bin/bash
+    echo 'This is a custom script'
+    """
+    file_path = os.getcwd() + '/tmp.sh'
+    try:
+      f = open(file_path, 'w')
+      f.write(file)
+      f.close()
+      os.environ['STARTUP_SCRIPT'] = file_path
+      script = FAKE_SOURCE_PROJECT._ReadStartupScript()
+      self.assertEqual(script, file)
+      os.remove(file_path)
+    except OSError as exception:
+      self.fail(str(exception))
+    # pylint: enable=protected-access
 
 
 class GoogleComputeBaseResourceTest(unittest.TestCase):
