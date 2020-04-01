@@ -41,6 +41,7 @@ log = logging.getLogger()
 
 RETRY_MAX = 10
 REGEX_DISK_NAME = re.compile('^(?=.{1,63}$)[a-z]([-a-z0-9]*[a-z0-9])?$')
+STARTUP_SCRIPT = 'scripts/startup.sh'
 
 
 def CreateService(service_name, api_version):
@@ -327,7 +328,8 @@ class GoogleCloudProject:
 
   def GetOrCreateAnalysisVm(
       self, vm_name, boot_disk_size, cpu_cores=4,
-      image_project='ubuntu-os-cloud', image_family='ubuntu-1804-lts'):
+      image_project='ubuntu-os-cloud', image_family='ubuntu-1804-lts',
+      packages=None):
     """Get or create a new virtual machine for analysis purposes.
 
     Args:
@@ -337,6 +339,7 @@ class GoogleCloudProject:
       image_project (str): Name of the project where the analysis VM image is
       hosted.
       image_family (str): Name of the image to use to create the analysis VM.
+      packages (list(str)): List of packages to install in the VM
 
     Returns:
       tuple(GoogleComputeInstance, bool): A tuple with a virtual machine object
@@ -362,6 +365,11 @@ class GoogleCloudProject:
         project=image_project, family=image_family).execute()
     ubuntu_image = self.GceOperation(get_image_operation, block=False)
     source_disk_image = ubuntu_image['selfLink']
+
+    startup_script = self._ReadStartupScript()
+
+    if packages:
+      startup_script.replace('${packages[@]}', ' '.join(packages))
 
     config = {
         'name': vm_name,
@@ -393,7 +401,7 @@ class GoogleCloudProject:
             'items': [{
                 'key': 'startup-script',
                 # Analysis software to install.
-                'value': self._ReadStartupScript()
+                'value': startup_script
             }]
         }
     }
@@ -523,8 +531,8 @@ class GoogleCloudProject:
       startup_script = os.environ.get('STARTUP_SCRIPT')
       if not startup_script:
         # Use the provided script
-        startup_script = os.path.dirname(os.path.realpath(__file__)) + \
-                         '/../scripts/startup.sh'
+        startup_script = os.path.join(os.path.dirname(os.path.dirname(
+            os.path.realpath(__file__))), STARTUP_SCRIPT)
       startup_script = open(startup_script)
       script = startup_script.read()
       startup_script.close()

@@ -7,7 +7,9 @@ max_retry=10
 
 gift_ppa_track='stable'
 
-# Packages to install
+# Default packages to install
+# This can be overwritten in GetOrCreateAnalysisVm(
+#   packages=['package1', 'package2', ...])
 packages=(
   binutils
   docker-explorer-tools
@@ -28,9 +30,7 @@ err() {
 
 install_packages() {
   add-apt-repository -y -u ppa:gift/${gift_ppa_track}
-  for package in ${packages[@]}; do
-    apt -y install ${package}
-  done
+  apt -y install ${packages[@]}
 }
 
 # Try to install the packages

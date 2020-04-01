@@ -17,6 +17,7 @@
 from __future__ import unicode_literals
 
 import os
+import tempfile
 import unittest
 import re
 
@@ -435,15 +436,13 @@ class GoogleCloudProjectTest(unittest.TestCase):
     file = """#!/bin/bash
     echo 'This is a custom script'
     """
-    file_path = os.getcwd() + '/tmp.sh'
     try:
-      f = open(file_path, 'w')
-      f.write(file)
-      f.close()
-      os.environ['STARTUP_SCRIPT'] = file_path
-      script = FAKE_SOURCE_PROJECT._ReadStartupScript()
-      self.assertEqual(script, file)
-      os.remove(file_path)
+      with tempfile.NamedTemporaryFile() as temp:
+        temp.write(str.encode(file))
+        temp.flush()
+        os.environ['STARTUP_SCRIPT'] = temp.name
+        script = FAKE_SOURCE_PROJECT._ReadStartupScript()
+        self.assertEqual(script, file)
     except OSError as exception:
       self.fail(str(exception))
     # pylint: enable=protected-access
