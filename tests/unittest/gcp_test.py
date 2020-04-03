@@ -17,7 +17,6 @@
 from __future__ import unicode_literals
 
 import os
-import tempfile
 import unittest
 import re
 
@@ -193,6 +192,7 @@ MOCK_GCE_OPERATION_INSTANCES_GET = {
 
 # See: https://cloud.google.com/compute/docs/reference/rest/v1/disks
 REGEX_DISK_NAME = re.compile('^(?=.{1,63}$)[a-z]([-a-z0-9]*[a-z0-9])?$')
+STARTUP_SCRIPT = 'startup_script.sh'
 
 
 class GoogleCloudProjectTest(unittest.TestCase):
@@ -428,23 +428,15 @@ class GoogleCloudProjectTest(unittest.TestCase):
     self.assertTrue(script.startswith('#!/bin/bash'))
     self.assertTrue(script.endswith('(exit ${exit_code})\n'))
 
+    # Environment variable set to custom script
+    os.environ['STARTUP_SCRIPT'] = os.path.join(os.path.dirname(
+        os.path.realpath(__file__)), STARTUP_SCRIPT)
+    script = FAKE_SOURCE_PROJECT._ReadStartupScript()
+    self.assertEqual('# THIS IS A CUSTOM BASH SCRIPT', script)
+
     # Bogus environment variable, should raise an exception
     os.environ['STARTUP_SCRIPT'] = '/bogus/path'
     self.assertRaises(OSError, FAKE_SOURCE_PROJECT._ReadStartupScript)
-
-    # Environment variable set to custom script
-    file = """#!/bin/bash
-    echo 'This is a custom script'
-    """
-    try:
-      with tempfile.NamedTemporaryFile() as temp:
-        temp.write(str.encode(file))
-        temp.flush()
-        os.environ['STARTUP_SCRIPT'] = temp.name
-        script = FAKE_SOURCE_PROJECT._ReadStartupScript()
-        self.assertEqual(script, file)
-    except OSError as exception:
-      self.fail(str(exception))
     # pylint: enable=protected-access
 
 
