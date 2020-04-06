@@ -37,9 +37,9 @@ To update your local repo from the main:
 
 Please follow the Style Guide when making your changes, and also make sure to
 use the project's
-[pylintrc](https://github.com/google/cloud-forensics-utils/blob/master/cloud-forensics-utils/.pylintrc)
+[pylintrc](https://github.com/google/cloud-forensics-utils/blob/master/.pylintrc)
 and
-[yapf config file](https://github.com/google/cloud-forensics-utils/blob/master/cloud-forensics-utils/.style.yapf).
+[yapf config file](https://github.com/google/cloud-forensics-utils/blob/master/.style.yapf).
 Once you're ready for review make sure the tests pass:
 
     $ python ./run_tests.py
