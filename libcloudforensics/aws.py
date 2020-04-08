@@ -16,7 +16,6 @@
 import binascii
 import datetime
 import logging
-import os
 import re
 
 import boto3
@@ -25,30 +24,15 @@ log = logging.getLogger()
 
 EC2_SERVICE = 'ec2'
 ACCOUNT_SERVICE = 'sts'
-UBUNTU_1804_AMI = 'ami-0013b3aa57f8a4331'
-AWS_PATH = os.path.expanduser('~/.aws/')
-RETRY_MAX = 10
 REGEX_TAG_VALUE = re.compile('^.{1,255}$')
 
 
-def CreateSession():
-  """Create an AWS session API service.
-
-  Returns:
-    boto3.Session: An AWS session object.
-  """
-  # Create a default session with credentials stored in ~/.aws/credentials
-  # https://boto3.amazonaws.com/v1/documentation/api/latest/guide
-  # /configuration.html
-  return boto3.session.Session()
-
-
-class AwsAccount:
+class AWSAccount:
   """Class representing an AWS account.
 
   Attributes:
     default_availability_zone (str): Default zone within the region to create
-    new resources in.
+        new resources in.
   """
   def __init__(self, default_availability_zone):
     self.default_availability_zone = default_availability_zone
@@ -68,10 +52,10 @@ class AwsAccount:
       boto3.Session.Client: An AWS EC2 client object.
     """
     if region:
-      return CreateSession().client(
+      return boto3.session.Session().client(
           service_name=service, region_name=region
       )
-    return CreateSession().client(
+    return boto3.session.Session().client(
         service_name=service, region_name=self.default_region
     )
 
@@ -86,10 +70,10 @@ class AwsAccount:
       boto3.Session.Resource: An AWS EC2 resource object.
     """
     if region:
-      return CreateSession().resource(
+      return boto3.session.Session().resource(
           service_name=service, region_name=region
       )
-    return CreateSession().resource(
+    return boto3.session.Session().resource(
         service_name=service, region_name=self.default_region
     )
 
@@ -103,49 +87,50 @@ class AwsAccount:
     Returns:
       dict: Dictionary with name and metadata for each instance.
 
+    Raises:
+      RuntimeError: If instances can't be listed.
+
     Example usage:
       ListInstances(region='us-east-1', filters=[
-        dict(Name='instance-id', Values=['a-particular-instance-id'])
-      ])
+          dict(Name='instance-id', Values=['some-instance-id'])])
     """
     if not filters:
       filters = []
 
     instances = dict()
-    have_all_tokens = False
     next_token = None
+    client = self.ClientApi(EC2_SERVICE, region=region)
 
-    while not have_all_tokens:
-      if next_token:
-        response = self.ClientApi(
-            EC2_SERVICE, region=region).describe_instances(
-                Filters=filters,
-                NextToken=next_token)
-      else:
-        response = self.ClientApi(
-            EC2_SERVICE, region=region).describe_instances(
-                Filters=filters)
+    while True:
+      try:
+        if next_token:
+          response = client.describe_instances(
+              Filters=filters, NextToken=next_token)
+        else:
+          response = client.describe_instances(Filters=filters)
+      except client.exceptions.ClientError as exception:
+        raise RuntimeError('Error: could not retrieve instances: {0:s}'.format(
+            str(exception)))
 
-      for reservation in response["Reservations"]:
-        for instance in reservation["Instances"]:
-          instance_name = None
-          if instance.get('Tags'):
-            for tag in instance['Tags']:
-              instance_name = tag.get('Value') if tag.get('Key') == 'Name' \
-                else None
-              if instance_name is not None:
-                break
+      for reservation in response['Reservations']:
+        for instance in reservation['Instances']:
           # Terminated instances are filtered out
-          if instance['State']['Name'] != 'terminated':
-            instance_info = dict(region=self.default_region,
-                                 zone=instance['Placement']['AvailabilityZone'])
-            if instance_name:
-              instance_info.update(name=instance_name)
-            instances[instance['InstanceId']] = instance_info
+          if instance['State']['Name'] == 'terminated':
+            continue
+
+          instance_info = dict(region=self.default_region,
+                               zone=instance['Placement']['AvailabilityZone'])
+
+          for tag in instance.get('Tags', []):
+            if tag.get('Key') == 'Name':
+              instance_info['name'] = tag.get('Value')
+              break
+
+          instances[instance['InstanceId']] = instance_info
 
       next_token = response.get('NextToken')
       if not next_token:
-        have_all_tokens = True
+        break
 
     return instances
 
@@ -159,52 +144,49 @@ class AwsAccount:
     Returns:
       dict: Dictionary with name and metadata for each volume.
 
+    Raises:
+      RuntimeError: If volumes can't be listed.
+
     Example usage:
-      # List volumes attached to the instance 'a-particular-instance-id'
+      # List volumes attached to the instance 'some-instance-id'
       ListVolumes(filters=[
-        dict(Name='attachment.instance-id', Values=['a-particular-instance-id'])
-      ])
+          dict(Name='attachment.instance-id', Values=['some-instance-id'])])
     """
     if not filters:
       filters = []
 
     volumes = dict()
-    have_all_tokens = False
     next_token = None
+    client = self.ClientApi(EC2_SERVICE, region=region)
 
-    while not have_all_tokens:
-      if next_token:
-        response = self.ClientApi(
-            EC2_SERVICE, region=region).describe_volumes(
-                Filters=filters,
-                NextToken=next_token
-            )
-      else:
-        response = self.ClientApi(
-            EC2_SERVICE, region=region).describe_volumes(
-                Filters=filters)
+    while True:
+      try:
+        if next_token:
+          response = client.describe_volumes(
+              Filters=filters, NextToken=next_token)
+        else:
+          response = client.describe_volumes(Filters=filters)
+      except client.exceptions.ClientError as exception:
+        raise RuntimeError('Error: could not retrieve volumes: {0:s}'.format(
+            str(exception)))
 
       for volume in response['Volumes']:
-        volume_name = None
-        if volume.get('Tags'):
-          for tag in volume['Tags']:
-            volume_name = tag.get('Value') if tag.get('Key') == 'Name' \
-              else None
-            if volume_name is not None:
-              break
-
         volume_info = dict(region=self.default_region,
                            zone=volume['AvailabilityZone'])
-        if volume_name:
-          volume_info.update(name=volume_name)
+
+        for tag in volume.get('Tags', []):
+          if tag.get('Key') == 'Name':
+            volume_info['name'] = tag.get('Value')
+            break
+
         if len(volume['Attachments']) > 0:
-          volume_info.update(device=volume['Attachments'][0]['Device'])
+          volume_info['device'] = volume['Attachments'][0]['Device']
 
         volumes[volume['VolumeId']] = volume_info
 
       next_token = response.get('NextToken')
       if not next_token:
-        have_all_tokens = True
+        break
 
     return volumes
 
@@ -213,11 +195,11 @@ class AwsAccount:
 
     Args:
       instance_name_or_id (str): The instance to get. This can be the
-      instance id or a name that is assigned to the instance as a Tag.
+          instance id or a name that is assigned to the instance as a Tag.
       region (str): The region to look the instance in.
 
     Returns:
-      AwsInstance: An Amazon EC2 Instance object.
+      AWSInstance: An Amazon EC2 Instance object.
 
     Raises:
       RuntimeError: If instance does not exist.
@@ -242,11 +224,11 @@ class AwsAccount:
 
     Args:
       volume_name_or_id (str): The volume to get. This can be the volume id or a
-      name that is assigned to the volume as a Tag.
+          name that is assigned to the volume as a Tag.
       region (str): The region to look the volume in.
 
     Returns:
-      AwsVolume: An Amazon EC2 Volume object.
+      AWSVolume: An Amazon EC2 Volume object.
 
     Raises:
       RuntimeError: If volume does not exist.
@@ -270,12 +252,12 @@ class AwsAccount:
     """Create a new volume based on a snapshot.
 
     Args:
-      snapshot (AwsSnapshot): Snapshot to use.
+      snapshot (AWSSnapshot): Snapshot to use.
       volume_name (str): Optional string to use as new volume name.
       volume_name_prefix (str): Optional string to prefix the volume name with.
 
     Returns:
-      AwsVolume: An AWS EBS Volume.
+      AWSVolume: An AWS EBS Volume.
 
     Raises:
       ValueError: If the volume name does not comply with the RegEx.
@@ -306,14 +288,14 @@ class AwsAccount:
                          '{1:s}: {2:s}'.format(
                              volume_name, snapshot.name, str(exception)))
 
-    return AwsVolume(volume_id, self, self.default_region, zone,
+    return AWSVolume(volume_id, self, self.default_region, zone,
                      name=volume_name)
 
   def _GenerateVolumeName(self, snapshot, volume_name_prefix=None):
     """Generate a new volume name given a volume's snapshot.
 
     Args:
-      snapshot (AwsSnapshot): A volume's Snapshot.
+      snapshot (AWSSnapshot): A volume's Snapshot.
       volume_name_prefix (str): An optional prefix for the volume name.
 
     Returns:
@@ -352,7 +334,7 @@ class AwsAccount:
       region (str): The region to look the instance in.
 
     Returns:
-      AwsInstance: An Amazon EC2 Instance object.
+      AWSInstance: An Amazon EC2 Instance object.
 
     Raises:
       RuntimeError: If instance does not exist.
@@ -369,7 +351,7 @@ class AwsAccount:
 
     zone = instance['zone']
 
-    return AwsInstance(self, instance_id, region, zone)
+    return AWSInstance(self, instance_id, region, zone)
 
   def __GetInstanceByName(self, instance_name, region=None):
     """Get an instance from an AWS account by its name tag.
@@ -379,11 +361,11 @@ class AwsAccount:
       region (str): The region to look the instance in.
 
     Returns:
-      AwsInstance: An Amazon EC2 Instance object.
+      AWSInstance: An Amazon EC2 Instance object.
 
     Raises:
       RuntimeError: If instance does not exist, or if multiple instances have
-      the same name tag.
+          the same name tag.
     """
     instance_id = None
     count = 0
@@ -408,7 +390,7 @@ class AwsAccount:
 
     zone = instances[instance_id]['zone']
 
-    return AwsInstance(self, instance_id, region,
+    return AWSInstance(self, instance_id, region,
                        zone, name=instance_name)
 
   def __GetVolumeById(self, volume_id, region=None):
@@ -419,7 +401,7 @@ class AwsAccount:
       region (str): The region to look the volume in.
 
     Returns:
-      AwsVolume: An Amazon EC2 Volume object.
+      AWSVolume: An Amazon EC2 Volume object.
 
     Raises:
       RuntimeError: If volume does not exist.
@@ -436,7 +418,7 @@ class AwsAccount:
 
     zone = volume['zone']
 
-    return AwsVolume(volume_id, self, region, zone)
+    return AWSVolume(volume_id, self, region, zone)
 
   def __GetVolumeByName(self, volume_name, region=None):
     """Get a volume from an AWS account by its name tag.
@@ -446,11 +428,11 @@ class AwsAccount:
       region (str): The region to look the volume in.
 
     Returns:
-      AwsVolume: An Amazon EC2 Volume object.
+      AWSVolume: An Amazon EC2 Volume object.
 
     Raises:
       RuntimeError: If volume does not exist, or if multiple volumes have the
-      same name tag.
+          same name tag.
     """
     volume_id = None
     count = 0
@@ -475,18 +457,18 @@ class AwsAccount:
 
     zone = volumes[volume_id]['zone']
 
-    return AwsVolume(volume_id, self, region, zone, name=volume_name)
+    return AWSVolume(volume_id, self, region, zone, name=volume_name)
 
 
-class AwsInstance:
+class AWSInstance:
   """Class representing an AWS EC2 instance.
 
   Attributes:
-    aws_account (AwsAccount): The account for the instance.
+    aws_account (AWSAccount): The account for the instance.
     instance_id (str): The id of the instance.
     region (str): The region the instance is in.
     availability_zone (str): The zone within the region in which the instance
-    is.
+        is.
     name (str): the name tag (if any) of the instance.
   """
   def __init__(self, aws_account, instance_id, region,
@@ -494,11 +476,11 @@ class AwsInstance:
     """Initialize the AWS EC2 instance.
 
     Attributes:
-      aws_account (AwsAccount): The account for the instance.
+      aws_account (AWSAccount): The account for the instance.
       instance_id (str): The id of the instance.
       region (str): The region the instance is in.
       availability_zone (str): The zone within the region in which the instance
-      is.
+          is.
       name (str): the name tag (if any) of the instance.
     """
     self.aws_account = aws_account
@@ -511,7 +493,7 @@ class AwsInstance:
     """Get the instance's boot volume.
 
     Returns:
-      AwsVolume: Volume object if the volume is found.
+      AWSVolume: Volume object if the volume is found.
 
     Raises:
       RuntimeError: If no boot volume could be found.
@@ -522,7 +504,7 @@ class AwsInstance:
 
     for volume_id in volumes:
       if volumes[volume_id]['device'] == boot_device:
-        return AwsVolume(volume_id, self.aws_account, self.region,
+        return AWSVolume(volume_id, self.aws_account, self.region,
                          self.availability_zone)
 
     error_msg = 'Boot volume not found for instance: {0:s}'.format(
@@ -536,16 +518,15 @@ class AwsInstance:
       dict: Dict of volume ids.
     """
     return self.aws_account.ListVolumes(
-        filters=[dict(Name='attachment.instance-id', Values=[
-            self.instance_id])]
-    )
+        filters=[dict(Name='attachment.instance-id',
+                      Values=[self.instance_id])])
 
 
-class AwsElasticBlockStore:
+class AWSElasticBlockStore:
   """Class representing an AWS EBS resource.
 
   Attributes:
-    aws_account (AwsAccount): The account for the resource.
+    aws_account (AWSAccount): The account for the resource.
     region (str): The region the EBS is in.
     availability_zone (str): The zone within the region in which the EBS is.
     name (str): The name tag (if any) of the EBS resource.
@@ -554,7 +535,7 @@ class AwsElasticBlockStore:
     """Initialize the AWS EBS resource.
 
     Attributes:
-      aws_account (AwsAccount): The account for the resource.
+      aws_account (AWSAccount): The account for the resource.
       region (str): The region the EBS is in.
       availability_zone (str): The zone within the region in which the EBS is.
       name (str): The name tag (if any) of the EBS resource.
@@ -565,12 +546,12 @@ class AwsElasticBlockStore:
     self.name = name
 
 
-class AwsVolume(AwsElasticBlockStore):
+class AWSVolume(AWSElasticBlockStore):
   """Class representing an AWS EBS volume.
 
   Attributes:
     volume_id (str): The id of the volume.
-    aws_account (AwsAccount): The account for the volume.
+    aws_account (AWSAccount): The account for the volume.
     region (str): The region the volume is in.
     availability_zone (str): The zone within the region in which the volume is.
     name (str): The name tag (if any) of the volume.
@@ -581,13 +562,13 @@ class AwsVolume(AwsElasticBlockStore):
 
     Attributes:
       volume_id (str): The id of the volume.
-      aws_account (AwsAccount): The account for the volume.
+      aws_account (AWSAccount): The account for the volume.
       region (str): The region the volume is in.
       availability_zone (str): The zone within the region in which the volume
-      is.
+          is.
       name (str): The name tag (if any) of the volume.
     """
-    super(AwsVolume, self).__init__(aws_account, region, availability_zone,
+    super(AWSVolume, self).__init__(aws_account, region, availability_zone,
                                     name)
     self.volume_id = volume_id
 
@@ -598,10 +579,10 @@ class AwsVolume(AwsElasticBlockStore):
       snapshot_name (str): Name tag of the snapshot.
 
     Returns:
-      AwsSnapshot: A snapshot object.
+      AWSSnapshot: A snapshot object.
 
     Raises:
-      ValueError: if the snapshot name does not comply with the RegEx.
+      ValueError: If the snapshot name does not comply with the RegEx.
       RuntimeError: If the snapshot could not be created.
     """
 
@@ -618,8 +599,8 @@ class AwsVolume(AwsElasticBlockStore):
     try:
       snapshot = client.create_snapshot(
           VolumeId=self.volume_id,
-          TagSpecifications=[GetTagForResourceType('snapshot', snapshot_name)]
-      )
+          TagSpecifications=[GetTagForResourceType('snapshot', snapshot_name)])
+
       snapshot_id = snapshot.get('SnapshotId')
       # Wait for snapshot completion
       client.get_waiter('snapshot_completed').wait(SnapshotIds=[snapshot_id])
@@ -627,15 +608,15 @@ class AwsVolume(AwsElasticBlockStore):
       raise RuntimeError('Error: could not create snapshot for volume {0:s}: '
                          '{1:s}'.format(self.volume_id, str(exception)))
 
-    return AwsSnapshot(snapshot_id, self, name=snapshot_name)
+    return AWSSnapshot(snapshot_id, self, name=snapshot_name)
 
 
-class AwsSnapshot(AwsElasticBlockStore):
+class AWSSnapshot(AWSElasticBlockStore):
   """Class representing an AWS EBS snapshot.
 
   Attributes:
     snapshot_id (str): The id of the snapshot.
-    volume (AwsVolume): The volume from which the snapshot was taken.
+    volume (AWSVolume): The volume from which the snapshot was taken.
     name (str): The name tag (if any) of the snapshot.
   """
   def __init__(self, snapshot_id, volume, name=None):
@@ -643,10 +624,10 @@ class AwsSnapshot(AwsElasticBlockStore):
 
     Attributes:
       snapshot_id (str): The id of the snapshot.
-      volume (AwsVolume): The volume from which the snapshot was taken.
+      volume (AWSVolume): The volume from which the snapshot was taken.
       name (str): The name tag (if any) of the snapshot.
     """
-    super(AwsSnapshot, self).__init__(volume.aws_account, volume.region,
+    super(AWSSnapshot, self).__init__(volume.aws_account, volume.region,
                                       volume.availability_zone, name)
     self.snapshot_id = snapshot_id
     self.volume = volume
@@ -656,8 +637,7 @@ class AwsSnapshot(AwsElasticBlockStore):
     client = self.aws_account.ClientApi(EC2_SERVICE)
     try:
       client.delete_snapshot(
-          SnapshotId=self.snapshot_id
-      )
+          SnapshotId=self.snapshot_id)
     except client.exceptions.ClientError as exception:
       raise RuntimeError('Error: could not delete snapshot {0:s}: {1:s}'.format(
           self.snapshot_id, str(exception)))
@@ -670,15 +650,15 @@ def CreateVolumeCopy(instance_name, zone, volume_name=None):
     instance_name (str): Instance using the volume to be copied.
     zone (str): The zone within the region to create the new resource in.
     volume_name (str): Name of the volume to copy. If None, boot volume will be
-    copied.
+        copied.
 
   Returns:
-    AwsVolume: An AWS EBS Volume object.
+    AWSVolume: An AWS EBS Volume object.
 
   Raises:
     RuntimeError: If there are errors copying the volume.
   """
-  aws_account = AwsAccount(zone)
+  aws_account = AWSAccount(zone)
   instance = aws_account.GetInstance(instance_name) if instance_name else None
 
   try:
@@ -693,12 +673,11 @@ def CreateVolumeCopy(instance_name, zone, volume_name=None):
         snapshot, volume_name_prefix='evidence'
     )
     snapshot.Delete()
-    log.info(
-        'Volume {0:s} successfully copied to {1:s}'.format(
-            volume_to_copy.volume_id, new_volume.volume_id))
+    log.info('Volume {0:s} successfully copied to {1:s}'.format(
+        volume_to_copy.volume_id, new_volume.volume_id))
 
   except RuntimeError as exception:
-    error_msg = 'Error copying volume "{0:s}": {1!s}'.format(
+    error_msg = 'Error copying volume {0:s}: {1!s}'.format(
         volume_name, exception)
     raise RuntimeError(error_msg)
 
