@@ -29,48 +29,23 @@ from libcloudforensics import gcp
 
 # For the forensics analysis
 FAKE_ANALYSIS_PROJECT = gcp.GoogleCloudProject(
-    'fake-target-project',
-    'fake-zone'
-)
+    'fake-target-project', 'fake-zone')
 FAKE_ANALYSIS_VM = gcp.GoogleComputeInstance(
-    FAKE_ANALYSIS_PROJECT,
-    'fake-zone',
-    'fake-analysis-vm'
-)
+    FAKE_ANALYSIS_PROJECT, 'fake-zone', 'fake-analysis-vm')
 
 # Source project with the instance that needs forensicating
-FAKE_SOURCE_PROJECT = gcp.GoogleCloudProject(
-    'fake-source-project',
-    'fake-zone'
-)
+FAKE_SOURCE_PROJECT = gcp.GoogleCloudProject('fake-source-project', 'fake-zone')
 FAKE_INSTANCE = gcp.GoogleComputeInstance(
-    FAKE_SOURCE_PROJECT,
-    'fake-zone',
-    'fake-instance'
-)
-FAKE_DISK = gcp.GoogleComputeDisk(
-    FAKE_SOURCE_PROJECT,
-    'fake-zone',
-    'fake-disk'
-)
+    FAKE_SOURCE_PROJECT, 'fake-zone', 'fake-instance')
+FAKE_DISK = gcp.GoogleComputeDisk(FAKE_SOURCE_PROJECT, 'fake-zone', 'fake-disk')
 FAKE_BOOT_DISK = gcp.GoogleComputeDisk(
-    FAKE_SOURCE_PROJECT,
-    'fake-zone',
-    'fake-boot-disk'
-)
-FAKE_SNAPSHOT = gcp.GoogleComputeSnapshot(
-    FAKE_DISK,
-    'fake-snapshot'
-)
+    FAKE_SOURCE_PROJECT, 'fake-zone', 'fake-boot-disk')
+FAKE_SNAPSHOT = gcp.GoogleComputeSnapshot(FAKE_DISK, 'fake-snapshot')
 FAKE_SNAPSHOT_LONG_NAME = gcp.GoogleComputeSnapshot(
     FAKE_DISK,
-    'this-is-a-kind-of-long-fake-snapshot-name-and-is-definitely-over-63-chars'
-)
+    'this-is-a-kind-of-long-fake-snapshot-name-and-is-definitely-over-63-chars')
 FAKE_DISK_COPY = gcp.GoogleComputeDisk(
-    FAKE_SOURCE_PROJECT,
-    'fake-zone',
-    'fake-disk-copy'
-)
+    FAKE_SOURCE_PROJECT, 'fake-zone', 'fake-disk-copy')
 
 # Mock struct to mimic GCP's API responses
 MOCK_INSTANCES_AGGREGATED = {
@@ -78,12 +53,10 @@ MOCK_INSTANCES_AGGREGATED = {
     # /aggregatedList for complete structure
     'items': {
         0: {
-            'instances': [
-                {
-                    'name': FAKE_INSTANCE.name,
-                    'zone': '/' + FAKE_INSTANCE.zone
-                }
-            ]
+            'instances': [{
+                'name': FAKE_INSTANCE.name,
+                'zone': '/' + FAKE_INSTANCE.zone
+            }]
         }
     }
 }
@@ -93,29 +66,21 @@ MOCK_DISKS_AGGREGATED = {
     # /aggregatedList for complete structure
     'items': {
         0: {
-            'disks': [
-                {
-                    'name': FAKE_BOOT_DISK.name,
-                    'zone': '/' + FAKE_BOOT_DISK.zone
-                }
-            ]
+            'disks': [{
+                'name': FAKE_BOOT_DISK.name,
+                'zone': '/' + FAKE_BOOT_DISK.zone
+            }]
         },
         1: {
-            'disks': [
-                {
-                    'name': FAKE_DISK.name,
-                    'zone': '/' + FAKE_DISK.zone
-                }
-            ]
+            'disks': [{
+                'name': FAKE_DISK.name,
+                'zone': '/' + FAKE_DISK.zone
+            }]
         }
     }
 }
 
-MOCK_LIST_INSTANCES = {
-    FAKE_INSTANCE.name: {
-        'zone': FAKE_INSTANCE.zone
-    }
-}
+MOCK_LIST_INSTANCES = {FAKE_INSTANCE.name: {'zone': FAKE_INSTANCE.zone}}
 
 MOCK_LIST_DISKS = {
     FAKE_DISK.name: {
@@ -128,37 +93,32 @@ MOCK_LIST_DISKS = {
 
 MOCK_GCE_OPERATION_INSTANCES_LABELS_SUCCESS = {
     'items': {
-        '/zone': {
-            'instances': [
-                {
-                    'name': FAKE_INSTANCE.name,
-                    'zone': '/' + FAKE_INSTANCE.zone,
-                    'labels': {
-                        'id': '123'
-                    }
+        'zone': {
+            'instances': [{
+                'name': FAKE_INSTANCE.name,
+                'zone': '/' + FAKE_INSTANCE.zone,
+                'labels': {
+                    'id': '123'
                 }
-            ]
+            }]
         }
     }
 }
 
 MOCK_GCE_OPERATION_DISKS_LABELS_SUCCESS = {
     'items': {
-        '/zone': {
-            'disks': [
-                {
-                    'name': FAKE_DISK.name,
-                    'labels': {
-                        'id': '123'
-                    }
-                },
-                {
-                    'name': FAKE_BOOT_DISK.name,
-                    'labels': {
-                        'some': 'thing'
-                    }
+        'zone': {
+            'disks': [{
+                'name': FAKE_DISK.name,
+                'labels': {
+                    'id': '123'
                 }
-            ]
+            }, {
+                'name': FAKE_BOOT_DISK.name,
+                'labels': {
+                    'some': 'thing'
+                }
+            }]
         }
     }
 }
@@ -174,20 +134,18 @@ MOCK_GCE_OPERATION_LABELS_FAILED = {
 MOCK_GCE_OPERATION_INSTANCES_GET = {
     # See https://cloud.google.com/compute/docs/reference/rest/v1/instances/get
     # for complete structure
-    'name': FAKE_INSTANCE.name,
-    'disks': [
-        {
-            'boot': True,
-            'source': '/' + FAKE_BOOT_DISK.name,
-        },
-        {
-            'boot': False,
-            'source': '/' + FAKE_DISK.name,
-            'initializeParams': {
-                'diskName': FAKE_DISK.name
-            }
+    'name':
+        FAKE_INSTANCE.name,
+    'disks': [{
+        'boot': True,
+        'source': '/' + FAKE_BOOT_DISK.name,
+    }, {
+        'boot': False,
+        'source': '/' + FAKE_DISK.name,
+        'initializeParams': {
+            'diskName': FAKE_DISK.name
         }
-    ]
+    }]
 }
 
 # See: https://cloud.google.com/compute/docs/reference/rest/v1/disks
@@ -204,29 +162,24 @@ class GoogleCloudProjectTest(unittest.TestCase):
     formatted_msg = FAKE_ANALYSIS_PROJECT.FormatLogMessage(msg)
     self.assertIsInstance(formatted_msg, six.string_types)
     self.assertEqual(
-        formatted_msg,
-        'project:{0:s} {1:s}'.format(FAKE_ANALYSIS_PROJECT.project_id, msg)
-    )
+        formatted_msg, 'project:{0:s} {1:s}'.format(
+            FAKE_ANALYSIS_PROJECT.project_id, msg))
 
-  @mock.patch('libcloudforensics.gcp.GoogleCloudProject.GceOperation')
   @mock.patch('libcloudforensics.gcp.GoogleCloudProject.GceApi')
-  def testListInstances(self, mock_gce_api, mock_gce_operation):
+  def testListInstances(self, mock_gce_api):
     """Test that instances of project are correctly listed."""
     mock_gce_api.return_value.instances.return_value.aggregatedList \
-      .return_value.execute.return_value = None
-    mock_gce_operation.return_value = MOCK_INSTANCES_AGGREGATED
+      .return_value.execute.return_value = MOCK_INSTANCES_AGGREGATED
     instances = FAKE_ANALYSIS_PROJECT.ListInstances()
     self.assertEqual(len(instances), 1)
-    self.assertTrue('fake-instance' in instances)
+    self.assertIn('fake-instance', instances)
     self.assertEqual(instances['fake-instance']['zone'], 'fake-zone')
 
-  @mock.patch('libcloudforensics.gcp.GoogleCloudProject.GceOperation')
   @mock.patch('libcloudforensics.gcp.GoogleCloudProject.GceApi')
-  def testListDisks(self, mock_gce_api, mock_gce_operation):
+  def testListDisks(self, mock_gce_api):
     """Test that disks of instances are correctly listed."""
     mock_gce_api.return_value.disks.return_value.aggregatedList.return_value \
-      .execute.return_value = None
-    mock_gce_operation.return_value = MOCK_DISKS_AGGREGATED
+      .execute.return_value = MOCK_DISKS_AGGREGATED
     disks = FAKE_ANALYSIS_PROJECT.ListDisks()
     self.assertEqual(len(disks), 2)
     self.assertTrue('fake-disk' in disks and 'fake-boot-disk' in disks)
@@ -260,61 +213,45 @@ class GoogleCloudProjectTest(unittest.TestCase):
     self.assertRaises(
         RuntimeError, FAKE_SOURCE_PROJECT.GetDisk, 'non-existent-disk')
 
-  @mock.patch('libcloudforensics.gcp.GoogleCloudProject.GceOperation')
+  @mock.patch('libcloudforensics.gcp.GoogleCloudProject.BlockOperation')
   @mock.patch('libcloudforensics.gcp.GoogleCloudProject.GceApi')
-  def testCreateDiskFromSnapshot(self, mock_gce_api, mock_gce_operation):
+  def testCreateDiskFromSnapshot(self, mock_gce_api, mock_block_operation):
     """Test the creation of a disk from a Snapshot."""
+    mock_block_operation.return_value = None
     mock_gce_api.return_value.disks.return_value.insert.return_value.execute \
       .return_value = None
-    mock_gce_operation.return_value = None
 
     # CreateDiskFromSnapshot(Snapshot=FAKE_SNAPSHOT, disk_name=None,
     # disk_name_prefix='')
     disk_from_snapshot = FAKE_ANALYSIS_PROJECT.CreateDiskFromSnapshot(
         FAKE_SNAPSHOT)
-    self.assertIsInstance(
-        disk_from_snapshot, gcp.GoogleComputeDisk)
+    self.assertIsInstance(disk_from_snapshot, gcp.GoogleComputeDisk)
     self.assertEqual(
-        disk_from_snapshot.name, gcp.GenerateDiskName(
-            FAKE_SNAPSHOT))
+        disk_from_snapshot.name, gcp.GenerateDiskName(FAKE_SNAPSHOT))
 
     # CreateDiskFromSnapshot(Snapshot=FAKE_SNAPSHOT,
     # disk_name='new-forensics-disk', disk_name_prefix='')
     disk_from_snapshot = FAKE_ANALYSIS_PROJECT.CreateDiskFromSnapshot(
-        FAKE_SNAPSHOT,
-        disk_name='new-forensics-disk'
-    )
+        FAKE_SNAPSHOT, disk_name='new-forensics-disk')
     self.assertIsInstance(disk_from_snapshot, gcp.GoogleComputeDisk)
-    self.assertEqual(
-        disk_from_snapshot.name,
-        'new-forensics-disk'
-    )
+    self.assertEqual(disk_from_snapshot.name, 'new-forensics-disk')
 
     # CreateDiskFromSnapshot(Snapshot=FAKE_SNAPSHOT, disk_name=None,
     # disk_name_prefix='prefix')
     disk_from_snapshot = FAKE_ANALYSIS_PROJECT.CreateDiskFromSnapshot(
-        FAKE_SNAPSHOT,
-        disk_name_prefix='prefix'
-    )
+        FAKE_SNAPSHOT, disk_name_prefix='prefix')
     self.assertIsInstance(disk_from_snapshot, gcp.GoogleComputeDisk)
     self.assertEqual(
         disk_from_snapshot.name,
-        gcp.GenerateDiskName(
-            FAKE_SNAPSHOT, disk_name_prefix='prefix')
-    )
+        gcp.GenerateDiskName(FAKE_SNAPSHOT, disk_name_prefix='prefix'))
 
     # CreateDiskFromSnapshot(Snapshot=FAKE_SNAPSHOT,
     # disk_name='new-forensics-disk', disk_name_prefix='prefix')
     disk_from_snapshot = FAKE_ANALYSIS_PROJECT.CreateDiskFromSnapshot(
-        FAKE_SNAPSHOT,
-        disk_name='new-forensics-disk',
-        disk_name_prefix='prefix'
-    )
+        FAKE_SNAPSHOT, disk_name='new-forensics-disk',
+        disk_name_prefix='prefix')
     self.assertIsInstance(disk_from_snapshot, gcp.GoogleComputeDisk)
-    self.assertEqual(
-        disk_from_snapshot.name,
-        'new-forensics-disk'
-    )
+    self.assertEqual(disk_from_snapshot.name, 'new-forensics-disk')
 
     # CreateDiskFromSnapshot(Snapshot=FAKE_SNAPSHOT,
     # disk_name='fake-disk') where 'fake-disk' exists already
@@ -326,9 +263,8 @@ class GoogleCloudProjectTest(unittest.TestCase):
     with self.assertRaises(RuntimeError) as context:
       _ = FAKE_ANALYSIS_PROJECT.CreateDiskFromSnapshot(
           FAKE_SNAPSHOT, disk_name=FAKE_DISK.name)
-    self.assertEqual(str(context.exception), 'Disk {0:s} already exists'.format(
-        'fake-disk'
-    ))
+    self.assertEqual(
+        str(context.exception), 'Disk {0:s} already exists'.format('fake-disk'))
 
     # other network issue should fail the disk creation
     mock_gce_api.return_value.disks.return_value.insert.return_value.execute \
@@ -339,20 +275,20 @@ class GoogleCloudProjectTest(unittest.TestCase):
     with self.assertRaises(RuntimeError) as context:
       _ = FAKE_ANALYSIS_PROJECT.CreateDiskFromSnapshot(
           FAKE_SNAPSHOT, FAKE_DISK.name)
-    self.assertTrue('status: 418' in str(context.exception))
+    self.assertIn('status: 418', str(context.exception))
 
   @mock.patch('libcloudforensics.gcp.GoogleCloudProject.GetInstance')
-  @mock.patch('libcloudforensics.gcp.GoogleCloudProject.GceOperation')
+  @mock.patch('libcloudforensics.gcp.GoogleCloudProject.BlockOperation')
   @mock.patch('libcloudforensics.gcp.GoogleCloudProject.GceApi')
-  def testGetOrCreateAnalysisVm(self, mock_gce_api,
-                                mock_gce_operation, mock_get_instance):
+  def testGetOrCreateAnalysisVm(
+      self, mock_gce_api, mock_block_operation, mock_get_instance):
     """Test that a new virtual machine is created if it doesn't exist,
     or that the existing one is returned. """
     mock_gce_api.return_value.images.return_value.getFromFamily.return_value \
-      .execute.return_value = None
+      .execute.return_value = {'selfLink': 'value'}
+    mock_block_operation.return_value = None
     mock_gce_api.return_value.instances.return_value.insert.return_value \
       .execute.return_value = None
-    mock_gce_operation.return_value = None
     mock_get_instance.return_value = FAKE_ANALYSIS_VM
 
     # GetOrCreateAnalysisVm(existing_vm, boot_disk_size)
@@ -366,59 +302,74 @@ class GoogleCloudProjectTest(unittest.TestCase):
     # GetInstance() call to throw a runtime error to mimic an instance that
     # wasn't found
     mock_get_instance.side_effect = RuntimeError()
-    mock_gce_operation.return_value = {
-        'selfLink': 'value'
-    }
     vm, created = FAKE_ANALYSIS_PROJECT.GetOrCreateAnalysisVm(
         'non-existent-analysis-vm', boot_disk_size=1)
     self.assertIsInstance(vm, gcp.GoogleComputeInstance)
     self.assertEqual(vm.name, 'non-existent-analysis-vm')
     self.assertTrue(created)
 
-  @mock.patch('libcloudforensics.gcp.GoogleCloudProject.GceOperation')
+  @mock.patch('libcloudforensics.gcp.GoogleCloudProject.ListInstanceByLabels')
   @mock.patch('libcloudforensics.gcp.GoogleCloudProject.GceApi')
-  def testListInstanceByLabels(self, mock_gce_api, mock_gce_operation):
+  def testListInstanceByLabels(
+      self, mock_gce_api, mock_list_instance_by_labels):
     """Test that instances are correctly listed when searching with a filter."""
-    mock_gce_api.return_value.instances.return_value.aggregatedList \
-      .return_value.execute.return_value = None
-    # To exit the loop
-    mock_gce_api.return_value.instances.return_value.aggregatedList_next \
-      .return_value = None
-    # Labels found, GCE API will return instances
-    mock_gce_operation.return_value = \
-      MOCK_GCE_OPERATION_INSTANCES_LABELS_SUCCESS
+    mock_gce_api.return_value.instances.return_value = None
+    mock_list_instance_by_labels.return_value = \
+        MOCK_GCE_OPERATION_INSTANCES_LABELS_SUCCESS
     instances = FAKE_ANALYSIS_PROJECT.ListInstanceByLabels(
         labels_filter={'id': '123'})
-    self.assertEqual(len(instances), 1)
-    self.assertTrue(FAKE_INSTANCE.name in instances)
+    if 'zone' in instances['items']:
+      instance_names = [
+          instance['name']
+          for instance in instances['items']['zone']['instances']
+      ]
+    else:
+      instance_names = []
+    self.assertEqual(len(instance_names), 1)
+    self.assertIn(FAKE_INSTANCE.name, instance_names)
 
     # Labels not found, GCE API will return no items
-    mock_gce_operation.return_value = MOCK_GCE_OPERATION_LABELS_FAILED
+    mock_list_instance_by_labels.return_value = MOCK_GCE_OPERATION_LABELS_FAILED
     instances = FAKE_ANALYSIS_PROJECT.ListInstanceByLabels(
         labels_filter={'id': '123'})
-    self.assertEqual(len(instances), 0)
+    if 'zone' in instances['items']:
+      instance_names = [
+          instance['name']
+          for instance in instances['items']['zone']['instances']
+      ]
+    else:
+      instance_names = []
+    self.assertEqual(len(instance_names), 0)
 
-  @mock.patch('libcloudforensics.gcp.GoogleCloudProject.GceOperation')
+  @mock.patch('libcloudforensics.gcp.GoogleCloudProject.ListDiskByLabels')
   @mock.patch('libcloudforensics.gcp.GoogleCloudProject.GceApi')
-  def testListDisksByLabels(self, mock_gce_api, mock_gce_operation):
+  def testListDisksByLabels(self, mock_gce_api, mock_list_disk_by_labels):
     """Test that disks are correctly listed when searching with a filter."""
-    mock_gce_api.return_value.disks.return_value.aggregatedList.return_value \
-      .execute.return_value = None
-    # To exit the loop
-    mock_gce_api.return_value.disks.return_value.aggregatedList_next \
-      .return_value = None
+    mock_gce_api.return_value.disks.return_value = None
+    mock_list_disk_by_labels.return_value = \
+        MOCK_GCE_OPERATION_DISKS_LABELS_SUCCESS
     # Labels found, GCE API will return disks
-    mock_gce_operation.return_value = MOCK_GCE_OPERATION_DISKS_LABELS_SUCCESS
     disks = FAKE_ANALYSIS_PROJECT.ListDiskByLabels(
-        labels_filter={'id': '123', 'some': 'thing'})
-    self.assertEqual(len(disks), 2)
-    self.assertTrue('fake-disk' in disks and 'fake-boot-disk' in disks)
+        labels_filter={
+            'id': '123',
+            'some': 'thing'
+        })
+    if 'zone' in disks['items']:
+      disk_names = [disk['name'] for disk in disks['items']['zone']['disks']]
+    else:
+      disk_names = []
+    self.assertEqual(len(disk_names), 2)
+    self.assertTrue(
+        'fake-disk' in disk_names and 'fake-boot-disk' in disk_names)
 
     # Labels not found, GCE API will return no items
-    mock_gce_operation.return_value = MOCK_GCE_OPERATION_LABELS_FAILED
-    instances = FAKE_ANALYSIS_PROJECT.ListDiskByLabels(
-        labels_filter={'id': '123'})
-    self.assertEqual(len(instances), 0)
+    mock_list_disk_by_labels.return_value = MOCK_GCE_OPERATION_LABELS_FAILED
+    disks = FAKE_ANALYSIS_PROJECT.ListDiskByLabels(labels_filter={'id': '123'})
+    if 'zone' in disks['items']:
+      disk_names = [disk['name'] for disk in disks['items']['zone']['disks']]
+    else:
+      disk_names = []
+    self.assertEqual(len(disk_names), 0)
 
   def testReadStartupScript(self):
     """Test that the startup script is correctly read."""
@@ -429,8 +380,8 @@ class GoogleCloudProjectTest(unittest.TestCase):
     self.assertTrue(script.endswith('(exit ${exit_code})\n'))
 
     # Environment variable set to custom script
-    os.environ['STARTUP_SCRIPT'] = os.path.join(os.path.dirname(
-        os.path.realpath(__file__)), STARTUP_SCRIPT)
+    os.environ['STARTUP_SCRIPT'] = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), STARTUP_SCRIPT)
     script = FAKE_SOURCE_PROJECT._ReadStartupScript()
     self.assertEqual('# THIS IS A CUSTOM BASH SCRIPT', script)
 
@@ -446,7 +397,7 @@ class GoogleComputeBaseResourceTest(unittest.TestCase):
   @mock.patch('libcloudforensics.gcp.GoogleComputeInstance.GetOperation')
   def testGetValue(self, mock_get_operation):
     """Test that the correct value is retrieved for the given key."""
-    mock_get_operation.return_value.execute.return_value = {
+    mock_get_operation.return_value = {
         # See https://cloud.google.com/compute/docs/reference/rest/v1/instances
         # /get for complete structure
         'name': FAKE_INSTANCE.name
@@ -462,7 +413,7 @@ class GoogleComputeInstanceTest(unittest.TestCase):
   @mock.patch('libcloudforensics.gcp.GoogleComputeInstance.GetOperation')
   def testGetBootDisk(self, mock_get_operation, mock_list_disks):
     """Test that a boot disk is retrieved if existing."""
-    mock_get_operation.return_value.execute.return_value = \
+    mock_get_operation.return_value = \
       MOCK_GCE_OPERATION_INSTANCES_GET
     mock_list_disks.return_value = MOCK_LIST_DISKS
 
@@ -474,7 +425,7 @@ class GoogleComputeInstanceTest(unittest.TestCase):
   @mock.patch('libcloudforensics.gcp.GoogleComputeInstance.GetOperation')
   def testGetDisk(self, mock_get_operation, mock_list_disks):
     """Test that a disk is retrieved by its name, if existing."""
-    mock_get_operation.return_value.execute.return_value = \
+    mock_get_operation.return_value = \
       MOCK_GCE_OPERATION_INSTANCES_GET
     mock_list_disks.return_value = MOCK_LIST_DISKS
 
@@ -495,7 +446,7 @@ class GoogleComputeInstanceTest(unittest.TestCase):
   @mock.patch('libcloudforensics.gcp.GoogleComputeInstance.GetOperation')
   def testListDisks(self, mock_get_operation, mock_list_disks):
     """Test that a all disks of an instance are correctly retrieved."""
-    mock_get_operation.return_value.execute.return_value = \
+    mock_get_operation.return_value = \
       MOCK_GCE_OPERATION_INSTANCES_GET
     mock_list_disks.return_value = MOCK_LIST_DISKS
 
@@ -507,13 +458,13 @@ class GoogleComputeInstanceTest(unittest.TestCase):
 class GoogleComputeDiskTest(unittest.TestCase):
   """Test Google Cloud Compute Disk class."""
 
+  @mock.patch('libcloudforensics.gcp.GoogleCloudProject.BlockOperation')
   @mock.patch('libcloudforensics.gcp.GoogleCloudProject.GceApi')
-  @mock.patch('libcloudforensics.gcp.GoogleCloudProject.GceOperation')
-  def testSnapshot(self, mock_gce_operation, mock_gce_api):
+  def testSnapshot(self, mock_gce_api, mock_block_operation):
     """Test that a Snapshot of the disk is created."""
-    mock_gce_operation.return_value = None
     mock_gce_api.return_value.disks.return_value.createSnapshot.return_value \
       .execute.return_value = None
+    mock_block_operation.return_value = None
 
     # Snapshot(snapshot_name=None). Snapshot should start with the disk's name
     snapshot = FAKE_DISK.Snapshot()
@@ -533,86 +484,77 @@ class GoogleComputeDiskTest(unittest.TestCase):
 class GCPTest(unittest.TestCase):
   """Test the gcp.py public methods."""
 
+  @mock.patch('libcloudforensics.gcp.GoogleCloudProject.BlockOperation')
   @mock.patch('libcloudforensics.gcp.GoogleComputeInstance.GetBootDisk')
   @mock.patch('libcloudforensics.gcp.GoogleCloudProject.GetInstance')
-  @mock.patch('libcloudforensics.gcp.GoogleCloudProject.GceOperation')
   @mock.patch('libcloudforensics.gcp.GoogleCloudProject.GceApi')
-  def testCreateDiskCopy1(self, mock_gce_api, mock_gce_operation,
-                          mock_get_instance, mock_get_boot_disk):
+  def testCreateDiskCopy1(
+      self, mock_gce_api, mock_get_instance, mock_get_boot_disk,
+      mock_block_operation):
     """Test that a disk from a remote project is duplicated and attached to
     an analysis project. """
     mock_gce_api.return_value.instances.return_value.aggregatedList \
-      .return_value.execute.return_value = None
-    mock_gce_operation.return_value = MOCK_INSTANCES_AGGREGATED
+      .return_value.execute.return_value = MOCK_INSTANCES_AGGREGATED
     mock_get_instance.return_value = FAKE_INSTANCE
     mock_get_boot_disk.return_value = FAKE_BOOT_DISK
+    mock_block_operation.return_value = None
 
     # create_disk_copy(src_proj, dst_proj, instance_name='fake-instance',
     # zone='fake-zone', disk_name=None) Should grab the boot disk
-    new_disk = gcp.CreateDiskCopy(FAKE_SOURCE_PROJECT.project_id,
-                                  FAKE_ANALYSIS_PROJECT.project_id,
-                                  instance_name=FAKE_INSTANCE.name,
-                                  zone=FAKE_INSTANCE.zone,
-                                  disk_name=None)
+    new_disk = gcp.CreateDiskCopy(
+        FAKE_SOURCE_PROJECT.project_id, FAKE_ANALYSIS_PROJECT.project_id,
+        instance_name=FAKE_INSTANCE.name, zone=FAKE_INSTANCE.zone,
+        disk_name=None)
     self.assertIsInstance(new_disk, gcp.GoogleComputeDisk)
     self.assertTrue(new_disk.name.startswith('evidence-'))
-    self.assertTrue('fake-boot-disk' in new_disk.name)
+    self.assertIn('fake-boot-disk', new_disk.name)
     self.assertTrue(new_disk.name.endswith('-copy'))
 
+  @mock.patch('libcloudforensics.gcp.GoogleCloudProject.BlockOperation')
   @mock.patch('libcloudforensics.gcp.GoogleCloudProject.GetDisk')
-  @mock.patch('libcloudforensics.gcp.GoogleCloudProject.GceOperation')
   @mock.patch('libcloudforensics.gcp.GoogleCloudProject.GceApi')
-  def testCreateDiskCopy2(self, mock_gce_api, mock_gce_operation,
-                          mock_get_disk):
+  def testCreateDiskCopy2(
+      self, mock_gce_api, mock_get_disk, mock_block_operation):
     """Test that a disk from a remote project is duplicated and attached to
     an analysis project. """
     mock_gce_api.return_value.instances.return_value.aggregatedList \
-      .return_value.execute.return_value = None
-    mock_gce_operation.return_value = MOCK_INSTANCES_AGGREGATED
+      .return_value.execute.return_value = MOCK_INSTANCES_AGGREGATED
     mock_get_disk.return_value = FAKE_DISK
+    mock_block_operation.return_value = None
 
     # create_disk_copy(src_proj, dst_proj, instance_name=None,
     # zone='fake-zone', disk_name='fake-disk') Should grab 'fake-disk'
-    new_disk = gcp.CreateDiskCopy(FAKE_SOURCE_PROJECT.project_id,
-                                  FAKE_ANALYSIS_PROJECT.project_id,
-                                  instance_name=None,
-                                  zone=FAKE_INSTANCE.zone,
-                                  disk_name=FAKE_DISK.name)
+    new_disk = gcp.CreateDiskCopy(
+        FAKE_SOURCE_PROJECT.project_id, FAKE_ANALYSIS_PROJECT.project_id,
+        instance_name=None, zone=FAKE_INSTANCE.zone, disk_name=FAKE_DISK.name)
     self.assertIsInstance(new_disk, gcp.GoogleComputeDisk)
     self.assertTrue(new_disk.name.startswith('evidence-'))
-    self.assertTrue('fake-disk' in new_disk.name)
+    self.assertIn('fake-disk', new_disk.name)
     self.assertTrue(new_disk.name.endswith('-copy'))
 
-  @mock.patch('libcloudforensics.gcp.GoogleCloudProject.GceOperation')
-  @mock.patch('libcloudforensics.gcp.GoogleCloudProject.GceApi')
-  def testCreateDiskCopy3(self, mock_gce_api, mock_gce_operation):
+  @mock.patch('libcloudforensics.gcp.GoogleCloudProject.ListInstances')
+  @mock.patch('libcloudforensics.gcp.GoogleCloudProject.ListDisks')
+  def testCreateDiskCopy3(self, mock_list_disks, mock_list_instances):
     """Test that a disk from a remote project is duplicated and attached to
     an analysis project. """
-    mock_gce_api.return_value.instances.return_value.aggregatedList \
-      .return_value.execute.return_value = None
-    mock_gce_operation.return_value = MOCK_INSTANCES_AGGREGATED
+    mock_list_disks.return_value = MOCK_DISKS_AGGREGATED
+    mock_list_instances.return_value = MOCK_INSTANCES_AGGREGATED
 
     # create_disk_copy(src_proj, dst_proj, instance_name=None,
     # zone='fake-zone', disk_name='non-existent-disk') Should raise an
     # exception
-    self.assertRaises(RuntimeError,
-                      gcp.CreateDiskCopy,
-                      FAKE_SOURCE_PROJECT.project_id,
-                      FAKE_ANALYSIS_PROJECT.project_id,
-                      instance_name=None,
-                      zone=FAKE_INSTANCE.zone,
-                      disk_name='non-existent-disk')
+    self.assertRaises(
+        RuntimeError, gcp.CreateDiskCopy, FAKE_SOURCE_PROJECT.project_id,
+        FAKE_ANALYSIS_PROJECT.project_id, instance_name=None,
+        zone=FAKE_INSTANCE.zone, disk_name='non-existent-disk')
 
     # create_disk_copy(src_proj, dst_proj,
     # instance_name='non-existent-instance', zone='fake-zone',
     # disk_name=None) Should raise an exception
-    self.assertRaises(RuntimeError,
-                      gcp.CreateDiskCopy,
-                      FAKE_SOURCE_PROJECT.project_id,
-                      FAKE_ANALYSIS_PROJECT.project_id,
-                      instance_name='non-existent-instance',
-                      zone=FAKE_INSTANCE.zone,
-                      disk_name='')
+    self.assertRaises(
+        RuntimeError, gcp.CreateDiskCopy, FAKE_SOURCE_PROJECT.project_id,
+        FAKE_ANALYSIS_PROJECT.project_id, instance_name='non-existent-instance',
+        zone=FAKE_INSTANCE.zone, disk_name='')
 
   def testGenerateDiskName(self):
     """Test that the generated disk name is always within GCP boundaries.
@@ -625,24 +567,18 @@ class GCPTest(unittest.TestCase):
     letter, or digit, except the last character, which cannot be a dash.
     """
 
-    disk_name = gcp.GenerateDiskName(
-        FAKE_SNAPSHOT
-    )
+    disk_name = gcp.GenerateDiskName(FAKE_SNAPSHOT)
     self.assertEqual(disk_name, 'fake-snapshot-857c0b16-copy')
     self.assertTrue(REGEX_DISK_NAME.match(disk_name))
 
-    disk_name = gcp.GenerateDiskName(
-        FAKE_SNAPSHOT_LONG_NAME
-    )
+    disk_name = gcp.GenerateDiskName(FAKE_SNAPSHOT_LONG_NAME)
     self.assertEqual(
         disk_name,
         'this-is-a-kind-of-long-fake-snapshot-name-and-is--857c0b16-copy')
     self.assertTrue(REGEX_DISK_NAME.match(disk_name))
 
     disk_name = gcp.GenerateDiskName(
-        FAKE_SNAPSHOT,
-        disk_name_prefix='some-not-so-long-disk-name-prefix'
-    )
+        FAKE_SNAPSHOT, disk_name_prefix='some-not-so-long-disk-name-prefix')
     self.assertEqual(
         disk_name,
         'some-not-so-long-disk-name-prefix-fake-snapshot-857c0b16-copy')
@@ -650,8 +586,7 @@ class GCPTest(unittest.TestCase):
 
     disk_name = gcp.GenerateDiskName(
         FAKE_SNAPSHOT_LONG_NAME,
-        disk_name_prefix='some-not-so-long-disk-name-prefix'
-    )
+        disk_name_prefix='some-not-so-long-disk-name-prefix')
     self.assertEqual(
         disk_name,
         'some-not-so-long-disk-name-prefix-this-is-a-kind--857c0b16-copy')
@@ -660,8 +595,7 @@ class GCPTest(unittest.TestCase):
     disk_name = gcp.GenerateDiskName(
         FAKE_SNAPSHOT,
         disk_name_prefix='some-really-really-really-really-really-really-long'
-                         '-disk-name-prefix'
-    )
+        '-disk-name-prefix')
     self.assertEqual(
         disk_name,
         'some-really-really-really-really-really-really-lo-857c0b16-copy')
@@ -670,16 +604,16 @@ class GCPTest(unittest.TestCase):
     disk_name = gcp.GenerateDiskName(
         FAKE_SNAPSHOT_LONG_NAME,
         disk_name_prefix='some-really-really-really-really-really-really-long'
-                         '-disk-name-prefix'
-    )
+        '-disk-name-prefix')
     self.assertEqual(
         disk_name,
         'some-really-really-really-really-really-really-lo-857c0b16-copy')
     self.assertTrue(REGEX_DISK_NAME.match(disk_name))
 
     # Disk prefix cannot start with a capital letter
-    self.assertRaises(ValueError, gcp.GenerateDiskName, FAKE_SNAPSHOT,
-                      'Some-prefix-that-starts-with-a-capital-letter')
+    self.assertRaises(
+        ValueError, gcp.GenerateDiskName, FAKE_SNAPSHOT,
+        'Some-prefix-that-starts-with-a-capital-letter')
 
 
 if __name__ == '__main__':
