@@ -184,9 +184,9 @@ class EndToEndTest(unittest.TestCase):
   def tearDownClass(cls):
     super(EndToEndTest, cls).tearDownClass()
 
-    analysis_vm = EndToEndTest.analysis_vm
-    zone = EndToEndTest.zone
-    project = EndToEndTest.gcp
+    analysis_vm = cls.analysis_vm
+    zone = cls.zone
+    project = cls.gcp
 
     disks = analysis_vm.ListDisks()
     # delete the created forensics VMs
