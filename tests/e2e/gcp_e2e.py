@@ -52,14 +52,6 @@ class EndToEndTest(unittest.TestCase):
   file: "user@terminal:~$ export PROJECT_INFO='absolute/path/project_info.json'"
   """
 
-  project_id = None
-  instance_to_analyse = None
-  disk_to_forensic = None
-  zone = None
-  gcp = None
-  analysis_vm_name = None
-  analysis_vm = None
-
   @classmethod
   def setUpClass(cls):
     super(EndToEndTest, cls).setUpClass()
@@ -192,10 +184,12 @@ class EndToEndTest(unittest.TestCase):
   def tearDownClass(cls):
     super(EndToEndTest, cls).tearDownClass()
 
+    if hasattr(cls, 'error_msg'):
+      raise unittest.SkipTest(cls.error_msg)
+
     analysis_vm = cls.analysis_vm
     zone = cls.zone
     project = cls.gcp
-
     disks = analysis_vm.ListDisks()
     # delete the created forensics VMs
     log.info('Deleting analysis instance: {0:s}.'.format(analysis_vm.name))
