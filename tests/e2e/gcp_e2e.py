@@ -52,6 +52,14 @@ class EndToEndTest(unittest.TestCase):
   file: "user@terminal:~$ export PROJECT_INFO='absolute/path/project_info.json'"
   """
 
+  project_id = None
+  instance_to_analyse = None
+  disk_to_forensic = None
+  zone = None
+  gcp = None
+  analysis_vm_name = None
+  analysis_vm = None
+
   @classmethod
   def setUpClass(cls):
     super(EndToEndTest, cls).setUpClass()
