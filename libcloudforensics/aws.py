@@ -38,8 +38,7 @@ class AWSAccount:
   def __init__(self, default_availability_zone):
     self.default_availability_zone = default_availability_zone
     # The region is given by the zone minus the last letter
-    # https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions
-    # -availability-zones.html#using-regions-availability-zones-describe
+    # https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#using-regions-availability-zones-describe # pylint: disable=line-too-long
     self.default_region = self.default_availability_zone[:-1]
 
   def ClientApi(self, service, region=None):
@@ -81,6 +80,10 @@ class AWSAccount:
   def ListInstances(self, region=None, filters=None):
     """List instances of an AWS account.
 
+    Example usage:
+      ListInstances(region='us-east-1', filters=[
+          {'Name':'instance-id', 'Values':['some-instance-id']}])
+
     Args:
       region (str): Optional. The region from which to list instances.
       filters (list(dict)): Optional. Filters for the query.
@@ -90,10 +93,6 @@ class AWSAccount:
 
     Raises:
       RuntimeError: If instances can't be listed.
-
-    Example usage:
-      ListInstances(region='us-east-1', filters=[
-          dict(Name='instance-id', Values=['some-instance-id'])])
     """
     if not filters:
       filters = []
@@ -110,7 +109,7 @@ class AWSAccount:
         else:
           response = client.describe_instances(Filters=filters)
       except client.exceptions.ClientError as exception:
-        raise RuntimeError('Error: could not retrieve instances: {0:s}'.format(
+        raise RuntimeError('Could not retrieve instances: {0:s}'.format(
             str(exception)))
 
       for reservation in response['Reservations']:
@@ -143,6 +142,11 @@ class AWSAccount:
   def ListVolumes(self, region=None, filters=None):
     """List volumes of an AWS account.
 
+    Example usage:
+      # List volumes attached to the instance 'some-instance-id'
+      ListVolumes(filters=[
+          {'Name':'attachment.instance-id', 'Values':['some-instance-id']}])
+
     Args:
       region (str): Optional. The region from which to list the volumes.
       filters (list(dict)): Optional. Filter for the query.
@@ -152,11 +156,6 @@ class AWSAccount:
 
     Raises:
       RuntimeError: If volumes can't be listed.
-
-    Example usage:
-      # List volumes attached to the instance 'some-instance-id'
-      ListVolumes(filters=[
-          dict(Name='attachment.instance-id', Values=['some-instance-id'])])
     """
     if not filters:
       filters = []
@@ -173,7 +172,7 @@ class AWSAccount:
         else:
           response = client.describe_volumes(Filters=filters)
       except client.exceptions.ClientError as exception:
-        raise RuntimeError('Error: could not retrieve volumes: {0:s}'.format(
+        raise RuntimeError('Could not retrieve volumes: {0:s}'.format(
             str(exception)))
 
       for volume in response['Volumes']:
@@ -223,7 +222,7 @@ class AWSAccount:
           are set.
     """
     if not instance_name and not instance_id or instance_name and instance_id:
-      raise ValueError('Error: you must specify exactly one of [instance_name, '
+      raise ValueError('You must specify exactly one of [instance_name, '
                        'instance_id]. Got instance_name: {0:s}, instance_id: '
                        '{1:s}'.format(instance_name, instance_id))
     if instance_name:
@@ -254,7 +253,7 @@ class AWSAccount:
           are set.
     """
     if not volume_name and not volume_id or volume_name and volume_id:
-      raise ValueError('Error: you must specify exactly one of [volume_name, '
+      raise ValueError('You must specify exactly one of [volume_name, '
                        'volume_id]. Got volume_name: {0:s}, volume_id: '
                        '{1:s}'.format(volume_name, volume_id))
     if volume_name:
@@ -284,7 +283,7 @@ class AWSAccount:
           snapshot, volume_name_prefix=volume_name_prefix)
 
     if not REGEX_TAG_VALUE.match(volume_name):
-      raise ValueError('Error: volume name {0:s} does not comply with '
+      raise ValueError('Volume name {0:s} does not comply with '
                        '{1:s}'.format(volume_name, REGEX_TAG_VALUE.pattern))
 
     client = self.ClientApi(EC2_SERVICE)
@@ -300,7 +299,7 @@ class AWSAccount:
       client.get_waiter('volume_available').wait(VolumeIds=[volume_id])
     except (client.exceptions.ClientError,
             botocore.exceptions.WaiterError) as exception:
-      raise RuntimeError('Error: could not create volume {0:s} from snapshot '
+      raise RuntimeError('Could not create volume {0:s} from snapshot '
                          '{1:s}: {2:s}'.format(volume_name, snapshot.name,
                                                str(exception)))
 
@@ -323,8 +322,7 @@ class AWSAccount:
 
     # Max length of tag values in AWS is 255 characters
     # UserId is expected to be set if the call to the EC2 API is successful.
-    # See https://boto3.amazonaws.com/v1/documentation/api/1.9.42/reference/
-    # services/sts.html#STS.Client.get_caller_identity for more details.
+    # https://boto3.amazonaws.com/v1/documentation/api/1.9.42/reference/services/sts.html#STS.Client.get_caller_identity for more details. # pylint: disable=line-too-long
     user_id = self.ClientApi(ACCOUNT_SERVICE).get_caller_identity()['UserId']
     volume_id = user_id + snapshot.volume.volume_id
     volume_id_crc32 = '{0:08x}'.format(
@@ -581,7 +579,7 @@ class AWSVolume(AWSElasticBlockStore):
     truncate_at = 255 - len(timestamp) - 1
     snapshot_name = '{0}-{1}'.format(snapshot_name[:truncate_at], timestamp)
     if not REGEX_TAG_VALUE.match(snapshot_name):
-      raise ValueError('Error: snapshot name {0:s} does not comply with '
+      raise ValueError('Snapshot name {0:s} does not comply with '
                        '{1:s}'.format(snapshot_name, REGEX_TAG_VALUE.pattern))
 
     client = self.aws_account.ClientApi(EC2_SERVICE)
@@ -595,7 +593,7 @@ class AWSVolume(AWSElasticBlockStore):
       client.get_waiter('snapshot_completed').wait(SnapshotIds=[snapshot_id])
     except (client.exceptions.ClientError,
             botocore.exceptions.WaiterError) as exception:
-      raise RuntimeError('Error: could not create snapshot for volume {0:s}: '
+      raise RuntimeError('Could not create snapshot for volume {0:s}: '
                          '{1:s}'.format(self.volume_id, str(exception)))
 
     return AWSSnapshot(snapshot_id, self, name=snapshot_name)
@@ -628,7 +626,7 @@ class AWSSnapshot(AWSElasticBlockStore):
     try:
       client.delete_snapshot(SnapshotId=self.snapshot_id)
     except client.exceptions.ClientError as exception:
-      raise RuntimeError('Error: could not delete snapshot {0:s}: {1:s}'.format(
+      raise RuntimeError('Could not delete snapshot {0:s}: {1:s}'.format(
           self.snapshot_id, str(exception)))
 
 
@@ -667,7 +665,7 @@ def CreateVolumeCopy(instance_id, zone, volume_id=None):
         volume_to_copy.volume_id, new_volume.volume_id))
 
   except RuntimeError as exception:
-    error_msg = 'Error copying volume {0:s}: {1!s}'.format(
+    error_msg = 'Copying volume {0:s}: {1!s}'.format(
         volume_id, exception)
     raise RuntimeError(error_msg)
 
