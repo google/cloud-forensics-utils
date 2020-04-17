@@ -77,7 +77,7 @@ class AWSAccount:
         service_name=service, region_name=self.default_region
     )
 
-  def ListInstances(self, region=None, filters=None):
+  def ListInstances(self, region=None, filters=None, show_terminated=False):
     """List instances of an AWS account.
 
     Example usage:
@@ -87,6 +87,8 @@ class AWSAccount:
     Args:
       region (str): Optional. The region from which to list instances.
       filters (list(dict)): Optional. Filters for the query.
+      show_terminated (bool): Optional. Include terminated instances in the
+      list.
 
     Returns:
       dict: Dictionary with name and metadata for each instance.
@@ -114,10 +116,9 @@ class AWSAccount:
 
       for reservation in response['Reservations']:
         for instance in reservation['Instances']:
-          # Terminated instances are filtered out. If
-          # reservation['Instances'] contains any entry, then the
+          # If reservation['Instances'] contains any entry, then the
           # instance's state is expected to be present in the API's response.
-          if instance['State']['Name'] == 'terminated':
+          if instance['State']['Name'] == 'terminated' and not show_terminated:
             continue
 
           zone = instance['Placement']['AvailabilityZone']
