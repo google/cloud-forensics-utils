@@ -179,7 +179,7 @@ class GoogleCloudProject:
     """
     have_all_tokens = False
     page_token = None
-    instances = dict()
+    instances = {}
     while not have_all_tokens:
       gce_instance_client = self.GceApi().instances()
       if page_token:
@@ -196,7 +196,9 @@ class GoogleCloudProject:
         try:
           for instance in result['items'][zone]['instances']:
             _, zone = instance['zone'].rsplit('/', 1)
-            instances[instance['name']] = dict(zone=zone)
+            instances[instance['name']] = {
+                'zone': zone
+            }
         except KeyError:
           pass
 
@@ -210,7 +212,7 @@ class GoogleCloudProject:
     """
     have_all_tokens = False
     page_token = None
-    disks = dict()
+    disks = {}
     while not have_all_tokens:
       gce_disk_client = self.GceApi().disks()
       if page_token:
@@ -226,7 +228,9 @@ class GoogleCloudProject:
         try:
           for instance in result['items'][zone]['disks']:
             _, zone = instance['zone'].rsplit('/', 1)
-            disks[instance['name']] = dict(zone=zone)
+            disks[instance['name']] = {
+                'zone': zone
+            }
         except KeyError:
           pass
 
@@ -298,7 +302,10 @@ class GoogleCloudProject:
 
     if not disk_name:
       disk_name = GenerateDiskName(snapshot, disk_name_prefix)
-    body = dict(name=disk_name, sourceSnapshot=snapshot.GetSourceString())
+    body = {
+        'name': disk_name,
+        'sourceSnapshot': snapshot.GetSourceString()
+    }
     try:
       gce_disks_client = self.GceApi().disks()
       request = gce_disks_client.insert(
@@ -471,7 +478,7 @@ class GoogleCloudProject:
           'invalid argument.').format(filter_union)
       raise RuntimeError(error_msg)
 
-    resource_dict = dict()
+    resource_dict = {}
     filter_expression = ''
     operation = 'AND' if filter_union else 'OR'
     for key, value in labels_filter.items():
@@ -492,12 +499,16 @@ class GoogleCloudProject:
           # Only one of the following loops will execute since the method is
           # called either with a service object Instances or Disks
           for resource in resource_scoped_list.get('instances', []):
-            resource_dict[resource['name']] = dict(
-                zone=zone, labels=resource['labels'])
+            resource_dict[resource['name']] = {
+                'zone': zone,
+                'labels': resource['labels']
+            }
 
           for resource in resource_scoped_list.get('disks', []):
-            resource_dict[resource['name']] = dict(
-                zone=zone, labels=resource['labels'])
+            resource_dict[resource['name']] = {
+                'zone': zone,
+                'labels': resource['labels']
+            }
 
       request = service_object.aggregatedList_next(
           previous_request=request, previous_response=response)
@@ -736,7 +747,7 @@ class GoogleComputeBaseResource:
     get_operation = self.GetOperation()  # pylint: disable=no-member
     label_fingerprint = get_operation['labelFingerprint']
 
-    existing_labels_dict = dict()
+    existing_labels_dict = {}
     if self.GetLabels() is not None:
       existing_labels_dict = self.GetLabels()
     existing_labels_dict.update(new_labels_dict)
@@ -928,7 +939,9 @@ class GoogleComputeDisk(GoogleComputeBaseResource):
     log.info(
         self.project.FormatLogMessage(
             'New Snapshot: {0}'.format(snapshot_name)))
-    operation_config = dict(name=snapshot_name)
+    operation_config = {
+        'name': snapshot_name
+    }
     gce_disk_client = self.project.GceApi().disks()
     request = gce_disk_client.createSnapshot(
         disk=self.name, project=self.project.project_id, zone=self.zone,
