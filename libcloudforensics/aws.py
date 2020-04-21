@@ -46,8 +46,9 @@ class AWSAccount:
 
     Args:
       service (str): The AWS service to use.
-      region (str): Optional. The region is which to create new resources in.
-
+      region (str): Optional. The region in which to create new resources. If
+          none provided, the default_region associated to the AWSAccount
+          object will be used.
     Returns:
       boto3.Session.Client: An AWS EC2 client object.
     """
@@ -62,7 +63,9 @@ class AWSAccount:
 
     Args:
       service (str): The AWS service to use.
-      region (str): Optional. The region is which to create new resources in.
+      region (str): Optional. The region in which to create new resources. If
+          none provided, the default_region associated to the AWSAccount
+          object will be used.
 
     Returns:
       boto3.Session.Resource: An AWS EC2 resource object.
@@ -82,6 +85,8 @@ class AWSAccount:
 
     Args:
       region (str): Optional. The region from which to list instances.
+          If none provided, the default_region associated to the AWSAccount
+          object will be used.
       filters (list(dict)): Optional. Filters for the query.
       show_terminated (bool): Optional. Include terminated instances in the
           list.
@@ -146,6 +151,8 @@ class AWSAccount:
 
     Args:
       region (str): Optional. The region from which to list the volumes.
+          If none provided, the default_region associated to the AWSAccount
+          object will be used.
       filters (list(dict)): Optional. Filter for the query.
 
     Returns:
@@ -212,6 +219,8 @@ class AWSAccount:
           get.
       instance_id (str): Optional. The instance id of the instance to get.
       region (str): Optional. The region to look the instance in.
+          If none provided, the default_region associated to the AWSAccount
+          object will be used.
 
     Returns:
       list(AWSInstance): A list of Amazon EC2 Instance objects.
@@ -246,6 +255,8 @@ class AWSAccount:
       volume_name (str): Optional. The volume name tag of the volume to get.
       volume_id (str): Optional. The volume id of the volume to get.
       region (str): Optional. The region to look the volume in.
+          If none provided, the default_region associated to the AWSAccount
+          object will be used.
 
     Returns:
       list(AWSVolume): A list of Amazon EC2 Volume objects.
@@ -354,6 +365,8 @@ class AWSAccount:
     Args:
       instance_id (str): The instance id.
       region (str): Optional. The region to look the instance in.
+          If none provided, the default_region associated to the AWSAccount
+          object will be used.
 
     Returns:
       AWSInstance: An Amazon EC2 Instance object.
@@ -381,6 +394,8 @@ class AWSAccount:
     Args:
       instance_name (str): The instance name tag.
       region (str): Optional. The region to look the instance in.
+          If none provided, the default_region associated to the AWSAccount
+          object will be used.
 
     Returns:
       list(AWSInstance): A list of EC2 Instance objects. If no instance with
@@ -408,6 +423,8 @@ class AWSAccount:
     Args:
       volume_id (str): The volume id.
       region (str): Optional. The region to look the volume in.
+          If none provided, the default_region associated to the AWSAccount
+          object will be used.
 
     Returns:
       AWSVolume: An Amazon EC2 Volume object.
@@ -435,6 +452,8 @@ class AWSAccount:
     Args:
       volume_name (str): The volume name tag.
       region (str): Optional. The region to look the volume in.
+          If none provided, the default_region associated to the AWSAccount
+          object will be used.
 
     Returns:
       list(AWSVolume): A list of EC2 Volume objects. If no volume with
