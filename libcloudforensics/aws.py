@@ -53,11 +53,9 @@ class AWSAccount:
     """
     if region:
       return boto3.session.Session().client(
-          service_name=service, region_name=region
-      )
+          service_name=service, region_name=region)
     return boto3.session.Session().client(
-        service_name=service, region_name=self.default_region
-    )
+        service_name=service, region_name=self.default_region)
 
   def ResourceApi(self, service, region=None):
     """Create an AWS resource object.
@@ -71,11 +69,9 @@ class AWSAccount:
     """
     if region:
       return boto3.session.Session().resource(
-          service_name=service, region_name=region
-      )
+          service_name=service, region_name=region)
     return boto3.session.Session().resource(
-        service_name=service, region_name=self.default_region
-    )
+        service_name=service, region_name=self.default_region)
 
   def ListInstances(self, region=None, filters=None, show_terminated=False):
     """List instances of an AWS account.
@@ -88,7 +84,7 @@ class AWSAccount:
       region (str): Optional. The region from which to list instances.
       filters (list(dict)): Optional. Filters for the query.
       show_terminated (bool): Optional. Include terminated instances in the
-      list.
+          list.
 
     Returns:
       dict: Dictionary with name and metadata for each instance.
@@ -198,8 +194,10 @@ class AWSAccount:
 
     return volumes
 
-  def GetInstancesByNameOrId(self, instance_name=None,
-                             instance_id=None, region=None):
+  def GetInstancesByNameOrId(self,
+                             instance_name=None,
+                             instance_id=None,
+                             region=None):
     """Get instances from an AWS account by their name tag or an ID.
 
     Exactly one of [instance_name, instance_id] must be specified. If looking up
@@ -222,7 +220,7 @@ class AWSAccount:
       ValueError: If both instance_name and instance_id are None or if both
           are set.
     """
-    if not instance_name and not instance_id or instance_name and instance_id:
+    if (not instance_name and not instance_id) or (instance_name and instance_id):  # pylint: disable=line-too-long
       raise ValueError('You must specify exactly one of [instance_name, '
                        'instance_id]. Got instance_name: {0:s}, instance_id: '
                        '{1:s}'.format(instance_name, instance_id))
@@ -231,7 +229,10 @@ class AWSAccount:
 
     return [self.GetInstanceById(instance_id, region=region)]
 
-  def GetVolumesByNameOrId(self, volume_name=None, volume_id=None, region=None):
+  def GetVolumesByNameOrId(self,
+                           volume_name=None,
+                           volume_id=None,
+                           region=None):
     """Get a volume from an AWS account by its name tag or its ID.
 
     Exactly one of [volume_name, volume_id] must be specified. If looking up
@@ -253,7 +254,7 @@ class AWSAccount:
       ValueError: If both volume_name and volume_id are None or if both
           are set.
     """
-    if not volume_name and not volume_id or volume_name and volume_id:
+    if (not volume_name and not volume_id) or (volume_name and volume_id):
       raise ValueError('You must specify exactly one of [volume_name, '
                        'volume_id]. Got volume_name: {0:s}, volume_id: '
                        '{1:s}'.format(volume_name, volume_id))
@@ -262,8 +263,10 @@ class AWSAccount:
 
     return [self.GetInstanceById(volume_id, region=region)]
 
-  def CreateVolumeFromSnapshot(
-      self, snapshot, volume_name=None, volume_name_prefix=''):
+  def CreateVolumeFromSnapshot(self,
+                               snapshot,
+                               volume_name=None,
+                               volume_name_prefix=''):
     """Create a new volume based on a snapshot.
 
     Args:
@@ -292,8 +295,7 @@ class AWSAccount:
       volume = client.create_volume(
           AvailabilityZone=snapshot.availability_zone,
           SnapshotId=snapshot.snapshot_id,
-          TagSpecifications=[GetTagForResourceType('volume', volume_name)]
-      )
+          TagSpecifications=[GetTagForResourceType('volume', volume_name)])
       volume_id = volume['VolumeId']
       zone = volume['AvailabilityZone']
       # Wait for volume creation completion
@@ -304,7 +306,10 @@ class AWSAccount:
                          '{1:s}: {2:s}'.format(volume_name, snapshot.name,
                                                str(exception)))
 
-    return AWSVolume(volume_id, self, self.default_region, zone,
+    return AWSVolume(volume_id,
+                     self,
+                     self.default_region,
+                     zone,
                      name=volume_name)
 
   def _GenerateVolumeName(self, snapshot, volume_name_prefix=None):
@@ -389,8 +394,11 @@ class AWSAccount:
     for instance_id in all_instances:
       if all_instances[instance_id].get('name') == instance_name:
         matching_instances.append(
-            AWSInstance(self, instance_id, region,
-                        all_instances[instance_id]['zone'], name=instance_name)
+            AWSInstance(self,
+                        instance_id,
+                        region,
+                        all_instances[instance_id]['zone'],
+                        name=instance_name)
         )
     return matching_instances
 
@@ -440,7 +448,10 @@ class AWSAccount:
     for volume_id in all_volumes:
       if all_volumes[volume_id].get('name', None) == volume_name:
         matching_volumes.append(
-            AWSVolume(volume_id, self, region, all_volumes[volume_id]['zone'],
+            AWSVolume(volume_id,
+                      self,
+                      region,
+                      all_volumes[volume_id]['zone'],
                       name=volume_name)
         )
     return matching_volumes
@@ -457,8 +468,12 @@ class AWSInstance:
         is.
     name (str): Optional. The name tag (if any) of the instance.
   """
-  def __init__(self, aws_account, instance_id, region,
-               availability_zone, name=None):
+  def __init__(self,
+               aws_account,
+               instance_id,
+               region,
+               availability_zone,
+               name=None):
     """Initialize the AWS EC2 instance.
 
     Args:
@@ -490,7 +505,9 @@ class AWSInstance:
 
     for volume_id in volumes:
       if volumes[volume_id]['device'] == boot_device:
-        return AWSVolume(volume_id, self.aws_account, self.region,
+        return AWSVolume(volume_id,
+                         self.aws_account,
+                         self.region,
                          self.availability_zone)
 
     error_msg = 'Boot volume not found for instance: {0:s}'.format(
@@ -501,13 +518,12 @@ class AWSInstance:
     """List all volumes for the instance.
 
     Returns:
-      dict: Dict of volume ids.
+      dict: Dictionary with name and metadata for each volume.
     """
     return self.aws_account.ListVolumes(
         filters=[{
             'Name': 'attachment.instance-id',
-            'Values': [self.instance_id]
-        }])
+            'Values': [self.instance_id]}])
 
 
 class AWSElasticBlockStore:
@@ -544,7 +560,11 @@ class AWSVolume(AWSElasticBlockStore):
     availability_zone (str): The zone within the region in which the volume is.
     name (str): Optional. The name tag (if any) of the volume.
   """
-  def __init__(self, volume_id, aws_account, region, availability_zone,
+  def __init__(self,
+               volume_id,
+               aws_account,
+               region,
+               availability_zone,
                name=None):
     """Initialize an AWS EBS volume.
 
@@ -556,7 +576,9 @@ class AWSVolume(AWSElasticBlockStore):
           is.
       name (str): Optional. The name tag (if any) of the volume.
     """
-    super(AWSVolume, self).__init__(aws_account, region, availability_zone,
+    super(AWSVolume, self).__init__(aws_account,
+                                    region,
+                                    availability_zone,
                                     name)
     self.volume_id = volume_id
 
@@ -616,8 +638,10 @@ class AWSSnapshot(AWSElasticBlockStore):
       volume (AWSVolume): The volume from which the snapshot was taken.
       name (str): Optional. The name tag (if any) of the snapshot.
     """
-    super(AWSSnapshot, self).__init__(volume.aws_account, volume.region,
-                                      volume.availability_zone, name)
+    super(AWSSnapshot, self).__init__(volume.aws_account,
+                                      volume.region,
+                                      volume.availability_zone,
+                                      name)
     self.snapshot_id = snapshot_id
     self.volume = volume
 
@@ -659,8 +683,7 @@ def CreateVolumeCopy(instance_id, zone, volume_id=None):
     log.info('Volume copy of {0:s} started...'.format(volume_to_copy.volume_id))
     snapshot = volume_to_copy.Snapshot()
     new_volume = aws_account.CreateVolumeFromSnapshot(
-        snapshot, volume_name_prefix='evidence'
-    )
+        snapshot, volume_name_prefix='evidence')
     snapshot.Delete()
     log.info('Volume {0:s} successfully copied to {1:s}'.format(
         volume_to_copy.volume_id, new_volume.volume_id))
