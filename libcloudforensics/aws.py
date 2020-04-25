@@ -202,8 +202,8 @@ class AWSAccount:
     return volumes
 
   def GetInstancesByNameOrId(self,
-                             instance_name=None,
-                             instance_id=None,
+                             instance_name='',
+                             instance_id='',
                              region=None):
     """Get instances from an AWS account by their name tag or an ID.
 
@@ -239,8 +239,8 @@ class AWSAccount:
     return [self.GetInstanceById(instance_id, region=region)]
 
   def GetVolumesByNameOrId(self,
-                           volume_name=None,
-                           volume_id=None,
+                           volume_name='',
+                           volume_id='',
                            region=None):
     """Get a volume from an AWS account by its name tag or its ID.
 
@@ -272,7 +272,7 @@ class AWSAccount:
     if volume_name:
       return self.GetVolumesByName(volume_name, region=region)
 
-    return [self.GetInstanceById(volume_id, region=region)]
+    return [self.GetVolumeById(volume_id, region=region)]
 
   def CreateVolumeFromSnapshot(self,
                                snapshot,
