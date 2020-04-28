@@ -43,6 +43,9 @@ class EndToEndTest(unittest.TestCase):
 
   Export a PROJECT_INFO environment variable with the absolute path to your
   file: "user@terminal:~$ export PROJECT_INFO='absolute/path/project_info.json'"
+
+  You will also need to configure your AWS account credentials as per the
+  guidelines in https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html # pylint: disable=line-too-long
   """
 
   @classmethod
