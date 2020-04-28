@@ -152,14 +152,15 @@ class AWSAccountTest(unittest.TestCase):
   @mock.patch('libcloudforensics.aws.AWSAccount.ClientApi')
   def testListInstances(self, mock_ec2_api):
     """Test that instances of an account are correctly listed."""
-    mock_ec2_api.return_value.describe_instances.return_value = MOCK_DESCRIBE_INSTANCES  # pylint: disable=line-too-long
+    describe_instances = mock_ec2_api.return_value.describe_instances
+    describe_instances.return_value = MOCK_DESCRIBE_INSTANCES
     instances = FAKE_AWS_ACCOUNT.ListInstances()
     self.assertEqual(1, len(instances))
     self.assertIn('fake-instance-id', instances)
     self.assertEqual('fake-zone-2', instances['fake-instance-id']['region'])
     self.assertEqual('fake-zone-2b', instances['fake-instance-id']['zone'])
 
-    mock_ec2_api.return_value.describe_instances.return_value = MOCK_DESCRIBE_INSTANCES_TAGS  # pylint: disable=line-too-long
+    describe_instances.return_value = MOCK_DESCRIBE_INSTANCES_TAGS
     instances = FAKE_AWS_ACCOUNT.ListInstances()
     self.assertIn('fake-instance-id', instances)
     self.assertEqual('fake-instance', instances['fake-instance-id']['name'])
@@ -167,7 +168,8 @@ class AWSAccountTest(unittest.TestCase):
   @mock.patch('libcloudforensics.aws.AWSAccount.ClientApi')
   def testListVolumes(self, mock_ec2_api):
     """Test that volumes of an account are correctly listed."""
-    mock_ec2_api.return_value.describe_volumes.return_value = MOCK_DESCRIBE_VOLUMES  # pylint: disable=line-too-long
+    describe_volumes = mock_ec2_api.return_value.describe_volumes
+    describe_volumes.return_value = MOCK_DESCRIBE_VOLUMES
     volumes = FAKE_AWS_ACCOUNT.ListVolumes()
     self.assertEqual(2, len(volumes))
     self.assertIn('fake-volume-id', volumes)
@@ -175,7 +177,7 @@ class AWSAccountTest(unittest.TestCase):
     self.assertEqual('fake-zone-2', volumes['fake-volume-id']['region'])
     self.assertEqual('fake-zone-2b', volumes['fake-volume-id']['zone'])
 
-    mock_ec2_api.return_value.describe_volumes.return_value = MOCK_DESCRIBE_VOLUMES_TAGS  # pylint: disable=line-too-long
+    describe_volumes.return_value = MOCK_DESCRIBE_VOLUMES_TAGS
     volumes = FAKE_AWS_ACCOUNT.ListVolumes()
     self.assertIn('fake-boot-volume-id', volumes)
     self.assertEqual('fake-boot-volume', volumes['fake-boot-volume-id']['name'])
@@ -284,10 +286,11 @@ class AWSAccountTest(unittest.TestCase):
         volume_name=FAKE_BOOT_VOLUME.name)
 
   @mock.patch('libcloudforensics.aws.AWSAccount.ClientApi')
-  def testCreateDiskFromSnapshot(self, mock_ec2_api):
+  def testCreateVolumeFromSnapshot(self, mock_ec2_api):
     """Test the creation of a volume from a snapshot."""
+    caller_identity = mock_ec2_api.return_value.get_caller_identity
     mock_ec2_api.return_value.create_volume.return_value = MOCK_CREATE_VOLUME
-    mock_ec2_api.return_value.get_caller_identity.return_value = MOCK_CALLER_IDENTITY  # pylint: disable=line-too-long
+    caller_identity.return_value = MOCK_CALLER_IDENTITY
 
     # CreateVolumeFromSnapshot(
     #     Snapshot=FAKE_SNAPSHOT, volume_name=None, volume_name_prefix='')
@@ -326,7 +329,8 @@ class AWSAccountTest(unittest.TestCase):
     The volume name tag must comply with the following RegEx: ^.{1,255}$
         i.e., it must be between 1 and 255 chars.
     """
-    mock_ec2_api.return_value.get_caller_identity.return_value = MOCK_CALLER_IDENTITY  # pylint: disable=line-too-long
+    caller_identity = mock_ec2_api.return_value.get_caller_identity
+    caller_identity.return_value = MOCK_CALLER_IDENTITY
     # pylint: disable=protected-access
     volume_name = FAKE_AWS_ACCOUNT._GenerateVolumeName(FAKE_SNAPSHOT)
     self.assertEqual('fake-snapshot-d69d57c3-copy', volume_name)
@@ -344,8 +348,11 @@ class AWSInstanceTest(unittest.TestCase):
   @mock.patch('libcloudforensics.aws.AWSAccount.ClientApi')
   def testGetBootVolume(self, mock_ec2_api, mock_resource_api):
     """Test that the boot volume is retrieved if existing."""
-    mock_ec2_api.return_value.describe_volumes.return_value = MOCK_DESCRIBE_VOLUMES_TAGS  # pylint: disable=line-too-long
-    mock_resource_api.return_value.Instance.return_value.root_device_name = '/dev/spf'  # pylint: disable=line-too-long
+    describe_volumes = mock_ec2_api.return_value.describe_volumes
+    instance = mock_resource_api.return_value.Instance
+    describe_volumes.return_value = MOCK_DESCRIBE_VOLUMES_TAGS
+    instance.return_value.root_device_name = '/dev/spf'
+
     boot_volume = FAKE_INSTANCE.GetBootVolume()
     self.assertIsInstance(boot_volume, aws.AWSVolume)
     self.assertEqual('fake-boot-volume-id', boot_volume.volume_id)
@@ -357,7 +364,8 @@ class AWSVolumeTest(unittest.TestCase):
   @mock.patch('libcloudforensics.aws.AWSAccount.ClientApi')
   def testSnapshot(self, mock_ec2_api):
     """Test that a snapshot of the volume is created."""
-    mock_ec2_api.return_value.create_snapshot.return_value = MOCK_CREATE_SNAPSHOT  # pylint: disable=line-too-long
+    snapshot = mock_ec2_api.return_value.create_snapshot
+    snapshot.return_value = MOCK_CREATE_SNAPSHOT
     mock_ec2_api.return_value.get_waiter.return_value.wait.return_value = None
 
     # Snapshot(snapshot_name=None). Snapshot should start with the volume's name
