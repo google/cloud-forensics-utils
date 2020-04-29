@@ -62,6 +62,9 @@ setup(
     ],
     packages=find_packages(),
     include_package_data=True,
+    package_data={
+      'libcloudforensics': ['scripts/*']
+    },
     zip_safe=False,
     install_requires=[str(req.req) for req in parse_requirements(
         'requirements.txt', session=PipSession())],
