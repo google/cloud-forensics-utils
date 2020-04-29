@@ -1,4 +1,4 @@
 -i https://pypi.org/simple
 google-api-core
 google-api-python-client
-oauth2client
+google-auth
