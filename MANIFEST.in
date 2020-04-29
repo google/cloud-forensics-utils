@@ -1,2 +1,2 @@
 include requirements*.txt
-include scripts/*
+include libcloudforensics/scripts/*

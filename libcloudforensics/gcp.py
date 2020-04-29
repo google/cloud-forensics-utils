@@ -533,8 +533,7 @@ class GoogleCloudProject:
       if not startup_script:
         # Use the provided script
         startup_script = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.realpath(__file__))),
-            STARTUP_SCRIPT)
+            os.path.dirname(os.path.realpath(__file__)), STARTUP_SCRIPT)
       startup_script = open(startup_script)
       script = startup_script.read()
       startup_script.close()

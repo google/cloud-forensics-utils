@@ -388,6 +388,7 @@ class GoogleCloudProjectTest(unittest.TestCase):
     # Bogus environment variable, should raise an exception
     os.environ['STARTUP_SCRIPT'] = '/bogus/path'
     self.assertRaises(OSError, FAKE_SOURCE_PROJECT._ReadStartupScript)
+    os.environ['STARTUP_SCRIPT'] = ''
     # pylint: enable=protected-access
 
 
