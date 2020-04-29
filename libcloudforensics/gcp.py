@@ -33,9 +33,8 @@ import time
 
 from googleapiclient.discovery import build  # pylint: disable=import-error
 from googleapiclient.errors import HttpError
-from oauth2client.client import AccessTokenRefreshError
-from oauth2client.client import GoogleCredentials
-from oauth2client.client import ApplicationDefaultCredentialsError
+from google.auth import default
+from google.auth.exceptions import RefreshError, DefaultCredentialsError
 
 log = logging.getLogger()
 
@@ -59,8 +58,8 @@ def CreateService(service_name, api_version):
     service build times out.
   """
   try:
-    credentials = GoogleCredentials.get_application_default()
-  except ApplicationDefaultCredentialsError as error:
+    credentials, _ = default()
+  except DefaultCredentialsError as error:
     error_msg = (
         'Could not get application default credentials: {0!s}\n'
         'Have you run $ gcloud auth application-default '
@@ -1029,11 +1028,11 @@ def CreateDiskCopy(src_proj, dst_proj, instance_name, zone, disk_name=None):
         'Disk {0:s} successfully copied to {1:s}'.format(
             disk_to_copy.name, new_disk.name))
 
-  except AccessTokenRefreshError as exception:
+  except RefreshError as exception:
     error_msg = ('Something is wrong with your gcloud access token: '
                  '{0:s}.').format(exception)
     raise RuntimeError(error_msg)
-  except ApplicationDefaultCredentialsError as exception:
+  except DefaultCredentialsError as exception:
     error_msg = (
         'Something is wrong with your Application Default '
         'Credentials. '
