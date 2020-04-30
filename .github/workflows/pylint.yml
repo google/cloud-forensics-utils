@@ -22,4 +22,4 @@ jobs:
         pip install -r requirements-dev.txt
     - name: Run pylint on all *.py files
       run: |
-        pylint tests libcloudforensics
+        pylint tests libcloudforensics examples
