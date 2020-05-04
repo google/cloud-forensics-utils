@@ -34,8 +34,11 @@ class AWSAccount:
   Attributes:
     default_availability_zone (str): Default zone within the region to create
         new resources in.
+    aws_profile (str): Optional. The AWS profile defined in the AWS
+        credentials file to use.
   """
-  def __init__(self, default_availability_zone):
+  def __init__(self, default_availability_zone, aws_profile=None):
+    self.aws_profile = aws_profile or 'default'
     self.default_availability_zone = default_availability_zone
     # The region is given by the zone minus the last letter
     # https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#using-regions-availability-zones-describe # pylint: disable=line-too-long
@@ -53,9 +56,9 @@ class AWSAccount:
       boto3.Session.Client: An AWS EC2 client object.
     """
     if region:
-      return boto3.session.Session().client(
+      return boto3.session.Session(profile_name=self.aws_profile).client(
           service_name=service, region_name=region)
-    return boto3.session.Session().client(
+    return boto3.session.Session(profile_name=self.aws_profile).client(
         service_name=service, region_name=self.default_region)
 
   def ResourceApi(self, service, region=None):
@@ -71,9 +74,9 @@ class AWSAccount:
       boto3.Session.Resource: An AWS EC2 resource object.
     """
     if region:
-      return boto3.session.Session().resource(
+      return boto3.session.Session(profile_name=self.aws_profile).resource(
           service_name=service, region_name=region)
-    return boto3.session.Session().resource(
+    return boto3.session.Session(profile_name=self.aws_profile).resource(
         service_name=service, region_name=self.default_region)
 
   def ListInstances(self, region=None, filters=None, show_terminated=False):
@@ -338,9 +341,7 @@ class AWSAccount:
     """
 
     # Max length of tag values in AWS is 255 characters
-    # UserId is expected to be set if the call to the EC2 API is successful.
-    # https://boto3.amazonaws.com/v1/documentation/api/1.9.42/reference/services/sts.html#STS.Client.get_caller_identity for more details. # pylint: disable=line-too-long
-    user_id = self.ClientApi(ACCOUNT_SERVICE).get_caller_identity()['UserId']
+    user_id = self.GetAccountInformation('UserId')
     volume_id = user_id + snapshot.volume.volume_id
     volume_id_crc32 = '{0:08x}'.format(
         binascii.crc32(volume_id.encode()) & 0xffffffff)
@@ -474,6 +475,30 @@ class AWSAccount:
                       name=volume_name)
         )
     return matching_volumes
+
+  def GetAccountInformation(self, info):
+    """Get information about the AWS account in use.
+
+    If the call succeeds, then the response from the STS API is expected to
+    have the following entries:
+      - UserId
+      - Account
+      - Arn
+    See https://boto3.amazonaws.com/v1/documentation/api/1.9.42/reference/services/sts.html#STS.Client.get_caller_identity for more details. # pylint: disable=line-too-long
+
+    Args:
+      info (str): The account information to retrieve. Must be one of [UserID,
+          Account, Arn]
+    Returns:
+      str: The information requested.
+
+    Raises:
+      KeyError: If the requested information doesn't exist.
+    """
+    account_information = self.ClientApi(ACCOUNT_SERVICE).get_caller_identity()
+    if not account_information.get(info):
+      raise KeyError('Key must be one of ["UserId", "Account", "Arn"]')
+    return account_information.get(info)
 
 
 class AWSInstance:
@@ -673,35 +698,117 @@ class AWSSnapshot(AWSElasticBlockStore):
       raise RuntimeError('Could not delete snapshot {0:s}: {1:s}'.format(
           self.snapshot_id, str(exception)))
 
+  def ShareWithAWSAccount(self, aws_account_id):
+    """Share the snapshot with another AWS account ID.
 
-def CreateVolumeCopy(instance_id, zone, volume_id=None):
+    Args:
+      aws_account_id (str): The AWS Account ID to share the snapshot with.
+    """
+    snapshot = self.aws_account.ResourceApi(EC2_SERVICE).Snapshot(
+        self.snapshot_id)
+    snapshot.modify_attribute(
+        Attribute='createVolumePermission',
+        CreateVolumePermission={
+            'Add': [{
+                'Group': 'all',
+                'UserId': aws_account_id
+            }]
+        },
+        OperationType='add'
+    )
+
+
+def CreateVolumeCopy(zone,
+                     instance_id=None,
+                     volume_id=None,
+                     src_account=None,
+                     dst_account=None):
   """Create a copy of an AWS EBS Volume.
 
+  By default, the volume copy will be created in the same AWS account where
+  the source volume sits. If you want the volume copy to be created in a
+  different AWS account, you can specify one in the dst_account parameter.
+  The following example illustrates how you should configure your AWS
+  credentials file for such a use case.
+
+  # AWS credentials file
+  [default] # default account to use with AWS
+  aws_access_key_id=foo
+  aws_secret_access_key=bar
+
+  [investigation] # source account for a particular volume to be copied from
+  aws_access_key_id=foo1
+  aws_secret_access_key=bar1
+
+  [forensics] # destination account to create the volume copy in
+  aws_access_key_id=foo2
+  aws_secret_access_key=bar2
+
+  # Copies the boot volume from instance "instance_id" from the default AWS
+  # account to the default AWS account.
+  volume_copy = CreateVolumeCopy(zone, instance_id='instance_id')
+
+  # Copies the boot volume from instance "instance_id" from the default AWS
+  # account to the 'forensics' AWS account.
+  volume_copy = CreateVolumeCopy(
+      zone, instance_id='instance_id', dst_account='forensics')
+
+  # Copies the boot volume from instance "instance_id" from the
+  # 'investigation' AWS account to the 'forensics' AWS account.
+  volume_copy = CreateVolumeCopy(
+      zone,
+      instance_id='instance_id',
+      src_account='investigation',
+      dst_account='forensics')
+
   Args:
-    instance_id (str): Instance ID of the instance using the volume
-        to be copied.
     zone (str): The zone within the region to create the new resource in.
-    volume_id (str): Optional. ID of the volume to copy. If None,
-        boot volume will be copied.
+    instance_id (str): Optional. Instance ID of the instance using the volume
+        to be copied. If specified, the boot volume of the instance will be
+        copied. If volume_id is also specified, then the volume pointed by
+        that volume_id will be copied.
+    volume_id (str): Optional. ID of the volume to copy. If not set,
+        then instance_id needs to be set and the boot volume will be copied.
+    src_account (str): Optional. If the AWS account containing the volume
+        that needs to be copied is different from the default account specified
+        in the AWS credentials file, then you can specify it here (see
+        example above).
+    dst_account (str): Optional. If the volume copy needs to be created in a
+        different AWS account, you can specify it here (see example above).
 
   Returns:
     AWSVolume: An AWS EBS Volume object.
 
   Raises:
     RuntimeError: If there are errors copying the volume.
+    ValueError: If both instance_id and volume_id are missing.
   """
 
-  aws_account = AWSAccount(zone)
-  instance = aws_account.GetInstanceById(instance_id)
+  if not instance_id and not volume_id:
+    raise ValueError('You must specify at least one of [instance_id, '
+                     'volume_id].')
+
+  source_account = AWSAccount(zone, aws_profile=src_account)
+  destination_account = AWSAccount(zone, aws_profile=dst_account)
+
   try:
     if volume_id:
-      volume_to_copy = aws_account.GetVolumeById(volume_id)
-    else:
+      volume_to_copy = source_account.GetVolumeById(volume_id)
+    elif instance_id:
+      instance = source_account.GetInstanceById(instance_id)
       volume_to_copy = instance.GetBootVolume()
 
     log.info('Volume copy of {0:s} started...'.format(volume_to_copy.volume_id))
     snapshot = volume_to_copy.Snapshot()
-    new_volume = aws_account.CreateVolumeFromSnapshot(
+
+    source_account_id = source_account.GetAccountInformation('Account')
+    destination_account_id = destination_account.GetAccountInformation(
+        'Account')
+
+    if source_account_id != destination_account_id:
+      snapshot.ShareWithAWSAccount(destination_account_id)
+
+    new_volume = destination_account.CreateVolumeFromSnapshot(
         snapshot, volume_name_prefix='evidence')
     snapshot.Delete()
     log.info('Volume {0:s} successfully copied to {1:s}'.format(

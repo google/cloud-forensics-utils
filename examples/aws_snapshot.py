@@ -23,21 +23,31 @@ if __name__ == '__main__':
   parser = argparse.ArgumentParser(
       description='Demo script for making volume copies on AWS. Example '
                   'usage: python -m examples.aws_snapshot --volume_id=xxx '
-                  'instance_id zone.')
-  parser.add_argument('instance_id', help='The AWS unique instance ID')
+                  '--src_account=foo --dst_account=bar us-east-2b')
   parser.add_argument(
       'zone',
       help='The AWS zone in which resources are located, e.g. us-east-2b')
   parser.add_argument(
       '--volume_id',
       help='The AWS unique volume ID of the volume to copy. If none '
-           'specified, then the boot volume of the AWS instance will be '
-           'copied.')
+           'specified, then --instance_id must be specified and the boot '
+           'volume of the AWS instance will be copied.')
+  parser.add_argument('--instance_id', help='The AWS unique instance ID')
+  parser.add_argument('--src_account', help='The name of the profile for the '
+                                            'source account, as defined in '
+                                            'the AWS credentials file.')
+  parser.add_argument('--dst_account', help='The name of the profile for the '
+                                            'destination account, as defined '
+                                            'in the AWS credentials file.')
 
   args = parser.parse_args()
-  print('Starting volume copy for instance {0:s}.'.format(args.instance_id))
+  print('Starting volume copy...')
   volume_copy = aws.CreateVolumeCopy(
-      args.instance_id, args.zone, args.volume_id)
+      args.zone,
+      instance_id=args.instance_id,
+      volume_id=args.volume_id,
+      src_account=args.src_account,
+      dst_account=args.dst_account)
   print('Done! Volume {0:s} successfully created. You will find it in '
         'your AWS account under the name {1:s}.'.format(
             volume_copy.volume_id, volume_copy.name))

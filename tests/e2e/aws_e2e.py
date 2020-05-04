@@ -72,9 +72,9 @@ class EndToEndTest(unittest.TestCase):
 
     # Make a copy of the boot volume of the instance to analyse
     boot_volume_copy = aws.CreateVolumeCopy(
-        self.instance_to_analyse,
-        self.zone
-        # volume_id=None by default, boot volume will be copied
+        self.zone,
+        instance_id=self.instance_to_analyse
+        # volume_id=None by default, boot volume of instance will be copied
     )
 
     # The volume copy should be attached to the AWS account
@@ -97,7 +97,6 @@ class EndToEndTest(unittest.TestCase):
 
     # Make a copy of another volume of the instance to analyse
     other_volume_copy = aws.CreateVolumeCopy(
-        self.instance_to_analyse,
         self.zone,
         volume_id=self.volume_to_forensic)
 
