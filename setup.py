@@ -17,9 +17,6 @@
 """This is the setup file for the project."""
 
 # yapf: disable
-
-from __future__ import unicode_literals
-
 import sys
 
 from setuptools import find_packages
