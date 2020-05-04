@@ -12,6 +12,9 @@ jobs:
         uses: actions/setup-python@v1
         with:
           python-version: 3.7
+      - name: Install dependencies
+        run: |
+          pip install wheel
       - name: Build a binary wheel and source tarball
         run: |
           python setup.py sdist bdist_wheel
