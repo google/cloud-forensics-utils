@@ -38,7 +38,7 @@ class AWSAccount:
         credentials file to use.
   """
   def __init__(self, default_availability_zone, aws_profile=None):
-    self.aws_profile = aws_profile if aws_profile else 'default'
+    self.aws_profile = aws_profile or 'default'
     self.default_availability_zone = default_availability_zone
     # The region is given by the zone minus the last letter
     # https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#using-regions-availability-zones-describe # pylint: disable=line-too-long
@@ -341,7 +341,7 @@ class AWSAccount:
     """
 
     # Max length of tag values in AWS is 255 characters
-    user_id = self.GetAccountDetails()['UserId']
+    user_id = self.GetAccountInformation('UserId')
     volume_id = user_id + snapshot.volume.volume_id
     volume_id_crc32 = '{0:08x}'.format(
         binascii.crc32(volume_id.encode()) & 0xffffffff)
@@ -476,20 +476,29 @@ class AWSAccount:
         )
     return matching_volumes
 
-  def GetAccountDetails(self):
-    """Get details about the AWS account in use.
+  def GetAccountInformation(self, info):
+    """Get information about the AWS account in use.
 
     If the call succeeds, then the response from the STS API is expected to
     have the following entries:
-      - UserID
+      - UserId
       - Account
       - Arn
     See https://boto3.amazonaws.com/v1/documentation/api/1.9.42/reference/services/sts.html#STS.Client.get_caller_identity for more details. # pylint: disable=line-too-long
 
+    Args:
+      info (str): The account information to retrieve. Must be one of [UserID,
+          Account, Arn]
     Returns:
-      dict: A dictionary with information about the AWS account.
+      str: The information requested.
+
+    Raises:
+      KeyError: If the requested information doesn't exist.
     """
-    return self.ClientApi(ACCOUNT_SERVICE).get_caller_identity()
+    account_information = self.ClientApi(ACCOUNT_SERVICE).get_caller_identity()
+    if not account_information.get(info):
+      raise KeyError('Key must be one of ["UserId", "Account", "Arn"]')
+    return account_information.get(info)
 
 
 class AWSInstance:
@@ -792,8 +801,9 @@ def CreateVolumeCopy(zone,
     log.info('Volume copy of {0:s} started...'.format(volume_to_copy.volume_id))
     snapshot = volume_to_copy.Snapshot()
 
-    source_account_id = source_account.GetAccountDetails()['Account']
-    destination_account_id = destination_account.GetAccountDetails()['Account']
+    source_account_id = source_account.GetAccountInformation('Account')
+    destination_account_id = destination_account.GetAccountInformation(
+        'Account')
 
     if source_account_id != destination_account_id:
       snapshot.ShareWithAWSAccount(destination_account_id)
