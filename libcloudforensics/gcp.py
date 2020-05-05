@@ -288,14 +288,20 @@ class GoogleCloudProject:
       raise RuntimeError(error_msg)
     return disk
 
-  def CreateDiskFromSnapshot(
-      self, snapshot, disk_name=None, disk_name_prefix=''):
+  def CreateDiskFromSnapshot(self,
+                             snapshot,
+                             disk_name=None,
+                             disk_name_prefix='',
+                             disk_type='pd-standard'):
     """Create a new disk based on a Snapshot.
 
     Args:
       snapshot (GoogleComputeSnapshot): Snapshot to use.
       disk_name (str): Optional. String to use as new disk name.
       disk_name_prefix (str): Optional. String to prefix the disk name with.
+      disk_type (str): Optional. URL of the disk type resource describing
+          which disk type to use to create the disk. Default is pd-standard. Use
+          pd-ssd to have a SSD disk.
 
     Returns:
       GoogleComputeDisk: Google Compute Disk.
@@ -308,7 +314,10 @@ class GoogleCloudProject:
       disk_name = GenerateDiskName(snapshot, disk_name_prefix)
     body = {
         'name': disk_name,
-        'sourceSnapshot': snapshot.GetSourceString()
+        'sourceSnapshot': snapshot.GetSourceString(),
+        'type': 'projects/{0:s}/zones/{1:s}/diskTypes/{2:s}'.format(
+            self.project_id, self.default_zone, disk_type
+        )
     }
     try:
       gce_disks_client = self.GceApi().disks()
@@ -327,10 +336,14 @@ class GoogleCloudProject:
     return GoogleComputeDisk(
         project=self, zone=self.default_zone, name=disk_name)
 
-  def GetOrCreateAnalysisVm(
-      self, vm_name, boot_disk_size, cpu_cores=4,
-      image_project='ubuntu-os-cloud', image_family='ubuntu-1804-lts',
-      packages=None):
+  def GetOrCreateAnalysisVm(self,
+                            vm_name,
+                            boot_disk_size,
+                            disk_type='pd-standard',
+                            cpu_cores=4,
+                            image_project='ubuntu-os-cloud',
+                            image_family='ubuntu-1804-lts',
+                            packages=None):
     """Get or create a new virtual machine for analysis purposes.
 
     If none of the optional parameters are specified, then by default the
@@ -341,6 +354,9 @@ class GoogleCloudProject:
     Args:
       vm_name (str): Name of the virtual machine.
       boot_disk_size (int): The size of the analysis VM boot disk (in GB).
+      disk_type (str): Optional. URL of the disk type resource describing
+          which disk type to use to create the disk. Default is pd-standard. Use
+          pd-ssd to have a SSD disk.
       cpu_cores (int): Optional. Number of CPU cores for the virtual machine.
       image_project (str): Optional. Name of the project where the analysis VM
           image is hosted.
@@ -386,6 +402,8 @@ class GoogleCloudProject:
             'boot': True,
             'autoDelete': True,
             'initializeParams': {
+                'diskType': 'projects/{0:s}/zones/{1:s}/diskTypes/{2:s}'.format(
+                    self.project_id, self.default_zone, disk_type),
                 'sourceImage': source_disk_image,
                 'diskSizeGb': boot_disk_size,
             }
@@ -1029,7 +1047,12 @@ class GoogleComputeSnapshot(GoogleComputeBaseResource):
     self.project.BlockOperation(response)
 
 
-def CreateDiskCopy(src_proj, dst_proj, instance_name, zone, disk_name=None):
+def CreateDiskCopy(src_proj,
+                   dst_proj,
+                   instance_name,
+                   zone,
+                   disk_name=None,
+                   disk_type='pd-standard'):
   """Creates a copy of a Google Compute Disk.
 
   Args:
@@ -1039,6 +1062,9 @@ def CreateDiskCopy(src_proj, dst_proj, instance_name, zone, disk_name=None):
     zone (str): Zone where the new disk is to be created.
     disk_name (str): Optional. Name of the disk to copy. If None, boot disk
         will be copied.
+    disk_type (str): Optional. URL of the disk type resource describing
+          which disk type to use to create the disk. Default is pd-standard. Use
+          pd-ssd to have a SSD disk.
 
   Returns:
     GoogleComputeDisk: A Google Compute Disk object.
@@ -1060,7 +1086,7 @@ def CreateDiskCopy(src_proj, dst_proj, instance_name, zone, disk_name=None):
     log.info('Disk copy of {0:s} started...'.format(disk_to_copy.name))
     snapshot = disk_to_copy.Snapshot()
     new_disk = dst_proj.CreateDiskFromSnapshot(
-        snapshot, disk_name_prefix='evidence')
+        snapshot, disk_name_prefix='evidence', disk_type=disk_type)
     snapshot.Delete()
     log.info(
         'Disk {0:s} successfully copied to {1:s}'.format(
@@ -1092,9 +1118,15 @@ def CreateDiskCopy(src_proj, dst_proj, instance_name, zone, disk_name=None):
   return new_disk
 
 
-def StartAnalysisVm(
-    project, vm_name, zone, boot_disk_size, cpu_cores, attach_disk=None,
-    image_project='ubuntu-os-cloud', image_family='ubuntu-1804-lts'):
+def StartAnalysisVm(project,
+                    vm_name,
+                    zone,
+                    boot_disk_size,
+                    boot_disk_type,
+                    cpu_cores,
+                    attach_disk=None,
+                    image_project='ubuntu-os-cloud',
+                    image_family='ubuntu-1804-lts'):
   """Start a virtual machine for analysis purposes.
 
   Args:
@@ -1102,6 +1134,9 @@ def StartAnalysisVm(
     vm_name (str): The name of the virtual machine.
     zone (str): Zone for the virtual machine.
     boot_disk_size (int): The size of the analysis VM boot disk (in GB).
+    boot_disk_type (str): URL of the disk type resource describing
+        which disk type to use to create the disk. Use pd-standard for a
+        standard disk and pd-ssd for a SSD disk.
     cpu_cores (int): The number of CPU cores to create the machine with.
     attach_disk (list(GoogleComputeDisk)): Optional. List of disks to attach.
     image_project (str): Optional. Name of the project where the analysis VM
@@ -1116,7 +1151,8 @@ def StartAnalysisVm(
 
   project = GoogleCloudProject(project, default_zone=zone)
   analysis_vm, created = project.GetOrCreateAnalysisVm(
-      vm_name, boot_disk_size, cpu_cores, image_project, image_family)
+      vm_name, boot_disk_size, disk_type=boot_disk_type, cpu_cores=cpu_cores,
+      image_project=image_project, image_family=image_family)
   for disk in (attach_disk or []):
     analysis_vm.AttachDisk(disk)
   return analysis_vm, created
