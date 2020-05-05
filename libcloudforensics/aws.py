@@ -536,7 +536,7 @@ class AWSInstance:
     region (str): The region the instance is in.
     availability_zone (str): The zone within the region in which the instance
         is.
-    name (str): The name tag (if any) of the instance.
+    name (str): The name tag of the instance, if existing.
   """
 
   def __init__(self,
@@ -553,7 +553,7 @@ class AWSInstance:
       region (str): The region the instance is in.
       availability_zone (str): The zone within the region in which the instance
           is.
-      name (str): Optional. The name tag (if any) of the instance.
+      name (str): Optional. The name tag of the instance, if existing.
     """
 
     self.aws_account = aws_account
@@ -607,7 +607,7 @@ class AWSElasticBlockStore:
     aws_account (AWSAccount): The account for the resource.
     region (str): The region the EBS is in.
     availability_zone (str): The zone within the region in which the EBS is.
-    name (str): The name tag (if any) of the EBS resource.
+    name (str): The name tag of the EBS resource, if existing.
   """
 
   def __init__(self, aws_account, region, availability_zone, name=None):
@@ -617,7 +617,7 @@ class AWSElasticBlockStore:
       aws_account (AWSAccount): The account for the resource.
       region (str): The region the EBS is in.
       availability_zone (str): The zone within the region in which the EBS is.
-      name (str): Optional. The name tag (if any) of the EBS resource.
+      name (str): Optional. The name tag of the EBS resource, if existing.
     """
 
     self.aws_account = aws_account
@@ -634,7 +634,7 @@ class AWSVolume(AWSElasticBlockStore):
     aws_account (AWSAccount): The account for the volume.
     region (str): The region the volume is in.
     availability_zone (str): The zone within the region in which the volume is.
-    name (str): The name tag (if any) of the volume.
+    name (str): The name tag of the volume, if existing.
   """
 
   def __init__(self,
@@ -651,7 +651,7 @@ class AWSVolume(AWSElasticBlockStore):
       region (str): The region the volume is in.
       availability_zone (str): The zone within the region in which the volume
           is.
-      name (str): Optional. The name tag (if any) of the volume.
+      name (str): Optional. The name tag of the volume, if existing.
     """
 
     super(AWSVolume, self).__init__(aws_account,
@@ -706,7 +706,7 @@ class AWSSnapshot(AWSElasticBlockStore):
   Attributes:
     snapshot_id (str): The id of the snapshot.
     volume (AWSVolume): The volume from which the snapshot was taken.
-    name (str): The name tag (if any) of the snapshot.
+    name (str): The name tag of the snapshot, if existing.
   """
 
   def __init__(self, snapshot_id, volume, name=None):
@@ -715,7 +715,7 @@ class AWSSnapshot(AWSElasticBlockStore):
     Args:
       snapshot_id (str): The id of the snapshot.
       volume (AWSVolume): The volume from which the snapshot was taken.
-      name (str): Optional. The name tag (if any) of the snapshot.
+      name (str): Optional. The name tag of the snapshot, if existing.
     """
 
     super(AWSSnapshot, self).__init__(volume.aws_account,

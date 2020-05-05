@@ -111,7 +111,8 @@ class GoogleCloudProject:
 
     Args:
       project_id (str): The name of the project.
-      default_zone (str): Optional. Default zone to create new resources in.
+      default_zone (str): Optional. Default zone to create new resources in. N
+          one means GlobalZone.
     """
 
     self.project_id = project_id
@@ -248,7 +249,8 @@ class GoogleCloudProject:
 
     Args:
       instance_name (str): The instance name.
-      zone (str): Optional. The zone for the instance.
+      zone (str): Optional. The zone for the instance. None means
+          GlobalZone.
 
     Returns:
       GoogleComputeInstance: A Google Compute Instance object.
@@ -273,7 +275,8 @@ class GoogleCloudProject:
 
     Args:
       disk_name (str): Name of the disk.
-      zone (str): Optional. What zone the disk is in.
+      zone (str): Optional. What zone the disk is in. None means
+          GlobalZone.
 
     Returns:
       GoogleComputeDisk: Disk object.
@@ -337,6 +340,11 @@ class GoogleCloudProject:
       image_project='ubuntu-os-cloud', image_family='ubuntu-1804-lts',
       packages=None):
     """Get or create a new virtual machine for analysis purposes.
+
+    If none of the optional parameters are specified, then by default the
+    analysis VM that will be created will run Ubuntu 18.04 LTS. A default
+    set of forensic tools is also installed (a custom one may be provided
+    using the 'packages' argument).
 
     Args:
       vm_name (str): Name of the virtual machine.
@@ -894,8 +902,8 @@ class GoogleComputeInstance(GoogleComputeBaseResource):
 
     Args:
       disk (GoogleComputeDisk): Disk to attach.
-      read_write (bool): Optional. Boolean saying if the disk should be
-          attached in RW mode.
+      read_write (bool): Optional. Boolean indicating whether the disk should
+          be attached in RW mode. Default is False (read-only).
     """
 
     mode = 'READ_ONLY'  # Default mode
