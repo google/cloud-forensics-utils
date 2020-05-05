@@ -32,12 +32,12 @@ class EndToEndTest(unittest.TestCase):
 
   This end-to-end test runs directly on GCP and tests that:
     1. The gcp.py module connects to the target instance and makes a snapshot
-    of the boot disk (by default) or of the disk passed in parameter to the
-    gcp.create_disk_copy() method.
+        of the boot disk (by default) or of the disk passed in parameter to the
+        gcp.create_disk_copy() method.
     2. A new disk is created from the taken snapshot.
     3. If an analysis VM already exists, the module will attach the disk
-    copy to the VM. Otherwise, it will create a new GCP instance for analysis
-    purpose and attach the disk copy to it.
+        copy to the VM. Otherwise, it will create a new GCP instance for
+        analysis purpose and attach the disk copy to it.
 
   To run this test, add your project information to a project_info.json file:
 
@@ -54,12 +54,10 @@ class EndToEndTest(unittest.TestCase):
 
   @classmethod
   def setUpClass(cls):
-    super(EndToEndTest, cls).setUpClass()
     try:
       project_info = ReadProjectInfo()
     except (OSError, RuntimeError, ValueError) as exception:
-      cls.error_msg = str(exception)
-      return
+      raise unittest.SkipTest(str(exception))
     cls.project_id = project_info['project_id']
     cls.instance_to_analyse = project_info['instance']
     # Optional: test a disk other than the boot disk
@@ -73,9 +71,6 @@ class EndToEndTest(unittest.TestCase):
         boot_disk_size=10, cpu_cores=4)
 
   def setUp(self):
-    super(EndToEndTest, self).setUp()
-    if hasattr(self, 'error_msg'):
-      raise unittest.SkipTest(self.error_msg)
     self.project_id = EndToEndTest.project_id
     self.instance_to_analyse = EndToEndTest.instance_to_analyse
     self.disk_to_forensic = EndToEndTest.disk_to_forensic
@@ -90,11 +85,11 @@ class EndToEndTest(unittest.TestCase):
 
     This end-to-end test runs directly on GCP and tests that:
       1. The gcp.py module connects to the target instance and makes a
-      snapshot of the boot disk.
+          snapshot of the boot disk.
       2. A new disk is created from the taken snapshot.
       3. If an analysis VM already exists, the module will attach the disk
-      copy to the VM. Otherwise, it will create a new GCP instance for
-      analysis purpose and attach the boot disk copy to it.
+          copy to the VM. Otherwise, it will create a new GCP instance for
+          analysis purpose and attach the boot disk copy to it.
     """
 
     # Make a copy of the boot disk of the instance to analyse
@@ -138,12 +133,12 @@ class EndToEndTest(unittest.TestCase):
 
     This end-to-end test runs directly on GCP and tests that:
       1. The gcp.py module connects to the target instance and makes a
-      snapshot of disk passed to the 'disk_name' parameter in the
-      create_disk_copy() method.
+          snapshot of disk passed to the 'disk_name' parameter in the
+          create_disk_copy() method.
       2. A new disk is created from the taken snapshot.
       3. If an analysis VM already exists, the module will attach the disk
-      copy to the VM. Otherwise, it will create a new GCP instance for
-      analysis purpose and attach the boot disk copy to it.
+          copy to the VM. Otherwise, it will create a new GCP instance for
+          analysis purpose and attach the boot disk copy to it.
     """
 
     # Make a copy of another disk of the instance to analyse
@@ -182,11 +177,6 @@ class EndToEndTest(unittest.TestCase):
 
   @classmethod
   def tearDownClass(cls):
-    super(EndToEndTest, cls).tearDownClass()
-
-    if hasattr(cls, 'error_msg'):
-      raise unittest.SkipTest(cls.error_msg)
-
     analysis_vm = cls.analysis_vm
     zone = cls.zone
     project = cls.gcp
@@ -243,14 +233,14 @@ def ReadProjectInfo():
     dict: A dict with the project information.
 
   Raises:
-    OSError: if the file cannot be found, opened or closed.
-    RuntimeError: if the json file cannot be parsed.
-    ValueError: if the json file does not have the required properties.
+    OSError: If the file cannot be found, opened or closed.
+    RuntimeError: If the json file cannot be parsed.
+    ValueError: If the json file does not have the required properties.
   """
   project_info = os.environ.get('PROJECT_INFO')
   if project_info is None:
     raise OSError(
-        'Error: please make sure that you defined the '
+        'Please make sure that you defined the '
         '"PROJECT_INFO" environment variable pointing '
         'to your project settings.')
   try:
@@ -259,16 +249,16 @@ def ReadProjectInfo():
       project_info = json.load(json_file)
     except ValueError as exception:
       raise RuntimeError(
-          'Error: cannot parse JSON file. {0:s}'.format(str(exception)))
+          'Cannot parse JSON file. {0:s}'.format(str(exception)))
     json_file.close()
   except OSError as exception:
     raise OSError(
-        'Error: could not open/close file {0:s}: {1:s}'.format(
+        'Could not open/close file {0:s}: {1:s}'.format(
             project_info, str(exception)))
 
   if not all(key in project_info for key in ['project_id', 'instance', 'zone']):
     raise ValueError(
-        'Error: please make sure that your JSON file '
+        'Please make sure that your JSON file '
         'has the required entries. The file should '
         'contain at least the following: ["project_id", '
         '"instance", "zone"].')

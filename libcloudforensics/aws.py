@@ -12,7 +12,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Library for incident response operations on AWS EC2."""
+"""Library for incident response operations on AWS EC2.
+
+Library to make forensic images of Amazon Elastic Block Store devices and create
+analysis virtual machine to be used in incident response.
+"""
+
 import binascii
 import datetime
 import logging
@@ -34,10 +39,20 @@ class AWSAccount:
   Attributes:
     default_availability_zone (str): Default zone within the region to create
         new resources in.
-    aws_profile (str): Optional. The AWS profile defined in the AWS
+    aws_profile (str): The AWS profile defined in the AWS
         credentials file to use.
   """
+
   def __init__(self, default_availability_zone, aws_profile=None):
+    """Initialize the AWS account.
+
+    Args:
+      default_availability_zone (str): Default zone within the region to create
+          new resources in.
+      aws_profile (str): Optional. The AWS profile defined in the AWS
+          credentials file to use.
+    """
+
     self.aws_profile = aws_profile or 'default'
     self.default_availability_zone = default_availability_zone
     # The region is given by the zone minus the last letter
@@ -55,6 +70,7 @@ class AWSAccount:
     Returns:
       boto3.Session.Client: An AWS EC2 client object.
     """
+
     if region:
       return boto3.session.Session(profile_name=self.aws_profile).client(
           service_name=service, region_name=region)
@@ -73,6 +89,7 @@ class AWSAccount:
     Returns:
       boto3.Session.Resource: An AWS EC2 resource object.
     """
+
     if region:
       return boto3.session.Session(profile_name=self.aws_profile).resource(
           service_name=service, region_name=region)
@@ -100,6 +117,7 @@ class AWSAccount:
     Raises:
       RuntimeError: If instances can't be listed.
     """
+
     if not filters:
       filters = []
 
@@ -164,6 +182,7 @@ class AWSAccount:
     Raises:
       RuntimeError: If volumes can't be listed.
     """
+
     if not filters:
       filters = []
 
@@ -232,6 +251,7 @@ class AWSAccount:
       ValueError: If both instance_name and instance_id are None or if both
           are set.
     """
+
     if (not instance_name and not instance_id) or (instance_name and instance_id):  # pylint: disable=line-too-long
       raise ValueError('You must specify exactly one of [instance_name, '
                        'instance_id]. Got instance_name: {0:s}, instance_id: '
@@ -268,6 +288,7 @@ class AWSAccount:
       ValueError: If both volume_name and volume_id are None or if both
           are set.
     """
+
     if (not volume_name and not volume_id) or (volume_name and volume_id):
       raise ValueError('You must specify exactly one of [volume_name, '
                        'volume_id]. Got volume_name: {0:s}, volume_id: '
@@ -337,7 +358,7 @@ class AWSAccount:
       str: A name for the volume.
 
     Raises:
-      ValueError: if the volume name does not comply with the RegEx.
+      ValueError: If the volume name does not comply with the RegEx.
     """
 
     # Max length of tag values in AWS is 255 characters
@@ -375,6 +396,7 @@ class AWSAccount:
     Raises:
       RuntimeError: If instance does not exist.
     """
+
     if not region:
       region = self.default_region
 
@@ -402,6 +424,7 @@ class AWSAccount:
       list(AWSInstance): A list of EC2 Instance objects. If no instance with
           matching name tag is found, the method returns an empty list.
     """
+
     if not region:
       region = self.default_region
 
@@ -433,6 +456,7 @@ class AWSAccount:
     Raises:
       RuntimeError: If volume does not exist.
     """
+
     if not region:
       region = self.default_region
 
@@ -460,6 +484,7 @@ class AWSAccount:
       list(AWSVolume): A list of EC2 Volume objects. If no volume with
           matching name tag is found, the method returns an empty list.
     """
+
     if not region:
       region = self.default_region
 
@@ -495,6 +520,7 @@ class AWSAccount:
     Raises:
       KeyError: If the requested information doesn't exist.
     """
+
     account_information = self.ClientApi(ACCOUNT_SERVICE).get_caller_identity()
     if not account_information.get(info):
       raise KeyError('Key must be one of ["UserId", "Account", "Arn"]')
@@ -510,8 +536,9 @@ class AWSInstance:
     region (str): The region the instance is in.
     availability_zone (str): The zone within the region in which the instance
         is.
-    name (str): Optional. The name tag (if any) of the instance.
+    name (str): The name tag (if any) of the instance.
   """
+
   def __init__(self,
                aws_account,
                instance_id,
@@ -528,6 +555,7 @@ class AWSInstance:
           is.
       name (str): Optional. The name tag (if any) of the instance.
     """
+
     self.aws_account = aws_account
     self.instance_id = instance_id
     self.region = region
@@ -543,6 +571,7 @@ class AWSInstance:
     Raises:
       RuntimeError: If no boot volume could be found.
     """
+
     boot_device = self.aws_account.ResourceApi(
         EC2_SERVICE).Instance(self.instance_id).root_device_name
     volumes = self.ListVolumes()
@@ -564,6 +593,7 @@ class AWSInstance:
     Returns:
       dict: Dictionary with name and metadata for each volume.
     """
+
     return self.aws_account.ListVolumes(
         filters=[{
             'Name': 'attachment.instance-id',
@@ -579,6 +609,7 @@ class AWSElasticBlockStore:
     availability_zone (str): The zone within the region in which the EBS is.
     name (str): The name tag (if any) of the EBS resource.
   """
+
   def __init__(self, aws_account, region, availability_zone, name=None):
     """Initialize the AWS EBS resource.
 
@@ -588,6 +619,7 @@ class AWSElasticBlockStore:
       availability_zone (str): The zone within the region in which the EBS is.
       name (str): Optional. The name tag (if any) of the EBS resource.
     """
+
     self.aws_account = aws_account
     self.region = region
     self.availability_zone = availability_zone
@@ -602,8 +634,9 @@ class AWSVolume(AWSElasticBlockStore):
     aws_account (AWSAccount): The account for the volume.
     region (str): The region the volume is in.
     availability_zone (str): The zone within the region in which the volume is.
-    name (str): Optional. The name tag (if any) of the volume.
+    name (str): The name tag (if any) of the volume.
   """
+
   def __init__(self,
                volume_id,
                aws_account,
@@ -620,6 +653,7 @@ class AWSVolume(AWSElasticBlockStore):
           is.
       name (str): Optional. The name tag (if any) of the volume.
     """
+
     super(AWSVolume, self).__init__(aws_account,
                                     region,
                                     availability_zone,
@@ -672,8 +706,9 @@ class AWSSnapshot(AWSElasticBlockStore):
   Attributes:
     snapshot_id (str): The id of the snapshot.
     volume (AWSVolume): The volume from which the snapshot was taken.
-    name (str): Optional. The name tag (if any) of the snapshot.
+    name (str): The name tag (if any) of the snapshot.
   """
+
   def __init__(self, snapshot_id, volume, name=None):
     """Initialize an AWS EBS snapshot.
 
@@ -682,6 +717,7 @@ class AWSSnapshot(AWSElasticBlockStore):
       volume (AWSVolume): The volume from which the snapshot was taken.
       name (str): Optional. The name tag (if any) of the snapshot.
     """
+
     super(AWSSnapshot, self).__init__(volume.aws_account,
                                       volume.region,
                                       volume.availability_zone,
@@ -691,6 +727,7 @@ class AWSSnapshot(AWSElasticBlockStore):
 
   def Delete(self):
     """Delete a snapshot."""
+
     client = self.aws_account.ClientApi(EC2_SERVICE)
     try:
       client.delete_snapshot(SnapshotId=self.snapshot_id)
@@ -704,6 +741,7 @@ class AWSSnapshot(AWSElasticBlockStore):
     Args:
       aws_account_id (str): The AWS Account ID to share the snapshot with.
     """
+
     snapshot = self.aws_account.ResourceApi(EC2_SERVICE).Snapshot(
         self.snapshot_id)
     snapshot.modify_attribute(
@@ -832,6 +870,7 @@ def GetTagForResourceType(resource, name):
   Returns:
     dict: A dictionary for AWS Tag Specifications.
   """
+
   return {
       'ResourceType': resource,
       'Tags': [

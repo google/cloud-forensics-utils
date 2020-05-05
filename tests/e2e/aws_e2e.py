@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """End to end test for the aws module."""
+
 import json
 import os
 import unittest
@@ -127,9 +128,9 @@ def ReadProjectInfo():
     dict: A dict with the project information.
 
   Raises:
-    OSError: if the file cannot be found, opened or closed.
-    RuntimeError: if the json file cannot be parsed.
-    ValueError: if the json file does not have the required properties.
+    OSError: If the file cannot be found, opened or closed.
+    RuntimeError: If the json file cannot be parsed.
+    ValueError: If the json file does not have the required properties.
   """
   project_info = os.environ.get('PROJECT_INFO')
   if project_info is None:
