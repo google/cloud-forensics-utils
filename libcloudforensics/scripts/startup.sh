@@ -3,7 +3,7 @@
 # Startup script to execute when bootstrapping a new forensic VM.
 # The script will install forensics packages to perform analysis.
 
-max_retry=10
+max_retry=100
 
 gift_ppa_track='stable'
 
@@ -35,9 +35,9 @@ install_packages() {
 
 # Try to install the packages
 for try in $(seq 1 ${max_retry}); do
-  [[ ${try} -gt 1 ]] && sleep 3
+  [[ ${try} -gt 1 ]] && sleep 5
   install_packages && exit_code=0 && break || exit_code=$?
-  err "Failed to install forensics packages, retrying in 3 seconds."
+  err "Failed to install forensics packages, retrying in 5 seconds."
 done;
 
 (exit ${exit_code})
