@@ -111,7 +111,7 @@ class EndToEndTest(unittest.TestCase):
     # Get the analysis VM and attach the evidence boot disk
     self.analysis_vm, _ = gcp.StartAnalysisVm(
         project=self.project_id, vm_name=self.analysis_vm_name, zone=self.zone,
-        boot_disk_size=10, cpu_cores=4, attach_disk=self.boot_disk_copy)
+        boot_disk_size=10, cpu_cores=4, attach_disk=[self.boot_disk_copy])
 
     # The forensic instance should be live in the analysis GCP project and
     # the disk should be attached
@@ -158,7 +158,7 @@ class EndToEndTest(unittest.TestCase):
     # Get the analysis VM and attach the evidence disk to forensic
     self.analysis_vm, _ = gcp.StartAnalysisVm(
         project=self.project_id, vm_name=self.analysis_vm_name, zone=self.zone,
-        boot_disk_size=10, cpu_cores=4, attach_disk=self.disk_to_forensic_copy)
+        boot_disk_size=10, cpu_cores=4, attach_disk=[self.disk_to_forensic_copy])
 
     # The forensic instance should be live in the analysis GCP project and
     # the disk should be attached
