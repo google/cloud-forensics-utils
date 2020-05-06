@@ -1108,7 +1108,7 @@ def StartAnalysisVm(
     zone (str): Zone for the virtual machine.
     boot_disk_size (int): The size of the analysis VM boot disk (in GB).
     cpu_cores (int): The number of CPU cores to create the machine with.
-    attach_disk (GoogleComputeDisk): Optional. Disk to attach.
+    attach_disk (list(GoogleComputeDisk)): List of disks to attach.
     image_project (str): Optional. Name of the project where the analysis VM
         image is hosted.
     image_family (str): Optional. Name of the image to use to create the
@@ -1122,8 +1122,8 @@ def StartAnalysisVm(
   project = GoogleCloudProject(project, default_zone=zone)
   analysis_vm, created = project.GetOrCreateAnalysisVm(
       vm_name, boot_disk_size, cpu_cores, image_project, image_family)
-  if attach_disk:
-    analysis_vm.AttachDisk(attach_disk)
+  for disk in (attach_disk or []):
+    analysis_vm.AttachDisk(disk)
   return analysis_vm, created
 
 
