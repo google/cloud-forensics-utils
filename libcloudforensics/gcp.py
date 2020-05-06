@@ -1108,7 +1108,7 @@ def StartAnalysisVm(
     zone (str): Zone for the virtual machine.
     boot_disk_size (int): The size of the analysis VM boot disk (in GB).
     cpu_cores (int): The number of CPU cores to create the machine with.
-    attach_disk (list(GoogleComputeDisk)): List of disks to attach.
+    attach_disk (list(GoogleComputeDisk)): Optional. List of disks to attach.
     image_project (str): Optional. Name of the project where the analysis VM
         image is hosted.
     image_family (str): Optional. Name of the image to use to create the
