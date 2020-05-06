@@ -181,7 +181,8 @@ class GoogleCloudProject:
     """List instances in project.
 
     Returns:
-      dict: Dictionary with name and metadata for each instance.
+      dict: Dictionary mapping instances to their respective
+          GoogleComputeInstance object.
     """
 
     have_all_tokens = False
@@ -203,9 +204,9 @@ class GoogleCloudProject:
         try:
           for instance in result['items'][zone]['instances']:
             _, zone = instance['zone'].rsplit('/', 1)
-            instances[instance['name']] = {
-                'zone': zone
-            }
+            name = instance['name']
+            instances[name] = GoogleComputeInstance(
+                self, zone, name, labels=instance.get('labels'))
         except KeyError:
           pass
 
@@ -215,7 +216,8 @@ class GoogleCloudProject:
     """List disks in project.
 
     Returns:
-      dict: Dictionary with name and metadata for each instance.
+      dict: Dictionary mapping disks to their respective GoogleComputeDisk
+          object.
     """
 
     have_all_tokens = False
@@ -234,23 +236,21 @@ class GoogleCloudProject:
         have_all_tokens = True
       for zone in result['items']:
         try:
-          for instance in result['items'][zone]['disks']:
-            _, zone = instance['zone'].rsplit('/', 1)
-            disks[instance['name']] = {
-                'zone': zone
-            }
+          for disk in result['items'][zone]['disks']:
+            _, zone = disk['zone'].rsplit('/', 1)
+            name = disk['name']
+            disks[name] = GoogleComputeDisk(
+                self, zone, name, labels=disk.get('labels'))
         except KeyError:
           pass
 
     return disks
 
-  def GetInstance(self, instance_name, zone=None):
+  def GetInstance(self, instance_name):
     """Get instance from project.
 
     Args:
       instance_name (str): The instance name.
-      zone (str): Optional. The zone for the instance. None means
-          GlobalZone.
 
     Returns:
       GoogleComputeInstance: A Google Compute Instance object.
@@ -265,18 +265,13 @@ class GoogleCloudProject:
       error_msg = 'Instance {0:s} was not found in project {1:s}'.format(
           instance_name, self.project_id)
       raise RuntimeError(error_msg)
+    return instance
 
-    if not zone:
-      zone = instance['zone']
-    return GoogleComputeInstance(self, zone, instance_name)
-
-  def GetDisk(self, disk_name, zone=None):
+  def GetDisk(self, disk_name):
     """Get a GCP disk object.
 
     Args:
       disk_name (str): Name of the disk.
-      zone (str): Optional. What zone the disk is in. None means
-          GlobalZone.
 
     Returns:
       GoogleComputeDisk: Disk object.
@@ -291,10 +286,7 @@ class GoogleCloudProject:
       error_msg = 'Disk {0:s} was not found in project {1:s}'.format(
           disk_name, self.project_id)
       raise RuntimeError(error_msg)
-
-    if not zone:
-      zone = disk['zone']
-    return GoogleComputeDisk(self, zone, disk_name)
+    return disk
 
   def CreateDiskFromSnapshot(
       self, snapshot, disk_name=None, disk_name_prefix=''):
@@ -369,7 +361,7 @@ class GoogleCloudProject:
 
     # Re-use instance if it already exists, or create a new one.
     try:
-      instance = self.GetInstance(vm_name, zone=self.default_zone)
+      instance = self.GetInstance(vm_name)
       created = False
       return instance, created
     except RuntimeError:
@@ -446,8 +438,8 @@ class GoogleCloudProject:
           filters, False to get the intersection.
 
     Returns:
-      dict: A dictionary with name and metadata (zone, labels) for each
-          instance.
+      dict: Dictionary mapping instances to their respective
+          GoogleComputeInstance object.
     """
 
     instance_service_object = self.GceApi().instances()
@@ -468,7 +460,8 @@ class GoogleCloudProject:
           filters, False to get the intersection.
 
     Returns:
-      dict: A dictionary with name and metadata (zone, labels) for each disk.
+      dict: Dictionary mapping disks to their respective GoogleComputeDisk
+          object.
     """
 
     disk_service_object = self.GceApi().disks()
@@ -487,8 +480,8 @@ class GoogleCloudProject:
           False to get the intersection.
 
     Returns:
-      dict: Dictionary with name and metadata (zone, labels) for each
-          instance/disk.
+      dict: Dictionary mapping instances/disks to their respective
+          GoogleComputeInstance/GoogleComputeDisk object.
 
     Raises:
       RuntimeError: If the operation doesn't complete on GCP.
@@ -519,18 +512,16 @@ class GoogleCloudProject:
         if 'warning' not in resource_scoped_list.keys():
           _, zone = region_or_zone_string.rsplit('/', 1)
           # Only one of the following loops will execute since the method is
-          # called either with a service object Instances or Disks
+          # called either with a service object Instances or Disks.
           for resource in resource_scoped_list.get('instances', []):
-            resource_dict[resource['name']] = {
-                'zone': zone,
-                'labels': resource['labels']
-            }
+            name = resource['name']
+            resource_dict[name] = GoogleComputeInstance(
+                self, zone, name, labels=resource['labels'])
 
           for resource in resource_scoped_list.get('disks', []):
-            resource_dict[resource['name']] = {
-                'zone': zone,
-                'labels': resource['labels']
-            }
+            name = resource['name']
+            resource_dict[name] = GoogleComputeDisk(
+                self, zone, name, labels=resource['labels'])
 
       request = service_object.aggregatedList_next(
           previous_request=request, previous_response=response)
@@ -655,20 +646,23 @@ class GoogleComputeBaseResource:
     project (GoogleCloudProject): Cloud project for the resource.
     zone (str): What zone the resource is in.
     name (str): Name of the resource.
+    labels (dict): Dictionary of labels for the resource, if existing.
   """
 
-  def __init__(self, project, zone, name):
+  def __init__(self, project, zone, name, labels=None):
     """Initialize the Google Compute Resource base object.
 
     Args:
       project (GoogleCloudProject): Cloud project for the resource.
       zone (str): What zone the resource is in.
       name (str): Name of the resource.
+      labels (dict): Dictionary of labels for the resource, if existing.
     """
 
     self.project = project
     self.zone = zone
     self.name = name
+    self.labels = labels
     self._data = None
 
   def GetValue(self, key):

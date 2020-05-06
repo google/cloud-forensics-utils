@@ -112,7 +112,7 @@ class AWSAccount:
           list.
 
     Returns:
-      dict: Dictionary with name and metadata for each instance.
+      dict: Dictionary mapping instances to their respective AWSInstance object.
 
     Raises:
       RuntimeError: If instances can't be listed.
@@ -144,17 +144,15 @@ class AWSAccount:
             continue
 
           zone = instance['Placement']['AvailabilityZone']
-          instance_info = {
-              'region': zone[:-1],
-              'zone': zone
-          }
+          instance_id = instance['InstanceId']
+          aws_instance = AWSInstance(self, instance_id, zone[:-1], zone)
 
           for tag in instance.get('Tags', []):
             if tag.get('Key') == 'Name':
-              instance_info['name'] = tag.get('Value')
+              aws_instance.name = tag.get('Value')
               break
 
-          instances[instance['InstanceId']] = instance_info
+          instances[instance_id] = aws_instance
 
       next_token = response.get('NextToken')
       if not next_token:
@@ -177,7 +175,7 @@ class AWSAccount:
       filters (list(dict)): Optional. Filter for the query.
 
     Returns:
-      dict: Dictionary with name and metadata for each volume.
+      dict: Dictionary mapping volumes to their respective AWSVolume object.
 
     Raises:
       RuntimeError: If volumes can't be listed.
@@ -202,20 +200,21 @@ class AWSAccount:
             str(exception)))
 
       for volume in response['Volumes']:
-        volume_info = {
-            'region': self.default_region,
-            'zone': volume['AvailabilityZone']
-        }
+        volume_id = volume['VolumeId']
+        aws_volume = AWSVolume(
+            volume_id, self, self.default_region, volume['AvailabilityZone'])
 
         for tag in volume.get('Tags', []):
           if tag.get('Key') == 'Name':
-            volume_info['name'] = tag.get('Value')
+            aws_volume.name = tag.get('Value')
             break
 
-        if len(volume['Attachments']) > 0:
-          volume_info['device'] = volume['Attachments'][0]['Device']
+        for attachment in volume.get('Attachments', []):
+          if attachment.get('State') == 'attached':
+            aws_volume.device_name = attachment.get('Device')
+            break
 
-        volumes[volume['VolumeId']] = volume_info
+        volumes[volume_id] = aws_volume
 
       next_token = response.get('NextToken')
       if not next_token:
@@ -261,6 +260,52 @@ class AWSAccount:
 
     return [self.GetInstanceById(instance_id, region=region)]
 
+  def GetInstancesByName(self, instance_name, region=None):
+    """Get all instances from an AWS account with matching name tag.
+
+    Args:
+      instance_name (str): The instance name tag.
+      region (str): Optional. The region to look the instance in.
+          If none provided, the default_region associated to the AWSAccount
+          object will be used.
+
+    Returns:
+      list(AWSInstance): A list of EC2 Instance objects. If no instance with
+          matching name tag is found, the method returns an empty list.
+    """
+
+    matching_instances = []
+    instances = self.ListInstances(region=region)
+    for instance_id in instances:
+      aws_instance = instances[instance_id]
+      if aws_instance.name == instance_name:
+        matching_instances.append(aws_instance)
+    return matching_instances
+
+  def GetInstanceById(self, instance_id, region=None):
+    """Get an instance from an AWS account by its ID.
+
+    Args:
+      instance_id (str): The instance id.
+      region (str): Optional. The region to look the instance in.
+          If none provided, the default_region associated to the AWSAccount
+          object will be used.
+
+    Returns:
+      AWSInstance: An Amazon EC2 Instance object.
+
+    Raises:
+      RuntimeError: If instance does not exist.
+    """
+
+    instances = self.ListInstances(region=region)
+    instance = instances.get(instance_id)
+    if not instance:
+      error_msg = 'Instance {0:s} was not found in AWS account'.format(
+          instance_id)
+      raise RuntimeError(error_msg)
+    return instance
+
   def GetVolumesByNameOrId(self,
                            volume_name='',
                            volume_id='',
@@ -297,6 +342,52 @@ class AWSAccount:
       return self.GetVolumesByName(volume_name, region=region)
 
     return [self.GetVolumeById(volume_id, region=region)]
+
+  def GetVolumesByName(self, volume_name, region=None):
+    """Get all volumes from an AWS account with matching name tag.
+
+    Args:
+      volume_name (str): The volume name tag.
+      region (str): Optional. The region to look the volume in.
+          If none provided, the default_region associated to the AWSAccount
+          object will be used.
+
+    Returns:
+      list(AWSVolume): A list of EC2 Volume objects. If no volume with
+          matching name tag is found, the method returns an empty list.
+    """
+
+    matching_volumes = []
+    volumes = self.ListVolumes(region=region)
+    for volume_id in volumes:
+      volume = volumes[volume_id]
+      if volume.name == volume_name:
+        matching_volumes.append(volume)
+    return matching_volumes
+
+  def GetVolumeById(self, volume_id, region=None):
+    """Get a volume from an AWS account by its ID.
+
+    Args:
+      volume_id (str): The volume id.
+      region (str): Optional. The region to look the volume in.
+          If none provided, the default_region associated to the AWSAccount
+          object will be used.
+
+    Returns:
+      AWSVolume: An Amazon EC2 Volume object.
+
+    Raises:
+      RuntimeError: If volume does not exist.
+    """
+
+    volumes = self.ListVolumes(region=region)
+    volume = volumes.get(volume_id)
+    if not volume:
+      error_msg = 'Volume {0:s} was not found in AWS account'.format(
+          volume_id)
+      raise RuntimeError(error_msg)
+    return volume
 
   def CreateVolumeFromSnapshot(self,
                                snapshot,
@@ -347,6 +438,31 @@ class AWSAccount:
                      zone,
                      name=volume_name)
 
+  def GetAccountInformation(self, info):
+    """Get information about the AWS account in use.
+
+    If the call succeeds, then the response from the STS API is expected to
+    have the following entries:
+      - UserId
+      - Account
+      - Arn
+    See https://boto3.amazonaws.com/v1/documentation/api/1.9.42/reference/services/sts.html#STS.Client.get_caller_identity for more details. # pylint: disable=line-too-long
+
+    Args:
+      info (str): The account information to retrieve. Must be one of [UserID,
+          Account, Arn]
+    Returns:
+      str: The information requested.
+
+    Raises:
+      KeyError: If the requested information doesn't exist.
+    """
+
+    account_information = self.ClientApi(ACCOUNT_SERVICE).get_caller_identity()
+    if not account_information.get(info):
+      raise KeyError('Key must be one of ["UserId", "Account", "Arn"]')
+    return account_information.get(info)
+
   def _GenerateVolumeName(self, snapshot, volume_name_prefix=None):
     """Generate a new volume name given a volume's snapshot.
 
@@ -380,151 +496,6 @@ class AWSAccount:
           snapshot.name[:truncate_at], volume_id_crc32)
 
     return volume_name
-
-  def GetInstanceById(self, instance_id, region=None):
-    """Get an instance from an AWS account by its ID.
-
-    Args:
-      instance_id (str): The instance id.
-      region (str): Optional. The region to look the instance in.
-          If none provided, the default_region associated to the AWSAccount
-          object will be used.
-
-    Returns:
-      AWSInstance: An Amazon EC2 Instance object.
-
-    Raises:
-      RuntimeError: If instance does not exist.
-    """
-
-    if not region:
-      region = self.default_region
-
-    instances = self.ListInstances(region=region)
-    instance = instances.get(instance_id)
-    if not instance:
-      error_msg = 'Instance {0:s} was not found in AWS account'.format(
-          instance_id)
-      raise RuntimeError(error_msg)
-
-    zone = instance['zone']
-
-    return AWSInstance(self, instance_id, region, zone)
-
-  def GetInstancesByName(self, instance_name, region=None):
-    """Get all instances from an AWS account with matching name tag.
-
-    Args:
-      instance_name (str): The instance name tag.
-      region (str): Optional. The region to look the instance in.
-          If none provided, the default_region associated to the AWSAccount
-          object will be used.
-
-    Returns:
-      list(AWSInstance): A list of EC2 Instance objects. If no instance with
-          matching name tag is found, the method returns an empty list.
-    """
-
-    if not region:
-      region = self.default_region
-
-    matching_instances = []
-    all_instances = self.ListInstances(region=region)
-    for instance_id in all_instances:
-      if all_instances[instance_id].get('name') == instance_name:
-        matching_instances.append(
-            AWSInstance(self,
-                        instance_id,
-                        region,
-                        all_instances[instance_id]['zone'],
-                        name=instance_name)
-        )
-    return matching_instances
-
-  def GetVolumeById(self, volume_id, region=None):
-    """Get a volume from an AWS account by its ID.
-
-    Args:
-      volume_id (str): The volume id.
-      region (str): Optional. The region to look the volume in.
-          If none provided, the default_region associated to the AWSAccount
-          object will be used.
-
-    Returns:
-      AWSVolume: An Amazon EC2 Volume object.
-
-    Raises:
-      RuntimeError: If volume does not exist.
-    """
-
-    if not region:
-      region = self.default_region
-
-    volumes = self.ListVolumes(region=region)
-    volume = volumes.get(volume_id)
-    if not volume:
-      error_msg = 'Volume {0:s} was not found in AWS account'.format(
-          volume_id)
-      raise RuntimeError(error_msg)
-
-    zone = volume['zone']
-
-    return AWSVolume(volume_id, self, region, zone)
-
-  def GetVolumesByName(self, volume_name, region=None):
-    """Get all volumes from an AWS account with matching name tag.
-
-    Args:
-      volume_name (str): The volume name tag.
-      region (str): Optional. The region to look the volume in.
-          If none provided, the default_region associated to the AWSAccount
-          object will be used.
-
-    Returns:
-      list(AWSVolume): A list of EC2 Volume objects. If no volume with
-          matching name tag is found, the method returns an empty list.
-    """
-
-    if not region:
-      region = self.default_region
-
-    matching_volumes = []
-    all_volumes = self.ListVolumes(region=region)
-    for volume_id in all_volumes:
-      if all_volumes[volume_id].get('name', None) == volume_name:
-        matching_volumes.append(
-            AWSVolume(volume_id,
-                      self,
-                      region,
-                      all_volumes[volume_id]['zone'],
-                      name=volume_name)
-        )
-    return matching_volumes
-
-  def GetAccountInformation(self, info):
-    """Get information about the AWS account in use.
-
-    If the call succeeds, then the response from the STS API is expected to
-    have the following entries:
-      - UserId
-      - Account
-      - Arn
-    See https://boto3.amazonaws.com/v1/documentation/api/1.9.42/reference/services/sts.html#STS.Client.get_caller_identity for more details. # pylint: disable=line-too-long
-
-    Args:
-      info (str): The account information to retrieve. Must be one of [UserID,
-          Account, Arn]
-    Returns:
-      str: The information requested.
-
-    Raises:
-      KeyError: If the requested information doesn't exist.
-    """
-
-    account_information = self.ClientApi(ACCOUNT_SERVICE).get_caller_identity()
-    if not account_information.get(info):
-      raise KeyError('Key must be one of ["UserId", "Account", "Arn"]')
-    return account_information.get(info)
 
 
 class AWSInstance:
@@ -577,11 +548,8 @@ class AWSInstance:
     volumes = self.ListVolumes()
 
     for volume_id in volumes:
-      if volumes[volume_id]['device'] == boot_device:
-        return AWSVolume(volume_id,
-                         self.aws_account,
-                         self.region,
-                         self.availability_zone)
+      if volumes[volume_id].device_name == boot_device:
+        return volumes[volume_id]
 
     error_msg = 'Boot volume not found for instance: {0:s}'.format(
         self.instance_id)
@@ -591,7 +559,7 @@ class AWSInstance:
     """List all volumes for the instance.
 
     Returns:
-      dict: Dictionary with name and metadata for each volume.
+      dict: Dictionary mapping volumes to their respective AWSVolume object.
     """
 
     return self.aws_account.ListVolumes(
@@ -642,7 +610,8 @@ class AWSVolume(AWSElasticBlockStore):
                aws_account,
                region,
                availability_zone,
-               name=None):
+               name=None,
+               device_name=None):
     """Initialize an AWS EBS volume.
 
     Args:
@@ -652,6 +621,8 @@ class AWSVolume(AWSElasticBlockStore):
       availability_zone (str): The zone within the region in which the volume
           is.
       name (str): Optional. The name tag of the volume, if existing.
+      device_name (str): Optional. The device name (e.g. /dev/spf) of the
+          volume when it is attached to an instance, if applicable.
     """
 
     super(AWSVolume, self).__init__(aws_account,
@@ -659,6 +630,7 @@ class AWSVolume(AWSElasticBlockStore):
                                     availability_zone,
                                     name)
     self.volume_id = volume_id
+    self.device_name = device_name
 
   def Snapshot(self, snapshot_name=None):
     """Create a snapshot of the volume.
