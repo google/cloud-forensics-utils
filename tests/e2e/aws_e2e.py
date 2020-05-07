@@ -59,6 +59,9 @@ class EndToEndTest(unittest.TestCase):
     cls.zone = project_info['zone']
     cls.volume_to_forensic = project_info.get('volume_id', None)
     cls.aws = aws.AWSAccount(cls.zone)
+    cls.analysis_vm_name = 'new-vm-for-analysis'
+    cls.analysis_vm, _ = aws.StartAnalysisVm(
+        cls.analysis_vm_name, cls.zone, 10, 4)
     cls.volumes = []
 
   def test_end_to_end_boot_volume(self):
@@ -83,6 +86,27 @@ class EndToEndTest(unittest.TestCase):
         self.aws.ResourceApi(EC2_SERVICE).Volume(boot_volume_copy.volume_id))
     self.assertEqual(self.volumes[-1].volume_id, boot_volume_copy.volume_id)
 
+    # Create and start the analysis VM and attach the boot volume
+    self.analysis_vm, _ = aws.StartAnalysisVm(
+        self.analysis_vm_name,
+        self.zone,
+        10,
+        4,
+        attach_volume=boot_volume_copy,
+        device_name='/dev/sdp'
+    )
+
+    # The forensic instance should be live in the analysis AWS account and
+    # the volume should be attached
+    instance = self.aws.ResourceApi(EC2_SERVICE).Instance(
+        self.analysis_vm.instance_id)
+    self.assertEqual(instance.instance_id, self.analysis_vm.instance_id)
+    for volume in instance.volumes.all():
+      if volume.volume_id == boot_volume_copy.volume_id:
+        return
+    self.fail('Error: could not find the volume {0:s} in instance {1:s}'.format(
+        boot_volume_copy.volume_id, self.analysis_vm_name))
+
   def test_end_to_end_other_volume(self):
     """End to end test on AWS.
 
@@ -106,9 +130,37 @@ class EndToEndTest(unittest.TestCase):
         self.aws.ResourceApi(EC2_SERVICE).Volume(other_volume_copy.volume_id))
     self.assertEqual(self.volumes[-1].volume_id, other_volume_copy.volume_id)
 
+    # Create and start the analysis VM and attach the boot volume
+    self.analysis_vm, _ = aws.StartAnalysisVm(
+        self.analysis_vm_name,
+        self.zone,
+        10,
+        4,
+        attach_volume=other_volume_copy,
+        device_name='/dev/sdq'
+    )
+
+    # The forensic instance should be live in the analysis AWS account and
+    # the volume should be attached
+    instance = self.aws.ResourceApi(EC2_SERVICE).Instance(
+        self.analysis_vm.instance_id)
+    self.assertEqual(instance.instance_id, self.analysis_vm.instance_id)
+    for volume in instance.volumes.all():
+      if volume.volume_id == other_volume_copy.volume_id:
+        return
+    self.fail('Error: could not find the volume {0:s} in instance {1:s}'.format(
+        other_volume_copy.volume_id, self.analysis_vm_name))
+
   @classmethod
   def tearDownClass(cls):
     client = cls.aws.ClientApi(EC2_SERVICE)
+    # Delete the instance
+    instance = cls.aws.ResourceApi(EC2_SERVICE).Instance(
+        cls.analysis_vm.instance_id)
+    instance.terminate()
+    client.get_waiter('instance_terminated').wait(InstanceIds=[
+        instance.instance_id])
+
     # Delete the volumes
     for volume in cls.volumes:
       log.info('Deleting volume: {0:s}.'.format(volume.volume_id))
