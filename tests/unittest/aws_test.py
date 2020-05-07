@@ -137,6 +137,22 @@ MOCK_CALLER_IDENTITY = {
     'UserId': 'fake-user-id'
 }
 
+MOCK_DESCRIBE_AMI = {
+    'Images': [{
+        'BlockDeviceMappings': [{
+            'Ebs': {
+                'VolumeSize': None
+            }
+        }]
+    }]
+}
+
+MOCK_RUN_INSTANCES = {
+    'Instances': [{
+        'InstanceId': 'new-instance-id'
+    }]
+}
+
 
 class AWSAccountTest(unittest.TestCase):
   """Test AWSAccount class."""
@@ -317,6 +333,37 @@ class AWSAccountTest(unittest.TestCase):
     self.assertEqual(
         'prefix-fake-snapshot-d69d57c3-copy', volume_from_snapshot.name)
 
+  @mock.patch('libcloudforensics.aws.AWSAccount._ReadStartupScript')
+  @mock.patch('libcloudforensics.aws.AWSAccount.GetInstancesByName')
+  @mock.patch('libcloudforensics.aws.AWSAccount.ClientApi')
+  def testGetOrCreateAnalysisVm(self,
+                                mock_ec2_api,
+                                mock_get_instance,
+                                mock_script):
+    """Test that a VM is created or retrieved if it already exists."""
+    mock_ec2_api.return_value.run_instances.return_value = MOCK_RUN_INSTANCES
+    mock_ec2_api.return_value.get_waiter.return_value.wait.return_value = None
+    mock_get_instance.return_value = [FAKE_INSTANCE_WITH_NAME]
+    mock_script.return_value = ''
+
+    # GetOrCreateAnalysisVm(vm_name, boot_volume_size, AMI, cpu_cores) where
+    # vm_name is the name of an analysis instance that already exists.
+    vm, created = FAKE_AWS_ACCOUNT.GetOrCreateAnalysisVm(
+        FAKE_INSTANCE_WITH_NAME.name, 1, 'ami-id', 2)
+    self.assertIsInstance(vm, aws.AWSInstance)
+    self.assertEqual('fake-instance', vm.name)
+    self.assertFalse(created)
+
+    # GetOrCreateAnalysisVm(non_existing_vm, boot_volume_size, AMI, cpu_cores).
+    # We mock the GetInstanceById() call to throw a RuntimeError to mimic
+    # an instance that wasn't found.
+    mock_get_instance.side_effect = RuntimeError()
+    vm, created = FAKE_AWS_ACCOUNT.GetOrCreateAnalysisVm(
+        'non-existent-instance-name', 1, 'ami-id', 2)
+    self.assertIsInstance(vm, aws.AWSInstance)
+    self.assertEqual('non-existent-instance-name', vm.name)
+    self.assertTrue(created)
+
   @mock.patch('libcloudforensics.aws.AWSAccount.ClientApi')
   def testGenerateVolumeName(self, mock_ec2_api):
     """Test the generation of AWS volume name tag.
@@ -324,15 +371,35 @@ class AWSAccountTest(unittest.TestCase):
     The volume name tag must comply with the following RegEx: ^.{1,255}$
         i.e., it must be between 1 and 255 chars.
     """
+    # pylint: disable=protected-access
     caller_identity = mock_ec2_api.return_value.get_caller_identity
     caller_identity.return_value = MOCK_CALLER_IDENTITY
-    # pylint: disable=protected-access
     volume_name = FAKE_AWS_ACCOUNT._GenerateVolumeName(FAKE_SNAPSHOT)
     self.assertEqual('fake-snapshot-d69d57c3-copy', volume_name)
 
     volume_name = FAKE_AWS_ACCOUNT._GenerateVolumeName(
         FAKE_SNAPSHOT, volume_name_prefix='prefix')
     self.assertEqual('prefix-fake-snapshot-d69d57c3-copy', volume_name)
+    # pylint: enable=protected-access
+
+  @mock.patch('libcloudforensics.aws.AWSAccount.ClientApi')
+  def testGetBootVolumeConfigByAmi(self, mock_ec2_api):
+    """Test that the boot volume configuration is correctly created."""
+    # pylint: disable=protected-access
+    mock_ec2_api.return_value.describe_images.return_value = MOCK_DESCRIBE_AMI
+    self.assertIsNone(
+        MOCK_DESCRIBE_AMI['Images'][0]['BlockDeviceMappings'][0]['Ebs']['VolumeSize'])  # pylint: disable=line-too-long
+    config = FAKE_AWS_ACCOUNT._GetBootVolumeConfigByAmi('ami-id', 50)
+    self.assertEqual(50, config['Ebs']['VolumeSize'])
+    # pylint: enable=protected-access
+
+  def testGetInstanceTypeByCPU(self):
+    """Test that the instance type matches the requested amount of CPU cores."""
+    # pylint: disable=protected-access
+    self.assertEqual('m4.large', FAKE_AWS_ACCOUNT._GetInstanceTypeByCPU(2))
+    self.assertEqual('m4.16xlarge', FAKE_AWS_ACCOUNT._GetInstanceTypeByCPU(64))
+    self.assertRaises(ValueError, FAKE_AWS_ACCOUNT._GetInstanceTypeByCPU, 0)
+    self.assertRaises(ValueError, FAKE_AWS_ACCOUNT._GetInstanceTypeByCPU, 256)
     # pylint: enable=protected-access
 
 
@@ -376,6 +443,92 @@ class AWSVolumeTest(unittest.TestCase):
     self.assertIsInstance(snapshot, aws.AWSSnapshot)
     # Same as above regarding the timestamp.
     self.assertTrue(snapshot.name.startswith('my-snapshot'))
+
+
+class AWSTest(unittest.TestCase):
+  """Test the aws.py public methods."""
+
+  @mock.patch('libcloudforensics.aws.AWSVolume.Snapshot')
+  @mock.patch('libcloudforensics.aws.AWSAccount.GetVolumeById')
+  @mock.patch('libcloudforensics.aws.AWSAccount.GetAccountInformation')
+  @mock.patch('libcloudforensics.aws.AWSAccount.ClientApi')
+  def testCreateVolumeCopy1(self,
+                            mock_ec2_api,
+                            mock_account,
+                            mock_get_volume,
+                            mock_snapshot):
+    """Test that a volume is correctly cloned."""
+    FAKE_SNAPSHOT.name = FAKE_VOLUME.volume_id
+    mock_ec2_api.return_value.create_volume.return_value = MOCK_CREATE_VOLUME
+    mock_account.return_value = 'fake-account-id'
+    mock_get_volume.return_value = FAKE_VOLUME
+    mock_snapshot.return_value = FAKE_SNAPSHOT
+
+    # CreateVolumeCopy(zone, volume_id='fake-volume-id'). This should grab
+    # the volume 'fake-volume-id'.
+    new_volume = aws.CreateVolumeCopy(
+        FAKE_INSTANCE.availability_zone, volume_id=FAKE_VOLUME.volume_id)
+    self.assertIsInstance(new_volume, aws.AWSVolume)
+    self.assertTrue(new_volume.name.startswith('evidence-'))
+    self.assertIn('fake-volume-id', new_volume.name)
+    self.assertTrue(new_volume.name.endswith('-copy'))
+
+  @mock.patch('libcloudforensics.aws.AWSVolume.Snapshot')
+  @mock.patch('libcloudforensics.aws.AWSInstance.GetBootVolume')
+  @mock.patch('libcloudforensics.aws.AWSAccount.GetInstanceById')
+  @mock.patch('libcloudforensics.aws.AWSAccount.GetAccountInformation')
+  @mock.patch('libcloudforensics.aws.AWSAccount.ClientApi')
+  def testCreateVolumeCopy2(self,
+                            mock_ec2_api,
+                            mock_account,
+                            mock_get_instance,
+                            mock_get_volume,
+                            mock_snapshot):
+    """Test that a volume is correctly cloned."""
+    FAKE_SNAPSHOT.name = FAKE_BOOT_VOLUME.volume_id
+    mock_ec2_api.return_value.create_volume.return_value = MOCK_CREATE_VOLUME
+    mock_account.return_value = 'fake-account-id'
+    mock_get_instance.return_value = FAKE_INSTANCE
+    mock_get_volume.return_value = FAKE_BOOT_VOLUME
+    mock_snapshot.return_value = FAKE_SNAPSHOT
+
+    # CreateVolumeCopy(zone, instance='fake-instance-id'). This should grab
+    # the boot volume of the instance.
+    new_volume = aws.CreateVolumeCopy(
+        FAKE_INSTANCE.availability_zone, instance_id=FAKE_INSTANCE.instance_id)
+    self.assertIsInstance(new_volume, aws.AWSVolume)
+    self.assertTrue(new_volume.name.startswith('evidence-'))
+    self.assertIn('fake-boot-volume-id', new_volume.name)
+    self.assertTrue(new_volume.name.endswith('-copy'))
+
+  @mock.patch('libcloudforensics.aws.AWSAccount.ListVolumes')
+  @mock.patch('libcloudforensics.aws.AWSAccount.ListInstances')
+  def testCreateVolumeCopy3(self, mock_list_instances, mock_list_volumes):
+    """Test that a volume is correctly cloned."""
+    # Should raise a ValueError exception  as no volume_id or instance_id is
+    # specified.
+    self.assertRaises(
+        ValueError,
+        aws.CreateVolumeCopy,
+        FAKE_INSTANCE.availability_zone)
+
+    # Should raise a RuntimeError in GetInstanceById as we are querying a
+    # non-existent instance.
+    mock_list_instances.return_value = {}
+    self.assertRaises(
+        RuntimeError,
+        aws.CreateVolumeCopy,
+        FAKE_INSTANCE.availability_zone,
+        instance_id='non-existent-instance-id')
+
+    # Should raise a RuntimeError in GetVolumeById as we are querying a
+    # non-existent volume.
+    mock_list_volumes.return_value = {}
+    self.assertRaises(
+        RuntimeError,
+        aws.CreateVolumeCopy,
+        FAKE_INSTANCE.availability_zone,
+        volume_id='non-existent-volume-id')
 
 
 if __name__ == '__main__':
