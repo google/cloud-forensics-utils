@@ -384,7 +384,7 @@ class GoogleCloudProject:
     startup_script = self._ReadStartupScript()
 
     if packages:
-      startup_script.replace('${packages[@]}', ' '.join(packages))
+      startup_script = startup_script.replace('${packages[@]}', ' '.join(packages))
 
     config = {
         'name': vm_name,
