@@ -716,17 +716,26 @@ class AWSAccount:
       ValueError: If the requested amount of cores is unavailable.
     """
 
-    cpus = [1, 2, 4, 8, 16, 32, 40, 48, 64, 96, 128]
-    instance_names = ['t2.small', 'm4.large', 'm4.xlarge', 'm4.2xlarge',
-                      'm4.4xlarge', 'm5.8xlarge', 'm4.10xlarge', 'm5.12xlarge',
-                      'm4.16xlarge', 'm5.24xlarge', 'x1.32xlarge']
-    try:
-      idx = cpus.index(cpu_cores)
-    except ValueError:
+    cpu_cores_to_instance_type = {
+        1: 't2.small',
+        2: 'm4.large',
+        4: 'm4.xlarge',
+        8: 'm4.2xlarge',
+        16: 'm4.4xlarge',
+        32: 'm5.8xlarge',
+        40: 'm4.10xlarge',
+        48: 'm5.12xlarge',
+        64: 'm4.16xlarge',
+        96: 'm5.24xlarge',
+        128: 'x1.32xlarge'
+    }
+    if cpu_cores not in cpu_cores_to_instance_type:
       raise ValueError(
           'Cannot start a machine with {0:d} CPU cores. CPU cores should be one'
-          ' of: {1:s}'.format(cpu_cores, ', '.join(map(str, cpus))))
-    return instance_names[idx]
+          ' of: {1:s}'.format(
+              cpu_cores, ', '.join(map(str, cpu_cores_to_instance_type.keys()))
+          ))
+    return cpu_cores_to_instance_type[cpu_cores]
 
   @staticmethod
   def _ReadStartupScript():
@@ -1189,6 +1198,10 @@ def StartAnalysisVm(vm_name,
                     dst_account=None):
   """Start a virtual machine for analysis purposes.
 
+  Look for an existing AWS instance with tag name vm_name. If found,
+  this instance will be started and used as analysis VM. If not found, then a
+  new vm with that name will be created, started and returned.
+
   Args:
     vm_name (str): The name for the virtual machine.
     default_availability_zone (str): Default zone within the region to create
@@ -1207,7 +1220,7 @@ def StartAnalysisVm(vm_name,
 
   Returns:
     tuple(AWSInstance, bool): a tuple with a virtual machine object
-    and a boolean indicating if the virtual machine was created or not.
+        and a boolean indicating if the virtual machine was created or not.
 
   Raises:
     RuntimeError: If device_name is missing when attach_volume is provided.
