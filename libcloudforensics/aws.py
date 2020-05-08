@@ -426,16 +426,15 @@ class AWSAccount:
                        '{1:s}'.format(volume_name, REGEX_TAG_VALUE.pattern))
 
     client = self.ClientApi(EC2_SERVICE)
+    create_volume_args = {
+        'AvailabilityZone': snapshot.availability_zone,
+        'SnapshotId': snapshot.snapshot_id,
+        'TagSpecifications': [GetTagForResourceType('volume', volume_name)]
+    }
+    if kms_key_id:
+      create_volume_args['Encrypted'] = True
+      create_volume_args['KmsKeyId'] = kms_key_id
     try:
-      create_volume_args = {
-          'AvailabilityZone': snapshot.availability_zone,
-          'SnapshotId': snapshot.snapshot_id,
-          'TagSpecifications': [GetTagForResourceType('volume', volume_name)]
-      }
-      if kms_key_id:
-        create_volume_args['Encrypted'] = True
-        create_volume_args['KmsKeyId'] = kms_key_id
-
       volume = client.create_volume(**create_volume_args)
       volume_id = volume['VolumeId']
       zone = volume['AvailabilityZone']
@@ -480,17 +479,34 @@ class AWSAccount:
       raise KeyError('Key must be one of ["UserId", "Account", "Arn"]')
     return account_information.get(info)
 
-  def CreateSharedKMSKey(self, aws_account_id):
-    """Create a KMS key and share it with aws_account_id
-
-    Args:
-      aws_account_id (str): The AWS Account ID to share the KMS key with.
+  def CreateKMSKey(self):
+    """Create a KMS key.
 
     Returns:
-      str: The KMS key ID that was created.
+      str: The KMS key ID for the key that was created.
 
     Raises:
       RuntimeError: If the key could not be created.
+    """
+    client = self.ClientApi(KMS_SERVICE)
+    try:
+      kms_key = client.create_key()
+      # If the call to the API is successful, then the response contains the
+      # key ID
+      return kms_key['KeyMetadata']['KeyId']
+    except client.exceptions.ClientError as exception:
+      raise RuntimeError('Could not create KMS key: {0:s}'.format(
+          str(exception)))
+
+  def ShareKMSKeyWithAWSAccount(self, kms_key_id, aws_account_id):
+    """Share a KMS key.
+
+    Args:
+      kms_key_id (str): The KMS key ID of the key to share.
+      aws_account_id (str): The AWS Account ID to share the KMS key with.
+
+    Raises:
+      RuntimeError: If the key could not be shared.
     """
 
     share_policy = {
@@ -508,20 +524,15 @@ class AWSAccount:
     }
     client = self.ClientApi(KMS_SERVICE)
     try:
-      kms_key = client.create_key()
-      # If the call to the API is successful, then the response contains the
-      # key ID
-      kms_key_id = kms_key['KeyMetadata']['KeyId']
       policy = json.loads(client.get_key_policy(
           KeyId=kms_key_id, PolicyName='default')['Policy'])
       policy['Statement'].append(share_policy)
       # Update the key policy so that it is shared with the AWS account.
       client.put_key_policy(
           KeyId=kms_key_id, PolicyName='default', Policy=json.dumps(policy))
-      return kms_key_id
     except client.exceptions.ClientError as exception:
-      raise RuntimeError('Could not create KMS key: {0:s}'.format(
-          str(exception)))
+      raise RuntimeError('Could not share KMS key {0:s}: {1:s}'.format(
+          kms_key_id, str(exception)))
 
   def DeleteKMSKey(self, kms_key_id):
     """Delete a KMS key.
@@ -906,7 +917,7 @@ def CreateVolumeCopy(zone,
 
   source_account = AWSAccount(zone, aws_profile=src_account)
   destination_account = AWSAccount(zone, aws_profile=dst_account)
-  shared_kms_key_id = None
+  kms_key_id = None
 
   try:
     if volume_id:
@@ -926,10 +937,11 @@ def CreateVolumeCopy(zone,
       if volume_to_copy.encrypted:
         # Generate one-time use KMS key that will be shared with the
         # destination account.
-        shared_kms_key_id = source_account.CreateSharedKMSKey(
-            destination_account_id)
+        kms_key_id = source_account.CreateKMSKey()
+        source_account.ShareKMSKeyWithAWSAccount(
+            kms_key_id, destination_account_id)
         temporary_volume = source_account.CreateVolumeFromSnapshot(
-            snapshot, kms_key_id=shared_kms_key_id)
+            snapshot, kms_key_id=kms_key_id)
         # The old snapshot is not needed anymore since we have created the
         # temporary volume
         snapshot.Delete()
@@ -943,7 +955,7 @@ def CreateVolumeCopy(zone,
         snapshot, volume_name_prefix='evidence')
     snapshot.Delete()
     # Delete the one-time use KMS key, if one was generated
-    source_account.DeleteKMSKey(shared_kms_key_id)
+    source_account.DeleteKMSKey(kms_key_id)
     log.info('Volume {0:s} successfully copied to {1:s}'.format(
         volume_to_copy.volume_id, new_volume.volume_id))
 
