@@ -181,7 +181,7 @@ class GoogleCloudProject:
     """List instances in project.
 
     Returns:
-      dict: Dictionary mapping instances to their respective
+      dict: Dictionary mapping instance names (str) to their respective
           GoogleComputeInstance object.
     """
 
@@ -216,8 +216,8 @@ class GoogleCloudProject:
     """List disks in project.
 
     Returns:
-      dict: Dictionary mapping disks to their respective GoogleComputeDisk
-          object.
+      dict: Dictionary mapping disk names (str) to their respective
+          GoogleComputeDisk object.
     """
 
     have_all_tokens = False

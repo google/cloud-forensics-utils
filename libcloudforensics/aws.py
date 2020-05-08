@@ -112,7 +112,8 @@ class AWSAccount:
           list.
 
     Returns:
-      dict: Dictionary mapping instances to their respective AWSInstance object.
+      dict: Dictionary mapping instance IDs (str) to their respective
+          AWSInstance object.
 
     Raises:
       RuntimeError: If instances can't be listed.
@@ -175,7 +176,8 @@ class AWSAccount:
       filters (list(dict)): Optional. Filter for the query.
 
     Returns:
-      dict: Dictionary mapping volumes to their respective AWSVolume object.
+      dict: Dictionary mapping volume IDs (str) to their respective AWSVolume
+          object.
 
     Raises:
       RuntimeError: If volumes can't be listed.
