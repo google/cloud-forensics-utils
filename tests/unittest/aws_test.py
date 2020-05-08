@@ -25,8 +25,7 @@ FAKE_INSTANCE = aws.AWSInstance(
     FAKE_AWS_ACCOUNT,
     'fake-instance-id',
     'fake-zone-2',
-    'fake-zone-2b',
-    name='fake-instance')
+    'fake-zone-2b')
 FAKE_INSTANCE_WITH_NAME = aws.AWSInstance(
     FAKE_AWS_ACCOUNT,
     'fake-instance-with-name-id',
@@ -43,7 +42,8 @@ FAKE_BOOT_VOLUME = aws.AWSVolume(
     FAKE_AWS_ACCOUNT,
     'fake-zone-2',
     'fake-zone-2b',
-    name='fake-boot-volume')
+    name='fake-boot-volume',
+    device_name='/dev/spf')
 FAKE_SNAPSHOT = aws.AWSSnapshot(
     'fake-snapshot-id',
     FAKE_VOLUME,
@@ -66,16 +66,16 @@ MOCK_DESCRIBE_INSTANCES = {
 MOCK_DESCRIBE_INSTANCES_TAGS = {
     'Reservations': [{
         'Instances': [{
-            'InstanceId': FAKE_INSTANCE.instance_id,
+            'InstanceId': FAKE_INSTANCE_WITH_NAME.instance_id,
             'Placement': {
-                'AvailabilityZone': FAKE_INSTANCE.availability_zone
+                'AvailabilityZone': FAKE_INSTANCE_WITH_NAME.availability_zone
             },
             'State': {
                 'Name': 'running'
             },
             'Tags': [{
                 'Key': 'Name',
-                'Value': FAKE_INSTANCE.name
+                'Value': FAKE_INSTANCE_WITH_NAME.name
             }]
         }]
     }]
@@ -98,7 +98,8 @@ MOCK_DESCRIBE_VOLUMES_TAGS = {
         'VolumeId': FAKE_BOOT_VOLUME.volume_id,
         'AvailabilityZone': FAKE_BOOT_VOLUME.availability_zone,
         'Attachments': [{
-            'Device': '/dev/spf'
+            'State': 'attached',
+            'Device': FAKE_BOOT_VOLUME.device_name
         }],
         'Tags': [{
             'Key': 'Name',
@@ -108,28 +109,13 @@ MOCK_DESCRIBE_VOLUMES_TAGS = {
 }
 
 MOCK_LIST_INSTANCES = {
-    FAKE_INSTANCE.instance_id: {
-        'region': FAKE_INSTANCE.region,
-        'zone': FAKE_INSTANCE.availability_zone
-    },
-    FAKE_INSTANCE_WITH_NAME.instance_id: {
-        'region': FAKE_INSTANCE_WITH_NAME.region,
-        'zone': FAKE_INSTANCE_WITH_NAME.availability_zone,
-        'name': FAKE_INSTANCE_WITH_NAME.name
-    }
+    FAKE_INSTANCE.instance_id: FAKE_INSTANCE,
+    FAKE_INSTANCE_WITH_NAME.instance_id: FAKE_INSTANCE_WITH_NAME
 }
 
 MOCK_LIST_VOLUMES = {
-    FAKE_VOLUME.volume_id: {
-        'region': FAKE_VOLUME.region,
-        'zone': FAKE_VOLUME.availability_zone,
-    },
-    FAKE_BOOT_VOLUME.volume_id: {
-        'region': FAKE_BOOT_VOLUME.region,
-        'zone': FAKE_BOOT_VOLUME.availability_zone,
-        'name': FAKE_BOOT_VOLUME.name,
-        'device': '/dev/spf'
-    }
+    FAKE_VOLUME.volume_id: FAKE_VOLUME,
+    FAKE_BOOT_VOLUME.volume_id: FAKE_BOOT_VOLUME
 }
 
 MOCK_CREATE_VOLUME = {
@@ -157,13 +143,15 @@ class AWSAccountTest(unittest.TestCase):
     instances = FAKE_AWS_ACCOUNT.ListInstances()
     self.assertEqual(1, len(instances))
     self.assertIn('fake-instance-id', instances)
-    self.assertEqual('fake-zone-2', instances['fake-instance-id']['region'])
-    self.assertEqual('fake-zone-2b', instances['fake-instance-id']['zone'])
+    self.assertEqual('fake-zone-2', instances['fake-instance-id'].region)
+    self.assertEqual(
+        'fake-zone-2b', instances['fake-instance-id'].availability_zone)
 
     describe_instances.return_value = MOCK_DESCRIBE_INSTANCES_TAGS
     instances = FAKE_AWS_ACCOUNT.ListInstances()
-    self.assertIn('fake-instance-id', instances)
-    self.assertEqual('fake-instance', instances['fake-instance-id']['name'])
+    self.assertIn('fake-instance-with-name-id', instances)
+    self.assertEqual(
+        'fake-instance', instances['fake-instance-with-name-id'].name)
 
   @mock.patch('libcloudforensics.aws.AWSAccount.ClientApi')
   def testListVolumes(self, mock_ec2_api):
@@ -174,14 +162,15 @@ class AWSAccountTest(unittest.TestCase):
     self.assertEqual(2, len(volumes))
     self.assertIn('fake-volume-id', volumes)
     self.assertIn('fake-boot-volume-id', volumes)
-    self.assertEqual('fake-zone-2', volumes['fake-volume-id']['region'])
-    self.assertEqual('fake-zone-2b', volumes['fake-volume-id']['zone'])
+    self.assertEqual('fake-zone-2', volumes['fake-volume-id'].region)
+    self.assertEqual(
+        'fake-zone-2b', volumes['fake-volume-id'].availability_zone)
 
     describe_volumes.return_value = MOCK_DESCRIBE_VOLUMES_TAGS
     volumes = FAKE_AWS_ACCOUNT.ListVolumes()
     self.assertIn('fake-boot-volume-id', volumes)
-    self.assertEqual('fake-boot-volume', volumes['fake-boot-volume-id']['name'])
-    self.assertEqual('/dev/spf', volumes['fake-boot-volume-id']['device'])
+    self.assertEqual('fake-boot-volume', volumes['fake-boot-volume-id'].name)
+    self.assertEqual('/dev/spf', volumes['fake-boot-volume-id'].device_name)
 
   @mock.patch('libcloudforensics.aws.AWSAccount.ListInstances')
   def testGetInstanceById(self, mock_list_instances):
