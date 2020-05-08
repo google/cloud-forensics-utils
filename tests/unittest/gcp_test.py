@@ -80,15 +80,11 @@ MOCK_DISKS_AGGREGATED = {
     }
 }
 
-MOCK_LIST_INSTANCES = {FAKE_INSTANCE.name: {'zone': FAKE_INSTANCE.zone}}
+MOCK_LIST_INSTANCES = {FAKE_INSTANCE.name: FAKE_INSTANCE}
 
 MOCK_LIST_DISKS = {
-    FAKE_DISK.name: {
-        'zone': FAKE_DISK.zone
-    },
-    FAKE_BOOT_DISK.name: {
-        'zone': FAKE_BOOT_DISK.zone
-    }
+    FAKE_DISK.name: FAKE_DISK,
+    FAKE_BOOT_DISK.name: FAKE_BOOT_DISK
 }
 
 MOCK_GCE_OPERATION_INSTANCES_LABELS_SUCCESS = {
@@ -170,8 +166,8 @@ class GoogleCloudProjectTest(unittest.TestCase):
     instances.return_value.execute.return_value = MOCK_INSTANCES_AGGREGATED
     list_instances = FAKE_ANALYSIS_PROJECT.ListInstances()
     self.assertEqual(1, len(list_instances))
-    self.assertIn('fake-instance', list_instances)
-    self.assertEqual('fake-zone', list_instances['fake-instance']['zone'])
+    self.assertEqual('fake-instance', list_instances['fake-instance'].name)
+    self.assertEqual('fake-zone', list_instances['fake-instance'].zone)
 
   @mock.patch('libcloudforensics.gcp.GoogleCloudProject.GceApi')
   def testListDisks(self, mock_gce_api):
@@ -180,17 +176,17 @@ class GoogleCloudProjectTest(unittest.TestCase):
     disks.return_value.execute.return_value = MOCK_DISKS_AGGREGATED
     list_disks = FAKE_ANALYSIS_PROJECT.ListDisks()
     self.assertEqual(2, len(list_disks))
-    self.assertIn('fake-disk', list_disks)
-    self.assertIn('fake-boot-disk', list_disks)
-    self.assertEqual('fake-zone', list_disks['fake-disk']['zone'])
-    self.assertEqual('fake-zone', list_disks['fake-boot-disk']['zone'])
+    self.assertEqual('fake-disk', list_disks['fake-disk'].name)
+    self.assertEqual('fake-boot-disk', list_disks['fake-boot-disk'].name)
+    self.assertEqual('fake-zone', list_disks['fake-disk'].zone)
+    self.assertEqual('fake-zone', list_disks['fake-boot-disk'].zone)
 
   @mock.patch('libcloudforensics.gcp.GoogleCloudProject.ListInstances')
   def testGetInstance(self, mock_list_instances):
     """Test that an instance of a project can be found."""
     mock_list_instances.return_value = MOCK_LIST_INSTANCES
     found_instance = FAKE_SOURCE_PROJECT.GetInstance(
-        FAKE_INSTANCE.name, FAKE_INSTANCE.zone)
+        FAKE_INSTANCE.name)
     self.assertIsInstance(found_instance, gcp.GoogleComputeInstance)
     self.assertEqual(FAKE_SOURCE_PROJECT, found_instance.project)
     self.assertEqual('fake-instance', found_instance.name)
