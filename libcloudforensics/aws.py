@@ -907,7 +907,8 @@ def CreateVolumeCopy(zone,
     AWSVolume: An AWS EBS Volume object.
 
   Raises:
-    RuntimeError: If there are errors copying the volume.
+    RuntimeError: If there are errors copying the volume, or errors during
+        KMS key creation/sharing if the target volume is encrypted.
     ValueError: If both instance_id and volume_id are missing.
   """
 
