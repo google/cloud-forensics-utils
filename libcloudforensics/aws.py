@@ -20,6 +20,7 @@ analysis virtual machine to be used in incident response.
 
 import binascii
 import datetime
+import json
 import logging
 import re
 
@@ -30,6 +31,7 @@ log = logging.getLogger()
 
 EC2_SERVICE = 'ec2'
 ACCOUNT_SERVICE = 'sts'
+KMS_SERVICE = 'kms'
 REGEX_TAG_VALUE = re.compile('^.{1,255}$')
 
 
@@ -203,8 +205,11 @@ class AWSAccount:
 
       for volume in response['Volumes']:
         volume_id = volume['VolumeId']
-        aws_volume = AWSVolume(
-            volume_id, self, self.default_region, volume['AvailabilityZone'])
+        aws_volume = AWSVolume(volume_id,
+                               self,
+                               self.default_region,
+                               volume['AvailabilityZone'],
+                               volume['Encrypted'])
 
         for tag in volume.get('Tags', []):
           if tag.get('Key') == 'Name':
@@ -394,13 +399,15 @@ class AWSAccount:
   def CreateVolumeFromSnapshot(self,
                                snapshot,
                                volume_name=None,
-                               volume_name_prefix=''):
+                               volume_name_prefix='',
+                               kms_key_id=None):
     """Create a new volume based on a snapshot.
 
     Args:
       snapshot (AWSSnapshot): Snapshot to use.
       volume_name (str): Optional. String to use as new volume name.
       volume_name_prefix (str): Optional. String to prefix the volume name with.
+      kms_key_id (str): Optional. A KMS key id to encrypt the volume with.
 
     Returns:
       AWSVolume: An AWS EBS Volume.
@@ -419,13 +426,19 @@ class AWSAccount:
                        '{1:s}'.format(volume_name, REGEX_TAG_VALUE.pattern))
 
     client = self.ClientApi(EC2_SERVICE)
+    create_volume_args = {
+        'AvailabilityZone': snapshot.availability_zone,
+        'SnapshotId': snapshot.snapshot_id,
+        'TagSpecifications': [GetTagForResourceType('volume', volume_name)]
+    }
+    if kms_key_id:
+      create_volume_args['Encrypted'] = True
+      create_volume_args['KmsKeyId'] = kms_key_id
     try:
-      volume = client.create_volume(
-          AvailabilityZone=snapshot.availability_zone,
-          SnapshotId=snapshot.snapshot_id,
-          TagSpecifications=[GetTagForResourceType('volume', volume_name)])
+      volume = client.create_volume(**create_volume_args)
       volume_id = volume['VolumeId']
       zone = volume['AvailabilityZone']
+      encrypted = volume['Encrypted']
       # Wait for volume creation completion
       client.get_waiter('volume_available').wait(VolumeIds=[volume_id])
     except (client.exceptions.ClientError,
@@ -438,6 +451,7 @@ class AWSAccount:
                      self,
                      self.default_region,
                      zone,
+                     encrypted,
                      name=volume_name)
 
   def GetAccountInformation(self, info):
@@ -464,6 +478,84 @@ class AWSAccount:
     if not account_information.get(info):
       raise KeyError('Key must be one of ["UserId", "Account", "Arn"]')
     return account_information.get(info)
+
+  def CreateKMSKey(self):
+    """Create a KMS key.
+
+    Returns:
+      str: The KMS key ID for the key that was created.
+
+    Raises:
+      RuntimeError: If the key could not be created.
+    """
+    client = self.ClientApi(KMS_SERVICE)
+    try:
+      kms_key = client.create_key()
+      # If the call to the API is successful, then the response contains the
+      # key ID
+      return kms_key['KeyMetadata']['KeyId']
+    except client.exceptions.ClientError as exception:
+      raise RuntimeError('Could not create KMS key: {0:s}'.format(
+          str(exception)))
+
+  def ShareKMSKeyWithAWSAccount(self, kms_key_id, aws_account_id):
+    """Share a KMS key.
+
+    Args:
+      kms_key_id (str): The KMS key ID of the key to share.
+      aws_account_id (str): The AWS Account ID to share the KMS key with.
+
+    Raises:
+      RuntimeError: If the key could not be shared.
+    """
+
+    share_policy = {
+        'Sid': 'Allow use of the key',
+        'Effect': 'Allow',
+        'Principal': {
+            'AWS': 'arn:aws:iam::{0:s}:root'.format(aws_account_id)
+        },
+        'Action': [
+            'kms:Encrypt',
+            'kms:Decrypt',
+            'kms:ReEncrypt*'
+        ],
+        'Resource': '*'
+    }
+    client = self.ClientApi(KMS_SERVICE)
+    try:
+      policy = json.loads(client.get_key_policy(
+          KeyId=kms_key_id, PolicyName='default')['Policy'])
+      policy['Statement'].append(share_policy)
+      # Update the key policy so that it is shared with the AWS account.
+      client.put_key_policy(
+          KeyId=kms_key_id, PolicyName='default', Policy=json.dumps(policy))
+    except client.exceptions.ClientError as exception:
+      raise RuntimeError('Could not share KMS key {0:s}: {1:s}'.format(
+          kms_key_id, str(exception)))
+
+  def DeleteKMSKey(self, kms_key_id):
+    """Delete a KMS key.
+
+    Schedule the KMS key for deletion. By default, users have a 30 days
+        window before the key gets deleted.
+
+    Args:
+      kms_key_id (str): The ID of the KMS key to delete.
+
+    Raises:
+      RuntimeError: If the key could not be scheduled for deletion.
+    """
+
+    if not kms_key_id:
+      return
+
+    client = self.ClientApi(KMS_SERVICE)
+    try:
+      client.schedule_key_deletion(KeyId=kms_key_id)
+    except client.exceptions.ClientError as exception:
+      raise RuntimeError('Could not schedule the KMS key: {0:s} for '
+                         'deletion'.format(str(exception)))
 
   def _GenerateVolumeName(self, snapshot, volume_name_prefix=None):
     """Generate a new volume name given a volume's snapshot.
@@ -577,22 +669,30 @@ class AWSElasticBlockStore:
     aws_account (AWSAccount): The account for the resource.
     region (str): The region the EBS is in.
     availability_zone (str): The zone within the region in which the EBS is.
+    encrypted (bool): True if the EBS resource is encrypted, False otherwise.
     name (str): The name tag of the EBS resource, if existing.
   """
 
-  def __init__(self, aws_account, region, availability_zone, name=None):
+  def __init__(self,
+               aws_account,
+               region,
+               availability_zone,
+               encrypted,
+               name=None):
     """Initialize the AWS EBS resource.
 
     Args:
       aws_account (AWSAccount): The account for the resource.
       region (str): The region the EBS is in.
       availability_zone (str): The zone within the region in which the EBS is.
+      encrypted (bool): True if the EBS resource is encrypted, False otherwise.
       name (str): Optional. The name tag of the EBS resource, if existing.
     """
 
     self.aws_account = aws_account
     self.region = region
     self.availability_zone = availability_zone
+    self.encrypted = encrypted
     self.name = name
 
 
@@ -604,7 +704,10 @@ class AWSVolume(AWSElasticBlockStore):
     aws_account (AWSAccount): The account for the volume.
     region (str): The region the volume is in.
     availability_zone (str): The zone within the region in which the volume is.
+    encrypted (bool): True if the volume is encrypted, False otherwise.
     name (str): The name tag of the volume, if existing.
+    device_name (str): The device name (e.g. /dev/spf) of the
+        volume when it is attached to an instance, if applicable.
   """
 
   def __init__(self,
@@ -612,6 +715,7 @@ class AWSVolume(AWSElasticBlockStore):
                aws_account,
                region,
                availability_zone,
+               encrypted,
                name=None,
                device_name=None):
     """Initialize an AWS EBS volume.
@@ -622,6 +726,7 @@ class AWSVolume(AWSElasticBlockStore):
       region (str): The region the volume is in.
       availability_zone (str): The zone within the region in which the volume
           is.
+      encrypted (bool): True if the volume is encrypted, False otherwise.
       name (str): Optional. The name tag of the volume, if existing.
       device_name (str): Optional. The device name (e.g. /dev/spf) of the
           volume when it is attached to an instance, if applicable.
@@ -630,6 +735,7 @@ class AWSVolume(AWSElasticBlockStore):
     super(AWSVolume, self).__init__(aws_account,
                                     region,
                                     availability_zone,
+                                    encrypted,
                                     name)
     self.volume_id = volume_id
     self.device_name = device_name
@@ -673,6 +779,15 @@ class AWSVolume(AWSElasticBlockStore):
 
     return AWSSnapshot(snapshot_id, self, name=snapshot_name)
 
+  def Delete(self):
+    """Delete a volume."""
+    client = self.aws_account.ClientApi(EC2_SERVICE)
+    try:
+      client.delete_volume(VolumeId=self.volume_id)
+    except client.exceptions.ClientError as exception:
+      raise RuntimeError('Could not delete volume {0:s}: {1:s}'.format(
+          self.volume_id, str(exception)))
+
 
 class AWSSnapshot(AWSElasticBlockStore):
   """Class representing an AWS EBS snapshot.
@@ -695,6 +810,7 @@ class AWSSnapshot(AWSElasticBlockStore):
     super(AWSSnapshot, self).__init__(volume.aws_account,
                                       volume.region,
                                       volume.availability_zone,
+                                      volume.encrypted,
                                       name)
     self.snapshot_id = snapshot_id
     self.volume = volume
@@ -722,7 +838,6 @@ class AWSSnapshot(AWSElasticBlockStore):
         Attribute='createVolumePermission',
         CreateVolumePermission={
             'Add': [{
-                'Group': 'all',
                 'UserId': aws_account_id
             }]
         },
@@ -792,7 +907,8 @@ def CreateVolumeCopy(zone,
     AWSVolume: An AWS EBS Volume object.
 
   Raises:
-    RuntimeError: If there are errors copying the volume.
+    RuntimeError: If there are errors copying the volume, or errors during
+        KMS key creation/sharing if the target volume is encrypted.
     ValueError: If both instance_id and volume_id are missing.
   """
 
@@ -802,6 +918,7 @@ def CreateVolumeCopy(zone,
 
   source_account = AWSAccount(zone, aws_profile=src_account)
   destination_account = AWSAccount(zone, aws_profile=dst_account)
+  kms_key_id = None
 
   try:
     if volume_id:
@@ -818,11 +935,28 @@ def CreateVolumeCopy(zone,
         'Account')
 
     if source_account_id != destination_account_id:
+      if volume_to_copy.encrypted:
+        # Generate one-time use KMS key that will be shared with the
+        # destination account.
+        kms_key_id = source_account.CreateKMSKey()
+        source_account.ShareKMSKeyWithAWSAccount(
+            kms_key_id, destination_account_id)
+        temporary_volume = source_account.CreateVolumeFromSnapshot(
+            snapshot, kms_key_id=kms_key_id)
+        # The old snapshot is not needed anymore since we have created the
+        # temporary volume
+        snapshot.Delete()
+        # Get a new snapshot
+        snapshot = temporary_volume.Snapshot()
+        # Delete the temporary volume
+        temporary_volume.Delete()
       snapshot.ShareWithAWSAccount(destination_account_id)
 
     new_volume = destination_account.CreateVolumeFromSnapshot(
         snapshot, volume_name_prefix='evidence')
     snapshot.Delete()
+    # Delete the one-time use KMS key, if one was generated
+    source_account.DeleteKMSKey(kms_key_id)
     log.info('Volume {0:s} successfully copied to {1:s}'.format(
         volume_to_copy.volume_id, new_volume.volume_id))
 
