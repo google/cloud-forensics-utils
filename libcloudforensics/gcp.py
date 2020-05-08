@@ -301,7 +301,8 @@ class GoogleCloudProject:
       disk_name_prefix (str): Optional. String to prefix the disk name with.
       disk_type (str): Optional. URL of the disk type resource describing
           which disk type to use to create the disk. Default is pd-standard. Use
-          pd-ssd to have a SSD disk.
+          pd-ssd to have a SSD disk. You can list all available disk types by
+          running the following command: gcloud compute disk-types list
 
     Returns:
       GoogleComputeDisk: Google Compute Disk.
