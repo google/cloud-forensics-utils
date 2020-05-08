@@ -42,7 +42,7 @@ and
 [yapf config file](https://github.com/google/cloud-forensics-utils/blob/master/.style.yapf).
 Once you're ready for review make sure the tests pass:
 
-    $ python ./run_tests.py
+    $ ./run_tests.sh
 
 Commit your changes to your personal fork and then use the GitHub Web UI to
 create and send the pull request. We'll review and merge the change.
