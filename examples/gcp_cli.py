@@ -29,7 +29,10 @@ def ListInstances(args):
   instances = project.ListInstances()
 
   print('Instances found:')
-  print(instances)
+  for instance in instances:
+    print(
+        'Name: {0}, Bootdisk: {1}'.format(
+            instance, instances[instance].GetBootDisk().name))
 
 
 def ListDisks(args):
@@ -42,7 +45,8 @@ def ListDisks(args):
   project = gcp.GoogleCloudProject(args.project)
   disks = project.ListDisks()
   print('Disks found:')
-  print(disks)
+  for disk in disks:
+    print('Name: {0}, Zone: {1}'.format(disk, disks[disk].zone))
 
 
 def CreateDiskCopy(args):
@@ -55,8 +59,8 @@ def CreateDiskCopy(args):
   disk = gcp.CreateDiskCopy(
       args.project, args.dstproject, args.instancename, args.zone)
 
-  print('Disk copy succesful:')
-  print(disk.name)
+  print('Disk copy completed.')
+  print('Name: {0}'.format(disk.name))
 
 
 if __name__ == '__main__':
