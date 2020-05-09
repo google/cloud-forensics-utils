@@ -86,27 +86,6 @@ class EndToEndTest(unittest.TestCase):
         self.aws.ResourceApi(EC2_SERVICE).Volume(boot_volume_copy.volume_id))
     self.assertEqual(self.volumes[-1].volume_id, boot_volume_copy.volume_id)
 
-    # Create and start the analysis VM and attach the boot volume
-    self.analysis_vm, _ = aws.StartAnalysisVm(
-        self.analysis_vm_name,
-        self.zone,
-        10,
-        4,
-        attach_volume=boot_volume_copy,
-        device_name='/dev/sdp'
-    )
-
-    # The forensic instance should be live in the analysis AWS account and
-    # the volume should be attached
-    instance = self.aws.ResourceApi(EC2_SERVICE).Instance(
-        self.analysis_vm.instance_id)
-    self.assertEqual(instance.instance_id, self.analysis_vm.instance_id)
-    for volume in instance.volumes.all():
-      if volume.volume_id == boot_volume_copy.volume_id:
-        return
-    self.fail('Error: could not find the volume {0:s} in instance {1:s}'.format(
-        boot_volume_copy.volume_id, self.analysis_vm_name))
-
   def test_end_to_end_other_volume(self):
     """End to end test on AWS.
 
@@ -130,14 +109,25 @@ class EndToEndTest(unittest.TestCase):
         self.aws.ResourceApi(EC2_SERVICE).Volume(other_volume_copy.volume_id))
     self.assertEqual(self.volumes[-1].volume_id, other_volume_copy.volume_id)
 
+  def test_end_to_end_vm(self):
+    """End to end test on AWS.
+
+    This tests that an analysis VM is correctly created and that a volume
+        passed to the attach_volume parameter is correctly attached.
+    """
+
+    volume_to_attach = aws.CreateVolumeCopy(
+        self.zone,
+        volume_id=self.volume_to_forensic)
+    self.volumes.append(volume_to_attach)
     # Create and start the analysis VM and attach the boot volume
     self.analysis_vm, _ = aws.StartAnalysisVm(
         self.analysis_vm_name,
         self.zone,
         10,
         4,
-        attach_volume=other_volume_copy,
-        device_name='/dev/sdq'
+        attach_volume=volume_to_attach,
+        device_name='/dev/sdp'
     )
 
     # The forensic instance should be live in the analysis AWS account and
@@ -146,10 +136,10 @@ class EndToEndTest(unittest.TestCase):
         self.analysis_vm.instance_id)
     self.assertEqual(instance.instance_id, self.analysis_vm.instance_id)
     for volume in instance.volumes.all():
-      if volume.volume_id == other_volume_copy.volume_id:
+      if volume.volume_id == volume_to_attach.volume_id:
         return
     self.fail('Error: could not find the volume {0:s} in instance {1:s}'.format(
-        other_volume_copy.volume_id, self.analysis_vm_name))
+        volume_to_attach.volume_id, self.analysis_vm_name))
 
   @classmethod
   def tearDownClass(cls):
