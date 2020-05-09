@@ -30,9 +30,8 @@ def ListInstances(args):
 
   print('Instances found:')
   for instance in instances:
-    print(
-        'Name: {0}, Bootdisk: {1}'.format(
-            instance, instances[instance].GetBootDisk().name))
+    bootdisk_name = instances[instance].GetBootDisk().name
+    print('Name: {0:s}, Bootdisk: {1:s}'.format(instance, bootdisk_name))
 
 
 def ListDisks(args):
@@ -46,7 +45,7 @@ def ListDisks(args):
   disks = project.ListDisks()
   print('Disks found:')
   for disk in disks:
-    print('Name: {0}, Zone: {1}'.format(disk, disks[disk].zone))
+    print('Name: {0:s}, Zone: {1:s}'.format(disk, disks[disk].zone))
 
 
 def CreateDiskCopy(args):
@@ -60,7 +59,7 @@ def CreateDiskCopy(args):
       args.project, args.dstproject, args.instancename, args.zone)
 
   print('Disk copy completed.')
-  print('Name: {0}'.format(disk.name))
+  print('Name: {0:s}'.format(disk.name))
 
 
 if __name__ == '__main__':
