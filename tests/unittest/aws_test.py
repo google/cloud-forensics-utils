@@ -36,12 +36,14 @@ FAKE_VOLUME = aws.AWSVolume(
     'fake-volume-id',
     FAKE_AWS_ACCOUNT,
     'fake-zone-2',
-    'fake-zone-2b')
+    'fake-zone-2b',
+    False)
 FAKE_BOOT_VOLUME = aws.AWSVolume(
     'fake-boot-volume-id',
     FAKE_AWS_ACCOUNT,
     'fake-zone-2',
     'fake-zone-2b',
+    False,
     name='fake-boot-volume',
     device_name='/dev/spf')
 FAKE_SNAPSHOT = aws.AWSSnapshot(
@@ -85,10 +87,12 @@ MOCK_DESCRIBE_VOLUMES = {
     'Volumes': [{
         'VolumeId': FAKE_VOLUME.volume_id,
         'AvailabilityZone': FAKE_VOLUME.availability_zone,
+        'Encrypted': FAKE_VOLUME.encrypted,
         'Attachments': []
     }, {
         'VolumeId': FAKE_BOOT_VOLUME.volume_id,
         'AvailabilityZone': FAKE_BOOT_VOLUME.availability_zone,
+        'Encrypted': FAKE_BOOT_VOLUME.encrypted,
         'Attachments': []
     }]
 }
@@ -97,6 +101,7 @@ MOCK_DESCRIBE_VOLUMES_TAGS = {
     'Volumes': [{
         'VolumeId': FAKE_BOOT_VOLUME.volume_id,
         'AvailabilityZone': FAKE_BOOT_VOLUME.availability_zone,
+        'Encrypted': FAKE_BOOT_VOLUME.encrypted,
         'Attachments': [{
             'State': 'attached',
             'Device': FAKE_BOOT_VOLUME.device_name
@@ -120,7 +125,8 @@ MOCK_LIST_VOLUMES = {
 
 MOCK_CREATE_VOLUME = {
     'VolumeId': 'fake-volume-from-snapshot-id',
-    'AvailabilityZone': FAKE_SNAPSHOT.availability_zone
+    'AvailabilityZone': FAKE_SNAPSHOT.availability_zone,
+    'Encrypted': False
 }
 
 MOCK_CREATE_SNAPSHOT = {
