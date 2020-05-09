@@ -341,25 +341,25 @@ class AWSAccountTest(unittest.TestCase):
                                 mock_get_instance,
                                 mock_script):
     """Test that a VM is created or retrieved if it already exists."""
-    mock_ec2_api.return_value.run_instances.return_value = MOCK_RUN_INSTANCES
-    mock_ec2_api.return_value.get_waiter.return_value.wait.return_value = None
     mock_get_instance.return_value = [FAKE_INSTANCE_WITH_NAME]
     mock_script.return_value = ''
-
     # GetOrCreateAnalysisVm(vm_name, boot_volume_size, AMI, cpu_cores) where
     # vm_name is the name of an analysis instance that already exists.
     vm, created = FAKE_AWS_ACCOUNT.GetOrCreateAnalysisVm(
         FAKE_INSTANCE_WITH_NAME.name, 1, 'ami-id', 2)
+    mock_ec2_api.return_value.run_instances.assert_not_called()
     self.assertIsInstance(vm, aws.AWSInstance)
     self.assertEqual('fake-instance', vm.name)
     self.assertFalse(created)
 
     # GetOrCreateAnalysisVm(non_existing_vm, boot_volume_size, AMI, cpu_cores).
     # We mock the GetInstanceById() call to throw a RuntimeError to mimic
-    # an instance that wasn't found.
+    # an instance that wasn't found. This should trigger run_instances to be
+    # called.
     mock_get_instance.side_effect = RuntimeError()
     vm, created = FAKE_AWS_ACCOUNT.GetOrCreateAnalysisVm(
         'non-existent-instance-name', 1, 'ami-id', 2)
+    mock_ec2_api.return_value.run_instances.assert_called()
     self.assertIsInstance(vm, aws.AWSInstance)
     self.assertEqual('non-existent-instance-name', vm.name)
     self.assertTrue(created)
@@ -371,27 +371,27 @@ class AWSAccountTest(unittest.TestCase):
     The volume name tag must comply with the following RegEx: ^.{1,255}$
         i.e., it must be between 1 and 255 chars.
     """
-    # pylint: disable=protected-access
     caller_identity = mock_ec2_api.return_value.get_caller_identity
     caller_identity.return_value = MOCK_CALLER_IDENTITY
+    # pylint: disable=protected-access
     volume_name = FAKE_AWS_ACCOUNT._GenerateVolumeName(FAKE_SNAPSHOT)
     self.assertEqual('fake-snapshot-d69d57c3-copy', volume_name)
 
     volume_name = FAKE_AWS_ACCOUNT._GenerateVolumeName(
         FAKE_SNAPSHOT, volume_name_prefix='prefix')
-    self.assertEqual('prefix-fake-snapshot-d69d57c3-copy', volume_name)
     # pylint: enable=protected-access
+    self.assertEqual('prefix-fake-snapshot-d69d57c3-copy', volume_name)
 
   @mock.patch('libcloudforensics.aws.AWSAccount.ClientApi')
   def testGetBootVolumeConfigByAmi(self, mock_ec2_api):
     """Test that the boot volume configuration is correctly created."""
-    # pylint: disable=protected-access
     mock_ec2_api.return_value.describe_images.return_value = MOCK_DESCRIBE_AMI
     self.assertIsNone(
         MOCK_DESCRIBE_AMI['Images'][0]['BlockDeviceMappings'][0]['Ebs']['VolumeSize'])  # pylint: disable=line-too-long
+    # pylint: disable=protected-access
     config = FAKE_AWS_ACCOUNT._GetBootVolumeConfigByAmi('ami-id', 50)
-    self.assertEqual(50, config['Ebs']['VolumeSize'])
     # pylint: enable=protected-access
+    self.assertEqual(50, config['Ebs']['VolumeSize'])
 
   def testGetInstanceTypeByCPU(self):
     """Test that the instance type matches the requested amount of CPU cores."""
@@ -468,6 +468,7 @@ class AWSTest(unittest.TestCase):
     # the volume 'fake-volume-id'.
     new_volume = aws.CreateVolumeCopy(
         FAKE_INSTANCE.availability_zone, volume_id=FAKE_VOLUME.volume_id)
+    mock_get_volume.assert_called_with('fake-volume-id')
     self.assertIsInstance(new_volume, aws.AWSVolume)
     self.assertTrue(new_volume.name.startswith('evidence-'))
     self.assertIn('fake-volume-id', new_volume.name)
@@ -496,6 +497,7 @@ class AWSTest(unittest.TestCase):
     # the boot volume of the instance.
     new_volume = aws.CreateVolumeCopy(
         FAKE_INSTANCE.availability_zone, instance_id=FAKE_INSTANCE.instance_id)
+    mock_get_instance.assert_called_with('fake-instance-id')
     self.assertIsInstance(new_volume, aws.AWSVolume)
     self.assertTrue(new_volume.name.startswith('evidence-'))
     self.assertIn('fake-boot-volume-id', new_volume.name)
