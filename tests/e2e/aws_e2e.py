@@ -135,11 +135,8 @@ class EndToEndTest(unittest.TestCase):
     instance = self.aws.ResourceApi(EC2_SERVICE).Instance(
         self.analysis_vm.instance_id)
     self.assertEqual(instance.instance_id, self.analysis_vm.instance_id)
-    for volume in instance.volumes.all():
-      if volume.volume_id == volume_to_attach.volume_id:
-        return
-    self.fail('Error: could not find the volume {0:s} in instance {1:s}'.format(
-        volume_to_attach.volume_id, self.analysis_vm_name))
+    self.assertIn(volume_to_attach.volume_id,
+                  [vol.volume_id for vol in instance.volumes.all()])
 
   @classmethod
   def tearDownClass(cls):
