@@ -5,8 +5,7 @@
 </p>
 
 This repository contains some tools to be used by forensics teams to collect
-evidence from cloud platforms (currently, only Google Cloud Platform is
-supported)
+evidence from cloud platforms. Currently, Google Cloud Platform and Amazon Web Services are supported.
 
 ## Quick install
 
