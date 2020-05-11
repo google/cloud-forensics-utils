@@ -133,7 +133,7 @@ class GoogleCloudProject:
     return self.gce_api_client
 
   def BlockOperation(self, response, zone=None):
-    """Executes API calls.
+    """Block until API operation is finished.
 
     Args:
       response (dict): GCE API response.
@@ -317,8 +317,7 @@ class GoogleCloudProject:
         'name': disk_name,
         'sourceSnapshot': snapshot.GetSourceString(),
         'type': 'projects/{0:s}/zones/{1:s}/diskTypes/{2:s}'.format(
-            self.project_id, self.default_zone, disk_type
-        )
+            self.project_id, self.default_zone, disk_type)
     }
     try:
       gce_disks_client = self.GceApi().disks()
@@ -557,7 +556,6 @@ class GoogleCloudProject:
 
     Returns:
       str: The script to run.
-
     Raises:
       OSError: If the script cannot be opened, read or closed.
     """
@@ -576,6 +574,31 @@ class GoogleCloudProject:
       raise OSError(
           'Could not open/read/close the startup script {0:s}: '
           '{1:s}'.format(startup_script, str(exception)))
+
+  def CreateImageFromDisk(self, src_disk, name=None):
+    """Creates an image from a persistence disk.
+
+    Args:
+      src_disk (GoogleComputeDisk): Source disk for the image.
+      name (str): name of the image to create if None then [src_disk]_image.
+    Returns:
+      GoogleComputeImage: A Google Compute Image object.
+    """
+    if not name:
+      name = '{0:s}_image'.format(src_disk.name)
+    image_body = {
+        'name':
+            name,
+        'sourceDisk':
+            'projects/{project_id}/zones/{zone}/disks/{src_disk}'.format(
+                project_id=self.project_id, zone=src_disk.zone,
+                src_disk=src_disk.name)
+    }
+    gce_image_client = self.GceApi().images()
+    request = gce_image_client.insert(project=self.project_id, body=image_body)
+    response = request.execute()
+    self.BlockOperation(response)
+    return GoogleComputeImage(self.project_id, None, name)
 
 
 class GoogleCloudFunction(GoogleCloudProject):
@@ -607,11 +630,11 @@ class GoogleCloudFunction(GoogleCloudProject):
       apiclient.discovery.Resource: A Google Cloud Function service object.
     """
 
-    if self.gce_api_client:
-      return self.gce_api_client
-    self.gce_api_client = CreateService(
+    if self.gcf_api_client:
+      return self.gcf_api_client
+    self.gcf_api_client = CreateService(
         'cloudfunctions', self.CLOUD_FUNCTIONS_API_VERSION)
-    return self.gce_api_client
+    return self.gcf_api_client
 
   def ExecuteFunction(self, function_name, args):
     """Executes a Google Cloud Function.
@@ -656,6 +679,83 @@ class GoogleCloudFunction(GoogleCloudProject):
       raise RuntimeError(error_msg)
 
     return function_return
+
+
+class GoogleCloudBuild(GoogleCloudProject):
+  """Class to call Google Cloud Build APIs.
+
+  Attributes:
+    gcb_api_client: Client to interact with GCB APIs.
+  """
+  CLOUD_BUILD_API_VERSION = 'v1'
+
+  def __init__(self, project_id):
+    """Initialize the GoogleCloudBuild object.
+
+    Args:
+      project_id (str): The name of the project.
+    """
+
+    self.gcb_api_client = None
+    super(GoogleCloudBuild, self).__init__(project_id)
+
+  def GcbApi(self):
+    """Get a Google Cloud Build service object.
+
+    Returns:
+      apiclient.discovery.Resource: A Google Cloud Build service object.
+    """
+
+    if self.gcb_api_client:
+      return self.gcb_api_client
+    self.gcb_api_client = CreateService(
+        'cloudbuild', self.CLOUD_BUILD_API_VERSION)
+    return self.gcb_api_client
+
+  def CreateBuild(self, build_body):
+    """Create a cloud build.
+    Args:
+      build_body (dict): the build resource describes how to find the source
+        code and how to build it.
+    Returns:
+      dict: represents long-running operation that is the result of
+        a network API call.
+    """
+    cloud_build_client = self.GcbApi().projects().builds()
+    build_info = cloud_build_client.create(
+        projectId=self.project_id, body=build_body).execute()
+    build_metadata = build_info['metadata']['build']
+    log.info(
+        'Build started, logs bucket: {0:s}, logs URL: {1:s}'.format(
+            build_metadata["logsBucket"], build_metadata["logUrl"]))
+    return build_info
+
+  def BlockOperation(self, response):  #  # pylint: disable=arguments-differ
+    """Block execution until API operation is finished.
+
+    Args:
+      response (dict): Google Cloud Build API response.
+
+    Returns:
+      str: Operation result in JSON format.
+
+    Raises:
+      RuntimeError: If API call failed.
+    """
+    service = self.GcbApi()
+    while True:
+      request = service.operations().get(name=response['name'])
+      response = request.execute()
+      if response.get('done', None) and response.get('error', None):
+        build_metadata = response['metadata']['build']
+        raise RuntimeError(
+            ': {0:1}, logs bucket: {1:s}, logs URL: {2:s}'.format(
+                response['error']['message'], build_metadata["logsBucket"],
+                build_metadata["logUrl"]))
+
+      if response.get('done', None) and response.get('response', None):
+        return response
+      time.sleep(5)  # Seconds between requests
 
 
 class GoogleComputeBaseResource:
@@ -834,7 +934,8 @@ class GoogleComputeInstance(GoogleComputeBaseResource):
     """Get API operation object for the virtual machine.
 
     Returns:
-       str: An API operation object for a Google Compute Engine virtual machine.
+       dict: An API operation object for a Google Compute Engine
+         virtual machine.
     """
 
     gce_instance_client = self.project.GceApi().instances()
@@ -950,7 +1051,7 @@ class GoogleComputeDisk(GoogleComputeBaseResource):
     """Get API operation object for the disk.
 
     Returns:
-       str: An API operation object for a Google Compute Engine disk.
+       dict: An API operation object for a Google Compute Engine disk.
     """
 
     gce_disk_client = self.project.GceApi().disks()
@@ -991,9 +1092,7 @@ class GoogleComputeDisk(GoogleComputeBaseResource):
     log.info(
         self.project.FormatLogMessage(
             'New Snapshot: {0}'.format(snapshot_name)))
-    operation_config = {
-        'name': snapshot_name
-    }
+    operation_config = {'name': snapshot_name}
     gce_disk_client = self.project.GceApi().disks()
     request = gce_disk_client.createSnapshot(
         disk=self.name, project=self.project.project_id, zone=self.zone,
@@ -1026,7 +1125,7 @@ class GoogleComputeSnapshot(GoogleComputeBaseResource):
     """Get API operation object for the Snapshot.
 
     Returns:
-       str: An API operation object for a Google Compute Engine Snapshot.
+       dict: An API operation object for a Google Compute Engine Snapshot.
     """
 
     gce_snapshot_client = self.project.GceApi().snapshots()
@@ -1046,6 +1145,65 @@ class GoogleComputeSnapshot(GoogleComputeBaseResource):
         project=self.project.project_id, snapshot=self.name)
     response = request.execute()
     self.project.BlockOperation(response)
+
+
+class GoogleComputeImage(GoogleComputeBaseResource):
+  """Class representing a Compute Engine Image.
+  Attributes:
+    disk (GoogleComputeDisk): Disk used for the Snapshot.
+  """
+
+  def GetOperation(self):
+    """Get API operation object for the image.
+
+    Returns:
+       dict: An API operation object for a Google Compute Engine Image.
+    """
+
+    gce_image_client = self.project.GceApi().images()
+    request = gce_image_client.get(
+        project=self.project.project_id, image=self.name)
+    response = request.execute()
+    return response
+
+  def ExportImage(self, gcs_output_folder, output_name=None):
+    """Export compute image to Google Cloud storage.
+
+    Exported image is compressed and stored in .tar.gz format.
+
+    Args:
+      gcs_output_folder (str): Folder path of the exported image.
+      output_name (str): Name of the output file, must end with .tar.gz,
+        if not exist, the [image_name].tar.gz will be used
+    Raises:
+      RuntimeError: If exported image name is invalid.
+    """
+    if not gcs_output_folder.endswith("/"):
+      gcs_output_folder += "/"
+    if output_name:
+      if not bool(re.match("^[A-Za-z0-9-]*$", output_name)):
+        raise RuntimeError(
+            "Destination disk name must comply with expression ^[A-Za-z0-9-]*$")
+      full_path = '{0:s}{1:s}.tar.gz'.format(gcs_output_folder, output_name)
+    else:
+      full_path = '{0:s}{1:s}.tar.gz'.format(gcs_output_folder, self.name)
+    build_body = {
+        "timeout": "86400s",
+        "steps": [{
+            "args": [
+                "-source_image={0:s}".format(self.name),
+                "-destination_uri={0:s}".format(full_path),
+                "-client_id=api",
+            ],
+            "name": "gcr.io/compute-image-tools/gce_vm_image_export:release",
+            "env": []
+        }],
+        "tags": ["gce-daisy", "gce-daisy-image-export"]
+    }
+    cloud_build = GoogleCloudBuild(self.project.project_id)
+    response = cloud_build.CreateBuild(build_body)
+    cloud_build.BlockOperation(response)
+    log.info('Image {0:s} exported to {1:s}.'.format(self.name, full_path))
 
 
 def CreateDiskCopy(src_proj,
