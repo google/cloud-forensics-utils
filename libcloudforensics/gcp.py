@@ -582,6 +582,7 @@ class GoogleCloudProject:
       src_disk (GoogleComputeDisk): Source disk for the image.
       name(str): Optional. Name of the image to create. Default
           is [src_disk]_image.
+
     Returns:
       GoogleComputeImage: A Google Compute Image object.
     """
@@ -1127,7 +1128,7 @@ class GoogleComputeSnapshot(GoogleComputeBaseResource):
     """Get API operation object for the Snapshot.
 
     Returns:
-       dict: An API operation object for a Google Compute Engine Snapshot.
+      dict: An API operation object for a Google Compute Engine Snapshot.
     """
 
     gce_snapshot_client = self.project.GceApi().snapshots()
