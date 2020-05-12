@@ -580,7 +580,8 @@ class GoogleCloudProject:
 
     Args:
       src_disk (GoogleComputeDisk): Source disk for the image.
-      name (str): name of the image to create if None then [src_disk]_image.
+      name(str): Optional. Name of the image to create. Default
+          is [src_disk]_image.
     Returns:
       GoogleComputeImage: A Google Compute Image object.
     """
@@ -715,11 +716,12 @@ class GoogleCloudBuild(GoogleCloudProject):
   def CreateBuild(self, build_body):
     """Create a cloud build.
     Args:
-      build_body (dict): the build resource describes how to find the source
-        code and how to build it.
+      build_body(dict): A dictionary that describes how to find the source
+          code and how to build it.
+
     Returns:
-      dict: represents long-running operation that is the result of
-        a network API call.
+      dict: Represents long-running operation that is the result of
+          a network API call.
     """
     cloud_build_client = self.GcbApi().projects().builds()
     build_info = cloud_build_client.create(
@@ -727,10 +729,10 @@ class GoogleCloudBuild(GoogleCloudProject):
     build_metadata = build_info['metadata']['build']
     log.info(
         'Build started, logs bucket: {0:s}, logs URL: {1:s}'.format(
-            build_metadata["logsBucket"], build_metadata["logUrl"]))
+            build_metadata['logsBucket'], build_metadata['logUrl']))
     return build_info
 
-  def BlockOperation(self, response):  #  # pylint: disable=arguments-differ
+  def BlockOperation(self, response):  #  pylint: disable=arguments-differ
     """Block execution until API operation is finished.
 
     Args:
@@ -746,14 +748,14 @@ class GoogleCloudBuild(GoogleCloudProject):
     while True:
       request = service.operations().get(name=response['name'])
       response = request.execute()
-      if response.get('done', None) and response.get('error', None):
+      if response.get('done') and response.get('error'):
         build_metadata = response['metadata']['build']
         raise RuntimeError(
             ': {0:1}, logs bucket: {1:s}, logs URL: {2:s}'.format(
-                response['error']['message'], build_metadata["logsBucket"],
-                build_metadata["logUrl"]))
+                response['error']['message'], build_metadata['logsBucket'],
+                build_metadata['logUrl']))
 
-      if response.get('done', None) and response.get('response', None):
+      if response.get('done') and response.get('response'):
         return response
       time.sleep(5)  # Seconds between requests
 
@@ -934,8 +936,8 @@ class GoogleComputeInstance(GoogleComputeBaseResource):
     """Get API operation object for the virtual machine.
 
     Returns:
-       dict: An API operation object for a Google Compute Engine
-         virtual machine.
+      dict: An API operation object for a Google Compute Engine
+          virtual machine.
     """
 
     gce_instance_client = self.project.GceApi().instances()
@@ -1051,7 +1053,7 @@ class GoogleComputeDisk(GoogleComputeBaseResource):
     """Get API operation object for the disk.
 
     Returns:
-       dict: An API operation object for a Google Compute Engine disk.
+      dict: An API operation object for a Google Compute Engine disk.
     """
 
     gce_disk_client = self.project.GceApi().disks()
@@ -1149,6 +1151,7 @@ class GoogleComputeSnapshot(GoogleComputeBaseResource):
 
 class GoogleComputeImage(GoogleComputeBaseResource):
   """Class representing a Compute Engine Image.
+
   Attributes:
     disk (GoogleComputeDisk): Disk used for the Snapshot.
   """
@@ -1157,7 +1160,7 @@ class GoogleComputeImage(GoogleComputeBaseResource):
     """Get API operation object for the image.
 
     Returns:
-       dict: An API operation object for a Google Compute Engine Image.
+      dict: Holding an API operation object for a Google Compute Engine Image.
     """
 
     gce_image_client = self.project.GceApi().images()
@@ -1173,32 +1176,33 @@ class GoogleComputeImage(GoogleComputeBaseResource):
 
     Args:
       gcs_output_folder (str): Folder path of the exported image.
-      output_name (str): Name of the output file, must end with .tar.gz,
-        if not exist, the [image_name].tar.gz will be used
+      output_name (str): Optional. Name of the output file, must end with
+          .tar.gz, if not exist, the [image_name].tar.gz will be used.
+
     Raises:
       RuntimeError: If exported image name is invalid.
     """
-    if not gcs_output_folder.endswith("/"):
-      gcs_output_folder += "/"
     if output_name:
       if not bool(re.match("^[A-Za-z0-9-]*$", output_name)):
         raise RuntimeError(
-            "Destination disk name must comply with expression ^[A-Za-z0-9-]*$")
-      full_path = '{0:s}{1:s}.tar.gz'.format(gcs_output_folder, output_name)
+            'Destination disk name must comply with expression ^[A-Za-z0-9-]*$')
+      full_path = '{0:s}.tar.gz'.format(
+          os.path.join(gcs_output_folder, output_name))
     else:
-      full_path = '{0:s}{1:s}.tar.gz'.format(gcs_output_folder, self.name)
+      full_path = '{0:s}.tar.gz'.format(
+          os.path.join(gcs_output_folder, self.name))
     build_body = {
-        "timeout": "86400s",
-        "steps": [{
-            "args": [
-                "-source_image={0:s}".format(self.name),
-                "-destination_uri={0:s}".format(full_path),
-                "-client_id=api",
+        'timeout': '86400s',
+        'steps': [{
+            'args': [
+                '-source_image={0:s}'.format(self.name),
+                '-destination_uri={0:s}'.format(full_path),
+                '-client_id=api',
             ],
-            "name": "gcr.io/compute-image-tools/gce_vm_image_export:release",
-            "env": []
+            'name': 'gcr.io/compute-image-tools/gce_vm_image_export:release',
+            'env': []
         }],
-        "tags": ["gce-daisy", "gce-daisy-image-export"]
+        'tags': ['gce-daisy', 'gce-daisy-image-export']
     }
     cloud_build = GoogleCloudBuild(self.project.project_id)
     response = cloud_build.CreateBuild(build_body)
