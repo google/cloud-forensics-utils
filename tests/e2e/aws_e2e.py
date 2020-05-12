@@ -59,6 +59,9 @@ class EndToEndTest(unittest.TestCase):
     cls.zone = project_info['zone']
     cls.volume_to_forensic = project_info.get('volume_id', None)
     cls.aws = aws.AWSAccount(cls.zone)
+    cls.analysis_vm_name = 'new-vm-for-analysis'
+    cls.analysis_vm, _ = aws.StartAnalysisVm(
+        cls.analysis_vm_name, cls.zone, 10, 4)
     cls.volumes = []
 
   def test_end_to_end_boot_volume(self):
@@ -106,9 +109,45 @@ class EndToEndTest(unittest.TestCase):
         self.aws.ResourceApi(EC2_SERVICE).Volume(other_volume_copy.volume_id))
     self.assertEqual(self.volumes[-1].volume_id, other_volume_copy.volume_id)
 
+  def test_end_to_end_vm(self):
+    """End to end test on AWS.
+
+    This tests that an analysis VM is correctly created and that a volume
+        passed to the attach_volume parameter is correctly attached.
+    """
+
+    volume_to_attach = aws.CreateVolumeCopy(
+        self.zone,
+        volume_id=self.volume_to_forensic)
+    self.volumes.append(volume_to_attach)
+    # Create and start the analysis VM and attach the boot volume
+    self.analysis_vm, _ = aws.StartAnalysisVm(
+        self.analysis_vm_name,
+        self.zone,
+        10,
+        4,
+        attach_volume=volume_to_attach,
+        device_name='/dev/sdp'
+    )
+
+    # The forensic instance should be live in the analysis AWS account and
+    # the volume should be attached
+    instance = self.aws.ResourceApi(EC2_SERVICE).Instance(
+        self.analysis_vm.instance_id)
+    self.assertEqual(instance.instance_id, self.analysis_vm.instance_id)
+    self.assertIn(volume_to_attach.volume_id,
+                  [vol.volume_id for vol in instance.volumes.all()])
+
   @classmethod
   def tearDownClass(cls):
     client = cls.aws.ClientApi(EC2_SERVICE)
+    # Delete the instance
+    instance = cls.aws.ResourceApi(EC2_SERVICE).Instance(
+        cls.analysis_vm.instance_id)
+    instance.terminate()
+    client.get_waiter('instance_terminated').wait(InstanceIds=[
+        instance.instance_id])
+
     # Delete the volumes
     for volume in cls.volumes:
       log.info('Deleting volume: {0:s}.'.format(volume.volume_id))
