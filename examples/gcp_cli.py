@@ -15,6 +15,7 @@
 """Demo CLI tool for GCP."""
 
 import argparse
+import json
 from libcloudforensics import gcp
 
 
@@ -62,6 +63,32 @@ def CreateDiskCopy(args):
   print('Name: {0:s}'.format(disk.name))
 
 
+def ListLogs(args):
+  """List GCP logs for a project.
+
+  Args:
+    args (dict): Arguments from ArgumentParser.
+  """
+  logs = gcp.GoogleCloudLog(args.project)
+  results = logs.ListLogs()
+  print('Found {0:d} available log types:'.format(len(results)))
+  for line in results:
+    print(line)
+
+
+def QueryLogs(args):
+  """Query GCP logs.
+
+  Args:
+    args (dict): Arguments from ArgumentParser.
+  """
+  logs = gcp.GoogleCloudLog(args.project)
+  results = logs.ExecuteQuery(args.filter)
+  print('Found {0:d} log entries:'.format(len(results)))
+  for line in results:
+    print(json.dumps(line))
+
+
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(description='Demo CLI tool for GCP')
   parser.add_argument('--project', help='The GCP project name')
@@ -81,6 +108,13 @@ if __name__ == '__main__':
   parser_creatediskcopy.add_argument(
       '--instancename', help='Instance to copy disk from')
   parser_creatediskcopy.set_defaults(func=CreateDiskCopy)
+
+  parser_listlogs = subparsers.add_parser('listlogs')
+  parser_listlogs.set_defaults(func=ListLogs)
+
+  parser_querylogs = subparsers.add_parser('querylogs')
+  parser_querylogs.add_argument('--filter', help='Query filter')
+  parser_querylogs.set_defaults(func=QueryLogs)
 
   parsed_args = parser.parse_args()
   if parsed_args.func:

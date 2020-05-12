@@ -46,6 +46,11 @@ FAKE_SNAPSHOT_LONG_NAME = gcp.GoogleComputeSnapshot(
     'this-is-a-kind-of-long-fake-snapshot-name-and-is-definitely-over-63-chars')
 FAKE_DISK_COPY = gcp.GoogleComputeDisk(
     FAKE_SOURCE_PROJECT, 'fake-zone', 'fake-disk-copy')
+FAKE_LOGS = gcp.GoogleCloudLog('fake-target-project')
+FAKE_LOG_LIST = ['projects/fake-target-project/logs/GCEGuestAgent',
+                 'projects/fake-target-project/logs/OSConfigAgent']
+FAKE_LOG_ENTRIES = [{'logName': 'test_log', 'timestamp': '123456789', 'textPayload': 'insert.compute.create'},{'logName': 'test_log', 'timestamp': '123456789', 'textPayload': 'insert.compute.create'}]
+FAKE_NEXT_PAGE_TOKEN = 'abcdefg1234567'
 
 # Mock struct to mimic GCP's API responses
 MOCK_INSTANCES_AGGREGATED = {
@@ -59,6 +64,19 @@ MOCK_INSTANCES_AGGREGATED = {
             }]
         }
     }
+}
+
+# Mock struct to mimic GCP's API responses
+MOCK_LOGS_LIST = {
+    # See https://cloud.google.com/logging/docs/reference/v2/rest/v2
+    # /ListLogsResponse for complete structure
+    'logNames': FAKE_LOG_LIST
+}
+
+MOCK_LOG_ENTRIES = {
+    # See https://cloud.google.com/logging/docs/reference/v2/rest/v2/entries/list
+    # /ListLogsResponse for complete structure
+    'entries': FAKE_LOG_ENTRIES
 }
 
 MOCK_DISKS_AGGREGATED = {
@@ -468,6 +486,29 @@ class GoogleComputeDiskTest(unittest.TestCase):
 
     # Snapshot(snapshot_name='Non-compliant-name'). Should raise a ValueError
     self.assertRaises(ValueError, FAKE_DISK.Snapshot, 'Non-compliant-name')
+
+
+class GoogleCloudLogTest(unittest.TestCase):
+  """Test Google Cloud Log class."""
+
+  @mock.patch('libcloudforensics.gcp.GoogleCloudLog.GclApi')
+  def testListLogs(self, mock_gcl_api):
+    """Test that logs of project are correctly listed."""
+    logs = mock_gcl_api.return_value.logs.return_value.list
+    logs.return_value.execute.return_value = MOCK_LOGS_LIST
+    list_logs = FAKE_LOGS.ListLogs()
+    self.assertEqual(2, len(list_logs))
+    self.assertEqual(FAKE_LOG_LIST[0], list_logs[0])
+
+  @mock.patch('libcloudforensics.gcp.GoogleCloudLog.GclApi')
+  def testExecuteQuery(self, mock_gcl_api):
+    """Test that logs of project are correctly queried."""
+    query = mock_gcl_api.return_value.entries.return_value.list
+    query.return_value.execute.return_value = MOCK_LOG_ENTRIES
+    qfilter='*'
+    query_logs = FAKE_LOGS.ExecuteQuery(qfilter)
+    self.assertEqual(2, len(query_logs))
+    self.assertEqual(FAKE_LOG_ENTRIES[0], query_logs[0])
 
 
 class GCPTest(unittest.TestCase):
