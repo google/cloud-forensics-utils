@@ -50,6 +50,13 @@ FAKE_SNAPSHOT = aws.AWSSnapshot(
     'fake-snapshot-id',
     FAKE_VOLUME,
     name='fake-snapshot')
+FAKE_CLOUDTRAIL = aws.AWSCloudTrail(FAKE_AWS_ACCOUNT)
+FAKE_EVENT_LIST = [
+    {'EventId': '474e8265-9180-4407-a5c9-f3a86d8bb1f0',
+     'EventName': 'CreateUser', 'ReadOnly': 'false'},
+    {'EventId': '474e8395-9122-4407-a3b9-f3a77d8aa1f0',
+     'EventName': 'AddUserToGroup', 'ReadOnly': 'false'},
+]
 
 MOCK_DESCRIBE_INSTANCES = {
     'Reservations': [{
@@ -151,6 +158,10 @@ MOCK_RUN_INSTANCES = {
     'Instances': [{
         'InstanceId': 'new-instance-id'
     }]
+}
+
+MOCK_EVENT_LIST = {
+    'Events': FAKE_EVENT_LIST
 }
 
 
@@ -531,6 +542,21 @@ class AWSTest(unittest.TestCase):
         aws.CreateVolumeCopy,
         FAKE_INSTANCE.availability_zone,
         volume_id='non-existent-volume-id')
+
+
+class AWSCloudTrail(unittest.TestCase):
+  """Test AWS CloudTrail class."""
+
+  @mock.patch('libcloudforensics.aws.AWSAccount.ClientApi')
+  def testLookupEvents(self, mock_ec2_api):
+    """Test that the CloudTrail event are looked up."""
+    events = mock_ec2_api.return_value.lookup_events
+    events.return_value = MOCK_EVENT_LIST
+    lookup_events = FAKE_CLOUDTRAIL.LookupEvents()
+
+    self.assertEqual(2, len(lookup_events))
+    self.assertEqual(FAKE_EVENT_LIST[0], lookup_events[0])
+
 
 
 if __name__ == '__main__':
