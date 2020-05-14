@@ -19,7 +19,7 @@ analysis virtual machine to be used in incident response.
 """
 
 import binascii
-import datetime
+from datetime import datetime
 import json
 import logging
 import os
@@ -166,32 +166,6 @@ class AWSAccount:
         break
 
     return instances
-
-  def LookupEvents(self):
-    """Lookup events in the CloudTrail logs of this account.
-
-    Example usage:
-      # List volumes attached to the instance 'some-instance-id'
-      ListVolumes(filters=[
-          {'Name':'attachment.instance-id', 'Values':['some-instance-id']}])
-
-    Args:
-      region (str): Optional. The region from which to list the volumes.
-          If none provided, the default_region associated to the AWSAccount
-          object will be used.
-      filters (list(dict)): Optional. Filter for the query.
-
-    Returns:
-      dict: Dictionary mapping volume IDs (str) to their respective AWSVolume
-          object.
-
-    Raises:
-      RuntimeError: If volumes can't be listed.
-    """
-
-    client = self.ClientApi('cloudtrail')
-    response = client.lookup_events()
-    print(response)
 
   def ListVolumes(self, region=None, filters=None):
     """List volumes of an AWS account.
@@ -1000,7 +974,7 @@ class AWSVolume(AWSElasticBlockStore):
       RuntimeError: If the snapshot could not be created.
     """
 
-    timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+    timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
     if not snapshot_name:
       snapshot_name = self.volume_id
     truncate_at = 255 - len(timestamp) - 1
@@ -1089,6 +1063,53 @@ class AWSSnapshot(AWSElasticBlockStore):
         },
         OperationType='add'
     )
+
+
+class AWSCloudTrail:
+  """Class representing an AWS CloudTrail service.
+
+  Attributes:
+    aws_account (AWSAccount): The AWS account to use.
+  """
+
+  def __init__(self, aws_account):
+    """Initialize an AWS CloudTrail client.
+
+    Args:
+      aws_account (AWSAccount): The AWS account to use.
+    """
+
+    self.aws_account = aws_account
+
+  def LookupEvents(self, qfilter=[],
+                   starttime=datetime(1800, 1, 1),
+                   endtime=datetime.now()):
+    """Lookup events in the CloudTrail logs of this account.
+
+    Example usage:
+      # pylint: disable=line-too-long
+      # qfilter = [{'AttributeKey':'Username', 'AttributeValue':'root'}]
+      # starttime = datetime(2020,5,5,17,33,00)
+      # LookupEvents(qfilter=qfilter, starttime=starttime)
+      # Check documentation for qfilter details
+      # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/cloudtrail.html#CloudTrail.Client.lookup_events
+
+    Args:
+      qfilter (str): Optional. Filter for the query including 1 AttributeKey and AttributeValue.
+      starttime (datetime): Optional. Start datetime to add to query filter
+      endtime (datetime): Optional. End datetime to add to query filter
+
+    Returns:
+      list(dict): A list of events
+    """
+
+    client = self.aws_account.ClientApi('cloudtrail')
+    response = client.lookup_events(LookupAttributes=qfilter,
+                                    StartTime=starttime,
+                                    EndTime=endtime)
+
+    if response['Events']:
+      return response['Events']
 
 
 def CreateVolumeCopy(zone,

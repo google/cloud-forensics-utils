@@ -15,11 +15,14 @@
 """Demo script for making volume copies on AWS."""
 
 import argparse
+from datetime import datetime
 from libcloudforensics import aws
 
 if __name__ == '__main__':
   # Make sure that your AWS credentials are configured correclty, see
   # https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html #pylint: disable=line-too-long
-  ct = aws.AWSCloudTrail(default_availability_zone='eu-central-1a')
-  result = ct.LookupEvents()
+  ct = aws.AWSCloudTrail(aws.AWSAccount(default_availability_zone='eu-central-1a'))
+  qfilter = [{'AttributeKey': 'EventName', 'AttributeValue': 'ListTopics'}]
+  result = ct.LookupEvents(starttime=datetime(2020, 5, 11))
+  print('Log events found: {0:d}'.format(len(result)))
   print(result)
