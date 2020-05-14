@@ -63,8 +63,8 @@ setup(
       'libcloudforensics': ['scripts/*']
     },
     zip_safe=False,
-    install_requires=[str(req.req) for req in parse_requirements(
+    install_requires=[str(req.requirement) for req in parse_requirements(
         'requirements.txt', session=PipSession())],
-    tests_require=[str(req.req) for req in parse_requirements(
+    tests_require=[str(req.requirement) for req in parse_requirements(
         'requirements-dev.txt', session=PipSession())],
 )
