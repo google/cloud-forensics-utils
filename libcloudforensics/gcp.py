@@ -580,7 +580,7 @@ class GoogleCloudProject:
 
     Args:
       src_disk (GoogleComputeDisk): Source disk for the image.
-      name(str): Optional. Name of the image to create. Default
+      name (str): Optional. Name of the image to create. Default
           is [src_disk]_image.
 
     Returns:
@@ -717,7 +717,7 @@ class GoogleCloudBuild(GoogleCloudProject):
   def CreateBuild(self, build_body):
     """Create a cloud build.
     Args:
-      build_body(dict): A dictionary that describes how to find the source
+      build_body (dict): A dictionary that describes how to find the source
           code and how to build it.
 
     Returns:
