@@ -1081,7 +1081,7 @@ class AWSCloudTrail:
 
     self.aws_account = aws_account
 
-  def LookupEvents(self, qfilter=[],
+  def LookupEvents(self, qfilter=(),
                    starttime=datetime(1800, 1, 1),
                    endtime=datetime.now()):
     """Lookup events in the CloudTrail logs of this account.
@@ -1095,7 +1095,7 @@ class AWSCloudTrail:
       # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/cloudtrail.html#CloudTrail.Client.lookup_events
 
     Args:
-      qfilter (str): Optional. Filter for the query including 1 AttributeKey and AttributeValue.
+      qfilter (tuple): Optional. Filter for the query including 1 AttributeKey and AttributeValue.
       starttime (datetime): Optional. Start datetime to add to query filter
       endtime (datetime): Optional. End datetime to add to query filter
 
@@ -1108,8 +1108,11 @@ class AWSCloudTrail:
                                     StartTime=starttime,
                                     EndTime=endtime)
 
-    if response['Events']:
-      return response['Events']
+    if not response['Events']:
+      return None
+
+    return response['Events']
+
 
 
 def CreateVolumeCopy(zone,
