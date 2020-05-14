@@ -23,6 +23,11 @@ from libcloudforensics import aws
 
 
 def CreateVolumeCopy(args):
+  """Create a AWS Volume copy.
+
+  Args:
+    args (dict): Arguments from ArgumentParser.
+  """
   print('Starting volume copy...')
   volume_copy = aws.CreateVolumeCopy(
       args.zone, instance_id=args.instance_id, volume_id=args.volume_id,
