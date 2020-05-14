@@ -115,7 +115,7 @@ class GoogleCloudLog:
       project_id (str): The name of the project.
     """
 
-    self.project_id = 'projects/' + project_id
+    self.project_id = project_id
     self.gcl_api_client = None
 
   def GclApi(self):
@@ -134,7 +134,7 @@ class GoogleCloudLog:
     """List logs in project.
 
     Returns:
-      list: the project logs available.
+      list: The project logs available.
 
     Raises:
       RuntimeError: If API call failed.
@@ -149,7 +149,7 @@ class GoogleCloudLog:
         request = gcl_instance_client.list(
             parent=self.project_id, pageToken=page_token)
       else:
-        request = gcl_instance_client.list(parent=self.project_id)
+        request = gcl_instance_client.list(parent='projects/' + self.project_id)
       try:
         result = request.execute()
       except (RefreshError, DefaultCredentialsError) as exception:
@@ -159,9 +159,8 @@ class GoogleCloudLog:
             'Credentials. Try running: '
             '$ gcloud auth application-default login'.format(str(exception)))
         raise RuntimeError(error_msg)
-      if 'logNames' in result:
-        for logtypes in result['logNames']:
-          logs.append(logtypes)
+      for logtypes in result.get('logNames', []):
+        logs.append(logtypes)
       page_token = result.get('nextPageToken')
       if not page_token:
         have_all_tokens = True
@@ -171,18 +170,18 @@ class GoogleCloudLog:
   def ExecuteQuery(self, qfilter):
     """Query logs in GCP project.
 
-    Returns:
-      list: Log entries returned by the query.
-
     Args:
       qfilter (str): The query filter to use.
+
+    Returns:
+      dict: Log entries returned by the query.
 
     Raises:
       RuntimeError: If API call failed.
     """
 
     body = {
-        'resourceNames': self.project_id,
+        'resourceNames': 'projects/' + self.project_id,
         'filter': qfilter,
         'orderBy': 'timestamp desc',
     }
@@ -209,9 +208,8 @@ class GoogleCloudLog:
             'Credentials. Try running: '
             '$ gcloud auth application-default login'.format(str(exception)))
         raise RuntimeError(error_msg)
-      if 'entries' in result:
-        for entry in result['entries']:
-          entries.append(entry)
+      for entry in result.get('entries', []):
+        entries.append(entry)
       page_token = result.get('nextPageToken')
       if not page_token:
         have_all_tokens = True
