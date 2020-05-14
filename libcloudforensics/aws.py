@@ -22,6 +22,7 @@ import binascii
 import datetime
 import json
 import logging
+import os
 import re
 
 import boto3
@@ -32,7 +33,10 @@ log = logging.getLogger()
 EC2_SERVICE = 'ec2'
 ACCOUNT_SERVICE = 'sts'
 KMS_SERVICE = 'kms'
+# Default Amazon Machine Image to use for bootstrapping instances
+UBUNTU_1804_AMI = 'ami-0013b3aa57f8a4331'
 REGEX_TAG_VALUE = re.compile('^.{1,255}$')
+STARTUP_SCRIPT = 'scripts/startup.sh'
 
 
 class AWSAccount:
@@ -454,6 +458,84 @@ class AWSAccount:
                      encrypted,
                      name=volume_name)
 
+  def GetOrCreateAnalysisVm(self,
+                            vm_name,
+                            boot_volume_size,
+                            ami,
+                            cpu_cores,
+                            packages=None):
+    """Get or create a new virtual machine for analysis purposes.
+
+    Args:
+      vm_name (str): The instance name tag of the virtual machine.
+      boot_volume_size (int): The size of the analysis VM boot volume (in GB).
+      ami (str): The Amazon Machine Image ID to use to create the VM.
+      cpu_cores (int): Number of CPU cores for the analysis VM.
+      packages (list(str)): Optional. List of packages to install in the VM.
+
+    Returns:
+      tuple(AWSInstance, bool): A tuple with an AWSInstance object and a
+          boolean indicating if the virtual machine was created (True) or
+          reused (False).
+
+    Raises:
+      RuntimeError: If the virtual machine cannot be found or created.
+    """
+
+    # Re-use instance if it already exists, or create a new one.
+    try:
+      instances = self.GetInstancesByName(vm_name)
+      if instances:
+        created = False
+        return instances[0], created
+    except RuntimeError:
+      pass
+
+    instance_type = self._GetInstanceTypeByCPU(cpu_cores)
+    startup_script = self._ReadStartupScript()
+    if packages:
+      startup_script = startup_script.replace('${packages[@]}', ' '.join(
+          packages))
+
+    # Install ec2-instance-connect to allow SSH connections from the browser.
+    startup_script = startup_script.replace(
+        '(exit ${exit_code})',
+        'apt -y install ec2-instance-connect && (exit ${exit_code})')
+
+    client = self.ClientApi(EC2_SERVICE)
+    # Create the instance in AWS
+    try:
+      instance = client.run_instances(
+          BlockDeviceMappings=[self._GetBootVolumeConfigByAmi(
+              ami, boot_volume_size)],
+          ImageId=ami,
+          MinCount=1,
+          MaxCount=1,
+          InstanceType=instance_type,
+          TagSpecifications=[GetTagForResourceType('instance', vm_name)],
+          UserData=startup_script,
+          Placement={'AvailabilityZone': self.default_availability_zone})
+
+      # If the call to run_instances was successful, then the API response
+      # contains the instance ID for the new instance.
+      instance_id = instance['Instances'][0]['InstanceId']
+
+      # Wait for the instance to be running
+      client.get_waiter('instance_running').wait(InstanceIds=[instance_id])
+      # Wait for the status checks to pass
+      client.get_waiter('instance_status_ok').wait(InstanceIds=[instance_id])
+
+      instance = AWSInstance(self,
+                             instance_id,
+                             self.default_region,
+                             self.default_availability_zone,
+                             name=vm_name)
+      created = True
+      return instance, created
+    except client.exceptions.ClientError as exception:
+      raise RuntimeError('Could not create instance {0:s}: {1:s}'.format(
+          vm_name, str(exception)))
+
   def GetAccountInformation(self, info):
     """Get information about the AWS account in use.
 
@@ -591,6 +673,101 @@ class AWSAccount:
 
     return volume_name
 
+  def _GetBootVolumeConfigByAmi(self, ami, boot_volume_size):
+    """Return a boot volume configuration for a given AMI and boot volume size.
+
+    Args:
+      ami (str): The Amazon Machine Image ID.
+      boot_volume_size (int): Size of the boot volume, in GB.
+
+    Returns:
+      dict: A BlockDeviceMappings configuration for the specified AMI.
+
+    Raises:
+      RuntimeError: If AMI details cannot be found.
+    """
+
+    client = self.ClientApi(EC2_SERVICE)
+    try:
+      image = client.describe_images(ImageIds=[ami])
+    except client.exceptions.ClientError as exception:
+      raise RuntimeError(
+          'Could not find image information for AMI {0:s}: {1:s}'.format(
+              ami, str(exception)))
+
+    # If the call to describe_images was successful, then the API's response
+    # is expected to contain at least one image and its corresponding block
+    # device mappings information.
+    block_device_mapping = image['Images'][0]['BlockDeviceMappings'][0]
+    block_device_mapping['Ebs']['VolumeSize'] = boot_volume_size
+    return block_device_mapping
+
+  @staticmethod
+  def _GetInstanceTypeByCPU(cpu_cores):
+    """Return the instance type for the requested number of  CPU cores.
+
+    Args:
+      cpu_cores (int): The number of requested cores.
+
+    Returns:
+      str: The type of instance that matches the number of cores.
+
+    Raises:
+      ValueError: If the requested amount of cores is unavailable.
+    """
+
+    cpu_cores_to_instance_type = {
+        1: 't2.small',
+        2: 'm4.large',
+        4: 'm4.xlarge',
+        8: 'm4.2xlarge',
+        16: 'm4.4xlarge',
+        32: 'm5.8xlarge',
+        40: 'm4.10xlarge',
+        48: 'm5.12xlarge',
+        64: 'm4.16xlarge',
+        96: 'm5.24xlarge',
+        128: 'x1.32xlarge'
+    }
+    if cpu_cores not in cpu_cores_to_instance_type:
+      raise ValueError(
+          'Cannot start a machine with {0:d} CPU cores. CPU cores should be one'
+          ' of: {1:s}'.format(
+              cpu_cores, ', '.join(map(str, cpu_cores_to_instance_type.keys()))
+          ))
+    return cpu_cores_to_instance_type[cpu_cores]
+
+  @staticmethod
+  def _ReadStartupScript():
+    """Read and return the startup script that is to be run on the forensics VM.
+
+    Users can either write their own script to install custom packages,
+    or use the provided one. To use your own script, export a STARTUP_SCRIPT
+    environment variable with the absolute path to it:
+    "user@terminal:~$ export STARTUP_SCRIPT='absolute/path/script.sh'"
+
+    Returns:
+      str: The script to run.
+
+    Raises:
+      OSError: If the script cannot be opened, read or closed.
+    """
+
+    try:
+      startup_script = os.environ.get('STARTUP_SCRIPT')
+      if not startup_script:
+        # Use the provided script
+        startup_script = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)), STARTUP_SCRIPT)
+      startup_script = open(startup_script)
+      script = startup_script.read()
+      startup_script.close()
+      return script
+    except OSError as exception:
+      raise OSError(
+          'Could not open/read/close the startup script {0:s}: {1:s}'.format(
+              startup_script, str(exception)))
+
 
 class AWSInstance:
   """Class representing an AWS EC2 instance.
@@ -649,6 +826,27 @@ class AWSInstance:
         self.instance_id)
     raise RuntimeError(error_msg)
 
+  def GetVolume(self, volume_id):
+    """Get a volume attached to the instance by ID.
+
+    Args:
+      volume_id (str): The ID of the volume to get.
+
+    Returns:
+      AWSVolume: The AWSVolume object.
+
+    Raises:
+      RuntimeError: If volume_id is not found amongst the volumes attached
+          to the instance.
+    """
+
+    volume = self.ListVolumes().get(volume_id)
+    if not volume:
+      raise RuntimeError(
+          'Volume {0:s} is not attached to instance {1:s}'.format(
+              volume_id, self.instance_id))
+    return volume
+
   def ListVolumes(self):
     """List all volumes for the instance.
 
@@ -660,6 +858,28 @@ class AWSInstance:
         filters=[{
             'Name': 'attachment.instance-id',
             'Values': [self.instance_id]}])
+
+  def AttachVolume(self, volume, device_name):
+    """Attach a volume to the AWS instance.
+
+    Args:
+      volume (AWSVolume): The AWSVolume object to attach to the instance.
+      device_name (str): The device name for the volume (e.g. /dev/sdf).
+
+    Raises:
+      RuntimeError: If the volume could not be attached.
+    """
+
+    client = self.aws_account.ClientApi(EC2_SERVICE)
+    try:
+      client.attach_volume(
+          Device=device_name,
+          InstanceId=self.instance_id,
+          VolumeId=volume.volume_id)
+      volume.device_name = device_name
+    except client.exceptions.ClientError as exception:
+      raise RuntimeError('Could not attach volume {0:s}: {1:s}'.format(
+          volume.volume_id, str(exception)))
 
 
 class AWSElasticBlockStore:
@@ -962,10 +1182,58 @@ def CreateVolumeCopy(zone,
 
   except RuntimeError as exception:
     error_msg = 'Copying volume {0:s}: {1!s}'.format(
-        volume_id, exception)
+        (volume_id or instance_id), exception)
     raise RuntimeError(error_msg)
 
   return new_volume
+
+
+def StartAnalysisVm(vm_name,
+                    default_availability_zone,
+                    boot_volume_size,
+                    cpu_cores=4,
+                    ami=UBUNTU_1804_AMI,
+                    attach_volume=None,
+                    device_name=None,
+                    dst_account=None):
+  """Start a virtual machine for analysis purposes.
+
+  Look for an existing AWS instance with tag name vm_name. If found,
+  this instance will be started and used as analysis VM. If not found, then a
+  new vm with that name will be created, started and returned.
+
+  Args:
+    vm_name (str): The name for the virtual machine.
+    default_availability_zone (str): Default zone within the region to create
+        new resources in.
+    boot_volume_size (int): The size of the analysis VM boot volume (in GB).
+    cpu_cores (int): Optional. The number of CPU cores to create the machine
+        with. Default is 4.
+    ami (str): Optional. The Amazon Machine Image ID to use to create the VM.
+        Default is a version of Ubuntu 18.04.
+    attach_volume (AWSVolume): Optional. The volume to attach.
+    device_name (str): Optional. The name of the device (e.g. /dev/sdf) for the
+        volume to be attached. Mandatory if attach_volume is provided.
+    dst_account (str): Optional. The AWS account in which to create the
+        analysis VM. This is the profile name that is defined in your AWS
+        credentials file.
+
+  Returns:
+    tuple(AWSInstance, bool): a tuple with a virtual machine object
+        and a boolean indicating if the virtual machine was created or not.
+
+  Raises:
+    RuntimeError: If device_name is missing when attach_volume is provided.
+  """
+  aws_account = AWSAccount(default_availability_zone, aws_profile=dst_account)
+  analysis_vm, created = aws_account.GetOrCreateAnalysisVm(
+      vm_name, boot_volume_size, cpu_cores=cpu_cores, ami=ami)
+  if attach_volume:
+    if not device_name:
+      raise RuntimeError('If you want to attach a volume, you must also '
+                         'specify a device name for that volume.')
+    analysis_vm.AttachVolume(attach_volume, device_name)
+  return analysis_vm, created
 
 
 def GetTagForResourceType(resource, name):
