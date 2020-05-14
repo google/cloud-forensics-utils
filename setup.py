@@ -22,16 +22,6 @@ import sys
 from setuptools import find_packages
 from setuptools import setup
 
-try:
-  # pip >= 20
-  from pip._internal.network.session import PipSession
-  from pip._internal.req import parse_requirements
-except ImportError:
-  # 10.0.0 <= pip <= 19.3.1
-  from pip._internal.download import PipSession
-  from pip._internal.req import parse_requirements
-
-
 # make sure libcloudforensics is in path
 sys.path.insert(0, '.')
 
@@ -41,6 +31,13 @@ description = (
     'libcloudforensics is a set of tools to help acquire forensic evidence from'
     ' cloud platforms.'
 )
+
+
+def parse_requirements(filename):
+  with open(filename) as requirements:
+      # Skipping -i https://pypi.org/simple
+    return requirements.readlines()[1:]
+
 
 setup(
     name='libcloudforensics',
@@ -63,8 +60,6 @@ setup(
       'libcloudforensics': ['scripts/*']
     },
     zip_safe=False,
-    install_requires=[str(req.req) for req in parse_requirements(
-        'requirements.txt', session=PipSession())],
-    tests_require=[str(req.req) for req in parse_requirements(
-        'requirements-dev.txt', session=PipSession())],
+    install_requires=[req for req in parse_requirements('requirements.txt')],
+    tests_require=[req for req in parse_requirements('requirements-dev.txt')],
 )
