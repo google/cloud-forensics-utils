@@ -1281,7 +1281,7 @@ class GoogleComputeSnapshot(GoogleComputeBaseResource):
 
 
 class GoogleComputeImage(GoogleComputeBaseResource):
-      """Class representing a Compute Engine Image.
+  """Class representing a Compute Engine Image.
 
   Attributes:
     disk (GoogleComputeDisk): Disk used for the Snapshot.
