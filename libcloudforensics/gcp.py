@@ -576,7 +576,7 @@ class GoogleCloudProject:
           '{1:s}'.format(startup_script, str(exception)))
 
   def CreateImageFromDisk(self, src_disk, name=None):
-    """Creates an image from a persistence disk.
+    """Creates an image from a persistent disk.
 
     Args:
       src_disk (GoogleComputeDisk): Source disk for the image.
