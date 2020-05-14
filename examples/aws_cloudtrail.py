@@ -20,6 +20,6 @@ from libcloudforensics import aws
 if __name__ == '__main__':
   # Make sure that your AWS credentials are configured correclty, see
   # https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html #pylint: disable=line-too-long
-  ct = aws.AWSAccount(default_availability_zone='eu-central-1a')
+  ct = aws.AWSCloudTrail(default_availability_zone='eu-central-1a')
   result = ct.LookupEvents()
   print(result)
