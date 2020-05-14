@@ -92,7 +92,7 @@ def CreateService(service_name, api_version):
 
 
 class GoogleCloudLog:
-  """Class representing a Google Cloud Logs.
+  """Class representing a Google Cloud Logs interface.
 
   Attributes:
     project_id: Project name.
@@ -463,10 +463,14 @@ class GoogleCloudProject:
     return GoogleComputeDisk(
         project=self, zone=self.default_zone, name=disk_name)
 
-  def GetOrCreateAnalysisVm(
-      self, vm_name, boot_disk_size, disk_type='pd-standard', cpu_cores=4,
-      image_project='ubuntu-os-cloud', image_family='ubuntu-1804-lts',
-      packages=None):
+  def GetOrCreateAnalysisVm(self,
+                            vm_name,
+                            boot_disk_size,
+                            disk_type='pd-standard',
+                            cpu_cores=4,
+                            image_project='ubuntu-os-cloud',
+                            image_family='ubuntu-1804-lts',
+                            packages=None):
     """Get or create a new virtual machine for analysis purposes.
 
     If none of the optional parameters are specified, then by default the
