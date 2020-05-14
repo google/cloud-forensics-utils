@@ -167,6 +167,32 @@ class AWSAccount:
 
     return instances
 
+  def LookupEvents(self):
+    """Lookup events in the CloudTrail logs of this account.
+
+    Example usage:
+      # List volumes attached to the instance 'some-instance-id'
+      ListVolumes(filters=[
+          {'Name':'attachment.instance-id', 'Values':['some-instance-id']}])
+
+    Args:
+      region (str): Optional. The region from which to list the volumes.
+          If none provided, the default_region associated to the AWSAccount
+          object will be used.
+      filters (list(dict)): Optional. Filter for the query.
+
+    Returns:
+      dict: Dictionary mapping volume IDs (str) to their respective AWSVolume
+          object.
+
+    Raises:
+      RuntimeError: If volumes can't be listed.
+    """
+
+    client = self.ClientApi('cloudtrail')
+    response = client.lookup_events()
+    print(response)
+
   def ListVolumes(self, region=None, filters=None):
     """List volumes of an AWS account.
 
