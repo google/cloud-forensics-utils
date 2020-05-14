@@ -174,7 +174,7 @@ class GoogleCloudLog:
       qfilter (str): The query filter to use.
 
     Returns:
-      dict: Log entries returned by the query.
+      list(dict): Log entries returned by the query.
 
     Raises:
       RuntimeError: If API call failed.
