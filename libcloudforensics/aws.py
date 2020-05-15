@@ -1103,16 +1103,31 @@ class AWSCloudTrail:
       list(dict): A list of events
     """
 
+    next_token = ''
+    events = []
+
     client = self.aws_account.ClientApi('cloudtrail')
+
     response = client.lookup_events(LookupAttributes=qfilter,
                                     StartTime=starttime,
                                     EndTime=endtime)
+    events = response['Events']
+    if 'NextToken' not in response:
+      return events
+    next_token = response['NextToken']
 
-    if not response['Events']:
-      return None
+    while True:
+      response = client.lookup_events(LookupAttributes=qfilter,
+                                      StartTime=starttime,
+                                      EndTime=endtime,
+                                      NextToken=next_token)
+      events.append(response['Events'])
+      if 'NextToken' not in response:
+        break
 
-    return response['Events']
+      next_token = response['NextToken']
 
+    return events
 
 
 def CreateVolumeCopy(zone,
