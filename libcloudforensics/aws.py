@@ -31,6 +31,7 @@ import botocore
 log = logging.getLogger()
 
 EC2_SERVICE = 'ec2'
+CLOUDTRAIL_SERVICE = 'cloudtrail'
 ACCOUNT_SERVICE = 'sts'
 KMS_SERVICE = 'kms'
 # Default Amazon Machine Image to use for bootstrapping instances
@@ -1081,7 +1082,8 @@ class AWSCloudTrail:
 
     self.aws_account = aws_account
 
-  def LookupEvents(self, qfilter=(),
+  def LookupEvents(self,
+                   qfilter=(),
                    starttime=datetime(1800, 1, 1),
                    endtime=datetime.now()):
     """Lookup events in the CloudTrail logs of this account.
@@ -1096,17 +1098,17 @@ class AWSCloudTrail:
 
     Args:
       qfilter (tuple): Optional. Filter for the query including 1 AttributeKey and AttributeValue.
-      starttime (datetime): Optional. Start datetime to add to query filter
-      endtime (datetime): Optional. End datetime to add to query filter
+      starttime (datetime): Optional. Start datetime to add to query filter.
+      endtime (datetime): Optional. End datetime to add to query filter.
 
     Returns:
-      list(dict): A list of events
+      list(dict): A list of events.
     """
 
     next_token = ''
     events = []
 
-    client = self.aws_account.ClientApi('cloudtrail')
+    client = self.aws_account.ClientApi(CLOUDTRAIL_SERVICE)
 
     response = client.lookup_events(LookupAttributes=qfilter,
                                     StartTime=starttime,

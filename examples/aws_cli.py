@@ -92,12 +92,10 @@ if __name__ == '__main__':
       '--instance_id', help='The AWS unique instance ID')
   parser_volumecopy.add_argument(
       '--src_account', help='The name of the profile for the '
-      'source account, as defined in '
-      'the AWS credentials file.')
+      'source account, as defined in the AWS credentials file.')
   parser_volumecopy.add_argument(
       '--dst_account', help='The name of the profile for the '
-      'destination account, as defined '
-      'in the AWS credentials file.')
+      'destination account, as defined in the AWS credentials file.')
 
   parsed_args = parser.parse_args()
   if parsed_args.func:
