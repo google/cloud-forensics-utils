@@ -45,7 +45,7 @@ def LookupLogEvents(args):
     args (dict): Arguments from ArgumentParser.
   """
   ct = aws.AWSCloudTrail(
-      aws.AWSAccount(default_availability_zone='eu-central-1a'))
+      aws.AWSAccount(default_availability_zone=args.zone))
 
   starttime = datetime.strptime(args.start, '%Y-%m-%d %H:%M:%S')
   endtime = datetime.strptime(args.end, '%Y-%m-%d %H:%M:%S')
@@ -69,6 +69,9 @@ if __name__ == '__main__':
 
   parser_querylogs = subparsers.add_parser(
       'querylog', help='Query AWS CloudTrail logs')
+  parser_querylogs.add_argument(
+      'zone',
+      help='The AWS zone in which resources are located, e.g. us-east-2b')
   parser_querylogs.add_argument('--filter', help='Query filter: \'value,key\'')
   parser_querylogs.add_argument('--start',
                                 help='Start date for query (2020-05-01 11:13:00)',
