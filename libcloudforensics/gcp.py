@@ -267,7 +267,8 @@ class GoogleCloudProject:
           GlobalZone.
 
     Returns:
-      str: Operation result in JSON format.
+      dict: Holding the response of a get operation on an API object of type
+          zoneOperations or globalOperations.
 
     Raises:
       RuntimeError: If API call failed.
@@ -723,14 +724,15 @@ class GoogleCloudProject:
             name,
         'sourceDisk':
             'projects/{project_id}/zones/{zone}/disks/{src_disk}'.format(
-                project_id=self.project_id, zone=src_disk.zone,
+                project_id=src_disk.project.project_id, zone=src_disk.zone,
                 src_disk=src_disk.name)
     }
     gce_image_client = self.GceApi().images()
-    request = gce_image_client.insert(project=self.project_id, body=image_body)
+    request = gce_image_client.insert(
+        project=self.project_id, body=image_body, forceCreate=True)
     response = request.execute()
     self.BlockOperation(response)
-    return GoogleComputeImage(self.project_id, None, name)
+    return GoogleComputeImage(self, None, name)
 
 
 class GoogleCloudFunction(GoogleCloudProject):
@@ -870,7 +872,8 @@ class GoogleCloudBuild(GoogleCloudProject):
       response (dict): Google Cloud Build API response.
 
     Returns:
-      str: Operation result in JSON format.
+      dict: Holding the response of a get operation on an
+          API object of type operations.
 
     Raises:
       RuntimeError: If API call failed.
@@ -1013,7 +1016,7 @@ class GoogleComputeBaseResource:
           should be blocking or not, default is False.
 
     Returns:
-      str: The response of the API operation.
+      dict: The response of the API operation.
 
     Raises:
       RuntimeError: If the Compute resource Type is not one of instance,
@@ -1313,6 +1316,7 @@ class GoogleComputeImage(GoogleComputeBaseResource):
     Raises:
       RuntimeError: If exported image name is invalid.
     """
+
     if output_name:
       if not bool(re.match("^[A-Za-z0-9-]*$", output_name)):
         raise RuntimeError(
@@ -1339,6 +1343,21 @@ class GoogleComputeImage(GoogleComputeBaseResource):
     response = cloud_build.CreateBuild(build_body)
     cloud_build.BlockOperation(response)
     log.info('Image {0:s} exported to {1:s}.'.format(self.name, full_path))
+
+  def Delete(self):
+    """Delete Compute Disk Image from a project.
+
+    Returns:
+      dict: Holding the response of a get operation on an API object of type
+          globalOperations..
+    """
+
+    gce_image_client = self.project.GceApi().images()
+    request = gce_image_client.delete(
+        project=self.project.project_id, image=self.name)
+    response = request.execute()
+    result = self.project.BlockOperation(response)
+    return result
 
 
 def CreateDiskCopy(
