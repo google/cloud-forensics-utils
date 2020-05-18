@@ -1346,18 +1346,13 @@ class GoogleComputeImage(GoogleComputeBaseResource):
 
   def Delete(self):
     """Delete Compute Disk Image from a project.
-
-    Returns:
-      dict: Holding the response of a get operation on an API object of type
-          globalOperations..
     """
 
     gce_image_client = self.project.GceApi().images()
     request = gce_image_client.delete(
         project=self.project.project_id, image=self.name)
     response = request.execute()
-    result = self.project.BlockOperation(response)
-    return result
+    self.project.BlockOperation(response)
 
 
 def CreateDiskCopy(
