@@ -1090,14 +1090,14 @@ class AWSCloudTrail:
 
     Example usage:
       # pylint: disable=line-too-long
-      # qfilter = [{'AttributeKey':'Username', 'AttributeValue':'root'}]
+      # qfilter = 'key,value'
       # starttime = datetime(2020,5,5,17,33,00)
       # LookupEvents(qfilter=qfilter, starttime=starttime)
       # Check documentation for qfilter details
       # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/cloudtrail.html#CloudTrail.Client.lookup_events
 
     Args:
-      qfilter (tuple): Optional. Filter for the query including 1 AttributeKey and AttributeValue.
+      qfilter (string): Optional. Filter for the query including 1 key and value.
       starttime (datetime): Optional. Start datetime to add to query filter.
       endtime (datetime): Optional. End datetime to add to query filter.
 
@@ -1109,7 +1109,11 @@ class AWSCloudTrail:
 
     client = self.aws_account.ClientApi(CLOUDTRAIL_SERVICE)
 
-    params = {'LookupAttributes': qfilter}
+    params = {}
+    if qfilter:
+      k, v = qfilter.split(',')
+      qfilter = [{'AttributeKey': k, 'AttributeValue': v}]
+      params = {'LookupAttributes': qfilter}
     if starttime:
       params['StartTime'] = starttime
     if endtime:

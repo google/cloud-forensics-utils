@@ -47,17 +47,15 @@ def LookupLogEvents(args):
   ct = aws.AWSCloudTrail(
       aws.AWSAccount(default_availability_zone=args.zone))
 
-  if args.start:
-    args.start = datetime.strptime(args.start, '%Y-%m-%d %H:%M:%S')
-  if args.end:
-    args.end = datetime.strptime(args.end, '%Y-%m-%d %H:%M:%S')
-
-  qfilter = []
+  params = {}
   if args.filter:
-    k, v = args.filter.split(',')
-    qfilter = [{'AttributeKey': k, 'AttributeValue': v}]
+    params['qfilter'] = args.filter
+  if args.start:
+    params['starttime'] = datetime.strptime(args.start, '%Y-%m-%d %H:%M:%S')
+  if args.end:
+    params['endtime'] = datetime.strptime(args.end, '%Y-%m-%d %H:%M:%S')
 
-  result = ct.LookupEvents(starttime=args.start, endtime=args.end, qfilter=qfilter)
+  result = ct.LookupEvents(**params)
 
   if result:
     print('Log events found: {0:d}'.format(len(result)))
