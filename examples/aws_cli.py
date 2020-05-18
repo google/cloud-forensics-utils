@@ -47,15 +47,17 @@ def LookupLogEvents(args):
   ct = aws.AWSCloudTrail(
       aws.AWSAccount(default_availability_zone=args.zone))
 
-  starttime = datetime.strptime(args.start, '%Y-%m-%d %H:%M:%S')
-  endtime = datetime.strptime(args.end, '%Y-%m-%d %H:%M:%S')
+  if args.start:
+    args.start = datetime.strptime(args.start, '%Y-%m-%d %H:%M:%S')
+  if args.end:
+    args.end = datetime.strptime(args.end, '%Y-%m-%d %H:%M:%S')
 
   qfilter = []
   if args.filter:
     k, v = args.filter.split(',')
     qfilter = [{'AttributeKey': k, 'AttributeValue': v}]
 
-  result = ct.LookupEvents(starttime=starttime, endtime=endtime, qfilter=qfilter)
+  result = ct.LookupEvents(starttime=args.start, endtime=args.end, qfilter=qfilter)
 
   if result:
     print('Log events found: {0:d}'.format(len(result)))
@@ -75,10 +77,10 @@ if __name__ == '__main__':
   parser_querylogs.add_argument('--filter', help='Query filter: \'value,key\'')
   parser_querylogs.add_argument('--start',
                                 help='Start date for query (2020-05-01 11:13:00)',
-                                default='1800-01-01 00:00:00')
+                                default=None)
   parser_querylogs.add_argument('--end',
                                 help='End date for query (2020-05-01 11:13:00)',
-                                default=datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+                                default=None)
   parser_querylogs.set_defaults(func=LookupLogEvents)
 
   parser_volumecopy = subparsers.add_parser(

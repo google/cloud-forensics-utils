@@ -1084,8 +1084,8 @@ class AWSCloudTrail:
 
   def LookupEvents(self,
                    qfilter=(),
-                   starttime=datetime(1800, 1, 1),
-                   endtime=datetime.now()):
+                   starttime=None,
+                   endtime=None):
     """Lookup events in the CloudTrail logs of this account.
 
     Example usage:
@@ -1105,32 +1105,23 @@ class AWSCloudTrail:
       list(dict): A list of events.
     """
 
-    next_token = ''
     events = []
 
     client = self.aws_account.ClientApi(CLOUDTRAIL_SERVICE)
 
-    response = client.lookup_events(LookupAttributes=qfilter,
-                                    StartTime=starttime,
-                                    EndTime=endtime)
-    events = response['Events']
-    if 'NextToken' not in response:
-      return events
-    next_token = response['NextToken']
+    params = {'LookupAttributes': qfilter}
+    if starttime:
+      params['StartTime'] = starttime
+    if endtime:
+      params['EndTime'] = endtime
 
     while True:
-      response = client.lookup_events(LookupAttributes=qfilter,
-                                      StartTime=starttime,
-                                      EndTime=endtime,
-                                      NextToken=next_token)
-      events.append(response['Events'])
+      response = client.lookup_events(**params)
+      for entry in response['Events']:
+        events.append(entry)
       if 'NextToken' not in response:
-        break
-
-      next_token = response['NextToken']
-
-    return events
-
+        return events
+      params['NextToken'] = response['NextToken']
 
 def CreateVolumeCopy(zone,
                      instance_id=None,
