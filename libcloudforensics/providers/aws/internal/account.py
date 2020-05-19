@@ -200,10 +200,10 @@ class AWSAccount:
       for volume in response['Volumes']:
         volume_id = volume['VolumeId']
         aws_volume = internal.AWSVolume(volume_id,
-                                            self,
-                                            self.default_region,
-                                            volume['AvailabilityZone'],
-                                            volume['Encrypted'])
+                                        self,
+                                        self.default_region,
+                                        volume['AvailabilityZone'],
+                                        volume['Encrypted'])
 
         for tag in volume.get('Tags', []):
           if tag.get('Key') == 'Name':
@@ -443,11 +443,11 @@ class AWSAccount:
                                                str(exception)))
 
     return internal.AWSVolume(volume_id,
-                                  self,
-                                  self.default_region,
-                                  zone,
-                                  encrypted,
-                                  name=volume_name)
+                              self,
+                              self.default_region,
+                              zone,
+                              encrypted,
+                              name=volume_name)
 
   def GetOrCreateAnalysisVm(self,
                             vm_name,
@@ -518,10 +518,10 @@ class AWSAccount:
       client.get_waiter('instance_status_ok').wait(InstanceIds=[instance_id])
 
       instance = internal.AWSInstance(self,
-                                          instance_id,
-                                          self.default_region,
-                                          self.default_availability_zone,
-                                          name=vm_name)
+                                      instance_id,
+                                      self.default_region,
+                                      self.default_availability_zone,
+                                      name=vm_name)
       created = True
       return instance, created
     except client.exceptions.ClientError as exception:
