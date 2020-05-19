@@ -99,6 +99,7 @@ if __name__ == '__main__':
   parser_volumecopy.add_argument(
       '--dst_account', help='The name of the profile for the '
       'destination account, as defined in the AWS credentials file.')
+  parser_volumecopy.set_defaults(func=CreateVolumeCopy)
 
   parsed_args = parser.parse_args()
   if parsed_args.func:
