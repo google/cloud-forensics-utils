@@ -15,7 +15,9 @@
 """Demo CLI tool for GCP."""
 
 import json
-from libcloudforensics import gcp
+from libcloudforensics.providers.gcp.internal.project import GoogleCloudProject
+from libcloudforensics.providers.gcp.internal.log import GoogleCloudLog
+from libcloudforensics.providers.gcp.forensics import GCPForensics
 
 
 def ListInstances(args):
@@ -25,7 +27,7 @@ def ListInstances(args):
     args (dict): Arguments from ArgumentParser.
   """
 
-  project = gcp.GoogleCloudProject(args.project)
+  project = GoogleCloudProject(args.project)
   instances = project.ListInstances()
 
   print('Instances found:')
@@ -41,7 +43,7 @@ def ListDisks(args):
     args (dict): Arguments from ArgumentParser.
   """
 
-  project = gcp.GoogleCloudProject(args.project)
+  project = GoogleCloudProject(args.project)
   disks = project.ListDisks()
   print('Disks found:')
   for disk in disks:
@@ -55,7 +57,7 @@ def CreateDiskCopy(args):
     args (dict): Arguments from ArgumentParser.
   """
 
-  disk = gcp.CreateDiskCopy(
+  disk = GCPForensics().CreateDiskCopy(
       args.project, args.dstproject, args.instancename, args.zone)
 
   print('Disk copy completed.')
@@ -68,7 +70,7 @@ def ListLogs(args):
   Args:
     args (dict): Arguments from ArgumentParser.
   """
-  logs = gcp.GoogleCloudLog(args.project)
+  logs = GoogleCloudLog(args.project)
   results = logs.ListLogs()
   print('Found {0:d} available log types:'.format(len(results)))
   for line in results:
@@ -81,7 +83,7 @@ def QueryLogs(args):
   Args:
     args (dict): Arguments from ArgumentParser.
   """
-  logs = gcp.GoogleCloudLog(args.project)
+  logs = GoogleCloudLog(args.project)
   results = logs.ExecuteQuery(args.filter)
   print('Found {0:d} log entries:'.format(len(results)))
   for line in results:

@@ -22,7 +22,8 @@ import os
 
 from googleapiclient.errors import HttpError
 
-from libcloudforensics import gcp
+from libcloudforensics.providers.gcp.internal.project import GoogleCloudProject
+from libcloudforensics.providers.gcp.forensics import GCPForensics
 
 log = logging.getLogger()
 
@@ -31,9 +32,9 @@ class EndToEndTest(unittest.TestCase):
   """End to end test on GCP.
 
   This end-to-end test runs directly on GCP and tests that:
-    1. The gcp.py module connects to the target instance and makes a snapshot
-        of the boot disk (by default) or of the disk passed in parameter to the
-        gcp.create_disk_copy() method.
+    1. The project.py module connects to the target instance and makes a
+        snapshot of the boot disk (by default) or of the disk passed in
+        parameter to the GCPForensics().CreateDiskCopy() method.
     2. A new disk is created from the taken snapshot.
     3. If an analysis VM already exists, the module will attach the disk
         copy to the VM. Otherwise, it will create a new GCP instance for
@@ -63,10 +64,11 @@ class EndToEndTest(unittest.TestCase):
     # Optional: test a disk other than the boot disk
     cls.disk_to_forensic = project_info.get('disk', None)
     cls.zone = project_info['zone']
-    cls.gcp = gcp.GoogleCloudProject(cls.project_id, cls.zone)
+    cls.gcp = GoogleCloudProject(cls.project_id, cls.zone)
+    cls.forensics = GCPForensics()
     cls.analysis_vm_name = 'new-vm-for-analysis'
     # Create and start the analysis VM
-    cls.analysis_vm, _ = gcp.StartAnalysisVm(
+    cls.analysis_vm, _ = cls.forensics.StartAnalysisVm(
         project=cls.project_id, vm_name=cls.analysis_vm_name, zone=cls.zone,
         boot_disk_size=10, boot_disk_type='pd-ssd', cpu_cores=4)
 
@@ -84,8 +86,8 @@ class EndToEndTest(unittest.TestCase):
     """End to end test on GCP.
 
     This end-to-end test runs directly on GCP and tests that:
-      1. The gcp.py module connects to the target instance and makes a
-          snapshot of the boot disk.
+      1. The project.py module connects to the target instance and makes a
+         snapshot of the boot disk.
       2. A new disk is created from the taken snapshot.
       3. If an analysis VM already exists, the module will attach the disk
           copy to the VM. Otherwise, it will create a new GCP instance for
@@ -93,7 +95,7 @@ class EndToEndTest(unittest.TestCase):
     """
 
     # Make a copy of the boot disk of the instance to analyse
-    self.boot_disk_copy = gcp.CreateDiskCopy(
+    self.boot_disk_copy = self.forensics.CreateDiskCopy(
         src_proj=self.project_id,
         dst_proj=self.project_id,
         instance_name=self.instance_to_analyse,
@@ -109,7 +111,7 @@ class EndToEndTest(unittest.TestCase):
     self.assertEqual(result['name'], self.boot_disk_copy.name)
 
     # Get the analysis VM and attach the evidence boot disk
-    self.analysis_vm, _ = gcp.StartAnalysisVm(
+    self.analysis_vm, _ = self.forensics.StartAnalysisVm(
         project=self.project_id, vm_name=self.analysis_vm_name, zone=self.zone,
         boot_disk_size=10, boot_disk_type='pd-ssd', cpu_cores=4,
         attach_disk=[self.boot_disk_copy])
@@ -139,9 +141,9 @@ class EndToEndTest(unittest.TestCase):
     """End to end test on GCP.
 
     This end-to-end test runs directly on GCP and tests that:
-      1. The gcp.py module connects to the target instance and makes a
+      1. The project.py module connects to the target instance and makes a
           snapshot of disk passed to the 'disk_name' parameter in the
-          create_disk_copy() method.
+          GCPForensics().CreateDiskCopy() method.
       2. A new disk is created from the taken snapshot.
       3. If an analysis VM already exists, the module will attach the disk
           copy to the VM. Otherwise, it will create a new GCP instance for
@@ -149,7 +151,7 @@ class EndToEndTest(unittest.TestCase):
     """
 
     # Make a copy of another disk of the instance to analyse
-    self.disk_to_forensic_copy = gcp.CreateDiskCopy(
+    self.disk_to_forensic_copy = self.forensics.CreateDiskCopy(
         src_proj=self.project_id, dst_proj=self.project_id,
         instance_name=self.instance_to_analyse, zone=self.zone,
         disk_name=self.disk_to_forensic)
@@ -163,7 +165,7 @@ class EndToEndTest(unittest.TestCase):
     self.assertEqual(result['name'], self.disk_to_forensic_copy.name)
 
     # Get the analysis VM and attach the evidence disk to forensic
-    self.analysis_vm, _ = gcp.StartAnalysisVm(
+    self.analysis_vm, _ = self.forensics.StartAnalysisVm(
         project=self.project_id, vm_name=self.analysis_vm_name, zone=self.zone,
         boot_disk_size=10, boot_disk_type='pd-ssd', cpu_cores=4,
         attach_disk=[self.disk_to_forensic_copy])

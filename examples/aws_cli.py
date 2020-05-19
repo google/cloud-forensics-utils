@@ -19,7 +19,9 @@
 
 
 from datetime import datetime
-from libcloudforensics import aws
+from libcloudforensics.providers.aws.forensics import AWSForensics
+from libcloudforensics.providers.aws.internal.log import AWSCloudTrail
+from libcloudforensics.providers.aws.internal.account import AWSAccount
 
 
 def ListInstances(args):
@@ -29,7 +31,7 @@ def ListInstances(args):
     args (dict): Arguments from ArgumentParser.
   """
 
-  account = aws.AWSAccount(args.zone)
+  account = AWSAccount(args.zone)
   instances = account.ListInstances()
 
   print('Instances found:')
@@ -45,7 +47,7 @@ def ListVolumes(args):
     args (dict): Arguments from ArgumentParser.
   """
 
-  account = aws.AWSAccount(args.zone)
+  account = AWSAccount(args.zone)
   volumes = account.ListVolumes()
 
   print('Volumes found:')
@@ -60,7 +62,7 @@ def CreateVolumeCopy(args):
     args (dict): Arguments from ArgumentParser.
   """
   print('Starting volume copy...')
-  volume_copy = aws.CreateVolumeCopy(
+  volume_copy = AWSForensics().CreateDiskCopy(
       args.zone, instance_id=args.instance_id, volume_id=args.volume_id,
       src_account=args.src_account, dst_account=args.dst_account)
   print(
@@ -75,7 +77,7 @@ def QueryLogs(args):
   Args:
     args (dict): Arguments from ArgumentParser.
   """
-  ct = aws.AWSCloudTrail(aws.AWSAccount(args.zone))
+  ct = AWSCloudTrail(AWSAccount(args.zone))
 
   params = {}
   if args.filter:

@@ -19,7 +19,8 @@ import os
 import unittest
 import logging
 
-from libcloudforensics import aws
+from libcloudforensics.providers.aws.internal.account import AWSAccount
+from libcloudforensics.providers.aws.forensics import AWSForensics
 
 log = logging.getLogger()
 EC2_SERVICE = 'ec2'
@@ -29,9 +30,9 @@ class EndToEndTest(unittest.TestCase):
   """End to end test on AWS.
 
   This end-to-end test runs directly on AWS and tests that:
-    1. The aws.py module connects to the target instance and makes a snapshot
-        of the boot volume (by default) or of the volume passed in parameter
-        to the aws.CreateVolumeCopy() method.
+    1. The account.py module connects to the target instance and makes a
+    snapshot of the boot volume (by default) or of the volume passed in
+    parameter to the AWSForensics().CreateDiskCopy() method.
     2. A new volume is created from the taken snapshot.
 
   To run this test, add your project information to a project_info.json file:
@@ -58,9 +59,10 @@ class EndToEndTest(unittest.TestCase):
     cls.instance_to_analyse = project_info['instance']
     cls.zone = project_info['zone']
     cls.volume_to_forensic = project_info.get('volume_id', None)
-    cls.aws = aws.AWSAccount(cls.zone)
+    cls.aws = AWSAccount(cls.zone)
+    cls.forensics = AWSForensics()
     cls.analysis_vm_name = 'new-vm-for-analysis'
-    cls.analysis_vm, _ = aws.StartAnalysisVm(
+    cls.analysis_vm, _ = cls.forensics.StartAnalysisVm(
         cls.analysis_vm_name, cls.zone, 10, 4)
     cls.volumes = []
 
@@ -68,14 +70,14 @@ class EndToEndTest(unittest.TestCase):
     """End to end test on AWS.
 
     This end-to-end test runs directly on AWS and tests that:
-      1. The aws.py module connects to the target instance and makes a snapshot
-          of the boot volume (by default) or of the volume passed in
-          parameter to the aws.CreateVolumeCopy() method.
+      1. The account.py module connects to the target instance and makes a
+          snapshot of the boot volume (by default) or of the volume passed in
+          parameter to the AWSForensics().CreateDiskCopy() method.
       2. A new volume is created from the taken snapshot.
     """
 
     # Make a copy of the boot volume of the instance to analyse
-    boot_volume_copy = aws.CreateVolumeCopy(
+    boot_volume_copy = self.forensics.CreateDiskCopy(
         self.zone,
         instance_id=self.instance_to_analyse
         # volume_id=None by default, boot volume of instance will be copied
@@ -90,9 +92,9 @@ class EndToEndTest(unittest.TestCase):
     """End to end test on AWS.
 
     This end-to-end test runs directly on AWS and tests that:
-      1. The aws.py module connects to the target instance and makes a
+      1. The account.py module connects to the target instance and makes a
           snapshot of volume passed to the 'volume_id' parameter in the
-          CreateVolumeCopy() method.
+          AWSForensics().CreateDiskCopy() method.
       2. A new volume is created from the taken snapshot.
     """
 
@@ -100,7 +102,7 @@ class EndToEndTest(unittest.TestCase):
       return
 
     # Make a copy of another volume of the instance to analyse
-    other_volume_copy = aws.CreateVolumeCopy(
+    other_volume_copy = self.forensics.CreateDiskCopy(
         self.zone,
         volume_id=self.volume_to_forensic)
 
@@ -116,12 +118,12 @@ class EndToEndTest(unittest.TestCase):
         passed to the attach_volume parameter is correctly attached.
     """
 
-    volume_to_attach = aws.CreateVolumeCopy(
+    volume_to_attach = self.forensics.CreateDiskCopy(
         self.zone,
         volume_id=self.volume_to_forensic)
     self.volumes.append(volume_to_attach)
     # Create and start the analysis VM and attach the boot volume
-    self.analysis_vm, _ = aws.StartAnalysisVm(
+    self.analysis_vm, _ = self.forensics.StartAnalysisVm(
         self.analysis_vm_name,
         self.zone,
         10,
