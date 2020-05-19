@@ -992,7 +992,9 @@ class AWSVolume(AWSElasticBlockStore):
 
       snapshot_id = snapshot.get('SnapshotId')
       # Wait for snapshot completion
-      client.get_waiter('snapshot_completed').wait(SnapshotIds=[snapshot_id])
+      client.get_waiter('snapshot_completed').wait(
+          SnapshotIds=[snapshot_id],
+          WaiterConfig={'Delay': 30, 'MaxAttempts': 100})
     except (client.exceptions.ClientError,
             botocore.exceptions.WaiterError) as exception:
       raise RuntimeError('Could not create snapshot for volume {0:s}: '
@@ -1066,7 +1068,8 @@ class AWSSnapshot(AWSElasticBlockStore):
           # If the call was successful, the response contains the new
           # snapshot ID
           response['SnapshotId'],
-          self.volume
+          self.volume,
+          name='{0:s}-copy'.format(self.snapshot_id)
       )
     except client.exceptions.ClientError as exception:
       raise RuntimeError('Could not copy snapshot {0:s}: {1:s}'.format(
