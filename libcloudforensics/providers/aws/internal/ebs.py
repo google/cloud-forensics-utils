@@ -18,7 +18,7 @@ import datetime
 
 import botocore
 
-from libcloudforensics.providers.aws import internal as aws_internal
+from libcloudforensics.providers.aws import internal
 from libcloudforensics.providers.aws.internal.common import REGEX_TAG_VALUE, EC2_SERVICE  # pylint: disable=line-too-long
 
 
@@ -127,7 +127,7 @@ class AWSVolume(AWSElasticBlockStore):
     try:
       snapshot = client.create_snapshot(
           VolumeId=self.volume_id,
-          TagSpecifications=[aws_internal.GetTagForResourceType(
+          TagSpecifications=[internal.GetTagForResourceType(
               'snapshot', snapshot_name)])
 
       snapshot_id = snapshot.get('SnapshotId')

@@ -22,8 +22,8 @@ import os
 from googleapiclient.errors import HttpError
 
 from libcloudforensics.providers.gcp.internal.common import LOGGER
-from libcloudforensics.providers.gcp import internal as gcp_internal
-from libcloudforensics.providers.gcp import forensics as gcp_forensics
+from libcloudforensics.providers.gcp import internal
+from libcloudforensics.providers.gcp import forensics
 
 
 class EndToEndTest(unittest.TestCase):
@@ -62,8 +62,8 @@ class EndToEndTest(unittest.TestCase):
     # Optional: test a disk other than the boot disk
     cls.disk_to_forensic = project_info.get('disk', None)
     cls.zone = project_info['zone']
-    cls.gcp = gcp_internal.GoogleCloudProject(cls.project_id, cls.zone)
-    cls.forensics = gcp_forensics.GCPForensics()
+    cls.gcp = internal.GoogleCloudProject(cls.project_id, cls.zone)
+    cls.forensics = forensics.GCPForensics()
     cls.analysis_vm_name = 'new-vm-for-analysis'
     # Create and start the analysis VM
     cls.analysis_vm, _ = cls.forensics.StartAnalysisVm(

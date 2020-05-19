@@ -17,12 +17,12 @@
 from google.auth.exceptions import RefreshError, DefaultCredentialsError
 from googleapiclient.errors import HttpError
 
-from libcloudforensics.providers.forensics_interface import Forensics
-from libcloudforensics.providers.gcp import internal as gcp_internal
+from libcloudforensics.providers import forensics_interface
+from libcloudforensics.providers.gcp import internal
 from libcloudforensics.providers.gcp.internal.common import LOGGER
 
 
-class GCPForensics(Forensics):
+class GCPForensics(forensics_interface.Forensics):
   """Concrete implementation of the forensics interface."""
 
   # pylint: disable=arguments-differ
@@ -53,8 +53,8 @@ class GCPForensics(Forensics):
       RuntimeError: If there are errors copying the disk
     """
 
-    src_proj = gcp_internal.GoogleCloudProject(src_proj)
-    dst_proj = gcp_internal.GoogleCloudProject(dst_proj, default_zone=zone)
+    src_proj = internal.GoogleCloudProject(src_proj)
+    dst_proj = internal.GoogleCloudProject(dst_proj, default_zone=zone)
     instance = src_proj.GetInstance(instance_name) if instance_name else None
 
     try:
@@ -130,7 +130,7 @@ class GCPForensics(Forensics):
           and a boolean indicating if the virtual machine was created or not.
     """
 
-    project = gcp_internal.GoogleCloudProject(project, default_zone=zone)
+    project = internal.GoogleCloudProject(project, default_zone=zone)
     analysis_vm, created = project.GetOrCreateAnalysisVm(
         vm_name, boot_disk_size, disk_type=boot_disk_type, cpu_cores=cpu_cores,
         image_project=image_project, image_family=image_family)

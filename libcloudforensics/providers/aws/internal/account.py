@@ -24,7 +24,7 @@ import json
 import boto3
 import botocore
 
-from libcloudforensics.providers.aws import internal as aws_internal
+from libcloudforensics.providers.aws import internal
 from libcloudforensics.providers.aws.internal.common import EC2_SERVICE, REGEX_TAG_VALUE, ACCOUNT_SERVICE, KMS_SERVICE  # pylint: disable=line-too-long
 
 
@@ -141,7 +141,7 @@ class AWSAccount:
 
           zone = instance['Placement']['AvailabilityZone']
           instance_id = instance['InstanceId']
-          aws_instance = aws_internal.AWSInstance(
+          aws_instance = internal.AWSInstance(
               self, instance_id, zone[:-1], zone)
 
           for tag in instance.get('Tags', []):
@@ -199,7 +199,7 @@ class AWSAccount:
 
       for volume in response['Volumes']:
         volume_id = volume['VolumeId']
-        aws_volume = aws_internal.AWSVolume(volume_id,
+        aws_volume = internal.AWSVolume(volume_id,
                                             self,
                                             self.default_region,
                                             volume['AvailabilityZone'],
@@ -424,7 +424,7 @@ class AWSAccount:
         'AvailabilityZone': snapshot.availability_zone,
         'SnapshotId': snapshot.snapshot_id,
         'TagSpecifications':
-            [aws_internal.GetTagForResourceType('volume', volume_name)]
+            [internal.GetTagForResourceType('volume', volume_name)]
     }
     if kms_key_id:
       create_volume_args['Encrypted'] = True
@@ -442,7 +442,7 @@ class AWSAccount:
                          '{1:s}: {2:s}'.format(volume_name, snapshot.name,
                                                str(exception)))
 
-    return aws_internal.AWSVolume(volume_id,
+    return internal.AWSVolume(volume_id,
                                   self,
                                   self.default_region,
                                   zone,
@@ -482,8 +482,8 @@ class AWSAccount:
     except RuntimeError:
       pass
 
-    instance_type = aws_internal.GetInstanceTypeByCPU(cpu_cores)
-    startup_script = aws_internal.ReadStartupScript()
+    instance_type = internal.GetInstanceTypeByCPU(cpu_cores)
+    startup_script = internal.ReadStartupScript()
     if packages:
       startup_script = startup_script.replace('${packages[@]}', ' '.join(
           packages))
@@ -503,7 +503,7 @@ class AWSAccount:
           MinCount=1,
           MaxCount=1,
           InstanceType=instance_type,
-          TagSpecifications=[aws_internal.GetTagForResourceType(
+          TagSpecifications=[internal.GetTagForResourceType(
               'instance', vm_name)],
           UserData=startup_script,
           Placement={'AvailabilityZone': self.default_availability_zone})
@@ -517,7 +517,7 @@ class AWSAccount:
       # Wait for the status checks to pass
       client.get_waiter('instance_status_ok').wait(InstanceIds=[instance_id])
 
-      instance = aws_internal.AWSInstance(self,
+      instance = internal.AWSInstance(self,
                                           instance_id,
                                           self.default_region,
                                           self.default_availability_zone,
