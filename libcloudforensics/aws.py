@@ -1036,6 +1036,42 @@ class AWSSnapshot(AWSElasticBlockStore):
     self.snapshot_id = snapshot_id
     self.volume = volume
 
+  def Copy(self, kms_key_id=None):
+    """Copy a snapshot.
+
+    Args:
+      kms_key_id (str): Optional. A KMS key id to encrypt the snapshot copy
+          with. If set to None but the source snapshot is encrypted,
+          then the copy will be encrypted too (with the key used by the
+          source snapshot).
+
+    Returns:
+      AWSSnapshot: A copy of the snapshot.
+
+    Raises:
+      RuntimeError: If the snapshot could not be copied.
+    """
+
+    client = self.aws_account.ClientApi(EC2_SERVICE)
+    copy_args = {
+        'SourceRegion': self.region,
+        'SourceSnapshotId': self.snapshot_id
+    }
+    if kms_key_id:
+      copy_args['Encrypted'] = True
+      copy_args['KmsKeyId'] = kms_key_id
+    try:
+      response = client.copy_snapshot(**copy_args)
+      return AWSSnapshot(
+          # If the call was successful, the response contains the new
+          # snapshot ID
+          response['SnapshotId'],
+          self.volume
+      )
+    except client.exceptions.ClientError as exception:
+      raise RuntimeError('Could not copy snapshot {0:s}: {1:s}'.format(
+          self.snapshot_id, str(exception)))
+
   def Delete(self):
     """Delete a snapshot."""
 
@@ -1126,6 +1162,7 @@ class AWSCloudTrail:
       if 'NextToken' not in response:
         return events
       params['NextToken'] = response['NextToken']
+
 
 def CreateVolumeCopy(zone,
                      instance_id=None,
@@ -1223,15 +1260,12 @@ def CreateVolumeCopy(zone,
         kms_key_id = source_account.CreateKMSKey()
         source_account.ShareKMSKeyWithAWSAccount(
             kms_key_id, destination_account_id)
-        temporary_volume = source_account.CreateVolumeFromSnapshot(
-            snapshot, kms_key_id=kms_key_id)
-        # The old snapshot is not needed anymore since we have created the
-        # temporary volume
+        # Create a copy of the initial snapshot and encrypts it with the
+        # shared key
+        temporary_snapshot = snapshot.Copy(kms_key_id=kms_key_id)
+        # Delete the initial snapshot
         snapshot.Delete()
-        # Get a new snapshot
-        snapshot = temporary_volume.Snapshot()
-        # Delete the temporary volume
-        temporary_volume.Delete()
+        snapshot = temporary_snapshot
       snapshot.ShareWithAWSAccount(destination_account_id)
 
     new_volume = destination_account.CreateVolumeFromSnapshot(
