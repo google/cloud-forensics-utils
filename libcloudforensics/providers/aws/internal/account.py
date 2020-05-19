@@ -24,11 +24,8 @@ import json
 import boto3
 import botocore
 
-from libcloudforensics.providers.aws.internal.common import EC2_SERVICE, \
-  REGEX_TAG_VALUE, GetTagForResourceType, GetInstanceTypeByCPU, \
-  ReadStartupScript, ACCOUNT_SERVICE, KMS_SERVICE
-from libcloudforensics.providers.aws.internal.ebs import AWSVolume
-from libcloudforensics.providers.aws.internal.ec2 import AWSInstance
+from libcloudforensics.providers.aws import internal as aws_internal
+from libcloudforensics.providers.aws.internal.common import EC2_SERVICE, REGEX_TAG_VALUE, ACCOUNT_SERVICE, KMS_SERVICE  # pylint: disable=line-too-long
 
 
 class AWSAccount:
@@ -144,7 +141,8 @@ class AWSAccount:
 
           zone = instance['Placement']['AvailabilityZone']
           instance_id = instance['InstanceId']
-          aws_instance = AWSInstance(self, instance_id, zone[:-1], zone)
+          aws_instance = aws_internal.AWSInstance(
+              self, instance_id, zone[:-1], zone)
 
           for tag in instance.get('Tags', []):
             if tag.get('Key') == 'Name':
@@ -201,11 +199,11 @@ class AWSAccount:
 
       for volume in response['Volumes']:
         volume_id = volume['VolumeId']
-        aws_volume = AWSVolume(volume_id,
-                               self,
-                               self.default_region,
-                               volume['AvailabilityZone'],
-                               volume['Encrypted'])
+        aws_volume = aws_internal.AWSVolume(volume_id,
+                                            self,
+                                            self.default_region,
+                                            volume['AvailabilityZone'],
+                                            volume['Encrypted'])
 
         for tag in volume.get('Tags', []):
           if tag.get('Key') == 'Name':
@@ -425,7 +423,8 @@ class AWSAccount:
     create_volume_args = {
         'AvailabilityZone': snapshot.availability_zone,
         'SnapshotId': snapshot.snapshot_id,
-        'TagSpecifications': [GetTagForResourceType('volume', volume_name)]
+        'TagSpecifications':
+            [aws_internal.GetTagForResourceType('volume', volume_name)]
     }
     if kms_key_id:
       create_volume_args['Encrypted'] = True
@@ -443,12 +442,12 @@ class AWSAccount:
                          '{1:s}: {2:s}'.format(volume_name, snapshot.name,
                                                str(exception)))
 
-    return AWSVolume(volume_id,
-                     self,
-                     self.default_region,
-                     zone,
-                     encrypted,
-                     name=volume_name)
+    return aws_internal.AWSVolume(volume_id,
+                                  self,
+                                  self.default_region,
+                                  zone,
+                                  encrypted,
+                                  name=volume_name)
 
   def GetOrCreateAnalysisVm(self,
                             vm_name,
@@ -483,8 +482,8 @@ class AWSAccount:
     except RuntimeError:
       pass
 
-    instance_type = GetInstanceTypeByCPU(cpu_cores)
-    startup_script = ReadStartupScript()
+    instance_type = aws_internal.GetInstanceTypeByCPU(cpu_cores)
+    startup_script = aws_internal.ReadStartupScript()
     if packages:
       startup_script = startup_script.replace('${packages[@]}', ' '.join(
           packages))
@@ -504,7 +503,8 @@ class AWSAccount:
           MinCount=1,
           MaxCount=1,
           InstanceType=instance_type,
-          TagSpecifications=[GetTagForResourceType('instance', vm_name)],
+          TagSpecifications=[aws_internal.GetTagForResourceType(
+              'instance', vm_name)],
           UserData=startup_script,
           Placement={'AvailabilityZone': self.default_availability_zone})
 
@@ -517,11 +517,11 @@ class AWSAccount:
       # Wait for the status checks to pass
       client.get_waiter('instance_status_ok').wait(InstanceIds=[instance_id])
 
-      instance = AWSInstance(self,
-                             instance_id,
-                             self.default_region,
-                             self.default_availability_zone,
-                             name=vm_name)
+      instance = aws_internal.AWSInstance(self,
+                                          instance_id,
+                                          self.default_region,
+                                          self.default_availability_zone,
+                                          name=vm_name)
       created = True
       return instance, created
     except client.exceptions.ClientError as exception:

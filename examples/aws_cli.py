@@ -19,9 +19,8 @@
 
 import argparse
 from datetime import datetime
-from libcloudforensics.providers.aws.forensics import AWSForensics
-from libcloudforensics.providers.aws.internal.log import AWSCloudTrail
-from libcloudforensics.providers.aws.internal.account import AWSAccount
+from libcloudforensics.providers.aws import internal as aws_internal
+from libcloudforensics.providers.aws import forensics as aws_forensics
 
 
 def CreateVolumeCopy(args):
@@ -31,7 +30,7 @@ def CreateVolumeCopy(args):
     args (dict): Arguments from ArgumentParser.
   """
   print('Starting volume copy...')
-  volume_copy = AWSForensics().CreateDiskCopy(
+  volume_copy = aws_forensics.AWSForensics().CreateDiskCopy(
       args.zone, instance_id=args.instance_id, volume_id=args.volume_id,
       src_account=args.src_account, dst_account=args.dst_account)
   print(
@@ -46,7 +45,8 @@ def LookupLogEvents(args):
   Args:
     args (dict): Arguments from ArgumentParser.
   """
-  ct = AWSCloudTrail(AWSAccount(default_availability_zone=args.zone))
+  ct = aws_internal.AWSCloudTrail(aws_internal.AWSAccount(
+      default_availability_zone=args.zone))
 
   params = {}
   if args.filter:

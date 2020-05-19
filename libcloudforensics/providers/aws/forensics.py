@@ -13,8 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Forensics implementation."""
-from libcloudforensics.providers.aws.internal.common import UBUNTU_1804_AMI, log
-from libcloudforensics.providers.aws.internal.account import AWSAccount
+from libcloudforensics.providers.aws.internal.common import UBUNTU_1804_AMI, LOGGER  # pylint: disable=line-too-long
+from libcloudforensics.providers.aws import internal as aws_internal
 from libcloudforensics.providers.forensics_interface import Forensics
 
 
@@ -94,8 +94,8 @@ class AWSForensics(Forensics):
       raise ValueError(
           'You must specify at least one of [instance_id, volume_id].')
 
-    source_account = AWSAccount(zone, aws_profile=src_account)
-    destination_account = AWSAccount(zone, aws_profile=dst_account)
+    source_account = aws_internal.AWSAccount(zone, aws_profile=src_account)
+    destination_account = aws_internal.AWSAccount(zone, aws_profile=dst_account)
     kms_key_id = None
 
     try:
@@ -105,7 +105,7 @@ class AWSForensics(Forensics):
         instance = source_account.GetInstanceById(instance_id)
         volume_to_copy = instance.GetBootVolume()
 
-      log.info('Volume copy of {0:s} started...'.format(
+      LOGGER.info('Volume copy of {0:s} started...'.format(
           volume_to_copy.volume_id))
       snapshot = volume_to_copy.Snapshot()
 
@@ -136,7 +136,7 @@ class AWSForensics(Forensics):
       snapshot.Delete()
       # Delete the one-time use KMS key, if one was generated
       source_account.DeleteKMSKey(kms_key_id)
-      log.info('Volume {0:s} successfully copied to {1:s}'.format(
+      LOGGER.info('Volume {0:s} successfully copied to {1:s}'.format(
           volume_to_copy.volume_id, new_volume.volume_id))
 
     except RuntimeError as exception:
@@ -185,7 +185,8 @@ class AWSForensics(Forensics):
     Raises:
       RuntimeError: If device_name is missing when attach_volume is provided.
     """
-    aws_account = AWSAccount(default_availability_zone, aws_profile=dst_account)
+    aws_account = aws_internal.AWSAccount(
+        default_availability_zone, aws_profile=dst_account)
     analysis_vm, created = aws_account.GetOrCreateAnalysisVm(
         vm_name, boot_volume_size, cpu_cores=cpu_cores, ami=ami)
     if attach_volume:

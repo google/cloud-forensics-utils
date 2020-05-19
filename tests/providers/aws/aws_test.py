@@ -18,33 +18,30 @@ import unittest
 
 import mock
 
-from libcloudforensics.providers.aws.internal.common import GetInstanceTypeByCPU
-from libcloudforensics.providers.aws.internal.ebs import AWSVolume, AWSSnapshot
-from libcloudforensics.providers.aws.internal.ec2 import AWSInstance
-from libcloudforensics.providers.aws.internal.account import AWSAccount
-from libcloudforensics.providers.aws.internal.log import AWSCloudTrail
-from libcloudforensics.providers.aws.forensics import AWSForensics
+from libcloudforensics.providers.aws import internal as aws_internal
+from libcloudforensics.providers.aws import forensics as aws_forensics
 
-FAKE_AWS_FORENSICS = AWSForensics()
-FAKE_AWS_ACCOUNT = AWSAccount(default_availability_zone='fake-zone-2b')
-FAKE_INSTANCE = AWSInstance(
+FAKE_AWS_FORENSICS = aws_forensics.AWSForensics()
+FAKE_AWS_ACCOUNT = aws_internal.AWSAccount(
+    default_availability_zone='fake-zone-2b')
+FAKE_INSTANCE = aws_internal.AWSInstance(
     FAKE_AWS_ACCOUNT,
     'fake-instance-id',
     'fake-zone-2',
     'fake-zone-2b')
-FAKE_INSTANCE_WITH_NAME = AWSInstance(
+FAKE_INSTANCE_WITH_NAME = aws_internal.AWSInstance(
     FAKE_AWS_ACCOUNT,
     'fake-instance-with-name-id',
     'fake-zone-2',
     'fake-zone-2b',
     name='fake-instance')
-FAKE_VOLUME = AWSVolume(
+FAKE_VOLUME = aws_internal.AWSVolume(
     'fake-volume-id',
     FAKE_AWS_ACCOUNT,
     'fake-zone-2',
     'fake-zone-2b',
     False)
-FAKE_BOOT_VOLUME = AWSVolume(
+FAKE_BOOT_VOLUME = aws_internal.AWSVolume(
     'fake-boot-volume-id',
     FAKE_AWS_ACCOUNT,
     'fake-zone-2',
@@ -52,11 +49,11 @@ FAKE_BOOT_VOLUME = AWSVolume(
     False,
     name='fake-boot-volume',
     device_name='/dev/spf')
-FAKE_SNAPSHOT = AWSSnapshot(
+FAKE_SNAPSHOT = aws_internal.AWSSnapshot(
     'fake-snapshot-id',
     FAKE_VOLUME,
     name='fake-snapshot')
-FAKE_CLOUDTRAIL = AWSCloudTrail(FAKE_AWS_ACCOUNT)
+FAKE_CLOUDTRAIL = aws_internal.AWSCloudTrail(FAKE_AWS_ACCOUNT)
 FAKE_EVENT_LIST = [
     {'EventId': '474e8265-9180-4407-a5c9-f3a86d8bb1f0',
      'EventName': 'CreateUser', 'ReadOnly': 'false'},
@@ -218,7 +215,7 @@ class AWSAccountTest(unittest.TestCase):
     mock_list_instances.return_value = MOCK_LIST_INSTANCES
     found_instance = FAKE_AWS_ACCOUNT.GetInstanceById(
         FAKE_INSTANCE.instance_id)
-    self.assertIsInstance(found_instance, AWSInstance)
+    self.assertIsInstance(found_instance, aws_internal.AWSInstance)
     self.assertEqual('fake-instance-id', found_instance.instance_id)
     self.assertEqual('fake-zone-2', found_instance.region)
     self.assertEqual('fake-zone-2b', found_instance.availability_zone)
@@ -234,7 +231,7 @@ class AWSAccountTest(unittest.TestCase):
     found_instances = FAKE_AWS_ACCOUNT.GetInstancesByName(
         FAKE_INSTANCE_WITH_NAME.name)
     self.assertEqual(1, len(found_instances))
-    self.assertIsInstance(found_instances[0], AWSInstance)
+    self.assertIsInstance(found_instances[0], aws_internal.AWSInstance)
     self.assertEqual(
         'fake-instance-with-name-id', found_instances[0].instance_id)
     self.assertEqual('fake-zone-2', found_instances[0].region)
@@ -272,7 +269,7 @@ class AWSAccountTest(unittest.TestCase):
     mock_list_volumes.return_value = MOCK_LIST_VOLUMES
     found_volume = FAKE_AWS_ACCOUNT.GetVolumeById(
         FAKE_VOLUME.volume_id)
-    self.assertIsInstance(found_volume, AWSVolume)
+    self.assertIsInstance(found_volume, aws_internal.AWSVolume)
     self.assertEqual('fake-volume-id', found_volume.volume_id)
     self.assertEqual('fake-zone-2', found_volume.region)
     self.assertEqual('fake-zone-2b', found_volume.availability_zone)
@@ -325,7 +322,7 @@ class AWSAccountTest(unittest.TestCase):
     #     Snapshot=FAKE_SNAPSHOT, volume_name=None, volume_name_prefix='')
     volume_from_snapshot = FAKE_AWS_ACCOUNT.CreateVolumeFromSnapshot(
         FAKE_SNAPSHOT)
-    self.assertIsInstance(volume_from_snapshot, AWSVolume)
+    self.assertIsInstance(volume_from_snapshot, aws_internal.AWSVolume)
     self.assertEqual(
         'fake-volume-from-snapshot-id', volume_from_snapshot.volume_id)
     self.assertEqual('fake-snapshot-d69d57c3-copy', volume_from_snapshot.name)
@@ -336,7 +333,7 @@ class AWSAccountTest(unittest.TestCase):
     #     volume_name_prefix='')
     volume_from_snapshot = FAKE_AWS_ACCOUNT.CreateVolumeFromSnapshot(
         FAKE_SNAPSHOT, volume_name='new-forensics-volume')
-    self.assertIsInstance(volume_from_snapshot, AWSVolume)
+    self.assertIsInstance(volume_from_snapshot, aws_internal.AWSVolume)
     self.assertEqual(
         'fake-volume-from-snapshot-id', volume_from_snapshot.volume_id)
     self.assertEqual('new-forensics-volume', volume_from_snapshot.name)
@@ -345,7 +342,7 @@ class AWSAccountTest(unittest.TestCase):
     #     Snapshot=FAKE_SNAPSHOT, volume_name=None, volume_name_prefix='prefix')
     volume_from_snapshot = FAKE_AWS_ACCOUNT.CreateVolumeFromSnapshot(
         FAKE_SNAPSHOT, volume_name_prefix='prefix')
-    self.assertIsInstance(volume_from_snapshot, AWSVolume)
+    self.assertIsInstance(volume_from_snapshot, aws_internal.AWSVolume)
     self.assertEqual(
         'fake-volume-from-snapshot-id', volume_from_snapshot.volume_id)
     self.assertEqual(
@@ -366,7 +363,7 @@ class AWSAccountTest(unittest.TestCase):
     vm, created = FAKE_AWS_ACCOUNT.GetOrCreateAnalysisVm(
         FAKE_INSTANCE_WITH_NAME.name, 1, 'ami-id', 2)
     mock_ec2_api.return_value.run_instances.assert_not_called()
-    self.assertIsInstance(vm, AWSInstance)
+    self.assertIsInstance(vm, aws_internal.AWSInstance)
     self.assertEqual('fake-instance', vm.name)
     self.assertFalse(created)
 
@@ -378,7 +375,7 @@ class AWSAccountTest(unittest.TestCase):
     vm, created = FAKE_AWS_ACCOUNT.GetOrCreateAnalysisVm(
         'non-existent-instance-name', 1, 'ami-id', 2)
     mock_ec2_api.return_value.run_instances.assert_called()
-    self.assertIsInstance(vm, AWSInstance)
+    self.assertIsInstance(vm, aws_internal.AWSInstance)
     self.assertEqual('non-existent-instance-name', vm.name)
     self.assertTrue(created)
 
@@ -414,10 +411,10 @@ class AWSAccountTest(unittest.TestCase):
   def testGetInstanceTypeByCPU(self):
     """Test that the instance type matches the requested amount of CPU cores."""
     # pylint: disable=protected-access
-    self.assertEqual('m4.large', GetInstanceTypeByCPU(2))
-    self.assertEqual('m4.16xlarge', GetInstanceTypeByCPU(64))
-    self.assertRaises(ValueError, GetInstanceTypeByCPU, 0)
-    self.assertRaises(ValueError, GetInstanceTypeByCPU, 256)
+    self.assertEqual('m4.large', aws_internal.GetInstanceTypeByCPU(2))
+    self.assertEqual('m4.16xlarge', aws_internal.GetInstanceTypeByCPU(64))
+    self.assertRaises(ValueError, aws_internal.GetInstanceTypeByCPU, 0)
+    self.assertRaises(ValueError, aws_internal.GetInstanceTypeByCPU, 256)
     # pylint: enable=protected-access
 
 
@@ -435,7 +432,7 @@ class AWSInstanceTest(unittest.TestCase):
     instance.return_value.root_device_name = '/dev/spf'
 
     boot_volume = FAKE_INSTANCE.GetBootVolume()
-    self.assertIsInstance(boot_volume, AWSVolume)
+    self.assertIsInstance(boot_volume, aws_internal.AWSVolume)
     self.assertEqual('fake-boot-volume-id', boot_volume.volume_id)
 
 
@@ -452,7 +449,7 @@ class AWSVolumeTest(unittest.TestCase):
 
     # Snapshot(snapshot_name=None). Snapshot should start with the volume's name
     snapshot = FAKE_VOLUME.Snapshot()
-    self.assertIsInstance(snapshot, AWSSnapshot)
+    self.assertIsInstance(snapshot, aws_internal.AWSSnapshot)
     # Part of the snapshot name is taken from a timestamp, therefore we only
     # assert for the beginning of the string.
     self.assertTrue(snapshot.name.startswith('fake-volume'))
@@ -460,7 +457,7 @@ class AWSVolumeTest(unittest.TestCase):
     # Snapshot(snapshot_name='my-Snapshot'). Snapshot should start with
     # 'my-Snapshot'
     snapshot = FAKE_VOLUME.Snapshot(snapshot_name='my-snapshot')
-    self.assertIsInstance(snapshot, AWSSnapshot)
+    self.assertIsInstance(snapshot, aws_internal.AWSSnapshot)
     # Same as above regarding the timestamp.
     self.assertTrue(snapshot.name.startswith('my-snapshot'))
 
@@ -505,7 +502,7 @@ class AWSTest(unittest.TestCase):
     new_volume = FAKE_AWS_FORENSICS.CreateDiskCopy(
         FAKE_INSTANCE.availability_zone, volume_id=FAKE_VOLUME.volume_id)
     mock_get_volume.assert_called_with('fake-volume-id')
-    self.assertIsInstance(new_volume, AWSVolume)
+    self.assertIsInstance(new_volume, aws_internal.AWSVolume)
     self.assertTrue(new_volume.name.startswith('evidence-'))
     self.assertIn('fake-volume-id', new_volume.name)
     self.assertTrue(new_volume.name.endswith('-copy'))
@@ -534,7 +531,7 @@ class AWSTest(unittest.TestCase):
     new_volume = FAKE_AWS_FORENSICS.CreateDiskCopy(
         FAKE_INSTANCE.availability_zone, instance_id=FAKE_INSTANCE.instance_id)
     mock_get_instance.assert_called_with('fake-instance-id')
-    self.assertIsInstance(new_volume, AWSVolume)
+    self.assertIsInstance(new_volume, aws_internal.AWSVolume)
     self.assertTrue(new_volume.name.startswith('evidence-'))
     self.assertIn('fake-boot-volume-id', new_volume.name)
     self.assertTrue(new_volume.name.endswith('-copy'))

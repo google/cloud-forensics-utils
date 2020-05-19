@@ -15,17 +15,15 @@
 """End to end test for the gcp module."""
 
 import unittest
-import logging
 import json
 import time
 import os
 
 from googleapiclient.errors import HttpError
 
-from libcloudforensics.providers.gcp.internal.project import GoogleCloudProject
-from libcloudforensics.providers.gcp.forensics import GCPForensics
-
-log = logging.getLogger()
+from libcloudforensics.providers.gcp.internal.common import LOGGER
+from libcloudforensics.providers.gcp import internal as gcp_internal
+from libcloudforensics.providers.gcp import forensics as gcp_forensics
 
 
 class EndToEndTest(unittest.TestCase):
@@ -64,8 +62,8 @@ class EndToEndTest(unittest.TestCase):
     # Optional: test a disk other than the boot disk
     cls.disk_to_forensic = project_info.get('disk', None)
     cls.zone = project_info['zone']
-    cls.gcp = GoogleCloudProject(cls.project_id, cls.zone)
-    cls.forensics = GCPForensics()
+    cls.gcp = gcp_internal.GoogleCloudProject(cls.project_id, cls.zone)
+    cls.forensics = gcp_forensics.GCPForensics()
     cls.analysis_vm_name = 'new-vm-for-analysis'
     # Create and start the analysis VM
     cls.analysis_vm, _ = cls.forensics.StartAnalysisVm(
@@ -87,11 +85,11 @@ class EndToEndTest(unittest.TestCase):
 
     This end-to-end test runs directly on GCP and tests that:
       1. The project.py module connects to the target instance and makes a
-         snapshot of the boot disk.
+            snapshot of the boot disk.
       2. A new disk is created from the taken snapshot.
       3. If an analysis VM already exists, the module will attach the disk
-          copy to the VM. Otherwise, it will create a new GCP instance for
-          analysis purpose and attach the boot disk copy to it.
+            copy to the VM. Otherwise, it will create a new GCP instance for
+            analysis purpose and attach the boot disk copy to it.
     """
 
     # Make a copy of the boot disk of the instance to analyse
@@ -198,7 +196,7 @@ class EndToEndTest(unittest.TestCase):
     project = cls.gcp
     disks = analysis_vm.ListDisks()
     # delete the created forensics VMs
-    log.info('Deleting analysis instance: {0:s}.'.format(analysis_vm.name))
+    LOGGER.info('Deleting analysis instance: {0:s}.'.format(analysis_vm.name))
     gce_instance_client = project.GceApi().instances()
     request = gce_instance_client.delete(
         project=project.project_id, zone=zone, instance=analysis_vm.name)
@@ -211,13 +209,13 @@ class EndToEndTest(unittest.TestCase):
       # operation has finished and thus the associated ID doesn't exists
       # anymore, throwing an HttpError. We can ignore this.
       pass
-    log.info('Instance {0:s} successfully deleted.'.format(analysis_vm.name))
+    LOGGER.info('Instance {0:s} successfully deleted.'.format(analysis_vm.name))
 
     # delete the copied disks
     # we ignore the disk that was created for the analysis VM (disks[0]) as
     # it is deleted in the previous operation
     for disk in disks[1:]:
-      log.info('Deleting disk: {0:s}.'.format(disk))
+      LOGGER.info('Deleting disk: {0:s}.'.format(disk))
       while True:
         try:
           gce_disk_client = project.GceApi().disks()
@@ -233,13 +231,13 @@ class EndToEndTest(unittest.TestCase):
           if exception.resp.status == 404:
             break
           if exception.resp.status != 400:
-            log.warning(
+            LOGGER.warning(
                 'Could not delete the disk {0:s}: {1:s}'.format(
                     disk, str(exception)))
           # Throttle the requests to one every 10 seconds
           time.sleep(10)
 
-      log.info('Disk {0:s} successfully deleted.'.format(disk))
+      LOGGER.info('Disk {0:s} successfully deleted.'.format(disk))
 
 
 def ReadProjectInfo():

@@ -16,9 +16,8 @@
 
 import argparse
 import json
-from libcloudforensics.providers.gcp.internal.project import GoogleCloudProject
-from libcloudforensics.providers.gcp.internal.log import GoogleCloudLog
-from libcloudforensics.providers.gcp.forensics import GCPForensics
+from libcloudforensics.providers.gcp import internal as gcp_internal
+from libcloudforensics.providers.gcp import forensics as gcp_forensics
 
 
 def ListInstances(args):
@@ -28,7 +27,7 @@ def ListInstances(args):
     args (dict): Arguments from ArgumentParser.
   """
 
-  project = GoogleCloudProject(args.project)
+  project = gcp_internal.GoogleCloudProject(args.project)
   instances = project.ListInstances()
 
   print('Instances found:')
@@ -44,7 +43,7 @@ def ListDisks(args):
     args (dict): Arguments from ArgumentParser.
   """
 
-  project = GoogleCloudProject(args.project)
+  project = gcp_internal.GoogleCloudProject(args.project)
   disks = project.ListDisks()
   print('Disks found:')
   for disk in disks:
@@ -58,7 +57,7 @@ def CreateDiskCopy(args):
     args (dict): Arguments from ArgumentParser.
   """
 
-  disk = GCPForensics().CreateDiskCopy(
+  disk = gcp_forensics.GCPForensics().CreateDiskCopy(
       args.project, args.dstproject, args.instancename, args.zone)
 
   print('Disk copy completed.')
@@ -71,7 +70,7 @@ def ListLogs(args):
   Args:
     args (dict): Arguments from ArgumentParser.
   """
-  logs = GoogleCloudLog(args.project)
+  logs = gcp_internal.GoogleCloudLog(args.project)
   results = logs.ListLogs()
   print('Found {0:d} available log types:'.format(len(results)))
   for line in results:
@@ -84,7 +83,7 @@ def QueryLogs(args):
   Args:
     args (dict): Arguments from ArgumentParser.
   """
-  logs = GoogleCloudLog(args.project)
+  logs = gcp_internal.GoogleCloudLog(args.project)
   results = logs.ExecuteQuery(args.filter)
   print('Found {0:d} log entries:'.format(len(results)))
   for line in results:
