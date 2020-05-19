@@ -19,7 +19,7 @@ analysis virtual machine to be used in incident response.
 """
 
 import binascii
-import datetime
+from datetime import datetime
 import json
 import logging
 import os
@@ -31,6 +31,7 @@ import botocore
 log = logging.getLogger()
 
 EC2_SERVICE = 'ec2'
+CLOUDTRAIL_SERVICE = 'cloudtrail'
 ACCOUNT_SERVICE = 'sts'
 KMS_SERVICE = 'kms'
 # Default Amazon Machine Image to use for bootstrapping instances
@@ -974,7 +975,7 @@ class AWSVolume(AWSElasticBlockStore):
       RuntimeError: If the snapshot could not be created.
     """
 
-    timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+    timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
     if not snapshot_name:
       snapshot_name = self.volume_id
     truncate_at = 255 - len(timestamp) - 1
@@ -1064,6 +1065,67 @@ class AWSSnapshot(AWSElasticBlockStore):
         OperationType='add'
     )
 
+
+class AWSCloudTrail:
+  """Class representing an AWS CloudTrail service.
+
+  Attributes:
+    aws_account (AWSAccount): The AWS account to use.
+  """
+
+  def __init__(self, aws_account):
+    """Initialize an AWS CloudTrail client.
+
+    Args:
+      aws_account (AWSAccount): The AWS account to use.
+    """
+
+    self.aws_account = aws_account
+
+  def LookupEvents(self,
+                   qfilter=(),
+                   starttime=None,
+                   endtime=None):
+    """Lookup events in the CloudTrail logs of this account.
+
+    Example usage:
+      # pylint: disable=line-too-long
+      # qfilter = 'key,value'
+      # starttime = datetime(2020,5,5,17,33,00)
+      # LookupEvents(qfilter=qfilter, starttime=starttime)
+      # Check documentation for qfilter details
+      # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/cloudtrail.html#CloudTrail.Client.lookup_events
+
+    Args:
+      qfilter (string): Optional. Filter for the query including 1 key and value.
+      starttime (datetime): Optional. Start datetime to add to query filter.
+      endtime (datetime): Optional. End datetime to add to query filter.
+
+    Returns:
+      list(dict): A list of events.
+    """
+
+    events = []
+
+    client = self.aws_account.ClientApi(CLOUDTRAIL_SERVICE)
+
+    params = {}
+    if qfilter:
+      k, v = qfilter.split(',')
+      qfilter = [{'AttributeKey': k, 'AttributeValue': v}]
+      params = {'LookupAttributes': qfilter}
+    if starttime:
+      params['StartTime'] = starttime
+    if endtime:
+      params['EndTime'] = endtime
+
+    while True:
+      response = client.lookup_events(**params)
+      for entry in response['Events']:
+        events.append(entry)
+      if 'NextToken' not in response:
+        return events
+      params['NextToken'] = response['NextToken']
 
 def CreateVolumeCopy(zone,
                      instance_id=None,
