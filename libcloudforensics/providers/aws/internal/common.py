@@ -27,7 +27,7 @@ UBUNTU_1804_AMI = 'ami-0013b3aa57f8a4331'
 REGEX_TAG_VALUE = re.compile('^.{1,255}$')
 STARTUP_SCRIPT = 'scripts/startup.sh'
 
-log = logging.getLogger()
+LOGGER = logging.getLogger()
 
 
 def GetTagForResourceType(resource, name):

@@ -26,10 +26,8 @@ import time
 
 from googleapiclient.errors import HttpError
 
-from libcloudforensics.providers.gcp.internal.common import GenerateDiskName, \
-  log, CreateService, ReadStartupScript
-from libcloudforensics.providers.gcp.internal.compute import \
-  GoogleComputeInstance, GoogleComputeDisk, GoogleComputeImage
+from libcloudforensics.providers.gcp.internal import common
+from libcloudforensics.providers.gcp.internal import compute
 
 
 class GoogleCloudProject:
@@ -69,7 +67,7 @@ class GoogleCloudProject:
 
     if self.gce_api_client:
       return self.gce_api_client
-    self.gce_api_client = CreateService(
+    self.gce_api_client = common.CreateService(
         'compute', self.COMPUTE_ENGINE_API_VERSION)
     return self.gce_api_client
 
@@ -147,7 +145,7 @@ class GoogleCloudProject:
           for instance in result['items'][zone]['instances']:
             _, zone = instance['zone'].rsplit('/', 1)
             name = instance['name']
-            instances[name] = GoogleComputeInstance(
+            instances[name] = compute.GoogleComputeInstance(
                 self, zone, name, labels=instance.get('labels'))
         except KeyError:
           pass
@@ -181,7 +179,7 @@ class GoogleCloudProject:
           for disk in result['items'][zone]['disks']:
             _, zone = disk['zone'].rsplit('/', 1)
             name = disk['name']
-            disks[name] = GoogleComputeDisk(
+            disks[name] = compute.GoogleComputeDisk(
                 self, zone, name, labels=disk.get('labels'))
         except KeyError:
           pass
@@ -253,7 +251,7 @@ class GoogleCloudProject:
     """
 
     if not disk_name:
-      disk_name = GenerateDiskName(snapshot, disk_name_prefix)
+      disk_name = common.GenerateDiskName(snapshot, disk_name_prefix)
     body = {
         'name':
             disk_name,
@@ -277,7 +275,7 @@ class GoogleCloudProject:
           'from Snapshot:\n{1!s}').format(exception.resp.status, exception)
       raise RuntimeError(error_msg)
     self.BlockOperation(response, zone=self.default_zone)
-    return GoogleComputeDisk(
+    return compute.GoogleComputeDisk(
         project=self, zone=self.default_zone, name=disk_name)
 
   def GetOrCreateAnalysisVm(self,
@@ -333,7 +331,7 @@ class GoogleCloudProject:
         project=image_project, family=image_family).execute()
     source_disk_image = ubuntu_image['selfLink']
 
-    startup_script = ReadStartupScript()
+    startup_script = common.ReadStartupScript()
 
     if packages:
       startup_script = startup_script.replace(
@@ -384,7 +382,7 @@ class GoogleCloudProject:
         project=self.project_id, zone=self.default_zone, body=config)
     response = request.execute()
     self.BlockOperation(response, zone=self.default_zone)
-    instance = GoogleComputeInstance(
+    instance = compute.GoogleComputeInstance(
         project=self, zone=self.default_zone, name=vm_name)
     created = True
     return instance, created
@@ -480,12 +478,12 @@ class GoogleCloudProject:
           # called either with a service object Instances or Disks.
           for resource in resource_scoped_list.get('instances', []):
             name = resource['name']
-            resource_dict[name] = GoogleComputeInstance(
+            resource_dict[name] = compute.GoogleComputeInstance(
                 self, zone, name, labels=resource['labels'])
 
           for resource in resource_scoped_list.get('disks', []):
             name = resource['name']
-            resource_dict[name] = GoogleComputeDisk(
+            resource_dict[name] = compute.GoogleComputeDisk(
                 self, zone, name, labels=resource['labels'])
 
       request = service_object.aggregatedList_next(
@@ -519,7 +517,7 @@ class GoogleCloudProject:
         project=self.project_id, body=image_body, forceCreate=True)
     response = request.execute()
     self.BlockOperation(response)
-    return GoogleComputeImage(self, None, name)
+    return compute.GoogleComputeImage(self, None, name)
 
 
 class GoogleCloudFunction(GoogleCloudProject):
@@ -553,7 +551,7 @@ class GoogleCloudFunction(GoogleCloudProject):
 
     if self.gcf_api_client:
       return self.gcf_api_client
-    self.gcf_api_client = CreateService(
+    self.gcf_api_client = common.CreateService(
         'cloudfunctions', self.CLOUD_FUNCTIONS_API_VERSION)
     return self.gcf_api_client
 
@@ -586,7 +584,7 @@ class GoogleCloudFunction(GoogleCloudProject):
     function_path = 'projects/{0:s}/locations/{1:s}/functions/{2:s}'.format(
         self.project_id, self.region, function_name)
 
-    log.debug(
+    common.LOGGER.debug(
         'Calling Cloud Function [{0:s}] with args [{1!s}]'.format(
             function_name, args))
     try:
@@ -629,7 +627,7 @@ class GoogleCloudBuild(GoogleCloudProject):
 
     if self.gcb_api_client:
       return self.gcb_api_client
-    self.gcb_api_client = CreateService(
+    self.gcb_api_client = common.CreateService(
         'cloudbuild', self.CLOUD_BUILD_API_VERSION)
     return self.gcb_api_client
 
@@ -647,7 +645,7 @@ class GoogleCloudBuild(GoogleCloudProject):
     build_info = cloud_build_client.create(
         projectId=self.project_id, body=build_body).execute()
     build_metadata = build_info['metadata']['build']
-    log.info(
+    common.LOGGER.info(
         'Build started, logs bucket: {0:s}, logs URL: {1:s}'.format(
             build_metadata['logsBucket'], build_metadata['logUrl']))
     return build_info

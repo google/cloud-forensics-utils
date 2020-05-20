@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Common utilities."""
+
 import binascii
 import logging
 import os
@@ -23,7 +24,7 @@ from google.auth import default
 from google.auth.exceptions import DefaultCredentialsError
 from googleapiclient.discovery import build
 
-log = logging.getLogger()
+LOGGER = logging.getLogger()
 RETRY_MAX = 10
 REGEX_DISK_NAME = re.compile('^(?=.{1,63}$)[a-z]([-a-z0-9]*[a-z0-9])?$')
 STARTUP_SCRIPT = 'scripts/startup.sh'
@@ -108,7 +109,7 @@ def CreateService(service_name, api_version):
           cache_discovery=False)
       service_built = True
     except socket.timeout:
-      log.info(
+      LOGGER.info(
           'Timeout trying to build service {0:s} (try {1:s} of {2:s})'.format(
               service_name, retry, RETRY_MAX))
 
