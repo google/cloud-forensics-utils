@@ -18,8 +18,7 @@ import datetime
 
 import botocore
 
-from libcloudforensics.providers.aws import internal
-from libcloudforensics.providers.aws.internal.common import REGEX_TAG_VALUE, EC2_SERVICE  # pylint: disable=line-too-long
+from libcloudforensics.providers.aws.internal import common
 
 
 class AWSElasticBlockStore:
@@ -119,15 +118,16 @@ class AWSVolume(AWSElasticBlockStore):
       snapshot_name = self.volume_id
     truncate_at = 255 - len(timestamp) - 1
     snapshot_name = '{0}-{1}'.format(snapshot_name[:truncate_at], timestamp)
-    if not REGEX_TAG_VALUE.match(snapshot_name):
+    if not common.REGEX_TAG_VALUE.match(snapshot_name):
       raise ValueError('Snapshot name {0:s} does not comply with '
-                       '{1:s}'.format(snapshot_name, REGEX_TAG_VALUE.pattern))
+                       '{1:s}'.format(snapshot_name,
+                                      common.REGEX_TAG_VALUE.pattern))
 
-    client = self.aws_account.ClientApi(EC2_SERVICE)
+    client = self.aws_account.ClientApi(common.EC2_SERVICE)
     try:
       snapshot = client.create_snapshot(
           VolumeId=self.volume_id,
-          TagSpecifications=[internal.GetTagForResourceType(
+          TagSpecifications=[common.GetTagForResourceType(
               'snapshot', snapshot_name)])
 
       snapshot_id = snapshot.get('SnapshotId')
@@ -142,7 +142,7 @@ class AWSVolume(AWSElasticBlockStore):
 
   def Delete(self):
     """Delete a volume."""
-    client = self.aws_account.ClientApi(EC2_SERVICE)
+    client = self.aws_account.ClientApi(common.EC2_SERVICE)
     try:
       client.delete_volume(VolumeId=self.volume_id)
     except client.exceptions.ClientError as exception:
@@ -179,7 +179,7 @@ class AWSSnapshot(AWSElasticBlockStore):
   def Delete(self):
     """Delete a snapshot."""
 
-    client = self.aws_account.ClientApi(EC2_SERVICE)
+    client = self.aws_account.ClientApi(common.EC2_SERVICE)
     try:
       client.delete_snapshot(SnapshotId=self.snapshot_id)
     except client.exceptions.ClientError as exception:
@@ -193,7 +193,7 @@ class AWSSnapshot(AWSElasticBlockStore):
       aws_account_id (str): The AWS Account ID to share the snapshot with.
     """
 
-    snapshot = self.aws_account.ResourceApi(EC2_SERVICE).Snapshot(
+    snapshot = self.aws_account.ResourceApi(common.EC2_SERVICE).Snapshot(
         self.snapshot_id)
     snapshot.modify_attribute(
         Attribute='createVolumePermission',

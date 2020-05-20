@@ -21,7 +21,7 @@ import subprocess
 import time
 
 from libcloudforensics.providers.gcp.internal.common import REGEX_DISK_NAME, LOGGER  # pylint: disable=line-too-long
-from libcloudforensics.providers.gcp import internal
+from libcloudforensics.providers.gcp.internal import project as gcp_project
 
 
 class GoogleComputeBaseResource:
@@ -469,7 +469,7 @@ class GoogleComputeImage(GoogleComputeBaseResource):
         }],
         'tags': ['gce-daisy', 'gce-daisy-image-export']
     }
-    cloud_build = internal.GoogleCloudBuild(self.project.project_id)
+    cloud_build = gcp_project.GoogleCloudBuild(self.project.project_id)
     response = cloud_build.CreateBuild(build_body)
     cloud_build.BlockOperation(response)
     LOGGER.info('Image {0:s} exported to {1:s}.'.format(self.name, full_path))
