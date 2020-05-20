@@ -62,7 +62,7 @@ def CreateVolumeCopy(args):
     args (dict): Arguments from ArgumentParser.
   """
   print('Starting volume copy...')
-  volume_copy = forensics.AWSForensics().CreateDiskCopy(
+  volume_copy = forensics.CreateVolumeCopy(
       args.zone, instance_id=args.instance_id, volume_id=args.volume_id,
       src_account=args.src_account, dst_account=args.dst_account)
   print(
