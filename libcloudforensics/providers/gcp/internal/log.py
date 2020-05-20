@@ -18,7 +18,7 @@ import time
 
 from google.auth.exceptions import RefreshError, DefaultCredentialsError
 
-from libcloudforensics.providers.gcp.internal.common import CreateService
+from libcloudforensics.providers.gcp.internal import common
 
 
 class GoogleCloudLog:
@@ -57,7 +57,8 @@ class GoogleCloudLog:
 
     if self.gcl_api_client:
       return self.gcl_api_client
-    self.gcl_api_client = CreateService('logging', self.LOGGING_API_VERSION)
+    self.gcl_api_client = common.CreateService(
+        'logging', self.LOGGING_API_VERSION)
     return self.gcl_api_client
 
   def ListLogs(self):

@@ -13,16 +13,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Forensics implementation."""
+
 from google.auth.exceptions import RefreshError, DefaultCredentialsError
 from googleapiclient.errors import HttpError
 
-from libcloudforensics.providers.forensics_interface import Forensics
-from libcloudforensics.providers.gcp.internal.project import \
-  GoogleCloudProject
-from libcloudforensics.providers.gcp.internal.common import log
+from libcloudforensics.providers import forensics_interface
+from libcloudforensics.providers.gcp.internal import project as gcp_project
+from libcloudforensics.providers.gcp.internal.common import LOGGER
 
 
-class GCPForensics(Forensics):
+class GCPForensics(forensics_interface.Forensics):
   """Concrete implementation of the forensics interface."""
 
   # pylint: disable=arguments-differ
@@ -53,8 +53,8 @@ class GCPForensics(Forensics):
       RuntimeError: If there are errors copying the disk
     """
 
-    src_proj = GoogleCloudProject(src_proj)
-    dst_proj = GoogleCloudProject(dst_proj, default_zone=zone)
+    src_proj = gcp_project.GoogleCloudProject(src_proj)
+    dst_proj = gcp_project.GoogleCloudProject(dst_proj, default_zone=zone)
     instance = src_proj.GetInstance(instance_name) if instance_name else None
 
     try:
@@ -63,12 +63,12 @@ class GCPForensics(Forensics):
       else:
         disk_to_copy = instance.GetBootDisk()
 
-      log.info('Disk copy of {0:s} started...'.format(disk_to_copy.name))
+      LOGGER.info('Disk copy of {0:s} started...'.format(disk_to_copy.name))
       snapshot = disk_to_copy.Snapshot()
       new_disk = dst_proj.CreateDiskFromSnapshot(
           snapshot, disk_name_prefix='evidence', disk_type=disk_type)
       snapshot.Delete()
-      log.info(
+      LOGGER.info(
           'Disk {0:s} successfully copied to {1:s}'.format(
               disk_to_copy.name, new_disk.name))
 
@@ -130,7 +130,7 @@ class GCPForensics(Forensics):
           and a boolean indicating if the virtual machine was created or not.
     """
 
-    project = GoogleCloudProject(project, default_zone=zone)
+    project = gcp_project.GoogleCloudProject(project, default_zone=zone)
     analysis_vm, created = project.GetOrCreateAnalysisVm(
         vm_name, boot_disk_size, disk_type=boot_disk_type, cpu_cores=cpu_cores,
         image_project=image_project, image_family=image_family)

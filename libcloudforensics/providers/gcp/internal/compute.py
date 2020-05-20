@@ -20,7 +20,8 @@ import re
 import subprocess
 import time
 
-from libcloudforensics.providers.gcp.internal.common import REGEX_DISK_NAME, log
+from libcloudforensics.providers.gcp.internal.common import REGEX_DISK_NAME, LOGGER  # pylint: disable=line-too-long
+from libcloudforensics.providers.gcp.internal import project as gcp_project
 
 
 class GoogleComputeBaseResource:
@@ -266,7 +267,7 @@ class GoogleComputeInstance(GoogleComputeBaseResource):
     max_retries = 100  # times to retry the connection
     retries = 0
 
-    log.info(
+    LOGGER.info(
         self.project.FormatLogMessage('Connecting to analysis VM over SSH'))
 
     while retries < max_retries:
@@ -290,7 +291,7 @@ class GoogleComputeInstance(GoogleComputeBaseResource):
     if read_write:
       mode = 'READ_WRITE'
 
-    log.info(
+    LOGGER.info(
         self.project.FormatLogMessage(
             'Attaching {0} to VM {1} in {2} mode'.format(
                 disk.name, self.name, mode)))
@@ -354,7 +355,7 @@ class GoogleComputeDisk(GoogleComputeBaseResource):
       raise ValueError(
           'Snapshot name {0:s} does not comply with '
           '{1:s}'.format(snapshot_name, REGEX_DISK_NAME.pattern))
-    log.info(
+    LOGGER.info(
         self.project.FormatLogMessage(
             'New Snapshot: {0}'.format(snapshot_name)))
     operation_config = {'name': snapshot_name}
@@ -402,7 +403,7 @@ class GoogleComputeSnapshot(GoogleComputeBaseResource):
   def Delete(self):
     """Delete a Snapshot."""
 
-    log.info(
+    LOGGER.info(
         self.project.FormatLogMessage(
             'Deleted Snapshot: {0}'.format(self.name)))
     gce_snapshot_client = self.project.GceApi().snapshots()
@@ -468,13 +469,10 @@ class GoogleComputeImage(GoogleComputeBaseResource):
         }],
         'tags': ['gce-daisy', 'gce-daisy-image-export']
     }
-    # Importing locally for the tests to pass
-    from libcloudforensics.providers.gcp.internal.project import \
-        GoogleCloudBuild  # pylint: disable=import-outside-toplevel, cyclic-import
-    cloud_build = GoogleCloudBuild(self.project.project_id)
+    cloud_build = gcp_project.GoogleCloudBuild(self.project.project_id)
     response = cloud_build.CreateBuild(build_body)
     cloud_build.BlockOperation(response)
-    log.info('Image {0:s} exported to {1:s}.'.format(self.name, full_path))
+    LOGGER.info('Image {0:s} exported to {1:s}.'.format(self.name, full_path))
 
   def Delete(self):
     """Delete Compute Disk Image from a project.

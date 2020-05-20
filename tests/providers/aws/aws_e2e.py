@@ -17,13 +17,10 @@
 import json
 import os
 import unittest
-import logging
 
-from libcloudforensics.providers.aws.internal.account import AWSAccount
-from libcloudforensics.providers.aws.forensics import AWSForensics
-
-log = logging.getLogger()
-EC2_SERVICE = 'ec2'
+from libcloudforensics.providers.aws.internal.common import LOGGER, EC2_SERVICE
+from libcloudforensics.providers.aws.internal import account
+from libcloudforensics.providers.aws import forensics
 
 
 class EndToEndTest(unittest.TestCase):
@@ -59,8 +56,8 @@ class EndToEndTest(unittest.TestCase):
     cls.instance_to_analyse = project_info['instance']
     cls.zone = project_info['zone']
     cls.volume_to_forensic = project_info.get('volume_id', None)
-    cls.aws = AWSAccount(cls.zone)
-    cls.forensics = AWSForensics()
+    cls.aws = account.AWSAccount(cls.zone)
+    cls.forensics = forensics.AWSForensics()
     cls.analysis_vm_name = 'new-vm-for-analysis'
     cls.analysis_vm, _ = cls.forensics.StartAnalysisVm(
         cls.analysis_vm_name, cls.zone, 10, 4)
@@ -152,14 +149,14 @@ class EndToEndTest(unittest.TestCase):
 
     # Delete the volumes
     for volume in cls.volumes:
-      log.info('Deleting volume: {0:s}.'.format(volume.volume_id))
+      LOGGER.info('Deleting volume: {0:s}.'.format(volume.volume_id))
       try:
         client.delete_volume(VolumeId=volume.volume_id)
         client.get_waiter('volume_deleted').wait(VolumeIds=[volume.volume_id])
       except client.exceptions.ClientError as exception:
         raise RuntimeError('Could not complete cleanup: {0:s}'.format(
             str(exception)))
-      log.info('Volume {0:s} successfully deleted.'.format(volume.volume_id))
+      LOGGER.info('Volume {0:s} successfully deleted.'.format(volume.volume_id))
 
 
 def ReadProjectInfo():
