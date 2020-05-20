@@ -19,7 +19,7 @@ import os
 import unittest
 
 from libcloudforensics.providers.aws.internal.common import LOGGER, EC2_SERVICE
-from libcloudforensics.providers.aws import internal
+from libcloudforensics.providers.aws.internal import account
 from libcloudforensics.providers.aws import forensics
 
 
@@ -56,7 +56,7 @@ class EndToEndTest(unittest.TestCase):
     cls.instance_to_analyse = project_info['instance']
     cls.zone = project_info['zone']
     cls.volume_to_forensic = project_info.get('volume_id', None)
-    cls.aws = internal.AWSAccount(cls.zone)
+    cls.aws = account.AWSAccount(cls.zone)
     cls.forensics = forensics.AWSForensics()
     cls.analysis_vm_name = 'new-vm-for-analysis'
     cls.analysis_vm, _ = cls.forensics.StartAnalysisVm(

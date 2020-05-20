@@ -28,6 +28,7 @@ from libcloudforensics.providers.aws.internal import ec2
 from libcloudforensics.providers.aws.internal import ebs
 from libcloudforensics.providers.aws.internal import common
 
+
 class AWSAccount:
   """Class representing an AWS account.
 

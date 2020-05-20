@@ -14,7 +14,7 @@
 # limitations under the License.
 """Forensics implementation."""
 from libcloudforensics.providers.aws.internal.common import UBUNTU_1804_AMI, LOGGER  # pylint: disable=line-too-long
-from libcloudforensics.providers.aws import internal
+from libcloudforensics.providers.aws.internal import account
 from libcloudforensics.providers import forensics_interface
 
 
@@ -94,8 +94,8 @@ class AWSForensics(forensics_interface.Forensics):
       raise ValueError(
           'You must specify at least one of [instance_id, volume_id].')
 
-    source_account = internal.AWSAccount(zone, aws_profile=src_account)
-    destination_account = internal.AWSAccount(zone, aws_profile=dst_account)
+    source_account = account.AWSAccount(zone, aws_profile=src_account)
+    destination_account = account.AWSAccount(zone, aws_profile=dst_account)
     kms_key_id = None
 
     try:
@@ -185,7 +185,7 @@ class AWSForensics(forensics_interface.Forensics):
     Raises:
       RuntimeError: If device_name is missing when attach_volume is provided.
     """
-    aws_account = internal.AWSAccount(
+    aws_account = account.AWSAccount(
         default_availability_zone, aws_profile=dst_account)
     analysis_vm, created = aws_account.GetOrCreateAnalysisVm(
         vm_name, boot_volume_size, cpu_cores=cpu_cores, ami=ami)

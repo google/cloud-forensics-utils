@@ -19,7 +19,8 @@
 
 import argparse
 from datetime import datetime
-from libcloudforensics.providers.aws import internal
+from libcloudforensics.providers.aws.internal import account
+from libcloudforensics.providers.aws.internal import log as aws_log
 from libcloudforensics.providers.aws import forensics
 
 
@@ -45,7 +46,7 @@ def LookupLogEvents(args):
   Args:
     args (dict): Arguments from ArgumentParser.
   """
-  ct = internal.AWSCloudTrail(internal.AWSAccount(
+  ct = aws_log.AWSCloudTrail(account.AWSAccount(
       default_availability_zone=args.zone))
 
   params = {}

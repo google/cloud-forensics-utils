@@ -18,7 +18,7 @@ from google.auth.exceptions import RefreshError, DefaultCredentialsError
 from googleapiclient.errors import HttpError
 
 from libcloudforensics.providers import forensics_interface
-from libcloudforensics.providers.gcp import internal
+from libcloudforensics.providers.gcp.internal import project as gcp_project
 from libcloudforensics.providers.gcp.internal.common import LOGGER
 
 
@@ -53,8 +53,8 @@ class GCPForensics(forensics_interface.Forensics):
       RuntimeError: If there are errors copying the disk
     """
 
-    src_proj = internal.GoogleCloudProject(src_proj)
-    dst_proj = internal.GoogleCloudProject(dst_proj, default_zone=zone)
+    src_proj = gcp_project.GoogleCloudProject(src_proj)
+    dst_proj = gcp_project.GoogleCloudProject(dst_proj, default_zone=zone)
     instance = src_proj.GetInstance(instance_name) if instance_name else None
 
     try:
@@ -130,7 +130,7 @@ class GCPForensics(forensics_interface.Forensics):
           and a boolean indicating if the virtual machine was created or not.
     """
 
-    project = internal.GoogleCloudProject(project, default_zone=zone)
+    project = gcp_project.GoogleCloudProject(project, default_zone=zone)
     analysis_vm, created = project.GetOrCreateAnalysisVm(
         vm_name, boot_disk_size, disk_type=boot_disk_type, cpu_cores=cpu_cores,
         image_project=image_project, image_family=image_family)
