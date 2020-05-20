@@ -348,7 +348,7 @@ class AWSAccountTest(unittest.TestCase):
     self.assertEqual(
         'prefix-fake-snapshot-d69d57c3-copy', volume_from_snapshot.name)
 
-  @mock.patch('libcloudforensics.providers.aws.internal.common.ReadStartupScript')
+  @mock.patch('libcloudforensics.scripts.utils.ReadStartupScript')
   @mock.patch('libcloudforensics.providers.aws.internal.account.AWSAccount.GetInstancesByName')
   @mock.patch('libcloudforensics.providers.aws.internal.account.AWSAccount.ClientApi')
   def testGetOrCreateAnalysisVm(self,

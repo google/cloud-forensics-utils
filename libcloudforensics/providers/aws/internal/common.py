@@ -14,7 +14,6 @@
 # limitations under the License.
 """Common utilities."""
 import logging
-import os
 import re
 
 EC2_SERVICE = 'ec2'
@@ -25,7 +24,6 @@ CLOUDTRAIL_SERVICE = 'cloudtrail'
 # Default Amazon Machine Image to use for bootstrapping instances
 UBUNTU_1804_AMI = 'ami-0013b3aa57f8a4331'
 REGEX_TAG_VALUE = re.compile('^.{1,255}$')
-STARTUP_SCRIPT = 'scripts/startup.sh'
 
 LOGGER = logging.getLogger()
 
@@ -85,35 +83,3 @@ def GetInstanceTypeByCPU(cpu_cores):
             cpu_cores, ', '.join(map(str, cpu_cores_to_instance_type.keys()))
         ))
   return cpu_cores_to_instance_type[cpu_cores]
-
-
-def ReadStartupScript():
-  """Read and return the startup script that is to be run on the forensics VM.
-
-  Users can either write their own script to install custom packages,
-  or use the provided one. To use your own script, export a STARTUP_SCRIPT
-  environment variable with the absolute path to it:
-  "user@terminal:~$ export STARTUP_SCRIPT='absolute/path/script.sh'"
-
-  Returns:
-    str: The script to run.
-
-  Raises:
-    OSError: If the script cannot be opened, read or closed.
-  """
-
-  try:
-    startup_script = os.environ.get('STARTUP_SCRIPT')
-    if not startup_script:
-      # Use the provided script
-      startup_script = os.path.join(
-          os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
-              os.path.realpath(__file__))))), STARTUP_SCRIPT)
-    startup_script = open(startup_script)
-    script = startup_script.read()
-    startup_script.close()
-    return script
-  except OSError as exception:
-    raise OSError(
-        'Could not open/read/close the startup script {0:s}: {1:s}'.format(
-            startup_script, str(exception)))

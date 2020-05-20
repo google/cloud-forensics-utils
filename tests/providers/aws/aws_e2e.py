@@ -14,13 +14,12 @@
 # limitations under the License.
 """End to end test for the aws module."""
 
-import json
-import os
 import unittest
 
 from libcloudforensics.providers.aws.internal.common import LOGGER, EC2_SERVICE
 from libcloudforensics.providers.aws.internal import account
 from libcloudforensics.providers.aws import forensics
+from tests.scripts import utils
 
 
 class EndToEndTest(unittest.TestCase):
@@ -50,7 +49,7 @@ class EndToEndTest(unittest.TestCase):
   @classmethod
   def setUpClass(cls):
     try:
-      project_info = ReadProjectInfo()
+      project_info = utils.ReadProjectInfo(['instance', 'zone'])
     except (OSError, RuntimeError, ValueError) as exception:
       raise unittest.SkipTest(str(exception))
     cls.instance_to_analyse = project_info['instance']
@@ -156,42 +155,6 @@ class EndToEndTest(unittest.TestCase):
         raise RuntimeError('Could not complete cleanup: {0:s}'.format(
             str(exception)))
       LOGGER.info('Volume {0:s} successfully deleted.'.format(volume.volume_id))
-
-
-def ReadProjectInfo():
-  """Read project information to run e2e test.
-
-  Returns:
-    dict: A dict with the project information.
-
-  Raises:
-    OSError: If the file cannot be found, opened or closed.
-    RuntimeError: If the json file cannot be parsed.
-    ValueError: If the json file does not have the required properties.
-  """
-  project_info = os.environ.get('PROJECT_INFO')
-  if project_info is None:
-    raise OSError('Please make sure that you defined the '
-                  '"PROJECT_INFO" environment variable pointing '
-                  'to your project settings.')
-  try:
-    json_file = open(project_info)
-    try:
-      project_info = json.load(json_file)
-    except ValueError as exception:
-      raise RuntimeError('Cannot parse JSON file. {0:s}'.format(
-          str(exception)))
-    json_file.close()
-  except OSError as exception:
-    raise OSError('Could not open/close file {0:s}: {1:s}'.format(
-        project_info, str(exception)))
-
-  if not all(key in project_info for key in ['instance', 'zone']):
-    raise ValueError('Please make sure that your JSON file '
-                     'has the required entries. The file should '
-                     'contain at least the following: ["instance", "zone"].')
-
-  return project_info
 
 
 if __name__ == '__main__':
