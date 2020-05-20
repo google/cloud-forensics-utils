@@ -24,11 +24,9 @@ import json
 import boto3
 import botocore
 
-from libcloudforensics.providers.aws.internal.common import EC2_SERVICE, \
-  REGEX_TAG_VALUE, GetTagForResourceType, GetInstanceTypeByCPU, \
-  ReadStartupScript, ACCOUNT_SERVICE, KMS_SERVICE
-from libcloudforensics.providers.aws.internal.ebs import AWSVolume
-from libcloudforensics.providers.aws.internal.ec2 import AWSInstance
+from libcloudforensics.providers.aws.internal import ec2
+from libcloudforensics.providers.aws.internal import ebs
+from libcloudforensics.providers.aws.internal import common
 
 
 class AWSAccount:
@@ -122,7 +120,7 @@ class AWSAccount:
 
     instances = {}
     next_token = None
-    client = self.ClientApi(EC2_SERVICE, region=region)
+    client = self.ClientApi(common.EC2_SERVICE, region=region)
 
     while True:
       try:
@@ -144,7 +142,8 @@ class AWSAccount:
 
           zone = instance['Placement']['AvailabilityZone']
           instance_id = instance['InstanceId']
-          aws_instance = AWSInstance(self, instance_id, zone[:-1], zone)
+          aws_instance = ec2.AWSInstance(
+              self, instance_id, zone[:-1], zone)
 
           for tag in instance.get('Tags', []):
             if tag.get('Key') == 'Name':
@@ -186,7 +185,7 @@ class AWSAccount:
 
     volumes = {}
     next_token = None
-    client = self.ClientApi(EC2_SERVICE, region=region)
+    client = self.ClientApi(common.EC2_SERVICE, region=region)
 
     while True:
       try:
@@ -201,11 +200,11 @@ class AWSAccount:
 
       for volume in response['Volumes']:
         volume_id = volume['VolumeId']
-        aws_volume = AWSVolume(volume_id,
-                               self,
-                               self.default_region,
-                               volume['AvailabilityZone'],
-                               volume['Encrypted'])
+        aws_volume = ebs.AWSVolume(volume_id,
+                                   self,
+                                   self.default_region,
+                                   volume['AvailabilityZone'],
+                                   volume['Encrypted'])
 
         for tag in volume.get('Tags', []):
           if tag.get('Key') == 'Name':
@@ -417,15 +416,17 @@ class AWSAccount:
       volume_name = self._GenerateVolumeName(
           snapshot, volume_name_prefix=volume_name_prefix)
 
-    if not REGEX_TAG_VALUE.match(volume_name):
-      raise ValueError('Volume name {0:s} does not comply with '
-                       '{1:s}'.format(volume_name, REGEX_TAG_VALUE.pattern))
+    if not common.REGEX_TAG_VALUE.match(volume_name):
+      raise ValueError(
+          'Volume name {0:s} does not comply with '
+          '{1:s}'.format(volume_name, common.REGEX_TAG_VALUE.pattern))
 
-    client = self.ClientApi(EC2_SERVICE)
+    client = self.ClientApi(common.EC2_SERVICE)
     create_volume_args = {
         'AvailabilityZone': snapshot.availability_zone,
         'SnapshotId': snapshot.snapshot_id,
-        'TagSpecifications': [GetTagForResourceType('volume', volume_name)]
+        'TagSpecifications':
+            [common.GetTagForResourceType('volume', volume_name)]
     }
     if kms_key_id:
       create_volume_args['Encrypted'] = True
@@ -443,12 +444,12 @@ class AWSAccount:
                          '{1:s}: {2:s}'.format(volume_name, snapshot.name,
                                                str(exception)))
 
-    return AWSVolume(volume_id,
-                     self,
-                     self.default_region,
-                     zone,
-                     encrypted,
-                     name=volume_name)
+    return ebs.AWSVolume(volume_id,
+                         self,
+                         self.default_region,
+                         zone,
+                         encrypted,
+                         name=volume_name)
 
   def GetOrCreateAnalysisVm(self,
                             vm_name,
@@ -483,8 +484,8 @@ class AWSAccount:
     except RuntimeError:
       pass
 
-    instance_type = GetInstanceTypeByCPU(cpu_cores)
-    startup_script = ReadStartupScript()
+    instance_type = common.GetInstanceTypeByCPU(cpu_cores)
+    startup_script = common.ReadStartupScript()
     if packages:
       startup_script = startup_script.replace('${packages[@]}', ' '.join(
           packages))
@@ -494,7 +495,7 @@ class AWSAccount:
         '(exit ${exit_code})',
         'apt -y install ec2-instance-connect && (exit ${exit_code})')
 
-    client = self.ClientApi(EC2_SERVICE)
+    client = self.ClientApi(common.EC2_SERVICE)
     # Create the instance in AWS
     try:
       instance = client.run_instances(
@@ -504,7 +505,8 @@ class AWSAccount:
           MinCount=1,
           MaxCount=1,
           InstanceType=instance_type,
-          TagSpecifications=[GetTagForResourceType('instance', vm_name)],
+          TagSpecifications=[common.GetTagForResourceType(
+              'instance', vm_name)],
           UserData=startup_script,
           Placement={'AvailabilityZone': self.default_availability_zone})
 
@@ -517,11 +519,11 @@ class AWSAccount:
       # Wait for the status checks to pass
       client.get_waiter('instance_status_ok').wait(InstanceIds=[instance_id])
 
-      instance = AWSInstance(self,
-                             instance_id,
-                             self.default_region,
-                             self.default_availability_zone,
-                             name=vm_name)
+      instance = ec2.AWSInstance(self,
+                                 instance_id,
+                                 self.default_region,
+                                 self.default_availability_zone,
+                                 name=vm_name)
       created = True
       return instance, created
     except client.exceptions.ClientError as exception:
@@ -548,7 +550,8 @@ class AWSAccount:
       KeyError: If the requested information doesn't exist.
     """
 
-    account_information = self.ClientApi(ACCOUNT_SERVICE).get_caller_identity()
+    account_information = self.ClientApi(
+        common.ACCOUNT_SERVICE).get_caller_identity()
     if not account_information.get(info):
       raise KeyError('Key must be one of ["UserId", "Account", "Arn"]')
     return account_information.get(info)
@@ -562,7 +565,7 @@ class AWSAccount:
     Raises:
       RuntimeError: If the key could not be created.
     """
-    client = self.ClientApi(KMS_SERVICE)
+    client = self.ClientApi(common.KMS_SERVICE)
     try:
       kms_key = client.create_key()
       # If the call to the API is successful, then the response contains the
@@ -596,7 +599,7 @@ class AWSAccount:
         ],
         'Resource': '*'
     }
-    client = self.ClientApi(KMS_SERVICE)
+    client = self.ClientApi(common.KMS_SERVICE)
     try:
       policy = json.loads(client.get_key_policy(
           KeyId=kms_key_id, PolicyName='default')['Policy'])
@@ -624,7 +627,7 @@ class AWSAccount:
     if not kms_key_id:
       return
 
-    client = self.ClientApi(KMS_SERVICE)
+    client = self.ClientApi(common.KMS_SERVICE)
     try:
       client.schedule_key_deletion(KeyId=kms_key_id)
     except client.exceptions.ClientError as exception:
@@ -679,7 +682,7 @@ class AWSAccount:
       RuntimeError: If AMI details cannot be found.
     """
 
-    client = self.ClientApi(EC2_SERVICE)
+    client = self.ClientApi(common.EC2_SERVICE)
     try:
       image = client.describe_images(ImageIds=[ami])
     except client.exceptions.ClientError as exception:
