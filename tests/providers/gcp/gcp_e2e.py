@@ -63,10 +63,9 @@ class EndToEndTest(unittest.TestCase):
     cls.disk_to_forensic = project_info.get('disk', None)
     cls.zone = project_info['zone']
     cls.gcp = gcp_project.GoogleCloudProject(cls.project_id, cls.zone)
-    cls.forensics = forensics.GCPForensics()
     cls.analysis_vm_name = 'new-vm-for-analysis'
     # Create and start the analysis VM
-    cls.analysis_vm, _ = cls.forensics.StartAnalysisVm(
+    cls.analysis_vm, _ = forensics.StartAnalysisVm(
         project=cls.project_id, vm_name=cls.analysis_vm_name, zone=cls.zone,
         boot_disk_size=10, boot_disk_type='pd-ssd', cpu_cores=4)
 
@@ -93,7 +92,7 @@ class EndToEndTest(unittest.TestCase):
     """
 
     # Make a copy of the boot disk of the instance to analyse
-    self.boot_disk_copy = self.forensics.CreateDiskCopy(
+    self.boot_disk_copy = forensics.CreateDiskCopy(
         src_proj=self.project_id,
         dst_proj=self.project_id,
         instance_name=self.instance_to_analyse,
@@ -109,7 +108,7 @@ class EndToEndTest(unittest.TestCase):
     self.assertEqual(result['name'], self.boot_disk_copy.name)
 
     # Get the analysis VM and attach the evidence boot disk
-    self.analysis_vm, _ = self.forensics.StartAnalysisVm(
+    self.analysis_vm, _ = forensics.StartAnalysisVm(
         project=self.project_id, vm_name=self.analysis_vm_name, zone=self.zone,
         boot_disk_size=10, boot_disk_type='pd-ssd', cpu_cores=4,
         attach_disk=[self.boot_disk_copy])
@@ -149,7 +148,7 @@ class EndToEndTest(unittest.TestCase):
     """
 
     # Make a copy of another disk of the instance to analyse
-    self.disk_to_forensic_copy = self.forensics.CreateDiskCopy(
+    self.disk_to_forensic_copy = forensics.CreateDiskCopy(
         src_proj=self.project_id, dst_proj=self.project_id,
         instance_name=self.instance_to_analyse, zone=self.zone,
         disk_name=self.disk_to_forensic)
@@ -163,7 +162,7 @@ class EndToEndTest(unittest.TestCase):
     self.assertEqual(result['name'], self.disk_to_forensic_copy.name)
 
     # Get the analysis VM and attach the evidence disk to forensic
-    self.analysis_vm, _ = self.forensics.StartAnalysisVm(
+    self.analysis_vm, _ = forensics.StartAnalysisVm(
         project=self.project_id, vm_name=self.analysis_vm_name, zone=self.zone,
         boot_disk_size=10, boot_disk_type='pd-ssd', cpu_cores=4,
         attach_disk=[self.disk_to_forensic_copy])

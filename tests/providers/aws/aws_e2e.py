@@ -57,9 +57,8 @@ class EndToEndTest(unittest.TestCase):
     cls.zone = project_info['zone']
     cls.volume_to_forensic = project_info.get('volume_id', None)
     cls.aws = account.AWSAccount(cls.zone)
-    cls.forensics = forensics.AWSForensics()
     cls.analysis_vm_name = 'new-vm-for-analysis'
-    cls.analysis_vm, _ = cls.forensics.StartAnalysisVm(
+    cls.analysis_vm, _ = forensics.StartAnalysisVm(
         cls.analysis_vm_name, cls.zone, 10, 4)
     cls.volumes = []
 
@@ -74,7 +73,7 @@ class EndToEndTest(unittest.TestCase):
     """
 
     # Make a copy of the boot volume of the instance to analyse
-    boot_volume_copy = self.forensics.CreateDiskCopy(
+    boot_volume_copy = forensics.CreateVolumeCopy(
         self.zone,
         instance_id=self.instance_to_analyse
         # volume_id=None by default, boot volume of instance will be copied
@@ -99,7 +98,7 @@ class EndToEndTest(unittest.TestCase):
       return
 
     # Make a copy of another volume of the instance to analyse
-    other_volume_copy = self.forensics.CreateDiskCopy(
+    other_volume_copy = forensics.CreateVolumeCopy(
         self.zone,
         volume_id=self.volume_to_forensic)
 
@@ -115,12 +114,12 @@ class EndToEndTest(unittest.TestCase):
         passed to the attach_volume parameter is correctly attached.
     """
 
-    volume_to_attach = self.forensics.CreateDiskCopy(
+    volume_to_attach = forensics.CreateVolumeCopy(
         self.zone,
         volume_id=self.volume_to_forensic)
     self.volumes.append(volume_to_attach)
     # Create and start the analysis VM and attach the boot volume
-    self.analysis_vm, _ = self.forensics.StartAnalysisVm(
+    self.analysis_vm, _ = forensics.StartAnalysisVm(
         self.analysis_vm_name,
         self.zone,
         10,
