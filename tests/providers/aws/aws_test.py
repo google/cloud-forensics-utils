@@ -22,7 +22,6 @@ from libcloudforensics.providers.aws.internal import account, common, ebs, ec2
 from libcloudforensics.providers.aws.internal import log as aws_log
 from libcloudforensics.providers.aws import forensics
 
-FAKE_forensics = forensics.AWSForensics()
 FAKE_AWS_ACCOUNT = account.AWSAccount(
     default_availability_zone='fake-zone-2b')
 FAKE_INSTANCE = ec2.AWSInstance(
@@ -498,9 +497,9 @@ class AWSTest(unittest.TestCase):
     mock_get_volume.return_value = FAKE_VOLUME
     mock_snapshot.return_value = FAKE_SNAPSHOT
 
-    # CreateDiskCopy(zone, volume_id='fake-volume-id'). This should grab
+    # CreateVolumeCopy(zone, volume_id='fake-volume-id'). This should grab
     # the volume 'fake-volume-id'.
-    new_volume = FAKE_forensics.CreateDiskCopy(
+    new_volume = forensics.CreateVolumeCopy(
         FAKE_INSTANCE.availability_zone, volume_id=FAKE_VOLUME.volume_id)
     mock_get_volume.assert_called_with('fake-volume-id')
     self.assertIsInstance(new_volume, ebs.AWSVolume)
@@ -527,9 +526,9 @@ class AWSTest(unittest.TestCase):
     mock_get_volume.return_value = FAKE_BOOT_VOLUME
     mock_snapshot.return_value = FAKE_SNAPSHOT
 
-    # CreateDiskCopy(zone, instance='fake-instance-id'). This should grab
+    # CreateVolumeCopy(zone, instance='fake-instance-id'). This should grab
     # the boot volume of the instance.
-    new_volume = FAKE_forensics.CreateDiskCopy(
+    new_volume = forensics.CreateVolumeCopy(
         FAKE_INSTANCE.availability_zone, instance_id=FAKE_INSTANCE.instance_id)
     mock_get_instance.assert_called_with('fake-instance-id')
     self.assertIsInstance(new_volume, ebs.AWSVolume)
@@ -545,7 +544,7 @@ class AWSTest(unittest.TestCase):
     # specified.
     self.assertRaises(
         ValueError,
-        FAKE_forensics.CreateDiskCopy,
+        forensics.CreateVolumeCopy,
         FAKE_INSTANCE.availability_zone)
 
     # Should raise a RuntimeError in GetInstanceById as we are querying a
@@ -553,7 +552,7 @@ class AWSTest(unittest.TestCase):
     mock_list_instances.return_value = {}
     self.assertRaises(
         RuntimeError,
-        FAKE_forensics.CreateDiskCopy,
+        forensics.CreateVolumeCopy,
         FAKE_INSTANCE.availability_zone,
         instance_id='non-existent-instance-id')
 
@@ -562,7 +561,7 @@ class AWSTest(unittest.TestCase):
     mock_list_volumes.return_value = {}
     self.assertRaises(
         RuntimeError,
-        FAKE_forensics.CreateDiskCopy,
+        forensics.CreateVolumeCopy,
         FAKE_INSTANCE.availability_zone,
         volume_id='non-existent-volume-id')
 

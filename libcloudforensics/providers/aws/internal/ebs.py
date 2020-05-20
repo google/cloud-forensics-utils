@@ -194,7 +194,7 @@ class AWSSnapshot(AWSElasticBlockStore):
       RuntimeError: If the snapshot could not be copied.
     """
 
-    client = self.aws_account.ClientApi(EC2_SERVICE)
+    client = self.aws_account.ClientApi(common.EC2_SERVICE)
     copy_args = {
         'SourceRegion': self.region,
         'SourceSnapshotId': self.snapshot_id
