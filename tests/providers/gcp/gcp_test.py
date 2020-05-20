@@ -31,7 +31,6 @@ from libcloudforensics.providers.gcp.internal import project as gcp_project
 from libcloudforensics.providers.gcp.internal import log as gcp_log
 
 # For the forensics analysis
-FAKE_forensics = forensics.GCPForensics()
 FAKE_ANALYSIS_PROJECT = gcp_project.GoogleCloudProject(
     'fake-target-project', 'fake-zone')
 FAKE_ANALYSIS_VM = compute.GoogleComputeInstance(
@@ -548,7 +547,7 @@ class GCPTest(unittest.TestCase):
 
     # create_disk_copy(src_proj, dst_proj, instance_name='fake-instance',
     #     zone='fake-zone', disk_name=None) Should grab the boot disk
-    new_disk = FAKE_forensics.CreateDiskCopy(
+    new_disk = forensics.CreateDiskCopy(
         FAKE_SOURCE_PROJECT.project_id, FAKE_ANALYSIS_PROJECT.project_id,
         instance_name=FAKE_INSTANCE.name, zone=FAKE_INSTANCE.zone,
         disk_name=None)
@@ -575,7 +574,7 @@ class GCPTest(unittest.TestCase):
     #     instance_name=None,
     #     zone='fake-zone',
     #     disk_name='fake-disk') Should grab 'fake-disk'
-    new_disk = FAKE_forensics.CreateDiskCopy(
+    new_disk = forensics.CreateDiskCopy(
         FAKE_SOURCE_PROJECT.project_id, FAKE_ANALYSIS_PROJECT.project_id,
         instance_name=None, zone=FAKE_INSTANCE.zone, disk_name=FAKE_DISK.name)
     self.assertIsInstance(new_disk, compute.GoogleComputeDisk)
@@ -598,7 +597,7 @@ class GCPTest(unittest.TestCase):
     #     zone='fake-zone',
     #     disk_name='non-existent-disk') Should raise an exception
     self.assertRaises(
-        RuntimeError, FAKE_forensics.CreateDiskCopy, FAKE_SOURCE_PROJECT.project_id,
+        RuntimeError, forensics.CreateDiskCopy, FAKE_SOURCE_PROJECT.project_id,
         FAKE_ANALYSIS_PROJECT.project_id, instance_name=None,
         zone=FAKE_INSTANCE.zone, disk_name='non-existent-disk')
 
@@ -609,7 +608,7 @@ class GCPTest(unittest.TestCase):
     #     zone='fake-zone',
     #     disk_name=None) Should raise an exception
     self.assertRaises(
-        RuntimeError, FAKE_forensics.CreateDiskCopy, FAKE_SOURCE_PROJECT.project_id,
+        RuntimeError, forensics.CreateDiskCopy, FAKE_SOURCE_PROJECT.project_id,
         FAKE_ANALYSIS_PROJECT.project_id, instance_name='non-existent-instance',
         zone=FAKE_INSTANCE.zone, disk_name='')
 

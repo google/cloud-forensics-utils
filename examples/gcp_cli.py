@@ -58,7 +58,7 @@ def CreateDiskCopy(args):
     args (dict): Arguments from ArgumentParser.
   """
 
-  disk = forensics.GCPForensics().CreateDiskCopy(
+  disk = forensics.CreateDiskCopy(
       args.project, args.dstproject, args.instancename, args.zone)
 
   print('Disk copy completed.')
