@@ -28,6 +28,7 @@ from googleapiclient.errors import HttpError
 
 from libcloudforensics.providers.gcp.internal import common
 from libcloudforensics.providers.gcp.internal import compute
+from libcloudforensics.scripts import utils
 
 
 class GoogleCloudProject:
@@ -331,7 +332,7 @@ class GoogleCloudProject:
         project=image_project, family=image_family).execute()
     source_disk_image = ubuntu_image['selfLink']
 
-    startup_script = common.ReadStartupScript()
+    startup_script = utils.ReadStartupScript()
 
     if packages:
       startup_script = startup_script.replace(

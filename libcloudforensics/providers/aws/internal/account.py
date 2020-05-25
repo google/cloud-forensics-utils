@@ -27,6 +27,7 @@ import botocore
 from libcloudforensics.providers.aws.internal import ec2
 from libcloudforensics.providers.aws.internal import ebs
 from libcloudforensics.providers.aws.internal import common
+from libcloudforensics.scripts import utils
 
 
 class AWSAccount:
@@ -485,7 +486,7 @@ class AWSAccount:
       pass
 
     instance_type = common.GetInstanceTypeByCPU(cpu_cores)
-    startup_script = common.ReadStartupScript()
+    startup_script = utils.ReadStartupScript()
     if packages:
       startup_script = startup_script.replace('${packages[@]}', ' '.join(
           packages))

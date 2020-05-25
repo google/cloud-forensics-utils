@@ -16,7 +16,6 @@
 
 import binascii
 import logging
-import os
 import re
 import socket
 
@@ -27,7 +26,6 @@ from googleapiclient.discovery import build
 LOGGER = logging.getLogger()
 RETRY_MAX = 10
 REGEX_DISK_NAME = re.compile('^(?=.{1,63}$)[a-z]([-a-z0-9]*[a-z0-9])?$')
-STARTUP_SCRIPT = 'scripts/startup.sh'
 
 
 def GenerateDiskName(snapshot, disk_name_prefix=None):
@@ -123,34 +121,3 @@ def CreateService(service_name, api_version):
     raise RuntimeError(error_msg)
 
   return service
-
-
-def ReadStartupScript():
-  """Read and return the startup script that is to be run on the forensics VM.
-
-  Users can either write their own script to install custom packages,
-  or use the provided one. To use your own script, export a STARTUP_SCRIPT
-  environment variable with the absolute path to it:
-  "user@terminal:~$ export STARTUP_SCRIPT='absolute/path/script.sh'"
-
-  Returns:
-    str: The script to run.
-  Raises:
-    OSError: If the script cannot be opened, read or closed.
-  """
-
-  try:
-    startup_script = os.environ.get('STARTUP_SCRIPT')
-    if not startup_script:
-      # Use the provided script
-      startup_script = os.path.join(
-          os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
-              os.path.realpath(__file__))))), STARTUP_SCRIPT)
-    startup_script = open(startup_script)
-    script = startup_script.read()
-    startup_script.close()
-    return script
-  except OSError as exception:
-    raise OSError(
-        'Could not open/read/close the startup script {0:s}: '
-        '{1:s}'.format(startup_script, str(exception)))
