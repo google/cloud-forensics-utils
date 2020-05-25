@@ -29,6 +29,7 @@ from libcloudforensics.providers.gcp import forensics
 from libcloudforensics.providers.gcp.internal import common, compute
 from libcloudforensics.providers.gcp.internal import project as gcp_project
 from libcloudforensics.providers.gcp.internal import log as gcp_log
+from libcloudforensics.scripts import utils
 
 # For the forensics analysis
 FAKE_ANALYSIS_PROJECT = gcp_project.GoogleCloudProject(
@@ -179,7 +180,7 @@ MOCK_GCE_OPERATION_INSTANCES_GET = {
 
 # See: https://cloud.google.com/compute/docs/reference/rest/v1/disks
 REGEX_DISK_NAME = re.compile('^(?=.{1,63}$)[a-z]([-a-z0-9]*[a-z0-9])?$')
-STARTUP_SCRIPT = 'startup_script.sh'
+STARTUP_SCRIPT = 'scripts/startup.sh'
 
 
 class GoogleCloudProjectTest(unittest.TestCase):
@@ -395,20 +396,20 @@ class GoogleCloudProjectTest(unittest.TestCase):
     """Test that the startup script is correctly read."""
     # No environment variable set, reading default script
     # pylint: disable=protected-access
-    script = common.ReadStartupScript()
+    script = utils.ReadStartupScript()
     self.assertTrue(script.startswith('#!/bin/bash'))
     self.assertTrue(script.endswith('(exit ${exit_code})\n'))
 
     # Environment variable set to custom script
     os.environ['STARTUP_SCRIPT'] = os.path.join(
-        os.path.dirname(os.path.dirname(
-            os.path.realpath(__file__))), STARTUP_SCRIPT)
-    script = common.ReadStartupScript()
+        os.path.dirname(os.path.dirname(os.path.dirname(
+            os.path.realpath(__file__)))), STARTUP_SCRIPT)
+    script = utils.ReadStartupScript()
     self.assertEqual('# THIS IS A CUSTOM BASH SCRIPT', script)
 
     # Bogus environment variable, should raise an exception
     os.environ['STARTUP_SCRIPT'] = '/bogus/path'
-    self.assertRaises(OSError, common.ReadStartupScript)
+    self.assertRaises(OSError, utils.ReadStartupScript)
     os.environ['STARTUP_SCRIPT'] = ''
     # pylint: enable=protected-access
 
