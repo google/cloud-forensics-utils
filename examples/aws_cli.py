@@ -15,11 +15,42 @@
 
 # Make sure that your AWS credentials are configured correclty, see
 # https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html #pylint: disable=line-too-long
-"""Demo script for making volume copies on AWS."""
+"""Demo CLI tool for AWS."""
 
-import argparse
+
 from datetime import datetime
 from libcloudforensics import aws
+
+
+def ListInstances(args):
+  """List EC2 instances in AWS account.
+
+  Args:
+    args (dict): Arguments from ArgumentParser.
+  """
+
+  account = aws.AWSAccount(args.zone)
+  instances = account.ListInstances()
+
+  print('Instances found:')
+  for instance in instances:
+    boot_volume = instances[instance].GetBootVolume().volume_id
+    print('Name: {0:s}, Boot volume: {1:s}'.format(instance, boot_volume))
+
+
+def ListVolumes(args):
+  """List EBS volumes in AWS account.
+
+  Args:
+    args (dict): Arguments from ArgumentParser.
+  """
+
+  account = aws.AWSAccount(args.zone)
+  volumes = account.ListVolumes()
+
+  print('Volumes found:')
+  for volume in volumes:
+    print('Name: {0:s}, Zone: {1:s}'.format(volume, volumes[volume].zone))
 
 
 def CreateVolumeCopy(args):
@@ -38,14 +69,13 @@ def CreateVolumeCopy(args):
           volume_copy.volume_id, volume_copy.name))
 
 
-def LookupLogEvents(args):
-  """Lookup AWS CloudTrail log events.
+def QueryLogs(args):
+  """Query AWS CloudTrail log events.
 
   Args:
     args (dict): Arguments from ArgumentParser.
   """
-  ct = aws.AWSCloudTrail(
-      aws.AWSAccount(default_availability_zone=args.zone))
+  ct = aws.AWSCloudTrail(aws.AWSAccount(args.zone))
 
   params = {}
   if args.filter:
@@ -61,46 +91,3 @@ def LookupLogEvents(args):
     print('Log events found: {0:d}'.format(len(result)))
     for event in result:
       print(event)
-
-
-if __name__ == '__main__':
-  parser = argparse.ArgumentParser(description='Demo CLI tool for AWS')
-  subparsers = parser.add_subparsers()
-
-  parser_querylogs = subparsers.add_parser(
-      'querylog', help='Query AWS CloudTrail logs')
-  parser_querylogs.add_argument(
-      'zone',
-      help='The AWS zone in which resources are located, e.g. us-east-2b')
-  parser_querylogs.add_argument('--filter', help='Query filter: \'value,key\'')
-  parser_querylogs.add_argument('--start',
-                                help='Start date for query (2020-05-01 11:13:00)',
-                                default=None)
-  parser_querylogs.add_argument('--end',
-                                help='End date for query (2020-05-01 11:13:00)',
-                                default=None)
-  parser_querylogs.set_defaults(func=LookupLogEvents)
-
-  parser_volumecopy = subparsers.add_parser(
-      'copyvolume', help='Create a AWS Volume copy')
-  parser_volumecopy.add_argument(
-      'zone',
-      help='The AWS zone in which resources are located, e.g. us-east-2b')
-  parser_volumecopy.add_argument(
-      '--volume_id',
-      help='The AWS unique volume ID of the volume to copy. If none '
-      'specified, then --instance_id must be specified and the boot '
-      'volume of the AWS instance will be copied.')
-  parser_volumecopy.add_argument(
-      '--instance_id', help='The AWS unique instance ID')
-  parser_volumecopy.add_argument(
-      '--src_account', help='The name of the profile for the '
-      'source account, as defined in the AWS credentials file.')
-  parser_volumecopy.add_argument(
-      '--dst_account', help='The name of the profile for the '
-      'destination account, as defined in the AWS credentials file.')
-  parser_volumecopy.set_defaults(func=CreateVolumeCopy)
-
-  parsed_args = parser.parse_args()
-  if parsed_args.func:
-    parsed_args.func(parsed_args)

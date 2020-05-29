@@ -14,7 +14,6 @@
 # limitations under the License.
 """Demo CLI tool for GCP."""
 
-import argparse
 import json
 from libcloudforensics import gcp
 
@@ -87,35 +86,3 @@ def QueryLogs(args):
   print('Found {0:d} log entries:'.format(len(results)))
   for line in results:
     print(json.dumps(line))
-
-
-if __name__ == '__main__':
-  parser = argparse.ArgumentParser(description='Demo CLI tool for GCP')
-  parser.add_argument('--project', help='The GCP project name')
-
-  subparsers = parser.add_subparsers()
-
-  parser_listdisks = subparsers.add_parser('listdisks')
-  parser_listdisks.set_defaults(func=ListDisks)
-
-  parser_listdisks = subparsers.add_parser('listinstances')
-  parser_listdisks.set_defaults(func=ListInstances)
-
-  parser_creatediskcopy = subparsers.add_parser('creatediskcopy')
-  parser_creatediskcopy.add_argument(
-      '--dstproject', help='Destination GCP project')
-  parser_creatediskcopy.add_argument('--zone', help='Zone to create disk in')
-  parser_creatediskcopy.add_argument(
-      '--instancename', help='Instance to copy disk from')
-  parser_creatediskcopy.set_defaults(func=CreateDiskCopy)
-
-  parser_listlogs = subparsers.add_parser('listlogs')
-  parser_listlogs.set_defaults(func=ListLogs)
-
-  parser_querylogs = subparsers.add_parser('querylogs')
-  parser_querylogs.add_argument('--filter', help='Query filter')
-  parser_querylogs.set_defaults(func=QueryLogs)
-
-  parsed_args = parser.parse_args()
-  if parsed_args.func:
-    parsed_args.func(parsed_args)
