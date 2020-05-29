@@ -68,25 +68,7 @@ that every developer knows to (largely) expect the same coding style.
 #### Style guide
 
 We primarily follow the
-[Google Python Style Guide](https://google.github.io/styleguide/pyguide.html).
-Various specific additions/variations are:
-
-*   Using two spaces instead of four
-*   Quote strings as ' or """ instead of "
-*   Textual strings should be Unicode strings so please include `from __future__
-    import unicode_literals` in new python files.
-*   Use the format() function instead of the %-way of formatting strings.
-*   Use positional or parameter format specifiers with typing e.g. '{0:s}' or
-    '{text:s}' instead of '{0}', '{}' or '{:s}'. If we ever want to have
-    language specific output strings we don't need to change the entire
-    codebase. It also makes is easier in determining what type every parameter
-    is expected to be.
-*   Use "cls" as the name of the class variable in preference of "klass"
-*   When catching exceptions use "as exception:" not some alternative form like
-    "as error:" or "as details:"
-*   Use textual pylint overrides e.g. "# pylint: disable=no-self-argument"
-    instead of "# pylint: disable=E0213". For a list of overrides see:
-    http://docs.pylint.org/features.html
+[Log2Timeline Python Style Guide](https://github.com/log2timeline/l2tdocs/blob/master/process/Style-guide.md).
 
 #### The small print
 
