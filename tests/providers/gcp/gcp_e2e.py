@@ -19,7 +19,8 @@ import time
 
 from googleapiclient.errors import HttpError
 
-from libcloudforensics.providers.gcp.internal.common import LOGGER
+from libcloudforensics.providers.gcp.internal.common import LOGGER, \
+  GoogleCloudComputeClient
 from libcloudforensics.providers.gcp.internal import project as gcp_project
 from libcloudforensics.providers.gcp import forensics
 from tests.scripts import utils
@@ -99,8 +100,10 @@ class EndToEndTest(unittest.TestCase):
         # disk_name=None by default, boot disk will be copied
     )
 
+    gcp_client_api = GoogleCloudComputeClient(self.project_id).GceApi()
+
     # The disk copy should be attached to the analysis project
-    gce_disk_client = self.gcp.GceApi().disks()
+    gce_disk_client = gcp_client_api.disks()
     request = gce_disk_client.get(
         project=self.project_id, zone=self.zone, disk=self.boot_disk_copy.name)
     result = request.execute()
@@ -114,7 +117,7 @@ class EndToEndTest(unittest.TestCase):
 
     # The forensic instance should be live in the analysis GCP project and
     # the disk should be attached
-    gce_instance_client = self.gcp.GceApi().instances()
+    gce_instance_client = gcp_client_api.instances()
     request = gce_instance_client.get(
         project=self.project_id, zone=self.zone, instance=self.analysis_vm_name)
     result = request.execute()
@@ -152,8 +155,10 @@ class EndToEndTest(unittest.TestCase):
         instance_name=self.instance_to_analyse, zone=self.zone,
         disk_name=self.disk_to_forensic)
 
+    gcp_client_api = GoogleCloudComputeClient(self.project_id).GceApi()
+
     # The disk copy should be existing in the analysis project
-    gce_disk_client = self.gcp.GceApi().disks()
+    gce_disk_client = gcp_client_api.disks()
     request = gce_disk_client.get(
         project=self.project_id, zone=self.zone,
         disk=self.disk_to_forensic_copy.name)
@@ -168,7 +173,7 @@ class EndToEndTest(unittest.TestCase):
 
     # The forensic instance should be live in the analysis GCP project and
     # the disk should be attached
-    gce_instance_client = self.gcp.GceApi().instances()
+    gce_instance_client = gcp_client_api.instances()
     request = gce_instance_client.get(
         project=self.project_id, zone=self.zone, instance=self.analysis_vm_name)
     result = request.execute()
@@ -193,14 +198,15 @@ class EndToEndTest(unittest.TestCase):
     zone = cls.zone
     project = cls.gcp
     disks = analysis_vm.ListDisks()
+    gcp_client = GoogleCloudComputeClient(project.project_id)
     # delete the created forensics VMs
     LOGGER.info('Deleting analysis instance: {0:s}.'.format(analysis_vm.name))
-    gce_instance_client = project.GceApi().instances()
+    gce_instance_client = gcp_client.GceApi().instances()
     request = gce_instance_client.delete(
         project=project.project_id, zone=zone, instance=analysis_vm.name)
     response = request.execute()
     try:
-      project.BlockOperation(response)
+      gcp_client.BlockOperation(response)
     except HttpError:
       # BlockOperation triggers a while(True) loop that checks on the
       # operation ID. Sometimes it loops one more time right when the
@@ -216,11 +222,11 @@ class EndToEndTest(unittest.TestCase):
       LOGGER.info('Deleting disk: {0:s}.'.format(disk))
       while True:
         try:
-          gce_disk_client = project.GceApi().disks()
+          gce_disk_client = gcp_client.GceApi().disks()
           request = gce_disk_client.delete(
               project=project.project_id, zone=zone, disk=disk)
           response = request.execute()
-          project.BlockOperation(response)
+          gcp_client.BlockOperation(response)
           break
         except HttpError as exception:
           # The gce api will throw a 400 until the analysis vm's deletion is

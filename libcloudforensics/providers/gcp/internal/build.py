@@ -52,6 +52,7 @@ class GoogleCloudBuild:
 
   def CreateBuild(self, build_body):
     """Create a cloud build.
+
     Args:
       build_body (dict): A dictionary that describes how to find the source
           code and how to build it.

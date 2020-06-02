@@ -12,7 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Google compute functionality."""
+"""Google compute resources."""
 
 import datetime
 import os
@@ -22,7 +22,8 @@ import time
 
 from libcloudforensics.providers.gcp.internal import build
 from libcloudforensics.providers.gcp.internal import common
-from libcloudforensics.providers.gcp.internal import compute # pylint: disable=cyclic-import
+from libcloudforensics.providers.gcp.internal import compute  # pylint: disable=cyclic-import
+
 
 class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
   """Base class representing a Computer Engine resource.
@@ -380,22 +381,20 @@ class GoogleComputeDisk(GoogleComputeBaseResource):
         body=operation_config)
     response = request.execute()
     self.BlockOperation(response, zone=self.zone)
-    return GoogleComputeSnapshot(self.project_id, disk=self, name=snapshot_name)
+    return GoogleComputeSnapshot(disk=self, name=snapshot_name)
 
 
 class GoogleComputeSnapshot(GoogleComputeBaseResource):
   """Class representing a Compute Engine Snapshot.
 
   Attributes:
-    project_id (str): Project name.
     disk (GoogleComputeDisk): Disk used for the Snapshot.
   """
 
-  def __init__(self, project_id, disk, name):
+  def __init__(self, disk, name):
     """Initialize the Snapshot object.
 
     Args:
-      project_id (str): Project name.
       disk (GoogleComputeDisk): Disk used for the Snapshot.
       name (str): Name of the Snapshot.
     """
