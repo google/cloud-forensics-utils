@@ -83,3 +83,35 @@ def GetInstanceTypeByCPU(cpu_cores):
             cpu_cores, ', '.join(map(str, cpu_cores_to_instance_type.keys()))
         ))
   return cpu_cores_to_instance_type[cpu_cores]
+
+
+def ExecuteAndPaginate(client, func, kwargs):
+  """Execute and paginate a request to the boto3 API.
+
+  Args:
+    client (boto3.session.Session): A boto3 client object.
+    func (str): A boto3 function to query from the client.
+    kwargs (dict): A dictionary of parameters for the function func.
+
+  Returns:
+    list(dict): A list of dictionaries (responses from the request).
+
+  Raises:
+    RuntimeError: If the request to the boto3 API could not complete.
+  """
+  responses = []
+  next_token = None
+  while True:
+    try:
+      if next_token:
+        kwargs['NextToken'] = next_token
+      request = getattr(client, func)
+      response = request(**kwargs)
+    except client.exceptions.ClientError as exception:
+      raise RuntimeError('Could not process request: {0:s}'.format(
+          str(exception)))
+    responses.append(response)
+    next_token = response.get('NextToken')
+    if not next_token:
+      break
+  return responses

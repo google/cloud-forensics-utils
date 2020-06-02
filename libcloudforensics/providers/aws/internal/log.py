@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Log functionality."""
-from libcloudforensics.providers.aws.internal.common import CLOUDTRAIL_SERVICE
+from libcloudforensics.providers.aws.internal import common
 
 
 class AWSCloudTrail:
@@ -57,7 +57,7 @@ class AWSCloudTrail:
 
     events = []
 
-    client = self.aws_account.ClientApi(CLOUDTRAIL_SERVICE)
+    client = self.aws_account.ClientApi(common.CLOUDTRAIL_SERVICE)
 
     params = {}
     if qfilter:
@@ -69,10 +69,8 @@ class AWSCloudTrail:
     if endtime:
       params['EndTime'] = endtime
 
-    while True:
-      response = client.lookup_events(**params)
+    responses = common.ExecuteAndPaginate(client, 'lookup_events', params)
+    for response in responses:
       for entry in response['Events']:
         events.append(entry)
-      if 'NextToken' not in response:
-        return events
-      params['NextToken'] = response['NextToken']
+    return events
