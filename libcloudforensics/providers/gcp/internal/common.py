@@ -18,6 +18,7 @@ import binascii
 import logging
 import re
 import socket
+import time
 
 from google.auth import default
 from google.auth.exceptions import DefaultCredentialsError
@@ -121,3 +122,68 @@ def CreateService(service_name, api_version):
     raise RuntimeError(error_msg)
 
   return service
+
+
+class GoogleCloudComputeClient:
+  """Class represnting Google Cloud Compute API client.
+
+  Attributes:
+    project_id (str): Project name.
+  """
+  COMPUTE_ENGINE_API_VERSION = 'v1'
+
+  def __init__(self, project_id=None):
+    """Initialize Google Cloud Engine API client object.
+
+    Args:
+     project_id (str): Optional. Project name. Nedded to use BlockOperation.
+    """
+    self._gce_api_client = None
+    self.project_id = project_id
+
+  def GceApi(self):
+    """Get a Google Compute Engine service object.
+
+    Returns:
+      apiclient.discovery.Resource: A Google Compute Engine service object.
+    """
+
+    if self._gce_api_client:
+      return self._gce_api_client
+    self._gce_api_client = CreateService(
+        'compute', self.COMPUTE_ENGINE_API_VERSION)
+    return self._gce_api_client
+
+  def BlockOperation(self, response, zone=None):
+    """Block until API operation is finished.
+
+    Args:
+      response (dict): GCE API response.
+      zone (str): Optional. GCP zone to execute the operation in. None means
+          GlobalZone.
+
+    Returns:
+      dict: Holding the response of a get operation on an API object of type
+          zoneOperations or globalOperations.
+
+    Raises:
+      RuntimeError: If API call failed.
+    """
+
+    service = self.GceApi()
+    while True:
+      if zone:
+        request = service.zoneOperations().get(
+            project=self.project_id, zone=zone, operation=response['name'])
+        result = request.execute()
+      else:
+        request = service.globalOperations().get(
+            project=self.project_id, operation=response['name'])
+        result = request.execute()
+
+      if 'error' in result:
+        raise RuntimeError(result['error'])
+
+      if result['status'] == 'DONE':
+        return result
+      time.sleep(5)  # Seconds between requests

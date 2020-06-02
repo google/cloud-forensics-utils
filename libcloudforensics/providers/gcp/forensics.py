@@ -18,7 +18,7 @@ from google.auth.exceptions import RefreshError, DefaultCredentialsError
 from googleapiclient.errors import HttpError
 
 from libcloudforensics.providers.gcp.internal import project as gcp_project
-from libcloudforensics.providers.gcp.internal.common import LOGGER
+from libcloudforensics.providers.gcp.internal import common
 
 
 def CreateDiskCopy(src_proj,
@@ -49,20 +49,22 @@ def CreateDiskCopy(src_proj,
 
   src_proj = gcp_project.GoogleCloudProject(src_proj)
   dst_proj = gcp_project.GoogleCloudProject(dst_proj, default_zone=zone)
-  instance = src_proj.GetInstance(instance_name) if instance_name else None
+  instance = src_proj.compute.GetInstance(
+      instance_name) if instance_name else None
 
   try:
     if disk_name:
-      disk_to_copy = src_proj.GetDisk(disk_name)
+      disk_to_copy = src_proj.compute.GetDisk(disk_name)
     else:
       disk_to_copy = instance.GetBootDisk()
 
-    LOGGER.info('Disk copy of {0:s} started...'.format(disk_to_copy.name))
+    common.LOGGER.info('Disk copy of {0:s} started...'.format(
+        disk_to_copy.name))
     snapshot = disk_to_copy.Snapshot()
-    new_disk = dst_proj.CreateDiskFromSnapshot(
+    new_disk = dst_proj.compute.CreateDiskFromSnapshot(
         snapshot, disk_name_prefix='evidence', disk_type=disk_type)
     snapshot.Delete()
-    LOGGER.info(
+    common.LOGGER.info(
         'Disk {0:s} successfully copied to {1:s}'.format(
             disk_to_copy.name, new_disk.name))
 
@@ -124,7 +126,7 @@ def StartAnalysisVm(project,
   """
 
   project = gcp_project.GoogleCloudProject(project, default_zone=zone)
-  analysis_vm, created = project.GetOrCreateAnalysisVm(
+  analysis_vm, created = project.compute.GetOrCreateAnalysisVm(
       vm_name, boot_disk_size, disk_type=boot_disk_type, cpu_cores=cpu_cores,
       image_project=image_project, image_family=image_family)
   for disk in (attach_disk or []):
