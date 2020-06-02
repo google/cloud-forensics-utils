@@ -35,7 +35,7 @@ description = (
 
 def parse_requirements(filename):
   with open(filename) as requirements:
-      # Skipping -i https://pypi.org/simple
+    # Skipping -i https://pypi.org/simple
     return requirements.readlines()[1:]
 
 
@@ -59,6 +59,7 @@ setup(
     package_data={
       'libcloudforensics': ['scripts/*']
     },
+    scripts=['examples/libcloudforensics.py'],
     zip_safe=False,
     install_requires=[req for req in parse_requirements('requirements.txt')],
     tests_require=[req for req in parse_requirements('requirements-dev.txt')],
