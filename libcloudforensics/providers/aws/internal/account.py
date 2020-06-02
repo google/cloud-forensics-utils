@@ -120,20 +120,11 @@ class AWSAccount:
       filters = []
 
     instances = {}
-    next_token = None
     client = self.ClientApi(common.EC2_SERVICE, region=region)
+    responses = common.ExecuteAndPaginate(
+        client, 'describe_instances', {'Filters': filters})
 
-    while True:
-      try:
-        if next_token:
-          response = client.describe_instances(
-              Filters=filters, NextToken=next_token)
-        else:
-          response = client.describe_instances(Filters=filters)
-      except client.exceptions.ClientError as exception:
-        raise RuntimeError('Could not retrieve instances: {0:s}'.format(
-            str(exception)))
-
+    for response in responses:
       for reservation in response['Reservations']:
         for instance in reservation['Instances']:
           # If reservation['Instances'] contains any entry, then the
@@ -152,11 +143,6 @@ class AWSAccount:
               break
 
           instances[instance_id] = aws_instance
-
-      next_token = response.get('NextToken')
-      if not next_token:
-        break
-
     return instances
 
   def ListVolumes(self, region=None, filters=None):
@@ -185,20 +171,10 @@ class AWSAccount:
       filters = []
 
     volumes = {}
-    next_token = None
     client = self.ClientApi(common.EC2_SERVICE, region=region)
-
-    while True:
-      try:
-        if next_token:
-          response = client.describe_volumes(
-              Filters=filters, NextToken=next_token)
-        else:
-          response = client.describe_volumes(Filters=filters)
-      except client.exceptions.ClientError as exception:
-        raise RuntimeError('Could not retrieve volumes: {0:s}'.format(
-            str(exception)))
-
+    responses = common.ExecuteAndPaginate(
+        client, 'describe_volumes', {'Filters': filters})
+    for response in responses:
       for volume in response['Volumes']:
         volume_id = volume['VolumeId']
         aws_volume = ebs.AWSVolume(volume_id,
@@ -218,11 +194,6 @@ class AWSAccount:
             break
 
         volumes[volume_id] = aws_volume
-
-      next_token = response.get('NextToken')
-      if not next_token:
-        break
-
     return volumes
 
   def GetInstancesByNameOrId(self,
