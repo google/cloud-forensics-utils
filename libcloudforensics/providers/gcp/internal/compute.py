@@ -83,7 +83,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
 
     instances = {}
     gce_instance_client = self.GceApi().instances()
-    responses = common.ExecuteAndPaginate(
+    responses = common.ExecuteRequest(
         gce_instance_client, 'aggregatedList', {'project': self.project_id})
 
     for response in responses:
@@ -109,7 +109,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
 
     disks = {}
     gce_disk_client = self.GceApi().disks()
-    responses = common.ExecuteAndPaginate(
+    responses = common.ExecuteRequest(
         gce_disk_client, 'aggregatedList', {'project': self.project_id})
 
     for response in responses:

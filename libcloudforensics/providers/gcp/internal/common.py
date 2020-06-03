@@ -189,7 +189,7 @@ class GoogleCloudComputeClient:
       time.sleep(5)  # Seconds between requests
 
 
-def ExecuteAndPaginate(client, func, kwargs, throttle=False):
+def ExecuteRequest(client, func, kwargs, throttle=False):
   """Execute and paginate a request to the GCP API.
 
   Args:
@@ -227,5 +227,4 @@ def ExecuteAndPaginate(client, func, kwargs, throttle=False):
     responses.append(response)
     next_token = response.get('nextPageToken')
     if not next_token:
-      break
-  return responses
+      return responses

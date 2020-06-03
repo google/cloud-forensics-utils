@@ -69,7 +69,7 @@ class GoogleCloudLog:
 
     logs = []
     gcl_instance_client = self.GclApi().logs()
-    responses = common.ExecuteAndPaginate(
+    responses = common.ExecuteRequest(
         gcl_instance_client, 'list', {'parent': 'projects/' + self.project_id})
 
     for response in responses:
@@ -99,7 +99,7 @@ class GoogleCloudLog:
 
     entries = []
     gcl_instance_client = self.GclApi().entries()
-    responses = common.ExecuteAndPaginate(
+    responses = common.ExecuteRequest(
         gcl_instance_client, 'list', body, throttle=True)
 
     for response in responses:
