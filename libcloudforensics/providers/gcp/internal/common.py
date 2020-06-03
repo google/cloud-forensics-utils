@@ -190,7 +190,7 @@ class GoogleCloudComputeClient:
 
 
 def ExecuteRequest(client, func, kwargs, throttle=False):
-  """Execute and paginate a request to the GCP API.
+  """Execute a request to the GCP API.
 
   Args:
     client (googleapiclient.Resources): A GCP client object.
