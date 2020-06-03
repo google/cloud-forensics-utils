@@ -125,7 +125,7 @@ def CreateService(service_name, api_version):
 
 
 class GoogleCloudComputeClient:
-  """Class represnting Google Cloud Compute API client.
+  """Class representing Google Cloud Compute API client.
 
   Attributes:
     project_id (str): Project name.
@@ -136,7 +136,7 @@ class GoogleCloudComputeClient:
     """Initialize Google Cloud Engine API client object.
 
     Args:
-     project_id (str): Optional. Project name. Nedded to use BlockOperation.
+     project_id (str): Optional. Project name. Needed to use BlockOperation.
     """
     self._gce_api_client = None
     self.project_id = project_id
@@ -190,21 +190,21 @@ class GoogleCloudComputeClient:
 
 
 def ExecuteAndPaginate(client, func, kwargs, throttle=False):
-  """Execute and paginate a request to the boto3 API.
+  """Execute and paginate a request to the GCP API.
 
   Args:
     client (googleapiclient.Resources): A GCP client object.
     func (str): A GCP function to query from the client.
     kwargs (dict): A dictionary of parameters for the function func.
-    throttle (bool): A boolean indicated if requests should be throttled. This
+    throttle (bool): A boolean indicating if requests should be throttled. This
         is necessary for some APIs (e.g. list logs) as there is an API rate
-        limit.
+        limit. Default is False, i.e. requests are not throttled.
 
   Returns:
     list(dict): A list of dictionaries (responses from the request).
 
   Raises:
-    RuntimeError: If the request to the boto3 API could not complete.
+    RuntimeError: If the request to the GCP API could not complete.
   """
 
   responses = []
