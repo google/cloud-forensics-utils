@@ -12,7 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Google compute resources."""
+"""Google Compute Engine resources."""
 
 import datetime
 import os
@@ -22,6 +22,8 @@ import time
 
 from libcloudforensics.providers.gcp.internal import build
 from libcloudforensics.providers.gcp.internal import common
+# The following import is only used in methods so we can ignore the cyclic
+# dependency
 from libcloudforensics.providers.gcp.internal import compute  # pylint: disable=cyclic-import
 
 
