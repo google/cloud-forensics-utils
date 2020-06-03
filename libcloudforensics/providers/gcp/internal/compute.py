@@ -12,13 +12,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Google compute functionality."""
+"""Google Compute Engine functionality."""
 
 from googleapiclient.errors import HttpError
 
 from libcloudforensics.providers.gcp.internal import common
-from libcloudforensics.providers.gcp.internal import compute_resources # pylint: disable=cyclic-import
+from libcloudforensics.providers.gcp.internal import compute_resources  # pylint: disable=cyclic-import
 from libcloudforensics.scripts import utils
+
 
 class GoogleCloudCompute(common.GoogleCloudComputeClient):
   """Class representing all Google Cloud Compute objects in a project.
@@ -47,28 +48,30 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
 
     Args:
       refresh (boolean): Optional. Returns refreshed result if True.
+
     Returns:
       dict: Dictionary mapping instance names (str) to their respective
           GoogleComputeInstance object.
     """
-    if not(refresh) and self._instances:
+    if not refresh and self._instances:
       return self._instances
     self._instances = self.ListInstances()
     return self._instances
 
   def Disks(self, refresh=True):
-    """Get all instances in the project.
+    """Get all disks in the project.
 
     Args:
       refresh (boolean): Optional. Returns refreshed result if True.
+
     Returns:
-      dict: Dictionary mapping instance names (str) to their respective
-          GoogleComputeInstance object.
+      dict: Dictionary mapping disk names (str) to their respective
+          GoogleComputeDisk object.
     """
-    if not(refresh) and self._instances:
-      return self._instances
-    self._instances = self.ListInstances()
-    return self._instances
+    if not refresh and self._disks:
+      return self._disks
+    self._disks = self.ListDisks()
+    return self._disks
 
   def ListInstances(self):
     """List instances in project.

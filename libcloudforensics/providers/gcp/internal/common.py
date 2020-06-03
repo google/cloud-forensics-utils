@@ -51,7 +51,7 @@ def GenerateDiskName(snapshot, disk_name_prefix=None):
   """
 
   # Max length of disk names in GCP is 63 characters
-  project_id = snapshot.project.project_id
+  project_id = snapshot.project_id
   disk_id = project_id + snapshot.disk.name
   disk_id_crc32 = '{0:08x}'.format(
       binascii.crc32(disk_id.encode()) & 0xffffffff)
@@ -109,7 +109,7 @@ def CreateService(service_name, api_version):
       service_built = True
     except socket.timeout:
       LOGGER.info(
-          'Timeout trying to build service {0:s} (try {1:s} of {2:s})'.format(
+          'Timeout trying to build service {0:s} (try {1:d} of {2:d})'.format(
               service_name, retry, RETRY_MAX))
 
     if service_built:

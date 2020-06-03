@@ -28,7 +28,7 @@ def ListInstances(args):
   """
 
   project = gcp_project.GoogleCloudProject(args.project)
-  instances = project.ListInstances()
+  instances = project.compute.ListInstances()
 
   print('Instances found:')
   for instance in instances:
@@ -44,7 +44,7 @@ def ListDisks(args):
   """
 
   project = gcp_project.GoogleCloudProject(args.project)
-  disks = project.ListDisks()
+  disks = project.compute.ListDisks()
   print('Disks found:')
   for disk in disks:
     print('Name: {0:s}, Zone: {1:s}'.format(disk, disks[disk].zone))
