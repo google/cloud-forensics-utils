@@ -81,24 +81,15 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
           GoogleComputeInstance object.
     """
 
-    have_all_tokens = False
-    page_token = None
     instances = {}
-    while not have_all_tokens:
-      gce_instance_client = self.GceApi().instances()
-      if page_token:
-        request = gce_instance_client.aggregatedList(
-            project=self.project_id, pageToken=page_token)
-      else:
-        request = gce_instance_client.aggregatedList(project=self.project_id)
-      result = request.execute()
-      page_token = result.get('nextPageToken')
-      if not page_token:
-        have_all_tokens = True
+    gce_instance_client = self.GceApi().instances()
+    responses = common.ExecuteAndPaginate(
+        gce_instance_client, 'aggregatedList', {'project': self.project_id})
 
-      for zone in result['items']:
+    for response in responses:
+      for zone in response['items']:
         try:
-          for instance in result['items'][zone]['instances']:
+          for instance in response['items'][zone]['instances']:
             _, zone = instance['zone'].rsplit('/', 1)
             name = instance['name']
             instances[name] = compute_resources.GoogleComputeInstance(
@@ -116,23 +107,15 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
           GoogleComputeDisk object.
     """
 
-    have_all_tokens = False
-    page_token = None
     disks = {}
-    while not have_all_tokens:
-      gce_disk_client = self.GceApi().disks()
-      if page_token:
-        request = gce_disk_client.aggregatedList(
-            project=self.project_id, pageToken=page_token)
-      else:
-        request = gce_disk_client.aggregatedList(project=self.project_id)
-      result = request.execute()
-      page_token = result.get('nextPageToken')
-      if not page_token:
-        have_all_tokens = True
-      for zone in result['items']:
+    gce_disk_client = self.GceApi().disks()
+    responses = common.ExecuteAndPaginate(
+        gce_disk_client, 'aggregatedList', {'project': self.project_id})
+
+    for response in responses:
+      for zone in response['items']:
         try:
-          for disk in result['items'][zone]['disks']:
+          for disk in response['items'][zone]['disks']:
             _, zone = disk['zone'].rsplit('/', 1)
             name = disk['name']
             disks[name] = compute_resources.GoogleComputeDisk(
