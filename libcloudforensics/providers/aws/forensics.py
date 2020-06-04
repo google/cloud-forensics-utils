@@ -19,6 +19,7 @@ from libcloudforensics.providers.aws.internal import account
 
 
 def CreateVolumeCopy(zone,
+                     dst_zone=None,
                      instance_id=None,
                      volume_id=None,
                      src_account=None,
@@ -62,7 +63,9 @@ def CreateVolumeCopy(zone,
       dst_account='forensics')
 
   Args:
-    zone (str): The zone within the region to create the new resource in.
+    zone (str): The AWS zone in which the volume is located, e.g. 'us-east-2b'.
+    dst_zone (str): Optional. The AWS zone in which to create the volume
+        copy. By default, this is the same as 'zone'.
     instance_id (str): Optional. Instance ID of the instance using the volume
         to be copied. If specified, the boot volume of the instance will be
         copied. If volume_id is also specified, then the volume pointed by
@@ -117,11 +120,16 @@ def CreateVolumeCopy(zone,
             kms_key_id, destination_account_id)
         # Create a copy of the initial snapshot and encrypts it with the
         # shared key
-        temporary_snapshot = snapshot.Copy(kms_key_id=kms_key_id)
-        # Delete the initial snapshot
-        snapshot.Delete()
-        snapshot = temporary_snapshot
+        snapshot = snapshot.Copy(kms_key_id=kms_key_id, delete=True)
       snapshot.ShareWithAWSAccount(destination_account_id)
+
+    if dst_zone:
+      # Assign the new zone to the destination account and assign it to the
+      # snapshot so that it can copy it
+      destination_account = account.AWSAccount(
+          dst_zone, aws_profile=dst_account)
+      snapshot.aws_account = destination_account
+      snapshot = snapshot.Copy(delete=True, deletion_account=source_account)
 
     new_volume = destination_account.CreateVolumeFromSnapshot(
         snapshot, volume_name_prefix='evidence')
