@@ -100,10 +100,10 @@ def Main():
                                 'copy. If none specified, then --instance_id '
                                 'must be specified and the boot volume of the '
                                 'AWS instance will be copied.', None),
-                ('--src_account', 'The name of the profile for the source '
+                ('--src_profile', 'The name of the profile for the source '
                                   'account, as defined in the AWS credentials '
                                   'file.', None),
-                ('--dst_account', 'The name of the profile for the destination '
+                ('--dst_profile', 'The name of the profile for the destination '
                                   'account, as defined in the AWS credentials '
                                   'file.', None)
             ])
