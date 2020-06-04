@@ -152,8 +152,7 @@ def StartAnalysisVm(vm_name,
                     boot_volume_size,
                     ami=UBUNTU_1804_AMI,
                     cpu_cores=4,
-                    attach_volume=None,
-                    device_name=None,
+                    attach_volumes=None,
                     dst_account=None,
                     ssh_key_name=None):
   """Start a virtual machine for analysis purposes.
@@ -171,9 +170,10 @@ def StartAnalysisVm(vm_name,
         Default is a version of Ubuntu 18.04.
     cpu_cores (int): Optional. The number of CPU cores to create the machine
         with. Default is 4.
-    attach_volume (AWSVolume): Optional. The volume to attach.
-    device_name (str): Optional. The name of the device (e.g. /dev/sdf) for
-        the volume to be attached. Mandatory if attach_volume is provided.
+    attach_volumes (list(tuple(str, str))): Optional. List of tuples
+        containing the volume IDs (str) to attach and their respective device
+        name (str, e.g. /dev/sdf). Note that it is mandatory to provide a
+        unique device name per volume to attach.
     dst_account (str): Optional. The AWS account in which to create the
         analysis VM. This is the profile name that is defined in your AWS
         credentials file.
@@ -200,9 +200,6 @@ def StartAnalysisVm(vm_name,
       ami,
       cpu_cores,
       ssh_key_name=ssh_key_name)
-  if attach_volume:
-    if not device_name:
-      raise RuntimeError('If you want to attach a volume, you must also '
-                         'specify a device name for that volume.')
-    analysis_vm.AttachVolume(attach_volume, device_name)
+  for volume_id, device_name in (attach_volumes or []):
+    analysis_vm.AttachVolume(aws_account.GetVolumeById(volume_id), device_name)
   return analysis_vm, created
