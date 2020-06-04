@@ -14,24 +14,21 @@
 # limitations under the License.
 """End to end test for the aws module."""
 
-import json
-import os
 import unittest
-import logging
 
-from libcloudforensics import aws
-
-log = logging.getLogger()
-EC2_SERVICE = 'ec2'
+from libcloudforensics.providers.aws.internal.common import LOGGER, EC2_SERVICE
+from libcloudforensics.providers.aws.internal import account
+from libcloudforensics.providers.aws import forensics
+from tests.scripts import utils
 
 
 class EndToEndTest(unittest.TestCase):
   """End to end test on AWS.
 
   This end-to-end test runs directly on AWS and tests that:
-    1. The aws.py module connects to the target instance and makes a snapshot
-        of the boot volume (by default) or of the volume passed in parameter
-        to the aws.CreateVolumeCopy() method.
+    1. The account.py module connects to the target instance and makes a
+    snapshot of the boot volume (by default) or of the volume passed in
+    parameter to the forensics.CreateVolumeCopy() method.
     2. A new volume is created from the taken snapshot.
 
   To run this test, add your project information to a project_info.json file:
@@ -52,15 +49,15 @@ class EndToEndTest(unittest.TestCase):
   @classmethod
   def setUpClass(cls):
     try:
-      project_info = ReadProjectInfo()
+      project_info = utils.ReadProjectInfo(['instance', 'zone'])
     except (OSError, RuntimeError, ValueError) as exception:
       raise unittest.SkipTest(str(exception))
     cls.instance_to_analyse = project_info['instance']
     cls.zone = project_info['zone']
     cls.volume_to_forensic = project_info.get('volume_id', None)
-    cls.aws = aws.AWSAccount(cls.zone)
+    cls.aws = account.AWSAccount(cls.zone)
     cls.analysis_vm_name = 'new-vm-for-analysis'
-    cls.analysis_vm, _ = aws.StartAnalysisVm(
+    cls.analysis_vm, _ = forensics.StartAnalysisVm(
         cls.analysis_vm_name, cls.zone, 10, 4)
     cls.volumes = []
 
@@ -68,14 +65,14 @@ class EndToEndTest(unittest.TestCase):
     """End to end test on AWS.
 
     This end-to-end test runs directly on AWS and tests that:
-      1. The aws.py module connects to the target instance and makes a snapshot
-          of the boot volume (by default) or of the volume passed in
-          parameter to the aws.CreateVolumeCopy() method.
+      1. The account.py module connects to the target instance and makes a
+          snapshot of the boot volume (by default) or of the volume passed in
+          parameter to the forensics.CreateVolumeCopy() method.
       2. A new volume is created from the taken snapshot.
     """
 
     # Make a copy of the boot volume of the instance to analyse
-    boot_volume_copy = aws.CreateVolumeCopy(
+    boot_volume_copy = forensics.CreateVolumeCopy(
         self.zone,
         instance_id=self.instance_to_analyse
         # volume_id=None by default, boot volume of instance will be copied
@@ -90,9 +87,9 @@ class EndToEndTest(unittest.TestCase):
     """End to end test on AWS.
 
     This end-to-end test runs directly on AWS and tests that:
-      1. The aws.py module connects to the target instance and makes a
+      1. The account.py module connects to the target instance and makes a
           snapshot of volume passed to the 'volume_id' parameter in the
-          CreateVolumeCopy() method.
+          forensics.CreateVolumeCopy() method.
       2. A new volume is created from the taken snapshot.
     """
 
@@ -100,7 +97,7 @@ class EndToEndTest(unittest.TestCase):
       return
 
     # Make a copy of another volume of the instance to analyse
-    other_volume_copy = aws.CreateVolumeCopy(
+    other_volume_copy = forensics.CreateVolumeCopy(
         self.zone,
         volume_id=self.volume_to_forensic)
 
@@ -116,12 +113,12 @@ class EndToEndTest(unittest.TestCase):
         passed to the attach_volume parameter is correctly attached.
     """
 
-    volume_to_attach = aws.CreateVolumeCopy(
+    volume_to_attach = forensics.CreateVolumeCopy(
         self.zone,
         volume_id=self.volume_to_forensic)
     self.volumes.append(volume_to_attach)
     # Create and start the analysis VM and attach the boot volume
-    self.analysis_vm, _ = aws.StartAnalysisVm(
+    self.analysis_vm, _ = forensics.StartAnalysisVm(
         self.analysis_vm_name,
         self.zone,
         10,
@@ -150,50 +147,14 @@ class EndToEndTest(unittest.TestCase):
 
     # Delete the volumes
     for volume in cls.volumes:
-      log.info('Deleting volume: {0:s}.'.format(volume.volume_id))
+      LOGGER.info('Deleting volume: {0:s}.'.format(volume.volume_id))
       try:
         client.delete_volume(VolumeId=volume.volume_id)
         client.get_waiter('volume_deleted').wait(VolumeIds=[volume.volume_id])
       except client.exceptions.ClientError as exception:
         raise RuntimeError('Could not complete cleanup: {0:s}'.format(
             str(exception)))
-      log.info('Volume {0:s} successfully deleted.'.format(volume.volume_id))
-
-
-def ReadProjectInfo():
-  """Read project information to run e2e test.
-
-  Returns:
-    dict: A dict with the project information.
-
-  Raises:
-    OSError: If the file cannot be found, opened or closed.
-    RuntimeError: If the json file cannot be parsed.
-    ValueError: If the json file does not have the required properties.
-  """
-  project_info = os.environ.get('PROJECT_INFO')
-  if project_info is None:
-    raise OSError('Please make sure that you defined the '
-                  '"PROJECT_INFO" environment variable pointing '
-                  'to your project settings.')
-  try:
-    json_file = open(project_info)
-    try:
-      project_info = json.load(json_file)
-    except ValueError as exception:
-      raise RuntimeError('Cannot parse JSON file. {0:s}'.format(
-          str(exception)))
-    json_file.close()
-  except OSError as exception:
-    raise OSError('Could not open/close file {0:s}: {1:s}'.format(
-        project_info, str(exception)))
-
-  if not all(key in project_info for key in ['instance', 'zone']):
-    raise ValueError('Please make sure that your JSON file '
-                     'has the required entries. The file should '
-                     'contain at least the following: ["instance", "zone"].')
-
-  return project_info
+      LOGGER.info('Volume {0:s} successfully deleted.'.format(volume.volume_id))
 
 
 if __name__ == '__main__':
