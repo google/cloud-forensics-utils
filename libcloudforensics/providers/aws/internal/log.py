@@ -69,7 +69,7 @@ class AWSCloudTrail:
     if endtime:
       params['EndTime'] = endtime
 
-    responses = common.ExecuteAndPaginate(client, 'lookup_events', params)
+    responses = common.ExecuteRequest(client, 'lookup_events', params)
     for response in responses:
       for entry in response['Events']:
         events.append(entry)
