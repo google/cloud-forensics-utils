@@ -21,7 +21,7 @@ import socket
 import time
 
 from google.auth import default
-from google.auth.exceptions import DefaultCredentialsError
+from google.auth.exceptions import DefaultCredentialsError, RefreshError
 from googleapiclient.discovery import build
 
 LOGGER = logging.getLogger()
@@ -125,7 +125,7 @@ def CreateService(service_name, api_version):
 
 
 class GoogleCloudComputeClient:
-  """Class represnting Google Cloud Compute API client.
+  """Class representing Google Cloud Compute API client.
 
   Attributes:
     project_id (str): Project name.
@@ -136,7 +136,7 @@ class GoogleCloudComputeClient:
     """Initialize Google Cloud Engine API client object.
 
     Args:
-     project_id (str): Optional. Project name. Nedded to use BlockOperation.
+     project_id (str): Optional. Project name. Needed to use BlockOperation.
     """
     self._gce_api_client = None
     self.project_id = project_id
@@ -187,3 +187,44 @@ class GoogleCloudComputeClient:
       if result['status'] == 'DONE':
         return result
       time.sleep(5)  # Seconds between requests
+
+
+def ExecuteRequest(client, func, kwargs, throttle=False):
+  """Execute a request to the GCP API.
+
+  Args:
+    client (googleapiclient.Resources): A GCP client object.
+    func (str): A GCP function to query from the client.
+    kwargs (dict): A dictionary of parameters for the function func.
+    throttle (bool): A boolean indicating if requests should be throttled. This
+        is necessary for some APIs (e.g. list logs) as there is an API rate
+        limit. Default is False, i.e. requests are not throttled.
+
+  Returns:
+    list(dict): A list of dictionaries (responses from the request).
+
+  Raises:
+    RuntimeError: If the request to the GCP API could not complete.
+  """
+
+  responses = []
+  next_token = None
+  while True:
+    if throttle:
+      time.sleep(1)
+    if next_token:
+      kwargs['pageToken'] = next_token
+    try:
+      request = getattr(client, func)
+      response = request(**kwargs).execute()
+    except (RefreshError, DefaultCredentialsError) as exception:
+      error_msg = (
+          '{0:s}\n'
+          'Something is wrong with your Application Default '
+          'Credentials. Try running: '
+          '$ gcloud auth application-default login'.format(str(exception)))
+      raise RuntimeError(error_msg)
+    responses.append(response)
+    next_token = response.get('nextPageToken')
+    if not next_token:
+      return responses

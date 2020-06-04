@@ -14,10 +14,6 @@
 # limitations under the License.
 """Log functionality."""
 
-import time
-
-from google.auth.exceptions import RefreshError, DefaultCredentialsError
-
 from libcloudforensics.providers.gcp.internal import common
 
 
@@ -71,30 +67,14 @@ class GoogleCloudLog:
       RuntimeError: If API call failed.
     """
 
-    have_all_tokens = False
-    page_token = None
     logs = []
-    while not have_all_tokens:
-      gcl_instance_client = self.GclApi().logs()
-      if page_token:
-        request = gcl_instance_client.list(
-            parent=self.project_id, pageToken=page_token)
-      else:
-        request = gcl_instance_client.list(parent='projects/' + self.project_id)
-      try:
-        result = request.execute()
-      except (RefreshError, DefaultCredentialsError) as exception:
-        error_msg = (
-            '{0:s}\n'
-            'Something is wrong with your Application Default '
-            'Credentials. Try running: '
-            '$ gcloud auth application-default login'.format(str(exception)))
-        raise RuntimeError(error_msg)
-      for logtypes in result.get('logNames', []):
+    gcl_instance_client = self.GclApi().logs()
+    responses = common.ExecuteRequest(
+        gcl_instance_client, 'list', {'parent': 'projects/' + self.project_id})
+
+    for response in responses:
+      for logtypes in response.get('logNames', []):
         logs.append(logtypes)
-      page_token = result.get('nextPageToken')
-      if not page_token:
-        have_all_tokens = True
 
     return logs
 
@@ -117,32 +97,13 @@ class GoogleCloudLog:
         'orderBy': 'timestamp desc',
     }
 
-    have_all_tokens = False
-    page_token = None
     entries = []
-    while not have_all_tokens:
-      gcl_instance_client = self.GclApi().entries()
-      if page_token:
-        # This sleep is needed as the API rate limits. It will *not* speed
-        # up the query by asking if there are new results more frequently.
-        time.sleep(1)
-        body['pageToken'] = page_token
-        request = gcl_instance_client.list(body=body)
-      else:
-        request = gcl_instance_client.list(body=body)
-      try:
-        result = request.execute()
-      except (RefreshError, DefaultCredentialsError) as exception:
-        error_msg = (
-            '{0:s}\n'
-            'Something is wrong with your Application Default '
-            'Credentials. Try running: '
-            '$ gcloud auth application-default login'.format(str(exception)))
-        raise RuntimeError(error_msg)
-      for entry in result.get('entries', []):
+    gcl_instance_client = self.GclApi().entries()
+    responses = common.ExecuteRequest(
+        gcl_instance_client, 'list', body, throttle=True)
+
+    for response in responses:
+      for entry in response.get('entries', []):
         entries.append(entry)
-      page_token = result.get('nextPageToken')
-      if not page_token:
-        have_all_tokens = True
 
     return entries
