@@ -188,9 +188,6 @@ def StartAnalysisVm(vm_name,
   Returns:
     tuple(AWSInstance, bool): a tuple with a virtual machine object
         and a boolean indicating if the virtual machine was created or not.
-
-  Raises:
-    RuntimeError: If device_name is missing when attach_volume is provided.
   """
   aws_account = account.AWSAccount(
       default_availability_zone, aws_profile=dst_account)
