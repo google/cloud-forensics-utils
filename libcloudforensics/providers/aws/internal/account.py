@@ -565,10 +565,12 @@ class AWSAccount:
             'AWS': 'arn:aws:iam::{0:s}:root'.format(aws_account_id)
         },
         'Action': [
+            # kms:*crypt and kms:ReEncrypt* are necessary to transfer
+            # encrypted EBS resources across accounts.
             'kms:Encrypt',
             'kms:Decrypt',
             'kms:ReEncrypt*',
-            # This permission is necessary to transfer encrypted EBS
+            # kms:CreateGrant is necessary to transfer encrypted EBS
             # resources across regions.
             'kms:CreateGrant'
         ],

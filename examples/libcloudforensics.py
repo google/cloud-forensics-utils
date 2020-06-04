@@ -91,7 +91,7 @@ if __name__ == '__main__':
   AddParser('aws', aws_subparsers, 'copydisk', 'Create an AWS volume copy.',
             args=[
                 ('--dst_zone', 'The AWS zone in which to copy the volume. By '
-                               'default this is the same as \'zone\'.',
+                               'default this is the same as "zone".',
                  None),
                 ('--instance_id', 'The AWS unique instance ID', None),
                 ('--volume_id', 'The AWS unique volume ID of the volume to '

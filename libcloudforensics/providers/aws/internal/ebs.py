@@ -236,8 +236,7 @@ class AWSSnapshot(AWSElasticBlockStore):
           self.snapshot_id, str(exception)))
 
     snapshot_copy = AWSSnapshot(
-        # If the call above was successful, the response contains the new
-        # snapshot ID
+        # The response contains the new snapshot ID
         response['SnapshotId'],
         self.aws_account,
         self.aws_account.default_region,

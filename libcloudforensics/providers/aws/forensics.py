@@ -63,7 +63,7 @@ def CreateVolumeCopy(zone,
       dst_account='forensics')
 
   Args:
-    zone (str): The AWS zone in which the volume is located, e.g. us-east-2b.
+    zone (str): The AWS zone in which the volume is located, e.g. 'us-east-2b'.
     dst_zone (str): Optional. The AWS zone in which to create the volume
         copy. By default, this is the same as 'zone'.
     instance_id (str): Optional. Instance ID of the instance using the volume
@@ -126,7 +126,8 @@ def CreateVolumeCopy(zone,
     if dst_zone:
       # Assign the new zone to the destination account and assign it to the
       # snapshot so that it can copy it
-      destination_account.__init__(dst_zone, aws_profile=dst_account)
+      destination_account = account.AWSAccount(
+          dst_zone, aws_profile=dst_account)
       snapshot.aws_account = destination_account
       snapshot = snapshot.Copy(delete=True, deletion_account=source_account)
 
