@@ -121,7 +121,7 @@ class AWSAccount:
 
     instances = {}
     client = self.ClientApi(common.EC2_SERVICE, region=region)
-    responses = common.ExecuteAndPaginate(
+    responses = common.ExecuteRequest(
         client, 'describe_instances', {'Filters': filters})
 
     for response in responses:
@@ -172,7 +172,7 @@ class AWSAccount:
 
     volumes = {}
     client = self.ClientApi(common.EC2_SERVICE, region=region)
-    responses = common.ExecuteAndPaginate(
+    responses = common.ExecuteRequest(
         client, 'describe_volumes', {'Filters': filters})
     for response in responses:
       for volume in response['Volumes']:

@@ -85,8 +85,8 @@ def GetInstanceTypeByCPU(cpu_cores):
   return cpu_cores_to_instance_type[cpu_cores]
 
 
-def ExecuteAndPaginate(client, func, kwargs):
-  """Execute and paginate a request to the boto3 API.
+def ExecuteRequest(client, func, kwargs):
+  """Execute a request to the boto3 API.
 
   Args:
     client (boto3.session.Session): A boto3 client object.
@@ -113,5 +113,4 @@ def ExecuteAndPaginate(client, func, kwargs):
     responses.append(response)
     next_token = response.get('NextToken')
     if not next_token:
-      break
-  return responses
+      return responses
