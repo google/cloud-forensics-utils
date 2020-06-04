@@ -63,8 +63,9 @@ def CreateVolumeCopy(args):
   """
   print('Starting volume copy...')
   volume_copy = forensics.CreateVolumeCopy(
-      args.zone, instance_id=args.instance_id, volume_id=args.volume_id,
-      src_account=args.src_account, dst_account=args.dst_account)
+      args.zone, dst_zone=args.dst_zone, instance_id=args.instance_id,
+      volume_id=args.volume_id, src_account=args.src_account,
+      dst_account=args.dst_account)
   print(
       'Done! Volume {0:s} successfully created. You will find it in '
       'your AWS account under the name {1:s}.'.format(

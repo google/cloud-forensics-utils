@@ -140,7 +140,12 @@ class AWSVolume(AWSElasticBlockStore):
       raise RuntimeError('Could not create snapshot for volume {0:s}: '
                          '{1:s}'.format(self.volume_id, str(exception)))
 
-    return AWSSnapshot(snapshot_id, self, name=snapshot_name)
+    return AWSSnapshot(snapshot_id,
+                       self.aws_account,
+                       self.aws_account.default_region,
+                       self.aws_account.default_availability_zone,
+                       self,
+                       name=snapshot_name)
 
   def Delete(self):
     """Delete a volume."""
@@ -157,28 +162,42 @@ class AWSSnapshot(AWSElasticBlockStore):
 
   Attributes:
     snapshot_id (str): The id of the snapshot.
+    aws_account (AWSAccount): The account for the snapshot.
+    region (str): The region the snapshot is in.
+    availability_zone (str): The zone within the region in which the snapshot
+        is.
     volume (AWSVolume): The volume from which the snapshot was taken.
     name (str): The name tag of the snapshot, if existing.
   """
 
-  def __init__(self, snapshot_id, volume, name=None):
+  def __init__(self,
+               snapshot_id,
+               aws_account,
+               region,
+               availability_zone,
+               volume,
+               name=None):
     """Initialize an AWS EBS snapshot.
 
     Args:
       snapshot_id (str): The id of the snapshot.
+      aws_account (AWSAccount): The account for the snapshot.
+      region (str): The region the snapshot is in.
+      availability_zone (str): The zone within the region in which the snapshot
+          is.
       volume (AWSVolume): The volume from which the snapshot was taken.
       name (str): Optional. The name tag of the snapshot, if existing.
     """
 
-    super(AWSSnapshot, self).__init__(volume.aws_account,
-                                      volume.region,
-                                      volume.availability_zone,
+    super(AWSSnapshot, self).__init__(aws_account,
+                                      region,
+                                      availability_zone,
                                       volume.encrypted,
                                       name)
     self.snapshot_id = snapshot_id
     self.volume = volume
 
-  def Copy(self, kms_key_id=None):
+  def Copy(self, kms_key_id=None, delete=False, deletion_account=None):
     """Copy a snapshot.
 
     Args:
@@ -186,6 +205,14 @@ class AWSSnapshot(AWSElasticBlockStore):
           with. If set to None but the source snapshot is encrypted,
           then the copy will be encrypted too (with the key used by the
           source snapshot).
+      delete (bool): Optional. If set to True, the snapshot being copied will
+          be deleted prior to returning the copy. Default is False.
+      deletion_account (AWSAccount): Optional. An AWSAccount object to use to
+          delete the snapshot if 'delete' is set to True. Since accounts operate
+          per region, this can be useful when copying snapshots across regions
+          (which requires one AWSAccount object per region as per
+          boto3.session.Session() requirements) and wanting to delete the source
+          snapshot located in a different region than the copy being created.
 
     Returns:
       AWSSnapshot: A copy of the snapshot.
@@ -204,16 +231,32 @@ class AWSSnapshot(AWSElasticBlockStore):
       copy_args['KmsKeyId'] = kms_key_id
     try:
       response = client.copy_snapshot(**copy_args)
-      return AWSSnapshot(
-          # If the call was successful, the response contains the new
-          # snapshot ID
-          response['SnapshotId'],
-          self.volume,
-          name='{0:s}-copy'.format(self.snapshot_id)
-      )
     except client.exceptions.ClientError as exception:
       raise RuntimeError('Could not copy snapshot {0:s}: {1:s}'.format(
           self.snapshot_id, str(exception)))
+
+    snapshot_copy = AWSSnapshot(
+        # If the call above was successful, the response contains the new
+        # snapshot ID
+        response['SnapshotId'],
+        self.aws_account,
+        self.aws_account.default_region,
+        self.aws_account.default_availability_zone,
+        self.volume,
+        name='{0:s}-copy'.format(self.snapshot_id)
+    )
+
+    # Wait for the copy to be available
+    client.get_waiter('snapshot_completed').wait(
+        SnapshotIds=[snapshot_copy.snapshot_id],
+        WaiterConfig={'Delay': 30, 'MaxAttempts': 100})
+
+    if delete:
+      if deletion_account:
+        self.aws_account = deletion_account
+      self.Delete()
+
+    return snapshot_copy
 
   def Delete(self):
     """Delete a snapshot."""

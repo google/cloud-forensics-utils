@@ -567,7 +567,10 @@ class AWSAccount:
         'Action': [
             'kms:Encrypt',
             'kms:Decrypt',
-            'kms:ReEncrypt*'
+            'kms:ReEncrypt*',
+            # This permission is necessary to transfer encrypted EBS
+            # resources across regions.
+            'kms:CreateGrant'
         ],
         'Resource': '*'
     }

@@ -51,6 +51,9 @@ FAKE_BOOT_VOLUME = ebs.AWSVolume(
     device_name='/dev/spf')
 FAKE_SNAPSHOT = ebs.AWSSnapshot(
     'fake-snapshot-id',
+    FAKE_AWS_ACCOUNT,
+    'fake-zone-2',
+    'fake-zone-2b',
     FAKE_VOLUME,
     name='fake-snapshot')
 FAKE_CLOUDTRAIL = aws_log.AWSCloudTrail(FAKE_AWS_ACCOUNT)

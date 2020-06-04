@@ -90,6 +90,9 @@ if __name__ == '__main__':
             'List EBS volumes in AWS account.')
   AddParser('aws', aws_subparsers, 'copydisk', 'Create an AWS volume copy.',
             args=[
+                ('--dst_zone', 'The AWS zone in which to copy the volume. By '
+                               'default this is the same as \'zone\'.',
+                 None),
                 ('--instance_id', 'The AWS unique instance ID', None),
                 ('--volume_id', 'The AWS unique volume ID of the volume to '
                                 'copy. If none specified, then --instance_id '
