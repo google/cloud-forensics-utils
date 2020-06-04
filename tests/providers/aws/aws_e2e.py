@@ -28,7 +28,7 @@ class EndToEndTest(unittest.TestCase):
   This end-to-end test runs directly on AWS and tests that:
     1. The account.py module connects to the target instance and makes a
     snapshot of the boot volume (by default) or of the volume passed in
-    parameter to the AWSForensics().CreateDiskCopy() method.
+    parameter to the forensics.CreateVolumeCopy() method.
     2. A new volume is created from the taken snapshot.
 
   To run this test, add your project information to a project_info.json file:
@@ -67,7 +67,7 @@ class EndToEndTest(unittest.TestCase):
     This end-to-end test runs directly on AWS and tests that:
       1. The account.py module connects to the target instance and makes a
           snapshot of the boot volume (by default) or of the volume passed in
-          parameter to the AWSForensics().CreateDiskCopy() method.
+          parameter to the forensics.CreateVolumeCopy() method.
       2. A new volume is created from the taken snapshot.
     """
 
@@ -89,7 +89,7 @@ class EndToEndTest(unittest.TestCase):
     This end-to-end test runs directly on AWS and tests that:
       1. The account.py module connects to the target instance and makes a
           snapshot of volume passed to the 'volume_id' parameter in the
-          AWSForensics().CreateDiskCopy() method.
+          forensics.CreateVolumeCopy() method.
       2. A new volume is created from the taken snapshot.
     """
 

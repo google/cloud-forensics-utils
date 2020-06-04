@@ -32,7 +32,7 @@ class EndToEndTest(unittest.TestCase):
   This end-to-end test runs directly on GCP and tests that:
     1. The project.py module connects to the target instance and makes a
         snapshot of the boot disk (by default) or of the disk passed in
-        parameter to the GCPForensics().CreateDiskCopy() method.
+        parameter to the forensics.CreateDiskCopy() method.
     2. A new disk is created from the taken snapshot.
     3. If an analysis VM already exists, the module will attach the disk
         copy to the VM. Otherwise, it will create a new GCP instance for
@@ -142,7 +142,7 @@ class EndToEndTest(unittest.TestCase):
     This end-to-end test runs directly on GCP and tests that:
       1. The project.py module connects to the target instance and makes a
           snapshot of disk passed to the 'disk_name' parameter in the
-          GCPForensics().CreateDiskCopy() method.
+          forensics.CreateDiskCopy() method.
       2. A new disk is created from the taken snapshot.
       3. If an analysis VM already exists, the module will attach the disk
           copy to the VM. Otherwise, it will create a new GCP instance for
