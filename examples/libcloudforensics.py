@@ -73,7 +73,9 @@ def AddParser(provider, provider_parser, func, func_helper, args=None):
   func_parser.set_defaults(func=PROVIDER_TO_FUNC[provider][func])
 
 
-if __name__ == '__main__':
+def Main():
+  """Main function for libcloudforensics CLI."""
+
   parser = argparse.ArgumentParser(description='CLI tool for AWS and GCP.')
   subparsers = parser.add_subparsers()
 
@@ -139,3 +141,7 @@ if __name__ == '__main__':
 
   if hasattr(parsed_args, 'func'):
     parsed_args.func(parsed_args)
+
+
+if __name__ == '__main__':
+  Main()
