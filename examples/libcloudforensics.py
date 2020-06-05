@@ -50,7 +50,7 @@ def AddParser(provider, provider_parser, func, func_helper, args=None):
     func (str): The name of the function to look for in the given provider
         and to add parsing options for.
     func_helper (str): A helper text describing what the function does.
-    args (list(tuple(str, str, str|None))): Optional. A list of arguments to add
+    args (list[tuple[str, str, str|None]]): Optional. A list of arguments to add
         to the parser. Each argument is a tuple containing the action (str) to
         add to the parser, a helper text (str), and a default value (str,
         optional).

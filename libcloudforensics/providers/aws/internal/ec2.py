@@ -99,7 +99,8 @@ class AWSInstance:
     """List all volumes for the instance.
 
     Returns:
-      dict: Dictionary mapping volumes to their respective AWSVolume object.
+      dict[str, AWSVolume]: Dictionary mapping volume IDs to their respective
+          AWSVolume object.
     """
 
     return self.aws_account.ListVolumes(

@@ -59,10 +59,10 @@ class GoogleCloudFunction:
     Args:
       function_name (str): The name of the function to call.
       region (str): Region to execute functions in.
-      args (dict): Arguments to pass to the function.
+      args (dict[str, str|dict|list]): Arguments to pass to the function.
 
     Returns:
-      dict: Return value from function call.
+      dict[str, str]: Return value from function call.
 
     Raises:
       RuntimeError: When cloud function arguments cannot be serialized or

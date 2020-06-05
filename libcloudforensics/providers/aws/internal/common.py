@@ -36,7 +36,7 @@ def GetTagForResourceType(resource, name):
     name (str): The name of the resource.
 
   Returns:
-    dict: A dictionary for AWS Tag Specifications.
+    dict[str, str|list[dict]]: A dictionary for AWS Tag Specifications.
   """
 
   return {
@@ -91,10 +91,12 @@ def ExecuteRequest(client, func, kwargs):
   Args:
     client (boto3.session.Session): A boto3 client object.
     func (str): A boto3 function to query from the client.
-    kwargs (dict): A dictionary of parameters for the function func.
+    kwargs (dict[str, str|int|dict]): A dictionary of parameters for the
+        function func.
 
   Returns:
-    list(dict): A list of dictionaries (responses from the request).
+    list[dict[str, str|dict|list]]: A list of dictionaries (responses from the
+        request).
 
   Raises:
     RuntimeError: If the request to the boto3 API could not complete.

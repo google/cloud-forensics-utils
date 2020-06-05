@@ -158,13 +158,13 @@ class GoogleCloudComputeClient:
     """Block until API operation is finished.
 
     Args:
-      response (dict): GCE API response.
+      response (dict[str, str|dict|list]): GCE API response.
       zone (str): Optional. GCP zone to execute the operation in. None means
           GlobalZone.
 
     Returns:
-      dict: Holding the response of a get operation on an API object of type
-          zoneOperations or globalOperations.
+      dict[str, str|dict|list]: Holding the response of a get operation on an
+          API object of type zoneOperations or globalOperations.
 
     Raises:
       RuntimeError: If API call failed.
@@ -195,13 +195,15 @@ def ExecuteRequest(client, func, kwargs, throttle=False):
   Args:
     client (googleapiclient.Resources): A GCP client object.
     func (str): A GCP function to query from the client.
-    kwargs (dict): A dictionary of parameters for the function func.
+    kwargs (dict[str, str|int|dict|list]): A dictionary of parameters for the
+        function func.
     throttle (bool): A boolean indicating if requests should be throttled. This
         is necessary for some APIs (e.g. list logs) as there is an API rate
         limit. Default is False, i.e. requests are not throttled.
 
   Returns:
-    list(dict): A list of dictionaries (responses from the request).
+    list(dict[str, str|dict|list]): A list of dictionaries (responses from the
+        request).
 
   Raises:
     RuntimeError: If the request to the GCP API could not complete.

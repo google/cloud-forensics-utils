@@ -52,7 +52,7 @@ class AWSCloudTrail:
       endtime (datetime): Optional. End datetime to add to query filter.
 
     Returns:
-      list(dict): A list of events.
+      list[dict[str, str|dict]]: A list of events.
     """
 
     events = []

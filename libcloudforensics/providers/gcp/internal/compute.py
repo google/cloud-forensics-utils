@@ -29,6 +29,7 @@ from libcloudforensics.scripts import utils
 
 class GoogleCloudCompute(common.GoogleCloudComputeClient):
   """Class representing all Google Cloud Compute objects in a project.
+
   Attributes:
     project_id: Project name.
     default_zone: Default zone to create new resources in.
@@ -56,8 +57,8 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       refresh (boolean): Optional. Returns refreshed result if True.
 
     Returns:
-      dict: Dictionary mapping instance names (str) to their respective
-          GoogleComputeInstance object.
+      dict[str, GoogleComputeInstance]: Dictionary mapping instance names
+          (str) to their respective GoogleComputeInstance object.
     """
     if not refresh and self._instances:
       return self._instances
@@ -71,8 +72,8 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       refresh (boolean): Optional. Returns refreshed result if True.
 
     Returns:
-      dict: Dictionary mapping disk names (str) to their respective
-          GoogleComputeDisk object.
+      dict[str, GoogleComputeDisk]: Dictionary mapping disk names (str) to
+          their respective GoogleComputeDisk object.
     """
     if not refresh and self._disks:
       return self._disks
@@ -83,8 +84,8 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     """List instances in project.
 
     Returns:
-      dict: Dictionary mapping instance names (str) to their respective
-          GoogleComputeInstance object.
+      dict[str, GoogleComputeInstance]: Dictionary mapping instance names (str)
+          to their respective GoogleComputeInstance object.
     """
 
     instances = {}
@@ -109,8 +110,8 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     """List disks in project.
 
     Returns:
-      dict: Dictionary mapping disk names (str) to their respective
-          GoogleComputeDisk object.
+      dict[str, GoogleComputeDisk]: Dictionary mapping disk names (str) to
+          their respective GoogleComputeDisk object.
     """
 
     disks = {}
@@ -179,8 +180,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     """Create a new disk based on a Snapshot.
 
     Args:
-      snapshot (libcloudforensics.providers.gcp.internal.compute_base_resource
-          .GoogleComputeSnapshot): Snapshot to use.
+      snapshot (GoogleComputeSnapshot): Snapshot to use.
       disk_name (str): Optional. String to use as new disk name.
       disk_name_prefix (str): Optional. String to prefix the disk name with.
       disk_type (str): Optional. URL of the disk type resource describing
@@ -341,13 +341,14 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
         {'instance-1': {'zone': 'us-central1-a', 'labels': {'id': '123'}}
 
     Args:
-      labels_filter (dict): A dict of labels to find e.g. {'id': '123'}.
+      labels_filter (dict[str, str]): A dict of labels to find e.g.
+          {'id': '123'}.
       filter_union (bool): Optional. A Boolean; True to get the union of all
           filters, False to get the intersection.
 
     Returns:
-      dict: Dictionary mapping instances to their respective
-          GoogleComputeInstance object.
+      dict[str, GoogleComputeInstance]: Dictionary mapping instances to their
+          respective GoogleComputeInstance object.
     """
 
     instance_service_object = self.GceApi().instances()
@@ -363,13 +364,14 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
         {'disk-1': {'zone': 'us-central1-a', 'labels': {'id': '123'}}
 
     Args:
-      labels_filter (dict): A dict of labels to find e.g. {'id': '123'}.
+      labels_filter (dict[str, str]): A dict of labels to find e.g.
+          {'id': '123'}.
       filter_union (bool): Optional. A Boolean; True to get the union of all
           filters, False to get the intersection.
 
     Returns:
-      dict: Dictionary mapping disks to their respective GoogleComputeDisk
-          object.
+      dict[str, GoogleComputeDisk]: Dictionary mapping disks to their
+          respective GoogleComputeDisk object.
     """
 
     disk_service_object = self.GceApi().disks()
@@ -381,15 +383,17 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     Private method used to select different compute resources by labels.
 
     Args:
-      labels_filter (dict):  A dict of labels to find e.g. {'id': '123'}.
+      labels_filter (dict[str, str]): A dict of labels to find e.g.
+          {'id': '123'}.
       service_object (apiclient.discovery.Resource): Google Compute Engine
           (Disk | Instance) service object.
       filter_union (bool): A boolean; True to get the union of all filters,
           False to get the intersection.
 
     Returns:
-      dict: Dictionary mapping instances/disks to their respective
-          GoogleComputeInstance/GoogleComputeDisk object.
+      dict[str, GoogleComputeInstance|GoogleComputeDisk]: Dictionary mapping
+          instances/disks to their respective GoogleComputeInstance /
+          GoogleComputeDisk object.
 
     Raises:
       RuntimeError: If the operation doesn't complete on GCP.
@@ -444,8 +448,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
           is [src_disk]_image.
 
     Returns:
-      libcloudforensics.providers.gcp.internal.compute.GoogleComputeImage:
-          A Google Compute Image object.
+      GoogleComputeImage: A Google Compute Image object.
     """
     if not name:
       name = '{0:s}_image'.format(src_disk.name)

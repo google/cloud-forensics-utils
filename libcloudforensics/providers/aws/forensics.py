@@ -187,7 +187,7 @@ def StartAnalysisVm(vm_name,
         parameter.
 
   Returns:
-    tuple(AWSInstance, bool): a tuple with a virtual machine object
+    tuple[AWSInstance, bool]: a tuple with a virtual machine object
         and a boolean indicating if the virtual machine was created or not.
   """
   aws_account = account.AWSAccount(

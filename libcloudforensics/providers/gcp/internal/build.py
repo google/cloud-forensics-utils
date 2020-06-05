@@ -54,12 +54,12 @@ class GoogleCloudBuild:
     """Create a cloud build.
 
     Args:
-      build_body (dict): A dictionary that describes how to find the source
-          code and how to build it.
+      build_body (dict[str, str|dict|list]): A dictionary that describes how to
+          find the source code and how to build it.
 
     Returns:
-      dict: Represents long-running operation that is the result of
-          a network API call.
+      dict[str, str|dict|list]: Represents long-running operation that is the
+          result of a network API call.
     """
     cloud_build_client = self.GcbApi().projects().builds()
     build_info = cloud_build_client.create(
@@ -74,10 +74,10 @@ class GoogleCloudBuild:
     """Block execution until API operation is finished.
 
     Args:
-      response (dict): Google Cloud Build API response.
+      response (dict[str, str|dict|list]): Google Cloud Build API response.
 
     Returns:
-      dict: Holding the response of a get operation on an
+      dict[str, str|dict|list]: Holding the response of a get operation on an
           API object of type operations.
 
     Raises:
