@@ -323,6 +323,8 @@ class GoogleCloudProjectTest(unittest.TestCase):
     # GetOrCreateAnalysisVm(existing_vm, boot_disk_size)
     vm, created = FAKE_ANALYSIS_PROJECT.compute.GetOrCreateAnalysisVm(
         FAKE_ANALYSIS_VM.name, boot_disk_size=1)
+    mock_get_instance.assert_called_with(FAKE_ANALYSIS_VM.name)
+    instances.return_value.insert.assert_not_called()
     self.assertIsInstance(vm, compute_resources.GoogleComputeInstance)
     self.assertEqual('fake-analysis-vm', vm.name)
     self.assertFalse(created)
@@ -333,6 +335,8 @@ class GoogleCloudProjectTest(unittest.TestCase):
     mock_get_instance.side_effect = RuntimeError()
     vm, created = FAKE_ANALYSIS_PROJECT.compute.GetOrCreateAnalysisVm(
         'non-existent-analysis-vm', boot_disk_size=1)
+    mock_get_instance.assert_called_with('non-existent-analysis-vm')
+    instances.return_value.insert.assert_called()
     self.assertIsInstance(vm, compute_resources.GoogleComputeInstance)
     self.assertEqual('non-existent-analysis-vm', vm.name)
     self.assertTrue(created)
@@ -538,12 +542,16 @@ class GCPTest(unittest.TestCase):
   # pylint: disable=line-too-long
 
   @mock.patch('libcloudforensics.providers.gcp.internal.common.GoogleCloudComputeClient.BlockOperation')
+  @mock.patch('libcloudforensics.providers.gcp.internal.compute_resources.GoogleComputeInstance.GetDisk')
   @mock.patch('libcloudforensics.providers.gcp.internal.compute_resources.GoogleComputeInstance.GetBootDisk')
   @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleCloudCompute.GetInstance')
   @mock.patch('libcloudforensics.providers.gcp.internal.common.GoogleCloudComputeClient.GceApi')
-  def testCreateDiskCopy1(
-      self, mock_gce_api, mock_get_instance, mock_get_boot_disk,
-      mock_block_operation):
+  def testCreateDiskCopy1(self,
+                          mock_gce_api,
+                          mock_get_instance,
+                          mock_get_boot_disk,
+                          mock_get_disk,
+                          mock_block_operation):
     """Test that a disk from a remote project is duplicated and attached to
     an analysis project. """
     instances = mock_gce_api.return_value.instances.return_value.aggregatedList
@@ -554,20 +562,27 @@ class GCPTest(unittest.TestCase):
 
     # create_disk_copy(src_proj, dst_proj, instance_name='fake-instance',
     #     zone='fake-zone', disk_name=None) Should grab the boot disk
-    new_disk = forensics.CreateDiskCopy(
-        FAKE_SOURCE_PROJECT.project_id, FAKE_ANALYSIS_PROJECT.project_id,
-        instance_name=FAKE_INSTANCE.name, zone=FAKE_INSTANCE.zone,
-        disk_name=None)
+    new_disk = forensics.CreateDiskCopy(FAKE_SOURCE_PROJECT.project_id,
+                                        FAKE_ANALYSIS_PROJECT.project_id,
+                                        instance_name=FAKE_INSTANCE.name,
+                                        zone=FAKE_INSTANCE.zone,
+                                        disk_name=None)
+    mock_get_instance.assert_called_with(FAKE_INSTANCE.name)
+    mock_get_disk.assert_not_called()
     self.assertIsInstance(new_disk, compute_resources.GoogleComputeDisk)
     self.assertTrue(new_disk.name.startswith('evidence-'))
     self.assertIn('fake-boot-disk', new_disk.name)
     self.assertTrue(new_disk.name.endswith('-copy'))
 
   @mock.patch('libcloudforensics.providers.gcp.internal.common.GoogleCloudComputeClient.BlockOperation')
+  @mock.patch('libcloudforensics.providers.gcp.internal.compute_resources.GoogleComputeInstance.GetBootDisk')
   @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleCloudCompute.GetDisk')
   @mock.patch('libcloudforensics.providers.gcp.internal.common.GoogleCloudComputeClient.GceApi')
-  def testCreateDiskCopy2(
-      self, mock_gce_api, mock_get_disk, mock_block_operation):
+  def testCreateDiskCopy2(self,
+                          mock_gce_api,
+                          mock_get_disk,
+                          mock_get_boot_disk,
+                          mock_block_operation):
     """Test that a disk from a remote project is duplicated and attached to
     an analysis project. """
     instances = mock_gce_api.return_value.instances.return_value.aggregatedList
@@ -581,9 +596,13 @@ class GCPTest(unittest.TestCase):
     #     instance_name=None,
     #     zone='fake-zone',
     #     disk_name='fake-disk') Should grab 'fake-disk'
-    new_disk = forensics.CreateDiskCopy(
-        FAKE_SOURCE_PROJECT.project_id, FAKE_ANALYSIS_PROJECT.project_id,
-        instance_name=None, zone=FAKE_INSTANCE.zone, disk_name=FAKE_DISK.name)
+    new_disk = forensics.CreateDiskCopy(FAKE_SOURCE_PROJECT.project_id,
+                                        FAKE_ANALYSIS_PROJECT.project_id,
+                                        instance_name=None,
+                                        zone=FAKE_INSTANCE.zone,
+                                        disk_name=FAKE_DISK.name)
+    mock_get_disk.assert_called_with(FAKE_DISK.name)
+    mock_get_boot_disk.assert_not_called()
     self.assertIsInstance(new_disk, compute_resources.GoogleComputeDisk)
     self.assertTrue(new_disk.name.startswith('evidence-'))
     self.assertIn('fake-disk', new_disk.name)
@@ -603,10 +622,13 @@ class GCPTest(unittest.TestCase):
     #     instance_name=None,
     #     zone='fake-zone',
     #     disk_name='non-existent-disk') Should raise an exception
-    self.assertRaises(
-        RuntimeError, forensics.CreateDiskCopy, FAKE_SOURCE_PROJECT.project_id,
-        FAKE_ANALYSIS_PROJECT.project_id, instance_name=None,
-        zone=FAKE_INSTANCE.zone, disk_name='non-existent-disk')
+    self.assertRaises(RuntimeError,
+                      forensics.CreateDiskCopy,
+                      FAKE_SOURCE_PROJECT.project_id,
+                      FAKE_ANALYSIS_PROJECT.project_id,
+                      instance_name=None,
+                      zone=FAKE_INSTANCE.zone,
+                      disk_name='non-existent-disk')
 
     # create_disk_copy(
     #     src_proj,
@@ -614,10 +636,12 @@ class GCPTest(unittest.TestCase):
     #     instance_name='non-existent-instance',
     #     zone='fake-zone',
     #     disk_name=None) Should raise an exception
-    self.assertRaises(
-        RuntimeError, forensics.CreateDiskCopy, FAKE_SOURCE_PROJECT.project_id,
-        FAKE_ANALYSIS_PROJECT.project_id, instance_name='non-existent-instance',
-        zone=FAKE_INSTANCE.zone, disk_name='')
+    self.assertRaises(RuntimeError,
+                      forensics.CreateDiskCopy,
+                      FAKE_SOURCE_PROJECT.project_id,
+                      FAKE_ANALYSIS_PROJECT.project_id,
+                      instance_name='non-existent-instance',
+                      zone=FAKE_INSTANCE.zone, disk_name='')
 
   def testGenerateDiskName(self):
     """Test that the generated disk name is always within GCP boundaries.

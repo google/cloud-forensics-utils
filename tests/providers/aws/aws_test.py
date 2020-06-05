@@ -365,6 +365,7 @@ class AWSAccountTest(unittest.TestCase):
     # vm_name is the name of an analysis instance that already exists.
     vm, created = FAKE_AWS_ACCOUNT.GetOrCreateAnalysisVm(
         FAKE_INSTANCE_WITH_NAME.name, 1, 'ami-id', 2)
+    mock_get_instance.assert_called_with(FAKE_INSTANCE_WITH_NAME.name)
     mock_ec2_api.return_value.run_instances.assert_not_called()
     self.assertIsInstance(vm, ec2.AWSInstance)
     self.assertEqual('fake-instance', vm.name)
@@ -377,6 +378,7 @@ class AWSAccountTest(unittest.TestCase):
     mock_get_instance.side_effect = RuntimeError()
     vm, created = FAKE_AWS_ACCOUNT.GetOrCreateAnalysisVm(
         'non-existent-instance-name', 1, 'ami-id', 2)
+    mock_get_instance.assert_called_with('non-existent-instance-name')
     mock_ec2_api.return_value.run_instances.assert_called()
     self.assertIsInstance(vm, ec2.AWSInstance)
     self.assertEqual('non-existent-instance-name', vm.name)
@@ -465,6 +467,26 @@ class AWSVolumeTest(unittest.TestCase):
     self.assertTrue(snapshot.name.startswith('my-snapshot'))
 
 
+class AWSSnapshotTest(unittest.TestCase):
+  """Test AWSSnapshot class."""
+
+  # pylint: disable=line-too-long
+  @mock.patch('libcloudforensics.providers.aws.internal.account.AWSAccount.ClientApi')
+  def testCopy(self, mock_ec2_api):
+    """Test that a copy of the snapshot is created."""
+    snapshot_copy = mock_ec2_api.return_value.copy_snapshot
+    snapshot_copy.return_value = MOCK_CREATE_SNAPSHOT
+    mock_ec2_api.return_value.get_waiter.return_value.wait.return_value = None
+
+    copy = FAKE_SNAPSHOT.Copy()
+    self.assertIsInstance(copy, ebs.AWSSnapshot)
+    self.assertEqual('fake-snapshot-id-copy', copy.name)
+    mock_ec2_api.return_value.delete_snapshot.assert_not_called()
+
+    copy = FAKE_SNAPSHOT.Copy(delete=True)
+    mock_ec2_api.return_value.delete_snapshot.assert_called()
+
+
 class AWSCloudTrailTest(unittest.TestCase):
   """Test AWS CloudTrail class."""
   # pylint: disable=line-too-long
@@ -546,27 +568,23 @@ class AWSTest(unittest.TestCase):
     # Should raise a ValueError exception  as no volume_id or instance_id is
     # specified.
     self.assertRaises(
-        ValueError,
-        forensics.CreateVolumeCopy,
-        FAKE_INSTANCE.availability_zone)
+        ValueError, forensics.CreateVolumeCopy, FAKE_INSTANCE.availability_zone)
 
     # Should raise a RuntimeError in GetInstanceById as we are querying a
     # non-existent instance.
     mock_list_instances.return_value = {}
-    self.assertRaises(
-        RuntimeError,
-        forensics.CreateVolumeCopy,
-        FAKE_INSTANCE.availability_zone,
-        instance_id='non-existent-instance-id')
+    self.assertRaises(RuntimeError,
+                      forensics.CreateVolumeCopy,
+                      FAKE_INSTANCE.availability_zone,
+                      instance_id='non-existent-instance-id')
 
     # Should raise a RuntimeError in GetVolumeById as we are querying a
     # non-existent volume.
     mock_list_volumes.return_value = {}
-    self.assertRaises(
-        RuntimeError,
-        forensics.CreateVolumeCopy,
-        FAKE_INSTANCE.availability_zone,
-        volume_id='non-existent-volume-id')
+    self.assertRaises(RuntimeError,
+                      forensics.CreateVolumeCopy,
+                      FAKE_INSTANCE.availability_zone,
+                      volume_id='non-existent-volume-id')
 
 
 if __name__ == '__main__':
