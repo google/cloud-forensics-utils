@@ -150,11 +150,11 @@ def CreateVolumeCopy(zone,
 def StartAnalysisVm(vm_name,
                     default_availability_zone,
                     boot_volume_size,
-                    cpu_cores=4,
                     ami=UBUNTU_1804_AMI,
-                    attach_volume=None,
-                    device_name=None,
-                    dst_account=None):
+                    cpu_cores=4,
+                    attach_volumes=None,
+                    dst_account=None,
+                    ssh_key_name=None):
   """Start a virtual machine for analysis purposes.
 
   Look for an existing AWS instance with tag name vm_name. If found,
@@ -166,31 +166,37 @@ def StartAnalysisVm(vm_name,
     default_availability_zone (str): Default zone within the region to create
         new resources in.
     boot_volume_size (int): The size of the analysis VM boot volume (in GB).
-    cpu_cores (int): Optional. The number of CPU cores to create the machine
-        with. Default is 4.
     ami (str): Optional. The Amazon Machine Image ID to use to create the VM.
         Default is a version of Ubuntu 18.04.
-    attach_volume (AWSVolume): Optional. The volume to attach.
-    device_name (str): Optional. The name of the device (e.g. /dev/sdf) for
-        the volume to be attached. Mandatory if attach_volume is provided.
+    cpu_cores (int): Optional. The number of CPU cores to create the machine
+        with. Default is 4.
+    attach_volumes (list[tuple[str, str]]): Optional. List of tuples
+        containing the volume IDs (str) to attach and their respective device
+        name (str, e.g. /dev/sdf). Note that it is mandatory to provide a
+        unique device name per volume to attach.
     dst_account (str): Optional. The AWS account in which to create the
         analysis VM. This is the profile name that is defined in your AWS
         credentials file.
+    ssh_key_name (str): Optional. A SSH key pair name linked to the AWS
+        account to associate with the VM. If none provided, the VM can only
+        be accessed through in-browser SSH from the AWS management console
+        with the EC2 client connection package (ec2-instance-connect). Note
+        that if this package fails to install on the target VM, then the VM
+        will not be accessible. It is therefore recommended to fill in this
+        parameter.
 
   Returns:
     tuple(AWSInstance, bool): a tuple with a virtual machine object
         and a boolean indicating if the virtual machine was created or not.
-
-  Raises:
-    RuntimeError: If device_name is missing when attach_volume is provided.
   """
   aws_account = account.AWSAccount(
       default_availability_zone, aws_profile=dst_account)
   analysis_vm, created = aws_account.GetOrCreateAnalysisVm(
-      vm_name, boot_volume_size, cpu_cores=cpu_cores, ami=ami)
-  if attach_volume:
-    if not device_name:
-      raise RuntimeError('If you want to attach a volume, you must also '
-                         'specify a device name for that volume.')
-    analysis_vm.AttachVolume(attach_volume, device_name)
+      vm_name,
+      boot_volume_size,
+      ami,
+      cpu_cores,
+      ssh_key_name=ssh_key_name)
+  for volume_id, device_name in (attach_volumes or []):
+    analysis_vm.AttachVolume(aws_account.GetVolumeById(volume_id), device_name)
   return analysis_vm, created

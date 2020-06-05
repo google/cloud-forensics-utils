@@ -100,7 +100,7 @@ def StartAnalysisVm(project,
                     boot_disk_size,
                     boot_disk_type,
                     cpu_cores,
-                    attach_disk=None,
+                    attach_disks=None,
                     image_project='ubuntu-os-cloud',
                     image_family='ubuntu-1804-lts'):
   """Start a virtual machine for analysis purposes.
@@ -114,7 +114,7 @@ def StartAnalysisVm(project,
         which disk type to use to create the disk. Use pd-standard for a
         standard disk and pd-ssd for a SSD disk.
     cpu_cores (int): The number of CPU cores to create the machine with.
-    attach_disk (list(GoogleComputeDisk)): Optional. List of disks to attach.
+    attach_disks (list[str]): Optional. List of disk names to attach.
     image_project (str): Optional. Name of the project where the analysis VM
         image is hosted.
     image_family (str): Optional. Name of the image to use to create the
@@ -129,6 +129,6 @@ def StartAnalysisVm(project,
   analysis_vm, created = project.compute.GetOrCreateAnalysisVm(
       vm_name, boot_disk_size, disk_type=boot_disk_type, cpu_cores=cpu_cores,
       image_project=image_project, image_family=image_family)
-  for disk in (attach_disk or []):
-    analysis_vm.AttachDisk(disk)
+  for disk_name in (attach_disks or []):
+    analysis_vm.AttachDisk(project.compute.GetDisk(disk_name))
   return analysis_vm, created
