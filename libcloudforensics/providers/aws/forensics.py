@@ -150,11 +150,12 @@ def CreateVolumeCopy(zone,
 def StartAnalysisVm(vm_name,
                     default_availability_zone,
                     boot_volume_size,
-                    cpu_cores=4,
                     ami=UBUNTU_1804_AMI,
+                    cpu_cores=4,
                     attach_volume=None,
                     device_name=None,
-                    dst_account=None):
+                    dst_account=None,
+                    ssh_key_name=None):
   """Start a virtual machine for analysis purposes.
 
   Look for an existing AWS instance with tag name vm_name. If found,
@@ -166,16 +167,22 @@ def StartAnalysisVm(vm_name,
     default_availability_zone (str): Default zone within the region to create
         new resources in.
     boot_volume_size (int): The size of the analysis VM boot volume (in GB).
-    cpu_cores (int): Optional. The number of CPU cores to create the machine
-        with. Default is 4.
     ami (str): Optional. The Amazon Machine Image ID to use to create the VM.
         Default is a version of Ubuntu 18.04.
+    cpu_cores (int): Optional. The number of CPU cores to create the machine
+        with. Default is 4.
     attach_volume (AWSVolume): Optional. The volume to attach.
     device_name (str): Optional. The name of the device (e.g. /dev/sdf) for
         the volume to be attached. Mandatory if attach_volume is provided.
     dst_account (str): Optional. The AWS account in which to create the
         analysis VM. This is the profile name that is defined in your AWS
         credentials file.
+    ssh_key_name (str): Optional. A SSH key pair name linked to the AWS
+        account to associate with the VM. If none provided, the VM can only
+        be accessed through in-browser SSH from the AWS management console
+        with the EC2 client connection package. Note that if this package
+        fails to install on the target VM, then the VM will not be accessible.
+        It is therefore recommended to fill in this parameter.
 
   Returns:
     tuple(AWSInstance, bool): a tuple with a virtual machine object
@@ -186,8 +193,11 @@ def StartAnalysisVm(vm_name,
   """
   aws_account = account.AWSAccount(
       default_availability_zone, aws_profile=dst_account)
-  analysis_vm, created = aws_account.GetOrCreateAnalysisVm(
-      vm_name, boot_volume_size, cpu_cores=cpu_cores, ami=ami)
+  analysis_vm, created = aws_account.GetOrCreateAnalysisVm(vm_name,
+                                                           boot_volume_size,
+                                                           ami,
+                                                           cpu_cores,
+                                                           ssh_key_name=ssh_key_name)  # pylint: disable=line-too-long
   if attach_volume:
     if not device_name:
       raise RuntimeError('If you want to attach a volume, you must also '

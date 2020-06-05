@@ -57,8 +57,9 @@ class EndToEndTest(unittest.TestCase):
     cls.volume_to_forensic = project_info.get('volume_id', None)
     cls.aws = account.AWSAccount(cls.zone)
     cls.analysis_vm_name = 'new-vm-for-analysis'
-    cls.analysis_vm, _ = forensics.StartAnalysisVm(
-        cls.analysis_vm_name, cls.zone, 10, 4)
+    cls.analysis_vm, _ = forensics.StartAnalysisVm(cls.analysis_vm_name,
+                                                   cls.zone,
+                                                   10)
     cls.volumes = []
 
   def test_end_to_end_boot_volume(self):
@@ -118,14 +119,11 @@ class EndToEndTest(unittest.TestCase):
         volume_id=self.volume_to_forensic)
     self.volumes.append(volume_to_attach)
     # Create and start the analysis VM and attach the boot volume
-    self.analysis_vm, _ = forensics.StartAnalysisVm(
-        self.analysis_vm_name,
-        self.zone,
-        10,
-        4,
-        attach_volume=volume_to_attach,
-        device_name='/dev/sdp'
-    )
+    self.analysis_vm, _ = forensics.StartAnalysisVm(self.analysis_vm_name,
+                                                    self.zone,
+                                                    10,
+                                                    attach_volume=volume_to_attach,  # pylint: disable=line-too-long
+                                                    device_name='/dev/sdp')
 
     # The forensic instance should be live in the analysis AWS account and
     # the volume should be attached

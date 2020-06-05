@@ -428,7 +428,8 @@ class AWSAccount:
                             boot_volume_size,
                             ami,
                             cpu_cores,
-                            packages=None):
+                            packages=None,
+                            ssh_key_name=None):
     """Get or create a new virtual machine for analysis purposes.
 
     Args:
@@ -437,6 +438,12 @@ class AWSAccount:
       ami (str): The Amazon Machine Image ID to use to create the VM.
       cpu_cores (int): Number of CPU cores for the analysis VM.
       packages (list(str)): Optional. List of packages to install in the VM.
+      ssh_key_name (str): Optional. A SSH key pair name linked to the AWS
+          account to associate with the VM. If none provided, the VM can only
+          be accessed through in-browser SSH from the AWS management console
+          with the EC2 client connection package. Note that if this package
+          fails to install on the target VM, then the VM will not be accessible.
+          It is therefore recommended to fill in this parameter.
 
     Returns:
       tuple(AWSInstance, bool): A tuple with an AWSInstance object and a
@@ -468,39 +475,41 @@ class AWSAccount:
         'apt -y install ec2-instance-connect && (exit ${exit_code})')
 
     client = self.ClientApi(common.EC2_SERVICE)
+    vm_args = {
+        'BlockDeviceMappings':
+            [self._GetBootVolumeConfigByAmi(ami, boot_volume_size)],
+        'ImageId': ami,
+        'MinCount': 1,
+        'MaxCount': 1,
+        'InstanceType': instance_type,
+        'TagSpecifications':
+            [common.GetTagForResourceType('instance', vm_name)],
+        'UserData': startup_script,
+        'Placement': {'AvailabilityZone': self.default_availability_zone}
+    }
+    if ssh_key_name:
+      vm_args['KeyName'] = ssh_key_name
     # Create the instance in AWS
     try:
-      instance = client.run_instances(
-          BlockDeviceMappings=[self._GetBootVolumeConfigByAmi(
-              ami, boot_volume_size)],
-          ImageId=ami,
-          MinCount=1,
-          MaxCount=1,
-          InstanceType=instance_type,
-          TagSpecifications=[common.GetTagForResourceType(
-              'instance', vm_name)],
-          UserData=startup_script,
-          Placement={'AvailabilityZone': self.default_availability_zone})
-
+      instance = client.run_instances(**vm_args)
       # If the call to run_instances was successful, then the API response
       # contains the instance ID for the new instance.
       instance_id = instance['Instances'][0]['InstanceId']
-
       # Wait for the instance to be running
       client.get_waiter('instance_running').wait(InstanceIds=[instance_id])
       # Wait for the status checks to pass
       client.get_waiter('instance_status_ok').wait(InstanceIds=[instance_id])
-
-      instance = ec2.AWSInstance(self,
-                                 instance_id,
-                                 self.default_region,
-                                 self.default_availability_zone,
-                                 name=vm_name)
-      created = True
-      return instance, created
     except client.exceptions.ClientError as exception:
       raise RuntimeError('Could not create instance {0:s}: {1:s}'.format(
           vm_name, str(exception)))
+
+    instance = ec2.AWSInstance(self,
+                               instance_id,
+                               self.default_region,
+                               self.default_availability_zone,
+                               name=vm_name)
+    created = True
+    return instance, created
 
   def GetAccountInformation(self, info):
     """Get information about the AWS account in use.
