@@ -113,7 +113,7 @@ class EndToEndTest(unittest.TestCase):
     self.analysis_vm, _ = forensics.StartAnalysisVm(
         project=self.project_id, vm_name=self.analysis_vm_name, zone=self.zone,
         boot_disk_size=10, boot_disk_type='pd-ssd', cpu_cores=4,
-        attach_disk=[self.boot_disk_copy])
+        attach_disks=[self.boot_disk_copy.name])
 
     # The forensic instance should be live in the analysis GCP project and
     # the disk should be attached
@@ -169,7 +169,7 @@ class EndToEndTest(unittest.TestCase):
     self.analysis_vm, _ = forensics.StartAnalysisVm(
         project=self.project_id, vm_name=self.analysis_vm_name, zone=self.zone,
         boot_disk_size=10, boot_disk_type='pd-ssd', cpu_cores=4,
-        attach_disk=[self.disk_to_forensic_copy])
+        attach_disks=[self.disk_to_forensic_copy.name])
 
     # The forensic instance should be live in the analysis GCP project and
     # the disk should be attached

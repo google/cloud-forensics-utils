@@ -123,8 +123,8 @@ class EndToEndTest(unittest.TestCase):
         self.analysis_vm_name,
         self.zone,
         10,
-        attach_volume=volume_to_attach,
-        device_name='/dev/sdp')
+        attach_volumes=[(volume_to_attach.volume_id, '/dev/sdp')]
+    )
 
     # The forensic instance should be live in the analysis AWS account and
     # the volume should be attached
