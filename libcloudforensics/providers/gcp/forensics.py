@@ -114,7 +114,7 @@ def StartAnalysisVm(project,
         which disk type to use to create the disk. Use pd-standard for a
         standard disk and pd-ssd for a SSD disk.
     cpu_cores (int): The number of CPU cores to create the machine with.
-    attach_disks (list(str)): Optional. List of disk names to attach.
+    attach_disks (list[str]): Optional. List of disk names to attach.
     image_project (str): Optional. Name of the project where the analysis VM
         image is hosted.
     image_family (str): Optional. Name of the image to use to create the

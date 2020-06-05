@@ -170,7 +170,7 @@ def StartAnalysisVm(vm_name,
         Default is a version of Ubuntu 18.04.
     cpu_cores (int): Optional. The number of CPU cores to create the machine
         with. Default is 4.
-    attach_volumes (list(tuple(str, str))): Optional. List of tuples
+    attach_volumes (list[tuple[str, str]]): Optional. List of tuples
         containing the volume IDs (str) to attach and their respective device
         name (str, e.g. /dev/sdf). Note that it is mandatory to provide a
         unique device name per volume to attach.
