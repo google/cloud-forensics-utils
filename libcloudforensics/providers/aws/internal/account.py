@@ -499,7 +499,8 @@ class AWSAccount:
       client.get_waiter('instance_running').wait(InstanceIds=[instance_id])
       # Wait for the status checks to pass
       client.get_waiter('instance_status_ok').wait(InstanceIds=[instance_id])
-    except client.exceptions.ClientError as exception:
+    except (client.exceptions.ClientError,
+            botocore.exceptions.WaiterError) as exception:
       raise RuntimeError('Could not create instance {0:s}: {1:s}'.format(
           vm_name, str(exception)))
 
