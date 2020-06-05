@@ -120,11 +120,11 @@ class AWSInstance:
 
     client = self.aws_account.ClientApi(EC2_SERVICE)
     try:
-      client.attach_volume(
-          Device=device_name,
-          InstanceId=self.instance_id,
-          VolumeId=volume.volume_id)
-      volume.device_name = device_name
+      client.attach_volume(Device=device_name,
+                           InstanceId=self.instance_id,
+                           VolumeId=volume.volume_id)
     except client.exceptions.ClientError as exception:
       raise RuntimeError('Could not attach volume {0:s}: {1:s}'.format(
           volume.volume_id, str(exception)))
+
+    volume.device_name = device_name

@@ -16,6 +16,8 @@
 
 import unittest
 
+import botocore
+
 from libcloudforensics.providers.aws.internal.common import LOGGER, EC2_SERVICE
 from libcloudforensics.providers.aws.internal import account
 from libcloudforensics.providers.aws import forensics
@@ -150,7 +152,8 @@ class EndToEndTest(unittest.TestCase):
       try:
         client.delete_volume(VolumeId=volume.volume_id)
         client.get_waiter('volume_deleted').wait(VolumeIds=[volume.volume_id])
-      except client.exceptions.ClientError as exception:
+      except (client.exceptions.ClientError,
+              botocore.exceptions.WaiterError) as exception:
         raise RuntimeError('Could not complete cleanup: {0:s}'.format(
             str(exception)))
       LOGGER.info('Volume {0:s} successfully deleted.'.format(volume.volume_id))
