@@ -441,9 +441,10 @@ class AWSAccount:
       ssh_key_name (str): Optional. A SSH key pair name linked to the AWS
           account to associate with the VM. If none provided, the VM can only
           be accessed through in-browser SSH from the AWS management console
-          with the EC2 client connection package. Note that if this package
-          fails to install on the target VM, then the VM will not be accessible.
-          It is therefore recommended to fill in this parameter.
+          with the EC2 client connection package (ec2-instance-connect). Note
+          that if this package fails to install on the target VM, then the VM
+          will not be accessible. It is therefore recommended to fill in this
+          parameter.
 
     Returns:
       tuple(AWSInstance, bool): A tuple with an AWSInstance object and a

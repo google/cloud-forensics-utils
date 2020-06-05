@@ -180,9 +180,10 @@ def StartAnalysisVm(vm_name,
     ssh_key_name (str): Optional. A SSH key pair name linked to the AWS
         account to associate with the VM. If none provided, the VM can only
         be accessed through in-browser SSH from the AWS management console
-        with the EC2 client connection package. Note that if this package
-        fails to install on the target VM, then the VM will not be accessible.
-        It is therefore recommended to fill in this parameter.
+        with the EC2 client connection package (ec2-instance-connect). Note
+        that if this package fails to install on the target VM, then the VM
+        will not be accessible. It is therefore recommended to fill in this
+        parameter.
 
   Returns:
     tuple(AWSInstance, bool): a tuple with a virtual machine object
@@ -193,11 +194,12 @@ def StartAnalysisVm(vm_name,
   """
   aws_account = account.AWSAccount(
       default_availability_zone, aws_profile=dst_account)
-  analysis_vm, created = aws_account.GetOrCreateAnalysisVm(vm_name,
-                                                           boot_volume_size,
-                                                           ami,
-                                                           cpu_cores,
-                                                           ssh_key_name=ssh_key_name)  # pylint: disable=line-too-long
+  analysis_vm, created = aws_account.GetOrCreateAnalysisVm(
+      vm_name,
+      boot_volume_size,
+      ami,
+      cpu_cores,
+      ssh_key_name=ssh_key_name)
   if attach_volume:
     if not device_name:
       raise RuntimeError('If you want to attach a volume, you must also '

@@ -119,11 +119,12 @@ class EndToEndTest(unittest.TestCase):
         volume_id=self.volume_to_forensic)
     self.volumes.append(volume_to_attach)
     # Create and start the analysis VM and attach the boot volume
-    self.analysis_vm, _ = forensics.StartAnalysisVm(self.analysis_vm_name,
-                                                    self.zone,
-                                                    10,
-                                                    attach_volume=volume_to_attach,  # pylint: disable=line-too-long
-                                                    device_name='/dev/sdp')
+    self.analysis_vm, _ = forensics.StartAnalysisVm(
+        self.analysis_vm_name,
+        self.zone,
+        10,
+        attach_volume=volume_to_attach,
+        device_name='/dev/sdp')
 
     # The forensic instance should be live in the analysis AWS account and
     # the volume should be attached
