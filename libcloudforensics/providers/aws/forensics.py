@@ -22,13 +22,13 @@ def CreateVolumeCopy(zone,
                      dst_zone=None,
                      instance_id=None,
                      volume_id=None,
-                     src_account=None,
-                     dst_account=None):
+                     src_profile=None,
+                     dst_profile=None):
   """Create a copy of an AWS EBS Volume.
 
   By default, the volume copy will be created in the same AWS account where
   the source volume sits. If you want the volume copy to be created in a
-  different AWS account, you can specify one in the dst_account parameter.
+  different AWS account, you can specify one in the dst_profile parameter.
   The following example illustrates how you should configure your AWS
   credentials file for such a use case.
 
@@ -52,15 +52,15 @@ def CreateVolumeCopy(zone,
   # Copies the boot volume from instance "instance_id" from the default AWS
   # account to the 'forensics' AWS account.
   volume_copy = CreateDiskCopy(
-      zone, instance_id='instance_id', dst_account='forensics')
+      zone, instance_id='instance_id', dst_profile='forensics')
 
   # Copies the boot volume from instance "instance_id" from the
   # 'investigation' AWS account to the 'forensics' AWS account.
   volume_copy = CreateDiskCopy(
       zone,
       instance_id='instance_id',
-      src_account='investigation',
-      dst_account='forensics')
+      src_profile='investigation',
+      dst_profile='forensics')
 
   Args:
     zone (str): The AWS zone in which the volume is located, e.g. 'us-east-2b'.
@@ -72,12 +72,13 @@ def CreateVolumeCopy(zone,
         that volume_id will be copied.
     volume_id (str): Optional. ID of the volume to copy. If not set,
         then instance_id needs to be set and the boot volume will be copied.
-    src_account (str): Optional. If the AWS account containing the volume
+    src_profile (str): Optional. If the AWS account containing the volume
         that needs to be copied is different from the default account
-        specified in the AWS credentials file, then you can specify it here
+        specified in the AWS credentials file then you can specify a
+        different profile name here (see example above).
+    dst_profile (str): Optional. If the volume copy needs to be created in a
+        different AWS account, you can specify a different profile name here
         (see example above).
-    dst_account (str): Optional. If the volume copy needs to be created in a
-        different AWS account, you can specify it here (see example above).
 
   Returns:
     AWSVolume: An AWS EBS Volume object.
@@ -92,8 +93,8 @@ def CreateVolumeCopy(zone,
     raise ValueError(
         'You must specify at least one of [instance_id, volume_id].')
 
-  source_account = account.AWSAccount(zone, aws_profile=src_account)
-  destination_account = account.AWSAccount(zone, aws_profile=dst_account)
+  source_account = account.AWSAccount(zone, aws_profile=src_profile)
+  destination_account = account.AWSAccount(zone, aws_profile=dst_profile)
   kms_key_id = None
 
   try:
@@ -127,7 +128,7 @@ def CreateVolumeCopy(zone,
       # Assign the new zone to the destination account and assign it to the
       # snapshot so that it can copy it
       destination_account = account.AWSAccount(
-          dst_zone, aws_profile=dst_account)
+          dst_zone, aws_profile=dst_profile)
       snapshot.aws_account = destination_account
       snapshot = snapshot.Copy(delete=True, deletion_account=source_account)
 
@@ -153,7 +154,7 @@ def StartAnalysisVm(vm_name,
                     ami=UBUNTU_1804_AMI,
                     cpu_cores=4,
                     attach_volumes=None,
-                    dst_account=None,
+                    dst_profile=None,
                     ssh_key_name=None):
   """Start a virtual machine for analysis purposes.
 
@@ -174,7 +175,7 @@ def StartAnalysisVm(vm_name,
         containing the volume IDs (str) to attach and their respective device
         name (str, e.g. /dev/sdf). Note that it is mandatory to provide a
         unique device name per volume to attach.
-    dst_account (str): Optional. The AWS account in which to create the
+    dst_profile (str): Optional. The AWS account in which to create the
         analysis VM. This is the profile name that is defined in your AWS
         credentials file.
     ssh_key_name (str): Optional. A SSH key pair name linked to the AWS
@@ -190,7 +191,7 @@ def StartAnalysisVm(vm_name,
         and a boolean indicating if the virtual machine was created or not.
   """
   aws_account = account.AWSAccount(
-      default_availability_zone, aws_profile=dst_account)
+      default_availability_zone, aws_profile=dst_profile)
   analysis_vm, created = aws_account.GetOrCreateAnalysisVm(
       vm_name,
       boot_volume_size,
