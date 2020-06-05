@@ -102,10 +102,10 @@ def ExecuteRequest(client, func, kwargs):
   responses = []
   next_token = None
   while True:
+    if next_token:
+      kwargs['NextToken'] = next_token
+    request = getattr(client, func)
     try:
-      if next_token:
-        kwargs['NextToken'] = next_token
-      request = getattr(client, func)
       response = request(**kwargs)
     except client.exceptions.ClientError as exception:
       raise RuntimeError('Could not process request: {0:s}'.format(

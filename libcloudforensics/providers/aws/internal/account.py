@@ -406,8 +406,6 @@ class AWSAccount:
     try:
       volume = client.create_volume(**create_volume_args)
       volume_id = volume['VolumeId']
-      zone = volume['AvailabilityZone']
-      encrypted = volume['Encrypted']
       # Wait for volume creation completion
       client.get_waiter('volume_available').wait(VolumeIds=[volume_id])
     except (client.exceptions.ClientError,
@@ -415,6 +413,9 @@ class AWSAccount:
       raise RuntimeError('Could not create volume {0:s} from snapshot '
                          '{1:s}: {2:s}'.format(volume_name, snapshot.name,
                                                str(exception)))
+
+    zone = volume['AvailabilityZone']
+    encrypted = volume['Encrypted']
 
     return ebs.AWSVolume(volume_id,
                          self,
@@ -548,15 +549,16 @@ class AWSAccount:
     Raises:
       RuntimeError: If the key could not be created.
     """
+
     client = self.ClientApi(common.KMS_SERVICE)
     try:
       kms_key = client.create_key()
-      # If the call to the API is successful, then the response contains the
-      # key ID
-      return kms_key['KeyMetadata']['KeyId']
     except client.exceptions.ClientError as exception:
       raise RuntimeError('Could not create KMS key: {0:s}'.format(
           str(exception)))
+
+    # The response contains the key ID
+    return kms_key['KeyMetadata']['KeyId']
 
   def ShareKMSKeyWithAWSAccount(self, kms_key_id, aws_account_id):
     """Share a KMS key.
