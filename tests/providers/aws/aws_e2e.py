@@ -73,7 +73,8 @@ class EndToEndTest(unittest.TestCase):
         instance_id=self.instance_to_analyse
         # volume_id=None by default, boot volume of instance will be copied
     )
-    self.VerifyVolume(self.aws, volume_copy.volume_id)
+    self._StoreVolumeForCleanup(self.aws, volume_copy.volume_id)
+    self.assertEqual(self.volumes[-1][1].volume_id, volume_copy.volume_id)
 
   def testVolumeCopy(self):
     """End to end test on AWS.
@@ -86,7 +87,8 @@ class EndToEndTest(unittest.TestCase):
 
     volume_copy = forensics.CreateVolumeCopy(
         self.zone, volume_id=self.volume_to_copy)
-    self.VerifyVolume(self.aws, volume_copy.volume_id)
+    self._StoreVolumeForCleanup(self.aws, volume_copy.volume_id)
+    self.assertEqual(self.volumes[-1][1].volume_id, volume_copy.volume_id)
 
   def testVolumeCopyToOtherZone(self):
     """End to end test on AWS.
@@ -99,7 +101,9 @@ class EndToEndTest(unittest.TestCase):
 
     volume_copy = forensics.CreateVolumeCopy(
         self.zone, dst_zone=self.dst_zone, volume_id=self.volume_to_copy)
-    self.VerifyVolume(account.AWSAccount(self.dst_zone), volume_copy.volume_id)
+    self._StoreVolumeForCleanup(
+        account.AWSAccount(self.dst_zone), volume_copy.volume_id)
+    self.assertEqual(self.volumes[-1][1].volume_id, volume_copy.volume_id)
 
   def testEncryptedVolumeCopy(self):
     """End to end test on AWS.
@@ -112,7 +116,8 @@ class EndToEndTest(unittest.TestCase):
 
     volume_copy = forensics.CreateVolumeCopy(
         self.zone, volume_id=self.encrypted_volume_to_copy)
-    self.VerifyVolume(self.aws, volume_copy.volume_id)
+    self._StoreVolumeForCleanup(self.aws, volume_copy.volume_id)
+    self.assertEqual(self.volumes[-1][1].volume_id, volume_copy.volume_id)
 
   def testEncryptedVolumeCopyToOtherZone(self):
     """End to end test on AWS.
@@ -128,7 +133,9 @@ class EndToEndTest(unittest.TestCase):
         self.zone,
         dst_zone=self.dst_zone,
         volume_id=self.encrypted_volume_to_copy)
-    self.VerifyVolume(account.AWSAccount(self.dst_zone), volume_copy.volume_id)
+    self._StoreVolumeForCleanup(
+        account.AWSAccount(self.dst_zone), volume_copy.volume_id)
+    self.assertEqual(self.volumes[-1][1].volume_id, volume_copy.volume_id)
 
   def testStartVm(self):
     """End to end test on AWS.
@@ -155,10 +162,8 @@ class EndToEndTest(unittest.TestCase):
     self.assertIn(volume_copy.volume_id,
                   [vol.volume_id for vol in instance.volumes.all()])
 
-  def VerifyVolume(self, aws_account, volume_id):
-    """Util method for AWS.
-
-    Verify that a volume created by the library is in AWS.
+  def _StoreVolumeForCleanup(self, aws_account, volume_id):
+    """Store a volume for cleanup when tests finish.
 
     Args:
       aws_account (AWSAccount): The AWS account to use.
@@ -166,7 +171,6 @@ class EndToEndTest(unittest.TestCase):
     """
     self.volumes.append(
         (aws_account, aws_account.ResourceApi(EC2_SERVICE).Volume(volume_id)))
-    self.assertEqual(self.volumes[-1][1].volume_id, volume_id)
 
   @classmethod
   def tearDownClass(cls):
