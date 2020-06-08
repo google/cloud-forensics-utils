@@ -58,11 +58,11 @@ class GoogleCloudBuild:
 
     Args:
       build_body (dict): A dictionary that describes how to find the source
-      code and how to build it.
+          code and how to build it.
 
     Returns:
-      dict: Represents long-running operation that is the
-          result of a network API call.
+      dict: Represents long-running operation that is the result of a network
+          API call.
     """
     cloud_build_client = self.GcbApi().projects().builds()
     build_info = cloud_build_client.create(
@@ -80,8 +80,8 @@ class GoogleCloudBuild:
       response (dict): Google Cloud Build API response.
 
     Returns:
-      dict: Holding the response of a get operation on an
-          API object of type operations.
+      dict: Holding the response of a get operation on an API object of type
+          operations.
 
     Raises:
       RuntimeError: If API call failed.

@@ -168,7 +168,7 @@ class GoogleCloudComputeClient:
 
     Returns:
       dict: Holding the response of a get operation on an API object of type
-      zoneOperations or globalOperations.
+          zoneOperations or globalOperations.
 
     Raises:
       RuntimeError: If API call failed.
