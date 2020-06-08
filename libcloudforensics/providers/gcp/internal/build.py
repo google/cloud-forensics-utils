@@ -57,11 +57,11 @@ class GoogleCloudBuild:
     """Create a cloud build.
 
     Args:
-      build_body (dict): A dictionary that describes how to
-          find the source code and how to build it.
+      build_body (dict): A dictionary that describes how to find the source
+      code and how to build it.
 
     Returns:
-      dict[str, str|dict|list]: Represents long-running operation that is the
+      dict: Represents long-running operation that is the
           result of a network API call.
     """
     cloud_build_client = self.GcbApi().projects().builds()
