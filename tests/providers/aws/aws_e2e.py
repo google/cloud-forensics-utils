@@ -73,8 +73,10 @@ class EndToEndTest(unittest.TestCase):
         instance_id=self.instance_to_analyse
         # volume_id=None by default, boot volume of instance will be copied
     )
-    self._StoreVolumeForCleanup(self.aws, volume_copy.volume_id)
-    self.assertEqual(self.volumes[-1][1].volume_id, volume_copy.volume_id)
+    # The volume should be created in AWS
+    aws_volume = self.aws.ResourceApi(EC2_SERVICE).Volume(volume_copy.volume_id)
+    self.assertEqual(aws_volume.volume_id, volume_copy.volume_id)
+    self._StoreVolumeForCleanup(self.aws, aws_volume)
 
   def testVolumeCopy(self):
     """End to end test on AWS.
@@ -87,8 +89,10 @@ class EndToEndTest(unittest.TestCase):
 
     volume_copy = forensics.CreateVolumeCopy(
         self.zone, volume_id=self.volume_to_copy)
-    self._StoreVolumeForCleanup(self.aws, volume_copy.volume_id)
-    self.assertEqual(self.volumes[-1][1].volume_id, volume_copy.volume_id)
+    # The volume should be created in AWS
+    aws_volume = self.aws.ResourceApi(EC2_SERVICE).Volume(volume_copy.volume_id)
+    self.assertEqual(aws_volume.volume_id, volume_copy.volume_id)
+    self._StoreVolumeForCleanup(self.aws, aws_volume)
 
   def testVolumeCopyToOtherZone(self):
     """End to end test on AWS.
@@ -101,9 +105,12 @@ class EndToEndTest(unittest.TestCase):
 
     volume_copy = forensics.CreateVolumeCopy(
         self.zone, dst_zone=self.dst_zone, volume_id=self.volume_to_copy)
-    self._StoreVolumeForCleanup(
-        account.AWSAccount(self.dst_zone), volume_copy.volume_id)
-    self.assertEqual(self.volumes[-1][1].volume_id, volume_copy.volume_id)
+    # The volume should be created in AWS
+    aws_account = account.AWSAccount(self.dst_zone)
+    aws_volume = aws_account.ResourceApi(EC2_SERVICE).Volume(
+        volume_copy.volume_id)
+    self.assertEqual(aws_volume.volume_id, volume_copy.volume_id)
+    self._StoreVolumeForCleanup(aws_account, aws_volume)
 
   def testEncryptedVolumeCopy(self):
     """End to end test on AWS.
@@ -116,8 +123,10 @@ class EndToEndTest(unittest.TestCase):
 
     volume_copy = forensics.CreateVolumeCopy(
         self.zone, volume_id=self.encrypted_volume_to_copy)
-    self._StoreVolumeForCleanup(self.aws, volume_copy.volume_id)
-    self.assertEqual(self.volumes[-1][1].volume_id, volume_copy.volume_id)
+    # The volume should be created in AWS
+    aws_volume = self.aws.ResourceApi(EC2_SERVICE).Volume(volume_copy.volume_id)
+    self.assertEqual(aws_volume.volume_id, volume_copy.volume_id)
+    self._StoreVolumeForCleanup(self.aws, aws_volume)
 
   def testEncryptedVolumeCopyToOtherZone(self):
     """End to end test on AWS.
@@ -133,9 +142,12 @@ class EndToEndTest(unittest.TestCase):
         self.zone,
         dst_zone=self.dst_zone,
         volume_id=self.encrypted_volume_to_copy)
-    self._StoreVolumeForCleanup(
-        account.AWSAccount(self.dst_zone), volume_copy.volume_id)
-    self.assertEqual(self.volumes[-1][1].volume_id, volume_copy.volume_id)
+    # The volume should be created in AWS
+    aws_account = account.AWSAccount(self.dst_zone)
+    aws_volume = aws_account.ResourceApi(EC2_SERVICE).Volume(
+        volume_copy.volume_id)
+    self.assertEqual(aws_volume.volume_id, volume_copy.volume_id)
+    self._StoreVolumeForCleanup(aws_account, aws_volume)
 
   def testStartVm(self):
     """End to end test on AWS.
@@ -162,15 +174,14 @@ class EndToEndTest(unittest.TestCase):
     self.assertIn(volume_copy.volume_id,
                   [vol.volume_id for vol in instance.volumes.all()])
 
-  def _StoreVolumeForCleanup(self, aws_account, volume_id):
+  def _StoreVolumeForCleanup(self, aws_account, volume):
     """Store a volume for cleanup when tests finish.
 
     Args:
       aws_account (AWSAccount): The AWS account to use.
-      volume_id (str): The volume ID of the volume to verify.
+      volume (boto3.resource.volume): An AWS volume.
     """
-    self.volumes.append(
-        (aws_account, aws_account.ResourceApi(EC2_SERVICE).Volume(volume_id)))
+    self.volumes.append((aws_account, volume))
 
   @classmethod
   def tearDownClass(cls):
