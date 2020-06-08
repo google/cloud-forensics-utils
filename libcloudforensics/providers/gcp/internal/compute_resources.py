@@ -327,6 +327,21 @@ class GoogleComputeInstance(GoogleComputeBaseResource):
     response = request.execute()
     self.BlockOperation(response, zone=self.zone)
 
+  def DetachDisk(self, disk):
+    """Detach a disk from the virtual machine.
+
+    Args:
+      disk (GoogleComputeDisk): Disk to detach.
+    """
+
+    gce_instance_client = self.GceApi().instances()
+    request = gce_instance_client.detachDisk(instance=self.name,
+                                             project=self.project_id,
+                                             zone=self.zone,
+                                             deviceName=disk.name)
+    response = request.execute()
+    self.BlockOperation(response, zone=self.zone)
+
 
 class GoogleComputeDisk(GoogleComputeBaseResource):
   """Class representing a Compute Engine disk."""
