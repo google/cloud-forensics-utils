@@ -132,7 +132,7 @@ class EndToEndTest(unittest.TestCase):
     """End to end test on AWS.
 
     Test copying a specific encrypted volume to a different AWS availability
-        zone.
+    zone.
     """
 
     if not (self.encrypted_volume_to_copy and self.dst_zone):
