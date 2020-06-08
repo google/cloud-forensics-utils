@@ -127,9 +127,13 @@ def CreateService(service_name, api_version):
 class GoogleCloudComputeClient:
   """Class representing Google Cloud Compute API client.
 
+  Request and response dictionary content is described here:
+  https://cloud.google.com/compute/docs/reference/rest/v1
+
   Attributes:
     project_id (str): Project name.
   """
+
   COMPUTE_ENGINE_API_VERSION = 'v1'
 
   def __init__(self, project_id=None):
@@ -158,12 +162,12 @@ class GoogleCloudComputeClient:
     """Block until API operation is finished.
 
     Args:
-      response (dict[str, str|dict|list]): GCE API response.
+      response (dict): GCE API response.
       zone (str): Optional. GCP zone to execute the operation in. None means
           GlobalZone.
 
     Returns:
-      dict[str, str|dict|list]: Holding the response of a get operation on an
+      dict: Holding the response of a get operation on an
           API object of type zoneOperations or globalOperations.
 
     Raises:
@@ -195,14 +199,14 @@ def ExecuteRequest(client, func, kwargs, throttle=False):
   Args:
     client (googleapiclient.Resources): A GCP client object.
     func (str): A GCP function to query from the client.
-    kwargs (dict[str, str|int|dict|list]): A dictionary of parameters for the
+    kwargs (dict): A dictionary of parameters for the
         function func.
     throttle (bool): A boolean indicating if requests should be throttled. This
         is necessary for some APIs (e.g. list logs) as there is an API rate
         limit. Default is False, i.e. requests are not throttled.
 
   Returns:
-    list(dict[str, str|dict|list]): A list of dictionaries (responses from the
+    list[dict]: A list of dictionaries (responses from the
         request).
 
   Raises:

@@ -59,7 +59,8 @@ class GoogleCloudFunction:
     Args:
       function_name (str): The name of the function to call.
       region (str): Region to execute functions in.
-      args (dict[str, str|dict|list]): Arguments to pass to the function.
+      args (dict): Arguments to pass to the function. Dictionary content
+          details can be found in https://cloud.google.com/functions/docs/reference/rest/v1/projects.locations.functions
 
     Returns:
       dict[str, str]: Return value from function call.

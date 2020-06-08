@@ -91,12 +91,13 @@ def ExecuteRequest(client, func, kwargs):
   Args:
     client (boto3.session.Session): A boto3 client object.
     func (str): A boto3 function to query from the client.
-    kwargs (dict[str, str|int|dict]): A dictionary of parameters for the
-        function func.
+    kwargs (dict): A dictionary of parameters for the function func. Expected
+        keys are strings, values can be of multiple types. E.g.:
+        {'InstanceIds': ['instance_id'], 'MaxResults': 12}.
 
   Returns:
-    list[dict[str, str|dict|list]]: A list of dictionaries (responses from the
-        request).
+    list[dict]: A list of dictionaries (responses from the
+        request), e.g. [{'Groups': [{...}], 'Instances': [{...}]}, {...}]
 
   Raises:
     RuntimeError: If the request to the boto3 API could not complete.

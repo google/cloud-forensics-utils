@@ -22,6 +22,9 @@ from libcloudforensics.providers.gcp.internal import common
 class GoogleCloudBuild:
   """Class to call Google Cloud Build APIs.
 
+  Dictionary objects content can be found in
+  https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds
+
   Attributes:
     gcb_api_client: Client to interact with GCB APIs.
   """
@@ -54,7 +57,7 @@ class GoogleCloudBuild:
     """Create a cloud build.
 
     Args:
-      build_body (dict[str, str|dict|list]): A dictionary that describes how to
+      build_body (dict): A dictionary that describes how to
           find the source code and how to build it.
 
     Returns:
@@ -74,10 +77,10 @@ class GoogleCloudBuild:
     """Block execution until API operation is finished.
 
     Args:
-      response (dict[str, str|dict|list]): Google Cloud Build API response.
+      response (dict): Google Cloud Build API response.
 
     Returns:
-      dict[str, str|dict|list]: Holding the response of a get operation on an
+      dict: Holding the response of a get operation on an
           API object of type operations.
 
     Raises:

@@ -104,7 +104,9 @@ class AWSAccount:
       region (str): Optional. The region from which to list instances.
           If none provided, the default_region associated to the AWSAccount
           object will be used.
-      filters (list[dict[str, str|list[str]]]): Optional. Filters for the query.
+      filters (list[dict]): Optional. Filters for the query. Filters are
+          given as a list of dictionaries, e.g.: {'Name': 'someFilter',
+          'Values': ['value1', 'value2']}.
       show_terminated (bool): Optional. Include terminated instances in the
           list.
 
@@ -157,7 +159,9 @@ class AWSAccount:
       region (str): Optional. The region from which to list the volumes.
           If none provided, the default_region associated to the AWSAccount
           object will be used.
-      filters (list[dict[str, str|list[str]]]): Optional. Filter for the query.
+      filters (list[dict]): Optional. Filters for the query. Filters are
+          given as a list of dictionaries, e.g.: {'Name': 'someFilter',
+          'Values': ['value1', 'value2']}.
 
     Returns:
       dict[str, AWSVolume]: Dictionary mapping volume IDs (str) to their
