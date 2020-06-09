@@ -124,7 +124,7 @@ def CreateVolumeCopy(zone,
         snapshot = snapshot.Copy(kms_key_id=kms_key_id, delete=True)
       snapshot.ShareWithAWSAccount(destination_account_id)
 
-    if dst_zone:
+    if dst_zone and dst_zone != zone:
       # Assign the new zone to the destination account and assign it to the
       # snapshot so that it can copy it
       destination_account = account.AWSAccount(
