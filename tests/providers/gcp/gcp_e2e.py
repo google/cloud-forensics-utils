@@ -19,8 +19,7 @@ import time
 
 from googleapiclient.errors import HttpError
 
-from libcloudforensics.providers.gcp.internal.common import LOGGER, \
-  GoogleCloudComputeClient
+from libcloudforensics.providers.gcp.internal import common
 from libcloudforensics.providers.gcp.internal import project as gcp_project
 from libcloudforensics.providers.gcp import forensics
 from tests.scripts import utils
@@ -100,7 +99,7 @@ class EndToEndTest(unittest.TestCase):
         # disk_name=None by default, boot disk will be copied
     )
 
-    gcp_client_api = GoogleCloudComputeClient(self.project_id).GceApi()
+    gcp_client_api = common.GoogleCloudComputeClient(self.project_id).GceApi()
 
     # The disk copy should be attached to the analysis project
     gce_disk_client = gcp_client_api.disks()
@@ -155,7 +154,7 @@ class EndToEndTest(unittest.TestCase):
         instance_name=self.instance_to_analyse, zone=self.zone,
         disk_name=self.disk_to_forensic)
 
-    gcp_client_api = GoogleCloudComputeClient(self.project_id).GceApi()
+    gcp_client_api = common.GoogleCloudComputeClient(self.project_id).GceApi()
 
     # The disk copy should be existing in the analysis project
     gce_disk_client = gcp_client_api.disks()
@@ -198,9 +197,10 @@ class EndToEndTest(unittest.TestCase):
     zone = cls.zone
     project = cls.gcp
     disks = analysis_vm.ListDisks()
-    gcp_client = GoogleCloudComputeClient(project.project_id)
+    gcp_client = common.GoogleCloudComputeClient(project.project_id)
     # delete the created forensics VMs
-    LOGGER.info('Deleting analysis instance: {0:s}.'.format(analysis_vm.name))
+    common.LOGGER.info('Deleting analysis instance: {0:s}.'.format(
+        analysis_vm.name))
     gce_instance_client = gcp_client.GceApi().instances()
     request = gce_instance_client.delete(
         project=project.project_id, zone=zone, instance=analysis_vm.name)
@@ -213,13 +213,14 @@ class EndToEndTest(unittest.TestCase):
       # operation has finished and thus the associated ID doesn't exists
       # anymore, throwing an HttpError. We can ignore this.
       pass
-    LOGGER.info('Instance {0:s} successfully deleted.'.format(analysis_vm.name))
+    common.LOGGER.info('Instance {0:s} successfully deleted.'.format(
+        analysis_vm.name))
 
     # delete the copied disks
     # we ignore the disk that was created for the analysis VM (disks[0]) as
     # it is deleted in the previous operation
     for disk in disks[1:]:
-      LOGGER.info('Deleting disk: {0:s}.'.format(disk))
+      common.LOGGER.info('Deleting disk: {0:s}.'.format(disk))
       while True:
         try:
           gce_disk_client = gcp_client.GceApi().disks()
@@ -235,13 +236,13 @@ class EndToEndTest(unittest.TestCase):
           if exception.resp.status == 404:
             break
           if exception.resp.status != 400:
-            LOGGER.warning(
+            common.LOGGER.warning(
                 'Could not delete the disk {0:s}: {1:s}'.format(
                     disk, str(exception)))
           # Throttle the requests to one every 10 seconds
           time.sleep(10)
 
-      LOGGER.info('Disk {0:s} successfully deleted.'.format(disk))
+      common.LOGGER.info('Disk {0:s} successfully deleted.'.format(disk))
 
 
 if __name__ == '__main__':
