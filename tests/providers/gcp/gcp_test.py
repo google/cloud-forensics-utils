@@ -26,7 +26,7 @@ import mock
 import six
 
 from libcloudforensics.providers.gcp import forensics
-from libcloudforensics.providers.gcp.internal import common, compute_resources
+from libcloudforensics.providers.gcp.internal import common, compute
 from libcloudforensics.providers.gcp.internal import project as gcp_project
 from libcloudforensics.providers.gcp.internal import log as gcp_log
 from libcloudforensics.scripts import utils
@@ -34,24 +34,24 @@ from libcloudforensics.scripts import utils
 # For the forensics analysis
 FAKE_ANALYSIS_PROJECT = gcp_project.GoogleCloudProject(
     'fake-target-project', 'fake-zone')
-FAKE_ANALYSIS_VM = compute_resources.GoogleComputeInstance(
+FAKE_ANALYSIS_VM = compute.GoogleComputeInstance(
     FAKE_ANALYSIS_PROJECT.project_id, 'fake-zone', 'fake-analysis-vm')
 
 # Source project with the instance that needs forensicating
 FAKE_SOURCE_PROJECT = gcp_project.GoogleCloudProject(
     'fake-source-project', 'fake-zone')
-FAKE_INSTANCE = compute_resources.GoogleComputeInstance(
+FAKE_INSTANCE = compute.GoogleComputeInstance(
     FAKE_SOURCE_PROJECT.project_id, 'fake-zone', 'fake-instance')
-FAKE_DISK = compute_resources.GoogleComputeDisk(
+FAKE_DISK = compute.GoogleComputeDisk(
     FAKE_SOURCE_PROJECT.project_id, 'fake-zone', 'fake-disk')
-FAKE_BOOT_DISK = compute_resources.GoogleComputeDisk(
+FAKE_BOOT_DISK = compute.GoogleComputeDisk(
     FAKE_SOURCE_PROJECT.project_id, 'fake-zone', 'fake-boot-disk')
-FAKE_SNAPSHOT = compute_resources.GoogleComputeSnapshot(
+FAKE_SNAPSHOT = compute.GoogleComputeSnapshot(
     FAKE_DISK, 'fake-snapshot')
-FAKE_SNAPSHOT_LONG_NAME = compute_resources.GoogleComputeSnapshot(
+FAKE_SNAPSHOT_LONG_NAME = compute.GoogleComputeSnapshot(
     FAKE_DISK,
     'this-is-a-kind-of-long-fake-snapshot-name-and-is-definitely-over-63-chars')
-FAKE_DISK_COPY = compute_resources.GoogleComputeDisk(
+FAKE_DISK_COPY = compute.GoogleComputeDisk(
     FAKE_SOURCE_PROJECT.project_id, 'fake-zone', 'fake-disk-copy')
 FAKE_LOGS = gcp_log.GoogleCloudLog('fake-target-project')
 FAKE_LOG_LIST = [
@@ -222,7 +222,7 @@ class GoogleCloudProjectTest(unittest.TestCase):
     """Test that an instance of a project can be found."""
     mock_list_instances.return_value = MOCK_LIST_INSTANCES
     found_instance = FAKE_SOURCE_PROJECT.compute.GetInstance(FAKE_INSTANCE.name)
-    self.assertIsInstance(found_instance, compute_resources.GoogleComputeInstance)
+    self.assertIsInstance(found_instance, compute.GoogleComputeInstance)
     self.assertEqual(FAKE_SOURCE_PROJECT.project_id, found_instance.project_id)
     self.assertEqual('fake-instance', found_instance.name)
     self.assertEqual('fake-zone', found_instance.zone)
@@ -238,7 +238,7 @@ class GoogleCloudProjectTest(unittest.TestCase):
     """Test that a disk of an instance can be found."""
     mock_list_disks.return_value = MOCK_LIST_DISKS
     found_disk = FAKE_SOURCE_PROJECT.compute.GetDisk(FAKE_DISK.name)
-    self.assertIsInstance(found_disk, compute_resources.GoogleComputeDisk)
+    self.assertIsInstance(found_disk, compute.GoogleComputeDisk)
     self.assertEqual(FAKE_SOURCE_PROJECT.project_id, found_disk.project_id)
     self.assertEqual('fake-disk', found_disk.name)
     self.assertEqual('fake-zone', found_disk.zone)
@@ -257,7 +257,7 @@ class GoogleCloudProjectTest(unittest.TestCase):
     # disk_name_prefix='')
     disk_from_snapshot = FAKE_ANALYSIS_PROJECT.compute.CreateDiskFromSnapshot(
         FAKE_SNAPSHOT)
-    self.assertIsInstance(disk_from_snapshot, compute_resources.GoogleComputeDisk)
+    self.assertIsInstance(disk_from_snapshot, compute.GoogleComputeDisk)
     self.assertEqual('fake-snapshot-857c0b16-copy', disk_from_snapshot.name)
 
     # CreateDiskFromSnapshot(Snapshot=FAKE_SNAPSHOT,
@@ -265,7 +265,7 @@ class GoogleCloudProjectTest(unittest.TestCase):
     disk_from_snapshot = FAKE_ANALYSIS_PROJECT.compute.CreateDiskFromSnapshot(
         FAKE_SNAPSHOT, disk_name='new-forensics-disk')
     self.assertIsInstance(
-        disk_from_snapshot, compute_resources.GoogleComputeDisk)
+        disk_from_snapshot, compute.GoogleComputeDisk)
     self.assertEqual('new-forensics-disk', disk_from_snapshot.name)
 
     # CreateDiskFromSnapshot(Snapshot=FAKE_SNAPSHOT, disk_name=None,
@@ -273,7 +273,7 @@ class GoogleCloudProjectTest(unittest.TestCase):
     disk_from_snapshot = FAKE_ANALYSIS_PROJECT.compute.CreateDiskFromSnapshot(
         FAKE_SNAPSHOT, disk_name_prefix='prefix')
     self.assertIsInstance(
-        disk_from_snapshot, compute_resources.GoogleComputeDisk)
+        disk_from_snapshot, compute.GoogleComputeDisk)
     self.assertEqual(
         'prefix-fake-snapshot-857c0b16-copy', disk_from_snapshot.name)
 
@@ -283,7 +283,7 @@ class GoogleCloudProjectTest(unittest.TestCase):
         FAKE_SNAPSHOT, disk_name='new-forensics-disk',
         disk_name_prefix='prefix')
     self.assertIsInstance(
-        disk_from_snapshot, compute_resources.GoogleComputeDisk)
+        disk_from_snapshot, compute.GoogleComputeDisk)
     self.assertEqual('new-forensics-disk', disk_from_snapshot.name)
 
     # CreateDiskFromSnapshot(Snapshot=FAKE_SNAPSHOT,
@@ -325,7 +325,7 @@ class GoogleCloudProjectTest(unittest.TestCase):
         FAKE_ANALYSIS_VM.name, boot_disk_size=1)
     mock_get_instance.assert_called_with(FAKE_ANALYSIS_VM.name)
     instances.return_value.insert.assert_not_called()
-    self.assertIsInstance(vm, compute_resources.GoogleComputeInstance)
+    self.assertIsInstance(vm, compute.GoogleComputeInstance)
     self.assertEqual('fake-analysis-vm', vm.name)
     self.assertFalse(created)
 
@@ -337,7 +337,7 @@ class GoogleCloudProjectTest(unittest.TestCase):
         'non-existent-analysis-vm', boot_disk_size=1)
     mock_get_instance.assert_called_with('non-existent-analysis-vm')
     instances.return_value.insert.assert_called()
-    self.assertIsInstance(vm, compute_resources.GoogleComputeInstance)
+    self.assertIsInstance(vm, compute.GoogleComputeInstance)
     self.assertEqual('non-existent-analysis-vm', vm.name)
     self.assertTrue(created)
 
@@ -428,7 +428,7 @@ class GoogleComputeBaseResourceTest(unittest.TestCase):
   """Test Google Cloud Compute Base Resource class."""
   # pylint: disable=line-too-long
 
-  @mock.patch('libcloudforensics.providers.gcp.internal.compute_resources.GoogleComputeInstance.GetOperation')
+  @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleComputeInstance.GetOperation')
   def testGetValue(self, mock_get_operation):
     """Test that the correct value is retrieved for the given key."""
     mock_get_operation.return_value = {
@@ -444,18 +444,18 @@ class GoogleComputeInstanceTest(unittest.TestCase):
   # pylint: disable=line-too-long
 
   @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleCloudCompute.ListDisks')
-  @mock.patch('libcloudforensics.providers.gcp.internal.compute_resources.GoogleComputeInstance.GetOperation')
+  @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleComputeInstance.GetOperation')
   def testGetBootDisk(self, mock_get_operation, mock_list_disks):
     """Test that a boot disk is retrieved if existing."""
     mock_get_operation.return_value = MOCK_GCE_OPERATION_INSTANCES_GET
     mock_list_disks.return_value = MOCK_LIST_DISKS
 
     boot_disk = FAKE_INSTANCE.GetBootDisk()
-    self.assertIsInstance(boot_disk, compute_resources.GoogleComputeDisk)
+    self.assertIsInstance(boot_disk, compute.GoogleComputeDisk)
     self.assertEqual('fake-boot-disk', boot_disk.name)
 
   @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleCloudCompute.ListDisks')
-  @mock.patch('libcloudforensics.providers.gcp.internal.compute_resources.GoogleComputeInstance.GetOperation')
+  @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleComputeInstance.GetOperation')
   def testGetDisk(self, mock_get_operation, mock_list_disks):
     """Test that a disk is retrieved by its name, if existing."""
     mock_get_operation.return_value = MOCK_GCE_OPERATION_INSTANCES_GET
@@ -463,19 +463,19 @@ class GoogleComputeInstanceTest(unittest.TestCase):
 
     # Normal disk
     disk = FAKE_INSTANCE.GetDisk(FAKE_DISK.name)
-    self.assertIsInstance(disk, compute_resources.GoogleComputeDisk)
+    self.assertIsInstance(disk, compute.GoogleComputeDisk)
     self.assertEqual('fake-disk', disk.name)
 
     # Boot disk
     disk = FAKE_INSTANCE.GetDisk(FAKE_BOOT_DISK.name)
-    self.assertIsInstance(disk, compute_resources.GoogleComputeDisk)
+    self.assertIsInstance(disk, compute.GoogleComputeDisk)
     self.assertEqual('fake-boot-disk', disk.name)
 
     # Disk that's not attached to the instance
     self.assertRaises(RuntimeError, FAKE_INSTANCE.GetDisk, 'non-existent-disk')
 
   @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleCloudCompute.ListDisks')
-  @mock.patch('libcloudforensics.providers.gcp.internal.compute_resources.GoogleComputeInstance.GetOperation')
+  @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleComputeInstance.GetOperation')
   def testListDisks(self, mock_get_operation, mock_list_disks):
     """Test that a all disks of an instance are correctly retrieved."""
     mock_get_operation.return_value = MOCK_GCE_OPERATION_INSTANCES_GET
@@ -500,13 +500,13 @@ class GoogleComputeDiskTest(unittest.TestCase):
 
     # Snapshot(snapshot_name=None). Snapshot should start with the disk's name
     snapshot = FAKE_DISK.Snapshot()
-    self.assertIsInstance(snapshot, compute_resources.GoogleComputeSnapshot)
+    self.assertIsInstance(snapshot, compute.GoogleComputeSnapshot)
     self.assertTrue(snapshot.name.startswith('fake-disk'))
 
     # Snapshot(snapshot_name='my-Snapshot'). Snapshot should start with
     # 'my-Snapshot'
     snapshot = FAKE_DISK.Snapshot(snapshot_name='my-snapshot')
-    self.assertIsInstance(snapshot, compute_resources.GoogleComputeSnapshot)
+    self.assertIsInstance(snapshot, compute.GoogleComputeSnapshot)
     self.assertTrue(snapshot.name.startswith('my-snapshot'))
 
     # Snapshot(snapshot_name='Non-compliant-name'). Should raise a ValueError
@@ -542,8 +542,8 @@ class GCPTest(unittest.TestCase):
   # pylint: disable=line-too-long
 
   @mock.patch('libcloudforensics.providers.gcp.internal.common.GoogleCloudComputeClient.BlockOperation')
-  @mock.patch('libcloudforensics.providers.gcp.internal.compute_resources.GoogleComputeInstance.GetDisk')
-  @mock.patch('libcloudforensics.providers.gcp.internal.compute_resources.GoogleComputeInstance.GetBootDisk')
+  @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleComputeInstance.GetDisk')
+  @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleComputeInstance.GetBootDisk')
   @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleCloudCompute.GetInstance')
   @mock.patch('libcloudforensics.providers.gcp.internal.common.GoogleCloudComputeClient.GceApi')
   def testCreateDiskCopy1(self,
@@ -569,13 +569,13 @@ class GCPTest(unittest.TestCase):
                                         disk_name=None)
     mock_get_instance.assert_called_with(FAKE_INSTANCE.name)
     mock_get_disk.assert_not_called()
-    self.assertIsInstance(new_disk, compute_resources.GoogleComputeDisk)
+    self.assertIsInstance(new_disk, compute.GoogleComputeDisk)
     self.assertTrue(new_disk.name.startswith('evidence-'))
     self.assertIn('fake-boot-disk', new_disk.name)
     self.assertTrue(new_disk.name.endswith('-copy'))
 
   @mock.patch('libcloudforensics.providers.gcp.internal.common.GoogleCloudComputeClient.BlockOperation')
-  @mock.patch('libcloudforensics.providers.gcp.internal.compute_resources.GoogleComputeInstance.GetBootDisk')
+  @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleComputeInstance.GetBootDisk')
   @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleCloudCompute.GetDisk')
   @mock.patch('libcloudforensics.providers.gcp.internal.common.GoogleCloudComputeClient.GceApi')
   def testCreateDiskCopy2(self,
@@ -603,7 +603,7 @@ class GCPTest(unittest.TestCase):
                                         disk_name=FAKE_DISK.name)
     mock_get_disk.assert_called_with(FAKE_DISK.name)
     mock_get_boot_disk.assert_not_called()
-    self.assertIsInstance(new_disk, compute_resources.GoogleComputeDisk)
+    self.assertIsInstance(new_disk, compute.GoogleComputeDisk)
     self.assertTrue(new_disk.name.startswith('evidence-'))
     self.assertIn('fake-disk', new_disk.name)
     self.assertTrue(new_disk.name.endswith('-copy'))
