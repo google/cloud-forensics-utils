@@ -16,8 +16,13 @@
 
 import json
 import ssl
+from typing import TYPE_CHECKING, Dict
 from googleapiclient.errors import HttpError
 from libcloudforensics.providers.gcp.internal import common
+
+
+if TYPE_CHECKING:
+  import googleapiclient
 
 
 class GoogleCloudFunction:
@@ -30,7 +35,7 @@ class GoogleCloudFunction:
 
   CLOUD_FUNCTIONS_API_VERSION = 'v1beta2'
 
-  def __init__(self, project_id):
+  def __init__(self, project_id: str) -> None:
     """Initialize the GoogleCloudFunction object.
 
     Args:
@@ -40,11 +45,12 @@ class GoogleCloudFunction:
     self.gcf_api_client = None
     self.project_id = project_id
 
-  def GcfApi(self):
+  def GcfApi(self) -> 'googleapiclient.discovery.Resource':
     """Get a Google Cloud Function service object.
 
     Returns:
-      apiclient.discovery.Resource: A Google Cloud Function service object.
+      googleapiclient.discovery.Resource: A Google Cloud Function service
+          object.
     """
 
     if self.gcf_api_client:
@@ -53,7 +59,10 @@ class GoogleCloudFunction:
         'cloudfunctions', self.CLOUD_FUNCTIONS_API_VERSION)
     return self.gcf_api_client
 
-  def ExecuteFunction(self, function_name, region, args):
+  def ExecuteFunction(self,
+                      function_name: str,
+                      region: str,
+                      args: Dict) -> Dict:
     """Executes a Google Cloud Function.
 
     Args:

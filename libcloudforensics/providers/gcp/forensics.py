@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Forensics on GCP."""
+from typing import TYPE_CHECKING, List, Tuple
 
 from google.auth.exceptions import RefreshError, DefaultCredentialsError
 from googleapiclient.errors import HttpError
@@ -20,13 +21,17 @@ from googleapiclient.errors import HttpError
 from libcloudforensics.providers.gcp.internal import project as gcp_project
 from libcloudforensics.providers.gcp.internal import common
 
+if TYPE_CHECKING:
+  from libcloudforensics.providers.gcp.internal import compute
 
-def CreateDiskCopy(src_proj,
-                   dst_proj,
-                   instance_name,
-                   zone,
-                   disk_name=None,
-                   disk_type='pd-standard'):
+
+def CreateDiskCopy(
+    src_proj: str,
+    dst_proj: str,
+    instance_name: str,
+    zone: str,
+    disk_name: str = None,
+    disk_type: str = 'pd-standard') -> 'compute.GoogleComputeDisk':
   """Creates a copy of a Google Compute Disk.
 
   Args:
@@ -94,15 +99,16 @@ def CreateDiskCopy(src_proj,
   return new_disk
 
 
-def StartAnalysisVm(project,
-                    vm_name,
-                    zone,
-                    boot_disk_size,
-                    boot_disk_type,
-                    cpu_cores,
-                    attach_disks=None,
-                    image_project='ubuntu-os-cloud',
-                    image_family='ubuntu-1804-lts'):
+def StartAnalysisVm(
+    project: str,
+    vm_name: str,
+    zone: str,
+    boot_disk_size: int,
+    boot_disk_type: str,
+    cpu_cores: int,
+    attach_disks: List[str] = None,
+    image_project: str = 'ubuntu-os-cloud',
+    image_family: str = 'ubuntu-1804-lts') -> Tuple['compute.GoogleComputeInstance', bool]:  # pylint: disable=line-too-long
   """Start a virtual machine for analysis purposes.
 
   Args:

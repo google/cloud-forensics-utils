@@ -14,7 +14,12 @@
 # limitations under the License.
 """Google Compute Engine resources."""
 
+from typing import TYPE_CHECKING, Dict
+
 from libcloudforensics.providers.gcp.internal import common
+
+if TYPE_CHECKING:
+  import googleapiclient
 
 
 class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
@@ -27,7 +32,11 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
     labels (dict): Dictionary of labels for the resource, if existing.
   """
 
-  def __init__(self, project_id, zone, name, labels=None):
+  def __init__(self,
+               project_id: str,
+               zone: str,
+               name: str,
+               labels: Dict = None) -> None:
     """Initialize the Google Compute Resource base object.
 
     Args:
@@ -44,7 +53,7 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
     self.project_id = project_id
     super(GoogleComputeBaseResource, self).__init__(self.project_id)
 
-  def FormatLogMessage(self, message):
+  def FormatLogMessage(self, message: str) -> str:
     """Format log messages with project specific information.
 
     Args:
@@ -56,7 +65,7 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
 
     return 'project:{0} {1}'.format(self.project_id, message)
 
-  def GetValue(self, key):
+  def GetValue(self, key: str) -> str:
     """Get specific value from the resource key value store.
 
     Args:
@@ -69,7 +78,7 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
     self._data = self.GetOperation()  # pylint: disable=no-member
     return self._data.get(key)
 
-  def GetSourceString(self):
+  def GetSourceString(self) -> str:
     """API URL to the resource.
 
     Returns:
@@ -80,7 +89,7 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
       return self._data['selfLink']
     return self.GetValue('selfLink')
 
-  def GetResourceType(self):
+  def GetResourceType(self) -> str:
     """Get the resource type from the resource key-value store.
 
     Returns:
@@ -94,7 +103,9 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
       return self._data['kind']
     return self.GetValue('kind')
 
-  def FormOperation(self, operation_name):
+  def FormOperation(
+      self,
+      operation_name: str) -> 'googleapiclient.discovery.Resource':
     """Form an API operation object for the compute resource.
 
     Example:[RESOURCE].FormOperation('setLabels')(**kwargs)
@@ -104,7 +115,7 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
       operation_name (str): The name of the API operation you need to perform.
 
     Returns:
-      apiclient.discovery.Resource: An API operation object for the
+      googleapiclient.discovery.Resource: An API operation object for the
           referenced compute resource.
 
     Raises:
@@ -131,7 +142,7 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
     operation_func_to_call = getattr(module, operation_name)
     return operation_func_to_call
 
-  def GetLabels(self):
+  def GetLabels(self) -> Dict:
     """Get all labels of a compute resource.
 
     Returns:
@@ -142,7 +153,9 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
 
     return operation.get('labels')
 
-  def AddLabels(self, new_labels_dict, blocking_call=False):
+  def AddLabels(self,
+                new_labels_dict: Dict,
+                blocking_call: bool = False) -> Dict:
     """Add or update labels of a compute resource.
 
     Args:

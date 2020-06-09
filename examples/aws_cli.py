@@ -17,14 +17,18 @@
 # https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html #pylint: disable=line-too-long
 """Demo CLI tool for AWS."""
 
-
 from datetime import datetime
+from typing import TYPE_CHECKING
+
 from libcloudforensics.providers.aws.internal import account
 from libcloudforensics.providers.aws.internal import log as aws_log
 from libcloudforensics.providers.aws import forensics
 
+if TYPE_CHECKING:
+  import argparse
 
-def ListInstances(args):
+
+def ListInstances(args: 'argparse.Namespace') -> None:
   """List EC2 instances in AWS account.
 
   Args:
@@ -40,7 +44,7 @@ def ListInstances(args):
     print('Name: {0:s}, Boot volume: {1:s}'.format(instance, boot_volume))
 
 
-def ListVolumes(args):
+def ListVolumes(args: 'argparse.Namespace') -> None:
   """List EBS volumes in AWS account.
 
   Args:
@@ -55,7 +59,7 @@ def ListVolumes(args):
     print('Name: {0:s}, Zone: {1:s}'.format(volume, volumes[volume].zone))
 
 
-def CreateVolumeCopy(args):
+def CreateVolumeCopy(args: 'argparse.Namespace') -> None:
   """Create a AWS Volume copy.
 
   Args:
@@ -74,7 +78,7 @@ def CreateVolumeCopy(args):
           volume_copy.volume_id, volume_copy.name))
 
 
-def QueryLogs(args):
+def QueryLogs(args: 'argparse.Namespace') -> None:
   """Query AWS CloudTrail log events.
 
   Args:

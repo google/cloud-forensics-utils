@@ -15,8 +15,12 @@
 """Google compute functionality."""
 
 import time
+from typing import TYPE_CHECKING, Dict
 
 from libcloudforensics.providers.gcp.internal import common
+
+if TYPE_CHECKING:
+  import googleapiclient
 
 
 class GoogleCloudBuild:
@@ -30,7 +34,7 @@ class GoogleCloudBuild:
   """
   CLOUD_BUILD_API_VERSION = 'v1'
 
-  def __init__(self, project_id):
+  def __init__(self, project_id: str) -> None:
     """Initialize the GoogleCloudBuild object.
 
     Args:
@@ -40,11 +44,11 @@ class GoogleCloudBuild:
     self.gcb_api_client = None
     self.project_id = project_id
 
-  def GcbApi(self):
+  def GcbApi(self) -> 'googleapiclient.discovery.Resource':
     """Get a Google Cloud Build service object.
 
     Returns:
-      apiclient.discovery.Resource: A Google Cloud Build service object.
+      googleapiclient.discovery.Resource: A Google Cloud Build service object.
     """
 
     if self.gcb_api_client:
@@ -53,7 +57,7 @@ class GoogleCloudBuild:
         'cloudbuild', self.CLOUD_BUILD_API_VERSION)
     return self.gcb_api_client
 
-  def CreateBuild(self, build_body):
+  def CreateBuild(self, build_body: Dict) -> Dict:
     """Create a cloud build.
 
     Args:
@@ -73,7 +77,7 @@ class GoogleCloudBuild:
             build_metadata['logsBucket'], build_metadata['logUrl']))
     return build_info
 
-  def BlockOperation(self, response):  # pylint: disable=arguments-differ
+  def BlockOperation(self, response: Dict) -> Dict:
     """Block execution until API operation is finished.
 
     Args:

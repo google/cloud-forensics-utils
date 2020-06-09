@@ -13,17 +13,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Forensics on AWS."""
+from typing import TYPE_CHECKING, Tuple, List
 
 from libcloudforensics.providers.aws.internal.common import UBUNTU_1804_AMI, LOGGER  # pylint: disable=line-too-long
 from libcloudforensics.providers.aws.internal import account
 
+if TYPE_CHECKING:
+  from libcloudforensics.providers.aws.internal import ebs, ec2
 
-def CreateVolumeCopy(zone,
-                     dst_zone=None,
-                     instance_id=None,
-                     volume_id=None,
-                     src_profile=None,
-                     dst_profile=None):
+
+def CreateVolumeCopy(zone: str,
+                     dst_zone: str = None,
+                     instance_id: str = None,
+                     volume_id: str = None,
+                     src_profile: str = None,
+                     dst_profile: str = None) -> 'ebs.AWSVolume':
   """Create a copy of an AWS EBS Volume.
 
   By default, the volume copy will be created in the same AWS account where
@@ -148,14 +152,14 @@ def CreateVolumeCopy(zone,
   return new_volume
 
 
-def StartAnalysisVm(vm_name,
-                    default_availability_zone,
-                    boot_volume_size,
-                    ami=UBUNTU_1804_AMI,
-                    cpu_cores=4,
-                    attach_volumes=None,
-                    dst_profile=None,
-                    ssh_key_name=None):
+def StartAnalysisVm(vm_name: str,
+                    default_availability_zone: str,
+                    boot_volume_size: int,
+                    ami: str = UBUNTU_1804_AMI,
+                    cpu_cores: int = 4,
+                    attach_volumes: List[Tuple[str, str]] = None,
+                    dst_profile: str = None,
+                    ssh_key_name: str = None) -> Tuple['ec2.AWSInstance', bool]:
   """Start a virtual machine for analysis purposes.
 
   Look for an existing AWS instance with tag name vm_name. If found,

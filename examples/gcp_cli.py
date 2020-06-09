@@ -15,12 +15,17 @@
 """Demo CLI tool for GCP."""
 
 import json
+from typing import TYPE_CHECKING
+
 from libcloudforensics.providers.gcp.internal import project as gcp_project
 from libcloudforensics.providers.gcp.internal import log as gcp_log
 from libcloudforensics.providers.gcp import forensics
 
+if TYPE_CHECKING:
+  import argparse
 
-def ListInstances(args):
+
+def ListInstances(args: 'argparse.Namespace') -> None:
   """List GCE instances in GCP project.
 
   Args:
@@ -36,7 +41,7 @@ def ListInstances(args):
     print('Name: {0:s}, Bootdisk: {1:s}'.format(instance, bootdisk_name))
 
 
-def ListDisks(args):
+def ListDisks(args: 'argparse.Namespace') -> None:
   """List GCE disks in GCP project.
 
   Args:
@@ -50,7 +55,7 @@ def ListDisks(args):
     print('Name: {0:s}, Zone: {1:s}'.format(disk, disks[disk].zone))
 
 
-def CreateDiskCopy(args):
+def CreateDiskCopy(args: 'argparse.Namespace') -> None:
   """Copy GCE disks to other GCP project.
 
   Args:
@@ -64,7 +69,7 @@ def CreateDiskCopy(args):
   print('Name: {0:s}'.format(disk.name))
 
 
-def ListLogs(args):
+def ListLogs(args: 'argparse.Namespace') -> None:
   """List GCP logs for a project.
 
   Args:
@@ -77,7 +82,7 @@ def ListLogs(args):
     print(line)
 
 
-def QueryLogs(args):
+def QueryLogs(args: 'argparse.Namespace') -> None:
   """Query GCP logs.
 
   Args:

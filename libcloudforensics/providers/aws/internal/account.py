@@ -20,6 +20,7 @@ analysis virtual machine to be used in incident response.
 
 import binascii
 import json
+from typing import Dict, List, Tuple
 
 import boto3
 import botocore
@@ -40,7 +41,9 @@ class AWSAccount:
         credentials file to use.
   """
 
-  def __init__(self, default_availability_zone, aws_profile=None):
+  def __init__(self,
+               default_availability_zone: str,
+               aws_profile: str = None) -> None:
     """Initialize the AWS account.
 
     Args:
@@ -56,7 +59,9 @@ class AWSAccount:
     # https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#using-regions-availability-zones-describe # pylint: disable=line-too-long
     self.default_region = self.default_availability_zone[:-1]
 
-  def ClientApi(self, service, region=None):
+  def ClientApi(self,
+                service: str,
+                region: str = None) -> 'botocore.client.EC2':  # pylint: disable=no-member
     """Create an AWS client object.
 
     Args:
@@ -65,7 +70,7 @@ class AWSAccount:
           none provided, the default_region associated to the AWSAccount
           object will be used.
     Returns:
-      boto3.Session.Client: An AWS EC2 client object.
+      botocore.client.EC2: An AWS EC2 client object.
     """
 
     if region:
@@ -74,7 +79,9 @@ class AWSAccount:
     return boto3.session.Session(profile_name=self.aws_profile).client(
         service_name=service, region_name=self.default_region)
 
-  def ResourceApi(self, service, region=None):
+  def ResourceApi(self,
+                  service: str,
+                  region: str = None) -> 'boto3.resources.factory.ec2.ServiceResource':  # pylint: disable=line-too-long, no-member
     """Create an AWS resource object.
 
     Args:
@@ -84,7 +91,7 @@ class AWSAccount:
           object will be used.
 
     Returns:
-      boto3.Session.Resource: An AWS EC2 resource object.
+      boto3.resources.factory.ec2.ServiceResource: An AWS EC2 resource object.
     """
 
     if region:
@@ -93,7 +100,11 @@ class AWSAccount:
     return boto3.session.Session(profile_name=self.aws_profile).resource(
         service_name=service, region_name=self.default_region)
 
-  def ListInstances(self, region=None, filters=None, show_terminated=False):
+  def ListInstances(
+      self,
+      region: str = None,
+      filters: List[Dict] = None,
+      show_terminated: bool = False) -> Dict[str, ec2.AWSInstance]:
     """List instances of an AWS account.
 
     Example usage:
@@ -147,7 +158,9 @@ class AWSAccount:
           instances[instance_id] = aws_instance
     return instances
 
-  def ListVolumes(self, region=None, filters=None):
+  def ListVolumes(self,
+                  region: str = None,
+                  filters: List[Dict] = None) -> Dict[str, ebs.AWSVolume]:
     """List volumes of an AWS account.
 
     Example usage:
@@ -201,9 +214,9 @@ class AWSAccount:
     return volumes
 
   def GetInstancesByNameOrId(self,
-                             instance_name='',
-                             instance_id='',
-                             region=None):
+                             instance_name: str = '',
+                             instance_id: str = '',
+                             region: str = None) -> List[ec2.AWSInstance]:
     """Get instances from an AWS account by their name tag or an ID.
 
     Exactly one of [instance_name, instance_id] must be specified. If looking up
@@ -238,7 +251,9 @@ class AWSAccount:
 
     return [self.GetInstanceById(instance_id, region=region)]
 
-  def GetInstancesByName(self, instance_name, region=None):
+  def GetInstancesByName(self,
+                         instance_name: str,
+                         region: str = None) -> List[ec2.AWSInstance]:
     """Get all instances from an AWS account with matching name tag.
 
     Args:
@@ -260,7 +275,9 @@ class AWSAccount:
         matching_instances.append(aws_instance)
     return matching_instances
 
-  def GetInstanceById(self, instance_id, region=None):
+  def GetInstanceById(self,
+                      instance_id: str,
+                      region: str = None) -> ec2.AWSInstance:
     """Get an instance from an AWS account by its ID.
 
     Args:
@@ -285,9 +302,9 @@ class AWSAccount:
     return instance
 
   def GetVolumesByNameOrId(self,
-                           volume_name='',
-                           volume_id='',
-                           region=None):
+                           volume_name: str = '',
+                           volume_id: str = '',
+                           region: str = None) -> List[ebs.AWSVolume]:
     """Get a volume from an AWS account by its name tag or its ID.
 
     Exactly one of [volume_name, volume_id] must be specified. If looking up
@@ -321,7 +338,9 @@ class AWSAccount:
 
     return [self.GetVolumeById(volume_id, region=region)]
 
-  def GetVolumesByName(self, volume_name, region=None):
+  def GetVolumesByName(self,
+                       volume_name: str,
+                       region: str = None) -> List[ebs.AWSVolume]:
     """Get all volumes from an AWS account with matching name tag.
 
     Args:
@@ -343,7 +362,9 @@ class AWSAccount:
         matching_volumes.append(volume)
     return matching_volumes
 
-  def GetVolumeById(self, volume_id, region=None):
+  def GetVolumeById(self,
+                    volume_id: str,
+                    region: str = None) -> ebs.AWSVolume:
     """Get a volume from an AWS account by its ID.
 
     Args:
@@ -368,10 +389,10 @@ class AWSAccount:
     return volume
 
   def CreateVolumeFromSnapshot(self,
-                               snapshot,
-                               volume_name=None,
-                               volume_name_prefix='',
-                               kms_key_id=None):
+                               snapshot: ebs.AWSSnapshot,
+                               volume_name: str = None,
+                               volume_name_prefix: str = '',
+                               kms_key_id: str = None) -> ebs.AWSVolume:
     """Create a new volume based on a snapshot.
 
     Args:
@@ -428,13 +449,14 @@ class AWSAccount:
                          encrypted,
                          name=volume_name)
 
-  def GetOrCreateAnalysisVm(self,
-                            vm_name,
-                            boot_volume_size,
-                            ami,
-                            cpu_cores,
-                            packages=None,
-                            ssh_key_name=None):
+  def GetOrCreateAnalysisVm(
+      self,
+      vm_name: str,
+      boot_volume_size: int,
+      ami: str,
+      cpu_cores: int,
+      packages: List[str] = None,
+      ssh_key_name: str = None) -> Tuple[ec2.AWSInstance, bool]:
     """Get or create a new virtual machine for analysis purposes.
 
     Args:
@@ -518,7 +540,7 @@ class AWSAccount:
     created = True
     return instance, created
 
-  def GetAccountInformation(self, info):
+  def GetAccountInformation(self, info: str) -> str:
     """Get information about the AWS account in use.
 
     If the call succeeds, then the response from the STS API is expected to
@@ -544,7 +566,7 @@ class AWSAccount:
       raise KeyError('Key must be one of ["UserId", "Account", "Arn"]')
     return account_information.get(info)
 
-  def CreateKMSKey(self):
+  def CreateKMSKey(self) -> str:
     """Create a KMS key.
 
     Returns:
@@ -564,7 +586,9 @@ class AWSAccount:
     # The response contains the key ID
     return kms_key['KeyMetadata']['KeyId']
 
-  def ShareKMSKeyWithAWSAccount(self, kms_key_id, aws_account_id):
+  def ShareKMSKeyWithAWSAccount(self,
+                                kms_key_id: str,
+                                aws_account_id: str) -> None:
     """Share a KMS key.
 
     Args:
@@ -605,7 +629,7 @@ class AWSAccount:
       raise RuntimeError('Could not share KMS key {0:s}: {1:s}'.format(
           kms_key_id, str(exception)))
 
-  def DeleteKMSKey(self, kms_key_id):
+  def DeleteKMSKey(self, kms_key_id: str) -> None:
     """Delete a KMS key.
 
     Schedule the KMS key for deletion. By default, users have a 30 days
@@ -628,7 +652,9 @@ class AWSAccount:
       raise RuntimeError('Could not schedule the KMS key: {0:s} for '
                          'deletion'.format(str(exception)))
 
-  def _GenerateVolumeName(self, snapshot, volume_name_prefix=None):
+  def _GenerateVolumeName(self,
+                          snapshot: ebs.AWSSnapshot,
+                          volume_name_prefix: str = None) -> str:
     """Generate a new volume name given a volume's snapshot.
 
     Args:
@@ -662,7 +688,9 @@ class AWSAccount:
 
     return volume_name
 
-  def _GetBootVolumeConfigByAmi(self, ami, boot_volume_size):
+  def _GetBootVolumeConfigByAmi(self,
+                                ami: str,
+                                boot_volume_size: int) -> Dict:
     """Return a boot volume configuration for a given AMI and boot volume size.
 
     Args:

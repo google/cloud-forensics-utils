@@ -14,7 +14,12 @@
 # limitations under the License.
 """Log functionality."""
 
+from typing import TYPE_CHECKING, List, Dict
+
 from libcloudforensics.providers.gcp.internal import common
+
+if TYPE_CHECKING:
+  import googleapiclient
 
 
 class GoogleCloudLog:
@@ -34,7 +39,7 @@ class GoogleCloudLog:
 
   LOGGING_API_VERSION = 'v2'
 
-  def __init__(self, project_id):
+  def __init__(self, project_id: str) -> None:
     """Initialize the GoogleCloudProject object.
 
     Args:
@@ -44,11 +49,12 @@ class GoogleCloudLog:
     self.project_id = project_id
     self.gcl_api_client = None
 
-  def GclApi(self):
+  def GclApi(self) -> 'googleapiclient.discovery.Resource':
     """Get a Google Compute Logging service object.
 
     Returns:
-      apiclient.discovery.Resource: A Google Compute Logging service object.
+      googleapiclient.discovery.Resource: A Google Compute Logging service
+          object.
     """
 
     if self.gcl_api_client:
@@ -57,7 +63,7 @@ class GoogleCloudLog:
         'logging', self.LOGGING_API_VERSION)
     return self.gcl_api_client
 
-  def ListLogs(self):
+  def ListLogs(self) -> List[str]:
     """List logs in project.
 
     Returns:
@@ -78,7 +84,7 @@ class GoogleCloudLog:
 
     return logs
 
-  def ExecuteQuery(self, qfilter):
+  def ExecuteQuery(self, qfilter: str) -> List[Dict]:
     """Query logs in GCP project.
 
     Args:

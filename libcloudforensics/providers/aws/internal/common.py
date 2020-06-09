@@ -15,6 +15,10 @@
 """Common utilities."""
 import logging
 import re
+from typing import Dict, List, TYPE_CHECKING
+
+if TYPE_CHECKING:
+  import botocore
 
 EC2_SERVICE = 'ec2'
 ACCOUNT_SERVICE = 'sts'
@@ -28,7 +32,7 @@ REGEX_TAG_VALUE = re.compile('^.{1,255}$')
 LOGGER = logging.getLogger()
 
 
-def GetTagForResourceType(resource, name):
+def GetTagForResourceType(resource: str, name: str) -> Dict:
   """Create a dictionary for AWS Tag Specifications.
 
   Args:
@@ -50,7 +54,7 @@ def GetTagForResourceType(resource, name):
   }
 
 
-def GetInstanceTypeByCPU(cpu_cores):
+def GetInstanceTypeByCPU(cpu_cores: int) -> str:
   """Return the instance type for the requested number of  CPU cores.
 
   Args:
@@ -85,7 +89,9 @@ def GetInstanceTypeByCPU(cpu_cores):
   return cpu_cores_to_instance_type[cpu_cores]
 
 
-def ExecuteRequest(client, func, kwargs):
+def ExecuteRequest(client: 'botocore.client.EC2',
+                   func: str,
+                   kwargs: Dict) -> List[Dict]:
   """Execute a request to the boto3 API.
 
   Args:

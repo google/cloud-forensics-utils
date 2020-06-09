@@ -40,7 +40,7 @@ class GoogleCloudProject:
 
   COMPUTE_ENGINE_API_VERSION = 'v1'
 
-  def __init__(self, project_id, default_zone=None):
+  def __init__(self, project_id: str, default_zone: str = None) -> None:
     """Initialize the GoogleCloudProject object.
 
     Args:
@@ -57,7 +57,7 @@ class GoogleCloudProject:
     self._log = None
 
   @property
-  def compute(self):
+  def compute(self) -> compute_module.GoogleCloudCompute:
     """Get a GoogleCloudCompute object for the project.
 
     Returns:
@@ -71,7 +71,7 @@ class GoogleCloudProject:
     return self._compute
 
   @property
-  def function(self):
+  def function(self) -> function_module.GoogleCloudFunction:
     """Get a GoogleCloudFunction object for the project.
 
     Returns:
@@ -85,7 +85,7 @@ class GoogleCloudProject:
     return self._function
 
   @property
-  def build(self):
+  def build(self) -> build_module.GoogleCloudBuild:
     """Get a GoogleCloudBuild object for the project.
 
     Returns:
@@ -99,7 +99,7 @@ class GoogleCloudProject:
     return self._build
 
   @property
-  def log(self):
+  def log(self) -> log_module.GoogleCloudLog:
     """Get a GoogleCloudLog object for the project.
 
     Returns:

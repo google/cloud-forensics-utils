@@ -15,9 +15,10 @@
 """Utils test methods"""
 import json
 import os
+from typing import List, Dict
 
 
-def ReadProjectInfo(keys):
+def ReadProjectInfo(keys: List[str]) -> Dict:
   """Read project information to run e2e test.
 
   Args:

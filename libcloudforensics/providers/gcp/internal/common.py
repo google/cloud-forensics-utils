@@ -19,17 +19,25 @@ import logging
 import re
 import socket
 import time
+from typing import TYPE_CHECKING, Dict, List
 
 from google.auth import default
 from google.auth.exceptions import DefaultCredentialsError, RefreshError
 from googleapiclient.discovery import build
+
+if TYPE_CHECKING:
+  import googleapiclient
+  # TYPE_CHECKING is always False at runtime, therefore it is safe to ignore
+  # the following cyclic import, as it it only used for type hints
+  from libcloudforensics.providers.gcp.internal import compute  # pylint: disable=cyclic-import
 
 LOGGER = logging.getLogger()
 RETRY_MAX = 10
 REGEX_DISK_NAME = re.compile('^(?=.{1,63}$)[a-z]([-a-z0-9]*[a-z0-9])?$')
 
 
-def GenerateDiskName(snapshot, disk_name_prefix=None):
+def GenerateDiskName(snapshot: 'compute.GoogleComputeSnapshot',
+                     disk_name_prefix: str = None) -> str:
   """Generate a new disk name for the disk to be created from the Snapshot.
 
   The disk name must comply with the following RegEx:
@@ -76,7 +84,8 @@ def GenerateDiskName(snapshot, disk_name_prefix=None):
   return disk_name
 
 
-def CreateService(service_name, api_version):
+def CreateService(service_name: str,
+                  api_version: str) -> 'googleapiclient.discovery.Resource':
   """Creates an GCP API service.
 
   Args:
@@ -84,7 +93,7 @@ def CreateService(service_name, api_version):
     api_version (str): Version of the GCP service API to use.
 
   Returns:
-    apiclient.discovery.Resource: API service resource.
+    googleapiclient.discovery.Resource: API service resource.
 
   Raises:
     RuntimeError: If Application Default Credentials could not be obtained or if
@@ -136,7 +145,7 @@ class GoogleCloudComputeClient:
 
   COMPUTE_ENGINE_API_VERSION = 'v1'
 
-  def __init__(self, project_id=None):
+  def __init__(self, project_id: str = None) -> None:
     """Initialize Google Cloud Engine API client object.
 
     Args:
@@ -145,11 +154,12 @@ class GoogleCloudComputeClient:
     self._gce_api_client = None
     self.project_id = project_id
 
-  def GceApi(self):
+  def GceApi(self) -> 'googleapiclient.discovery.Resource':
     """Get a Google Compute Engine service object.
 
     Returns:
-      apiclient.discovery.Resource: A Google Compute Engine service object.
+      googleapiclient.discovery.Resource: A Google Compute Engine service
+          object.
     """
 
     if self._gce_api_client:
@@ -158,7 +168,7 @@ class GoogleCloudComputeClient:
         'compute', self.COMPUTE_ENGINE_API_VERSION)
     return self._gce_api_client
 
-  def BlockOperation(self, response, zone=None):
+  def BlockOperation(self, response: Dict, zone: str = None) -> Dict:
     """Block until API operation is finished.
 
     Args:
@@ -193,11 +203,14 @@ class GoogleCloudComputeClient:
       time.sleep(5)  # Seconds between requests
 
 
-def ExecuteRequest(client, func, kwargs, throttle=False):
+def ExecuteRequest(client: 'googleapiclient.discovery.Resource',
+                   func: str,
+                   kwargs: Dict,
+                   throttle: bool = False) -> List[Dict]:
   """Execute a request to the GCP API.
 
   Args:
-    client (googleapiclient.Resources): A GCP client object.
+    client (googleapiclient.discovery.Resource): A GCP client object.
     func (str): A GCP function to query from the client.
     kwargs (dict): A dictionary of parameters for the function func.
     throttle (bool): A boolean indicating if requests should be throttled. This

@@ -19,6 +19,8 @@
 import sys
 
 import argparse
+from typing import Tuple, List
+
 from examples import aws_cli, gcp_cli
 
 
@@ -39,7 +41,11 @@ PROVIDER_TO_FUNC = {
 }
 
 
-def AddParser(provider, provider_parser, func, func_helper, args=None):
+def AddParser(provider: str,
+              provider_parser: argparse._SubParsersAction,  # pylint: disable=protected-access
+              func: str,
+              func_helper: str,
+              args: List[Tuple[str, ...]] = None) -> None:
   """Create a new parser object for a provider's functionality.
 
   Args:

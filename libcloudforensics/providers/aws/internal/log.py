@@ -13,7 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Log functionality."""
+from typing import TYPE_CHECKING, Dict, List
+
 from libcloudforensics.providers.aws.internal import common
+
+if TYPE_CHECKING:
+  # TYPE_CHECKING is always False at runtime, therefore it is safe to ignore
+  # the following cyclic import, as it it only used for type hints
+  from libcloudforensics.providers.aws.internal import account  # pylint: disable=cyclic-import
+  from datetime import datetime
 
 
 class AWSCloudTrail:
@@ -23,7 +31,7 @@ class AWSCloudTrail:
     aws_account (AWSAccount): The AWS account to use.
   """
 
-  def __init__(self, aws_account):
+  def __init__(self, aws_account: 'account.AWSAccount') -> None:
     """Initialize an AWS CloudTrail client.
 
     Args:
@@ -33,9 +41,9 @@ class AWSCloudTrail:
     self.aws_account = aws_account
 
   def LookupEvents(self,
-                   qfilter=(),
-                   starttime=None,
-                   endtime=None):
+                   qfilter: str = (),
+                   starttime: 'datetime' = None,
+                   endtime: 'datetime' = None) -> List[Dict]:
     """Lookup events in the CloudTrail logs of this account.
 
     Example usage:
