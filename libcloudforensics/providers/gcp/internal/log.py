@@ -61,7 +61,7 @@ class GoogleCloudLog:
     """List logs in project.
 
     Returns:
-      list: The project logs available.
+      list[str]: The project logs available.
 
     Raises:
       RuntimeError: If API call failed.
@@ -85,7 +85,8 @@ class GoogleCloudLog:
       qfilter (str): The query filter to use.
 
     Returns:
-      list(dict): Log entries returned by the query.
+      list[dict]: Log entries returned by the query, e.g. [{'projectIds':
+          [...], 'resourceNames': [...]}, {...}]
 
     Raises:
       RuntimeError: If API call failed.

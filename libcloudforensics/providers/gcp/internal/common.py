@@ -127,9 +127,13 @@ def CreateService(service_name, api_version):
 class GoogleCloudComputeClient:
   """Class representing Google Cloud Compute API client.
 
+  Request and response dictionary content is described here:
+  https://cloud.google.com/compute/docs/reference/rest/v1
+
   Attributes:
     project_id (str): Project name.
   """
+
   COMPUTE_ENGINE_API_VERSION = 'v1'
 
   def __init__(self, project_id=None):
@@ -201,7 +205,7 @@ def ExecuteRequest(client, func, kwargs, throttle=False):
         limit. Default is False, i.e. requests are not throttled.
 
   Returns:
-    list(dict): A list of dictionaries (responses from the request).
+    list[dict]: A list of dictionaries (responses from the request).
 
   Raises:
     RuntimeError: If the request to the GCP API could not complete.
