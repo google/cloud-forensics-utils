@@ -219,7 +219,7 @@ class EndToEndTest(unittest.TestCase):
     # delete the copied disks
     # we ignore the disk that was created for the analysis VM (disks[0]) as
     # it is deleted in the previous operation
-    for disk in disks[1:]:
+    for disk in list(disks.keys())[1:]:
       common.LOGGER.info('Deleting disk: {0:s}.'.format(disk))
       while True:
         try:
