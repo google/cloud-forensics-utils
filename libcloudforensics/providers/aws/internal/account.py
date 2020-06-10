@@ -104,13 +104,15 @@ class AWSAccount:
       region (str): Optional. The region from which to list instances.
           If none provided, the default_region associated to the AWSAccount
           object will be used.
-      filters (list(dict)): Optional. Filters for the query.
+      filters (list[dict]): Optional. Filters for the query. Filters are
+          given as a list of dictionaries, e.g.: {'Name': 'someFilter',
+          'Values': ['value1', 'value2']}.
       show_terminated (bool): Optional. Include terminated instances in the
           list.
 
     Returns:
-      dict: Dictionary mapping instance IDs (str) to their respective
-          AWSInstance object.
+      dict[str, AWInstance]: Dictionary mapping instance IDs (str) to their
+          respective AWSInstance object.
 
     Raises:
       RuntimeError: If instances can't be listed.
@@ -157,11 +159,13 @@ class AWSAccount:
       region (str): Optional. The region from which to list the volumes.
           If none provided, the default_region associated to the AWSAccount
           object will be used.
-      filters (list(dict)): Optional. Filter for the query.
+      filters (list[dict]): Optional. Filters for the query. Filters are
+          given as a list of dictionaries, e.g.: {'Name': 'someFilter',
+          'Values': ['value1', 'value2']}.
 
     Returns:
-      dict: Dictionary mapping volume IDs (str) to their respective AWSVolume
-          object.
+      dict[str, AWSVolume]: Dictionary mapping volume IDs (str) to their
+          respective AWSVolume object.
 
     Raises:
       RuntimeError: If volumes can't be listed.
@@ -218,7 +222,7 @@ class AWSAccount:
           object will be used.
 
     Returns:
-      list(AWSInstance): A list of Amazon EC2 Instance objects.
+      list[AWSInstance]: A list of Amazon EC2 Instance objects.
 
     Raises:
       ValueError: If both instance_name and instance_id are None or if both
@@ -244,7 +248,7 @@ class AWSAccount:
           object will be used.
 
     Returns:
-      list(AWSInstance): A list of EC2 Instance objects. If no instance with
+      list[AWSInstance]: A list of EC2 Instance objects. If no instance with
           matching name tag is found, the method returns an empty list.
     """
 
@@ -301,7 +305,7 @@ class AWSAccount:
           object will be used.
 
     Returns:
-      list(AWSVolume): A list of Amazon EC2 Volume objects.
+      list[AWSVolume]: A list of Amazon EC2 Volume objects.
 
     Raises:
       ValueError: If both volume_name and volume_id are None or if both
@@ -327,7 +331,7 @@ class AWSAccount:
           object will be used.
 
     Returns:
-      list(AWSVolume): A list of EC2 Volume objects. If no volume with
+      list[AWSVolume]: A list of EC2 Volume objects. If no volume with
           matching name tag is found, the method returns an empty list.
     """
 
@@ -438,7 +442,7 @@ class AWSAccount:
       boot_volume_size (int): The size of the analysis VM boot volume (in GB).
       ami (str): The Amazon Machine Image ID to use to create the VM.
       cpu_cores (int): Number of CPU cores for the analysis VM.
-      packages (list(str)): Optional. List of packages to install in the VM.
+      packages (list[str]): Optional. List of packages to install in the VM.
       ssh_key_name (str): Optional. A SSH key pair name linked to the AWS
           account to associate with the VM. If none provided, the VM can only
           be accessed through in-browser SSH from the AWS management console
@@ -448,7 +452,7 @@ class AWSAccount:
           parameter.
 
     Returns:
-      tuple(AWSInstance, bool): A tuple with an AWSInstance object and a
+      tuple[AWSInstance, bool]: A tuple with an AWSInstance object and a
           boolean indicating if the virtual machine was created (True) or
           reused (False).
 
@@ -666,7 +670,8 @@ class AWSAccount:
       boot_volume_size (int): Size of the boot volume, in GB.
 
     Returns:
-      dict: A BlockDeviceMappings configuration for the specified AMI.
+      dict[str, str|dict]]: A BlockDeviceMappings configuration for the
+          specified AMI.
 
     Raises:
       RuntimeError: If AMI details cannot be found.

@@ -24,7 +24,7 @@ def ListInstances(args):
   """List GCE instances in GCP project.
 
   Args:
-    args (dict): Arguments from ArgumentParser.
+    args (argparse.Namespace): Arguments from ArgumentParser.
   """
 
   project = gcp_project.GoogleCloudProject(args.project)
@@ -40,7 +40,7 @@ def ListDisks(args):
   """List GCE disks in GCP project.
 
   Args:
-    args (dict): Arguments from ArgumentParser.
+    args (argparse.Namespace): Arguments from ArgumentParser.
   """
 
   project = gcp_project.GoogleCloudProject(args.project)
@@ -54,7 +54,7 @@ def CreateDiskCopy(args):
   """Copy GCE disks to other GCP project.
 
   Args:
-    args (dict): Arguments from ArgumentParser.
+    args (argparse.Namespace): Arguments from ArgumentParser.
   """
 
   disk = forensics.CreateDiskCopy(
@@ -68,7 +68,7 @@ def ListLogs(args):
   """List GCP logs for a project.
 
   Args:
-    args (dict): Arguments from ArgumentParser.
+    args (argparse.Namespace): Arguments from ArgumentParser.
   """
   logs = gcp_log.GoogleCloudLog(args.project)
   results = logs.ListLogs()
@@ -81,7 +81,7 @@ def QueryLogs(args):
   """Query GCP logs.
 
   Args:
-    args (dict): Arguments from ArgumentParser.
+    args (argparse.Namespace): Arguments from ArgumentParser.
   """
   logs = gcp_log.GoogleCloudLog(args.project)
   results = logs.ExecuteQuery(args.filter)

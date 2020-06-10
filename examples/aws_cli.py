@@ -28,7 +28,7 @@ def ListInstances(args):
   """List EC2 instances in AWS account.
 
   Args:
-    args (dict): Arguments from ArgumentParser.
+    args (argparse.Namespace): Arguments from ArgumentParser.
   """
 
   aws_account = account.AWSAccount(args.zone)
@@ -44,7 +44,7 @@ def ListVolumes(args):
   """List EBS volumes in AWS account.
 
   Args:
-    args (dict): Arguments from ArgumentParser.
+    args (argparse.Namespace): Arguments from ArgumentParser.
   """
 
   aws_account = account.AWSAccount(args.zone)
@@ -59,7 +59,7 @@ def CreateVolumeCopy(args):
   """Create a AWS Volume copy.
 
   Args:
-    args (dict): Arguments from ArgumentParser.
+    args (argparse.Namespace): Arguments from ArgumentParser.
   """
   print('Starting volume copy...')
   volume_copy = forensics.CreateVolumeCopy(args.zone,
@@ -78,7 +78,7 @@ def QueryLogs(args):
   """Query AWS CloudTrail log events.
 
   Args:
-    args (dict): Arguments from ArgumentParser.
+    args (argparse.Namespace): Arguments from ArgumentParser.
   """
   ct = aws_log.AWSCloudTrail(account.AWSAccount(args.zone))
 

@@ -27,18 +27,14 @@ from tests.scripts import utils
 class EndToEndTest(unittest.TestCase):
   """End to end test on AWS.
 
-  This end-to-end test runs directly on AWS and tests that:
-    1. The account.py module connects to the target instance and makes a
-    snapshot of the boot volume (by default) or of the volume passed in
-    parameter to the forensics.CreateVolumeCopy() method.
-    2. A new volume is created from the taken snapshot.
-
-  To run this test, add your project information to a project_info.json file:
+  To run these tests, add your project information to a project_info.json file:
 
   {
     "instance": "xxx", # required
     "zone": "xxx" # required
+    "destination_zone": "xxx", # optional
     "volume_id": "xxx", # optional
+    "encrypted_volume_id": "xxx", # optional
   }
 
   Export a PROJECT_INFO environment variable with the absolute path to your
@@ -56,76 +52,118 @@ class EndToEndTest(unittest.TestCase):
       raise unittest.SkipTest(str(exception))
     cls.instance_to_analyse = project_info['instance']
     cls.zone = project_info['zone']
-    cls.volume_to_forensic = project_info.get('volume_id', None)
+    cls.dst_zone = project_info.get('destination_zone', None)
+    cls.volume_to_copy = project_info.get('volume_id', None)
+    cls.encrypted_volume_to_copy = project_info.get('encrypted_volume_id', None)
     cls.aws = account.AWSAccount(cls.zone)
     cls.analysis_vm_name = 'new-vm-for-analysis'
     cls.analysis_vm, _ = forensics.StartAnalysisVm(cls.analysis_vm_name,
                                                    cls.zone,
                                                    10)
-    cls.volumes = []
+    cls.volumes = []  # List of (AWSAccount, AWSVolume) tuples
 
-  def test_end_to_end_boot_volume(self):
+  def testBootVolumeCopy(self):
     """End to end test on AWS.
 
-    This end-to-end test runs directly on AWS and tests that:
-      1. The account.py module connects to the target instance and makes a
-          snapshot of the boot volume (by default) or of the volume passed in
-          parameter to the forensics.CreateVolumeCopy() method.
-      2. A new volume is created from the taken snapshot.
+    Test copying the boot volume of an instance.
     """
 
-    # Make a copy of the boot volume of the instance to analyse
-    boot_volume_copy = forensics.CreateVolumeCopy(
+    volume_copy = forensics.CreateVolumeCopy(
         self.zone,
         instance_id=self.instance_to_analyse
         # volume_id=None by default, boot volume of instance will be copied
     )
+    # The volume should be created in AWS
+    aws_volume = self.aws.ResourceApi(EC2_SERVICE).Volume(volume_copy.volume_id)
+    self.assertEqual(aws_volume.volume_id, volume_copy.volume_id)
+    self._StoreVolumeForCleanup(self.aws, aws_volume)
 
-    # The volume copy should be attached to the AWS account
-    self.volumes.append(
-        self.aws.ResourceApi(EC2_SERVICE).Volume(boot_volume_copy.volume_id))
-    self.assertEqual(self.volumes[-1].volume_id, boot_volume_copy.volume_id)
-
-  def test_end_to_end_other_volume(self):
+  def testVolumeCopy(self):
     """End to end test on AWS.
 
-    This end-to-end test runs directly on AWS and tests that:
-      1. The account.py module connects to the target instance and makes a
-          snapshot of volume passed to the 'volume_id' parameter in the
-          forensics.CreateVolumeCopy() method.
-      2. A new volume is created from the taken snapshot.
+    Test copying a specific volume.
     """
 
-    if not self.volume_to_forensic:
+    if not self.volume_to_copy:
       return
 
-    # Make a copy of another volume of the instance to analyse
-    other_volume_copy = forensics.CreateVolumeCopy(
-        self.zone,
-        volume_id=self.volume_to_forensic)
+    volume_copy = forensics.CreateVolumeCopy(
+        self.zone, volume_id=self.volume_to_copy)
+    # The volume should be created in AWS
+    aws_volume = self.aws.ResourceApi(EC2_SERVICE).Volume(volume_copy.volume_id)
+    self.assertEqual(aws_volume.volume_id, volume_copy.volume_id)
+    self._StoreVolumeForCleanup(self.aws, aws_volume)
 
-    # The volume copy should be attached to the AWS account
-    self.volumes.append(
-        self.aws.ResourceApi(EC2_SERVICE).Volume(other_volume_copy.volume_id))
-    self.assertEqual(self.volumes[-1].volume_id, other_volume_copy.volume_id)
-
-  def test_end_to_end_vm(self):
+  def testVolumeCopyToOtherZone(self):
     """End to end test on AWS.
 
-    This tests that an analysis VM is correctly created and that a volume
-        passed to the attach_volume parameter is correctly attached.
+    Test copying a specific volume to a different AWS availability zone.
     """
 
-    volume_to_attach = forensics.CreateVolumeCopy(
+    if not (self.volume_to_copy and self.dst_zone):
+      return
+
+    volume_copy = forensics.CreateVolumeCopy(
+        self.zone, dst_zone=self.dst_zone, volume_id=self.volume_to_copy)
+    # The volume should be created in AWS
+    aws_account = account.AWSAccount(self.dst_zone)
+    aws_volume = aws_account.ResourceApi(EC2_SERVICE).Volume(
+        volume_copy.volume_id)
+    self.assertEqual(aws_volume.volume_id, volume_copy.volume_id)
+    self._StoreVolumeForCleanup(aws_account, aws_volume)
+
+  def testEncryptedVolumeCopy(self):
+    """End to end test on AWS.
+
+    Test copying a specific encrypted volume.
+    """
+
+    if not self.encrypted_volume_to_copy:
+      return
+
+    volume_copy = forensics.CreateVolumeCopy(
+        self.zone, volume_id=self.encrypted_volume_to_copy)
+    # The volume should be created in AWS
+    aws_volume = self.aws.ResourceApi(EC2_SERVICE).Volume(volume_copy.volume_id)
+    self.assertEqual(aws_volume.volume_id, volume_copy.volume_id)
+    self._StoreVolumeForCleanup(self.aws, aws_volume)
+
+  def testEncryptedVolumeCopyToOtherZone(self):
+    """End to end test on AWS.
+
+    Test copying a specific encrypted volume to a different AWS availability
+    zone.
+    """
+
+    if not (self.encrypted_volume_to_copy and self.dst_zone):
+      return
+
+    volume_copy = forensics.CreateVolumeCopy(
         self.zone,
-        volume_id=self.volume_to_forensic)
-    self.volumes.append(volume_to_attach)
+        dst_zone=self.dst_zone,
+        volume_id=self.encrypted_volume_to_copy)
+    # The volume should be created in AWS
+    aws_account = account.AWSAccount(self.dst_zone)
+    aws_volume = aws_account.ResourceApi(EC2_SERVICE).Volume(
+        volume_copy.volume_id)
+    self.assertEqual(aws_volume.volume_id, volume_copy.volume_id)
+    self._StoreVolumeForCleanup(aws_account, aws_volume)
+
+  def testStartVm(self):
+    """End to end test on AWS.
+
+    Test creating an analysis VM and attaching a copied volume to it.
+    """
+
+    volume_copy = forensics.CreateVolumeCopy(
+        self.zone, volume_id=self.volume_to_copy)
+    self.volumes.append((self.aws, volume_copy))
     # Create and start the analysis VM and attach the boot volume
     self.analysis_vm, _ = forensics.StartAnalysisVm(
         self.analysis_vm_name,
         self.zone,
         10,
-        attach_volumes=[(volume_to_attach.volume_id, '/dev/sdp')]
+        attach_volumes=[(volume_copy.volume_id, '/dev/sdp')]
     )
 
     # The forensic instance should be live in the analysis AWS account and
@@ -133,22 +171,31 @@ class EndToEndTest(unittest.TestCase):
     instance = self.aws.ResourceApi(EC2_SERVICE).Instance(
         self.analysis_vm.instance_id)
     self.assertEqual(instance.instance_id, self.analysis_vm.instance_id)
-    self.assertIn(volume_to_attach.volume_id,
+    self.assertIn(volume_copy.volume_id,
                   [vol.volume_id for vol in instance.volumes.all()])
+
+  def _StoreVolumeForCleanup(self, aws_account, volume):
+    """Store a volume for cleanup when tests finish.
+
+    Args:
+      aws_account (AWSAccount): The AWS account to use.
+      volume (boto3.resource.volume): An AWS volume.
+    """
+    self.volumes.append((aws_account, volume))
 
   @classmethod
   def tearDownClass(cls):
-    client = cls.aws.ClientApi(EC2_SERVICE)
     # Delete the instance
     instance = cls.aws.ResourceApi(EC2_SERVICE).Instance(
         cls.analysis_vm.instance_id)
     instance.terminate()
-    client.get_waiter('instance_terminated').wait(InstanceIds=[
-        instance.instance_id])
+    cls.aws.ClientApi(EC2_SERVICE).get_waiter('instance_terminated').wait(
+        InstanceIds=[instance.instance_id])
 
     # Delete the volumes
-    for volume in cls.volumes:
+    for aws_account, volume in cls.volumes:
       LOGGER.info('Deleting volume: {0:s}.'.format(volume.volume_id))
+      client = aws_account.ClientApi(EC2_SERVICE)
       try:
         client.delete_volume(VolumeId=volume.volume_id)
         client.get_waiter('volume_deleted').wait(VolumeIds=[volume.volume_id])
