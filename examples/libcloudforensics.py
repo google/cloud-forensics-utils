@@ -75,7 +75,7 @@ def AddParser(provider: str,
   if args:
     for argument, helper_text, default_value in args:
       kwargs = {'help': helper_text, 'default': default_value}
-      func_parser.add_argument(argument, **kwargs)
+      func_parser.add_argument(argument, **kwargs)  # type: ignore
   func_parser.set_defaults(func=PROVIDER_TO_FUNC[provider][func])
 
 

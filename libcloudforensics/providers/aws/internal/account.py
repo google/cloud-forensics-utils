@@ -81,7 +81,9 @@ class AWSAccount:
 
   def ResourceApi(self,
                   service: str,
-                  region: str = None) -> 'boto3.resources.factory.ec2.ServiceResource':  # pylint: disable=line-too-long, no-member
+                  # pylint: disable=line-too-long
+                  region: str = None) -> 'boto3.resources.factory.ec2.ServiceResource':  # type: ignore
+    # pylint: enable=line-too-long
     """Create an AWS resource object.
 
     Args:
@@ -629,7 +631,7 @@ class AWSAccount:
       raise RuntimeError('Could not share KMS key {0:s}: {1:s}'.format(
           kms_key_id, str(exception)))
 
-  def DeleteKMSKey(self, kms_key_id: str) -> None:
+  def DeleteKMSKey(self, kms_key_id: str = None) -> None:
     """Delete a KMS key.
 
     Schedule the KMS key for deletion. By default, users have a 30 days
@@ -681,10 +683,12 @@ class AWSAccount:
         volume_name_prefix = volume_name_prefix[:truncate_at]
       truncate_at -= len(volume_name_prefix)
       volume_name = '{0:s}{1:s}-{2:s}-copy'.format(
-          volume_name_prefix, snapshot.name[:truncate_at], volume_id_crc32)
+          volume_name_prefix,
+          snapshot.name[:truncate_at],  # type: ignore
+          volume_id_crc32)
     else:
       volume_name = '{0:s}-{1:s}-copy'.format(
-          snapshot.name[:truncate_at], volume_id_crc32)
+          snapshot.name[:truncate_at], volume_id_crc32)  # type: ignore
 
     return volume_name
 

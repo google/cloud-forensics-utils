@@ -64,9 +64,12 @@ class EndToEndTest(unittest.TestCase):
     cls.gcp = gcp_project.GoogleCloudProject(cls.project_id, cls.zone)
     cls.analysis_vm_name = 'new-vm-for-analysis'
     # Create and start the analysis VM
-    cls.analysis_vm, _ = forensics.StartAnalysisVm(
-        project=cls.project_id, vm_name=cls.analysis_vm_name, zone=cls.zone,
-        boot_disk_size=10, boot_disk_type='pd-ssd', cpu_cores=4)
+    cls.analysis_vm, _ = forensics.StartAnalysisVm(project=cls.project_id,
+                                                   vm_name=cls.analysis_vm_name,
+                                                   zone=cls.zone,
+                                                   boot_disk_size=10,
+                                                   boot_disk_type='pd-ssd',
+                                                   cpu_cores=4)
 
   def setUp(self):
     self.project_id = EndToEndTest.project_id
@@ -110,8 +113,12 @@ class EndToEndTest(unittest.TestCase):
 
     # Get the analysis VM and attach the evidence boot disk
     self.analysis_vm, _ = forensics.StartAnalysisVm(
-        project=self.project_id, vm_name=self.analysis_vm_name, zone=self.zone,
-        boot_disk_size=10, boot_disk_type='pd-ssd', cpu_cores=4,
+        project=self.project_id,
+        vm_name=self.analysis_vm_name,
+        zone=self.zone,
+        boot_disk_size=10,
+        boot_disk_type='pd-ssd',
+        cpu_cores=4,
         attach_disks=[self.boot_disk_copy.name])
 
     # The forensic instance should be live in the analysis GCP project and
@@ -166,8 +173,12 @@ class EndToEndTest(unittest.TestCase):
 
     # Get the analysis VM and attach the evidence disk to forensic
     self.analysis_vm, _ = forensics.StartAnalysisVm(
-        project=self.project_id, vm_name=self.analysis_vm_name, zone=self.zone,
-        boot_disk_size=10, boot_disk_type='pd-ssd', cpu_cores=4,
+        project=self.project_id,
+        vm_name=self.analysis_vm_name,
+        zone=self.zone,
+        boot_disk_size=10,
+        boot_disk_type='pd-ssd',
+        cpu_cores=4,
         attach_disks=[self.disk_to_forensic_copy.name])
 
     # The forensic instance should be live in the analysis GCP project and

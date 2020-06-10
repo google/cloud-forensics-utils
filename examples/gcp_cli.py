@@ -37,8 +37,9 @@ def ListInstances(args: 'argparse.Namespace') -> None:
 
   print('Instances found:')
   for instance in instances:
-    bootdisk_name = instances[instance].GetBootDisk().name
-    print('Name: {0:s}, Bootdisk: {1:s}'.format(instance, bootdisk_name))
+    bootdisk = instances[instance].GetBootDisk()
+    if bootdisk:
+      print('Name: {0:s}, Bootdisk: {1:s}'.format(instance, bootdisk.name))
 
 
 def ListDisks(args: 'argparse.Namespace') -> None:

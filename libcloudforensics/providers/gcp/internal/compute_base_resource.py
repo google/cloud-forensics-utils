@@ -14,7 +14,7 @@
 # limitations under the License.
 """Google Compute Engine resources."""
 
-from typing import TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING, Dict, Optional, Any
 
 from libcloudforensics.providers.gcp.internal import common
 
@@ -49,8 +49,8 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
     self.zone = zone
     self.name = name
     self.labels = labels
-    self._data = None
-    self.project_id = project_id
+    self._data = None  # type: ignore
+    self.project_id = project_id  # type: str
     super(GoogleComputeBaseResource, self).__init__(self.project_id)
 
   def FormatLogMessage(self, message: str) -> str:
@@ -75,8 +75,9 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
       str: Value of key or None if key is missing.
     """
 
-    self._data = self.GetOperation()  # pylint: disable=no-member
-    return self._data.get(key)
+    # pylint: disable=no-member
+    self._data = self.GetOperation()  # type: ignore
+    return self._data.get(key)  # type: ignore
 
   def GetSourceString(self) -> str:
     """API URL to the resource.
@@ -149,13 +150,14 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
       dict: A dictionary of all labels.
     """
 
-    operation = self.GetOperation()  # pylint: disable=no-member
+    # pylint: disable=no-member
+    operation = self.GetOperation()  # type: ignore
 
     return operation.get('labels')
 
   def AddLabels(self,
                 new_labels_dict: Dict,
-                blocking_call: bool = False) -> Dict:
+                blocking_call: bool = False) -> Optional[Any]:
     """Add or update labels of a compute resource.
 
     Args:
@@ -165,14 +167,16 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
           should be blocking or not, default is False.
 
     Returns:
-      dict: The response of the API operation.
+      Optional[Any]: The response of the API operation (a Dict if the call is
+          successful).
 
     Raises:
       RuntimeError: If the Compute resource Type is not one of instance,
           disk or snapshot.
     """
 
-    get_operation = self.GetOperation()  # pylint: disable=no-member
+    # pylint: disable=no-member
+    get_operation = self.GetOperation()  # type: ignore
     label_fingerprint = get_operation['labelFingerprint']
 
     existing_labels_dict = {}
@@ -207,6 +211,6 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
           resource=self.name, project=self.project_id,
           body=request_body).execute()
     if blocking_call:
-      self.BlockOperation(response, zone=self.zone)
+      self.BlockOperation(response, zone=self.zone)  # type: ignore
 
     return response

@@ -15,7 +15,7 @@
 """Disk functionality."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict
 
 import botocore
 
@@ -234,7 +234,7 @@ class AWSSnapshot(AWSElasticBlockStore):
     copy_args = {
         'SourceRegion': self.region,
         'SourceSnapshotId': self.snapshot_id
-    }
+    }  # type: Dict
     if kms_key_id:
       copy_args['Encrypted'] = True
       copy_args['KmsKeyId'] = kms_key_id

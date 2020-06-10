@@ -41,7 +41,7 @@ class AWSCloudTrail:
     self.aws_account = aws_account
 
   def LookupEvents(self,
-                   qfilter: str = (),
+                   qfilter: str = None,
                    starttime: 'datetime' = None,
                    endtime: 'datetime' = None) -> List[Dict]:
     """Lookup events in the CloudTrail logs of this account.
@@ -68,11 +68,11 @@ class AWSCloudTrail:
 
     client = self.aws_account.ClientApi(common.CLOUDTRAIL_SERVICE)
 
-    params = {}
+    params = {}  # type: Dict
     if qfilter:
       k, v = qfilter.split(',')
-      qfilter = [{'AttributeKey': k, 'AttributeValue': v}]
-      params = {'LookupAttributes': qfilter}
+      filters = [{'AttributeKey': k, 'AttributeValue': v}]
+      params = {'LookupAttributes': filters}
     if starttime:
       params['StartTime'] = starttime
     if endtime:

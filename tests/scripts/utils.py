@@ -22,7 +22,7 @@ def ReadProjectInfo(keys: List[str]) -> Dict:
   """Read project information to run e2e test.
 
   Args:
-    keys (list(str)): A list of mandatory dictionary keys that are expected
+    keys (List[str]): A list of mandatory dictionary keys that are expected
         to be present in the project_info file.
 
   Returns:
@@ -33,14 +33,14 @@ def ReadProjectInfo(keys: List[str]) -> Dict:
     RuntimeError: If the json file cannot be parsed.
     ValueError: If the json file does not have the required properties.
   """
-  project_info = os.environ.get('PROJECT_INFO')
-  if project_info is None:
+  project_info_path = os.environ.get('PROJECT_INFO')
+  if project_info_path is None:
     raise OSError(
         'Please make sure that you defined the '
         '"PROJECT_INFO" environment variable pointing '
         'to your project settings.')
   try:
-    json_file = open(project_info)
+    json_file = open(project_info_path)
     try:
       project_info = json.load(json_file)
     except ValueError as exception:
@@ -50,7 +50,7 @@ def ReadProjectInfo(keys: List[str]) -> Dict:
   except OSError as exception:
     raise OSError(
         'Could not open/close file {0:s}: {1:s}'.format(
-            project_info, str(exception)))
+            project_info_path, str(exception)))
 
   if not all(key in project_info for key in keys):
     raise ValueError(

@@ -56,7 +56,8 @@ def ListVolumes(args: 'argparse.Namespace') -> None:
 
   print('Volumes found:')
   for volume in volumes:
-    print('Name: {0:s}, Zone: {1:s}'.format(volume, volumes[volume].zone))
+    print('Name: {0:s}, Zone: {1:s}'.format(
+        volume, volumes[volume].availability_zone))
 
 
 def CreateVolumeCopy(args: 'argparse.Namespace') -> None:

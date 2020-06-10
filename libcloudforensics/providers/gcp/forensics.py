@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Forensics on GCP."""
+
 from typing import TYPE_CHECKING, List, Tuple
 
 from google.auth.exceptions import RefreshError, DefaultCredentialsError
@@ -52,21 +53,21 @@ def CreateDiskCopy(
     RuntimeError: If there are errors copying the disk
   """
 
-  src_proj = gcp_project.GoogleCloudProject(src_proj)
-  dst_proj = gcp_project.GoogleCloudProject(dst_proj, default_zone=zone)
-  instance = src_proj.compute.GetInstance(
+  src_project = gcp_project.GoogleCloudProject(src_proj)
+  dst_project = gcp_project.GoogleCloudProject(dst_proj, default_zone=zone)
+  instance = src_project.compute.GetInstance(
       instance_name) if instance_name else None
 
   try:
     if disk_name:
-      disk_to_copy = src_proj.compute.GetDisk(disk_name)
+      disk_to_copy = src_project.compute.GetDisk(disk_name)
     else:
-      disk_to_copy = instance.GetBootDisk()
+      disk_to_copy = instance.GetBootDisk()  # type: ignore
 
     common.LOGGER.info('Disk copy of {0:s} started...'.format(
         disk_to_copy.name))
     snapshot = disk_to_copy.Snapshot()
-    new_disk = dst_proj.compute.CreateDiskFromSnapshot(
+    new_disk = dst_project.compute.CreateDiskFromSnapshot(
         snapshot, disk_name_prefix='evidence', disk_type=disk_type)
     snapshot.Delete()
     common.LOGGER.info(
@@ -91,7 +92,7 @@ def CreateDiskCopy(
       raise RuntimeError(
           'GCP resource not found. Maybe a typo in the project / instance / '
           'disk name?')
-    raise RuntimeError(exception, critical=True)
+    raise RuntimeError(exception)
   except RuntimeError as exception:
     error_msg = 'Cannot copy disk "{0:s}": {1!s}'.format(disk_name, exception)
     raise RuntimeError(error_msg)
@@ -131,10 +132,10 @@ def StartAnalysisVm(
         and a boolean indicating if the virtual machine was created or not.
   """
 
-  project = gcp_project.GoogleCloudProject(project, default_zone=zone)
-  analysis_vm, created = project.compute.GetOrCreateAnalysisVm(
+  proj = gcp_project.GoogleCloudProject(project, default_zone=zone)
+  analysis_vm, created = proj.compute.GetOrCreateAnalysisVm(
       vm_name, boot_disk_size, disk_type=boot_disk_type, cpu_cores=cpu_cores,
       image_project=image_project, image_family=image_family)
   for disk_name in (attach_disks or []):
-    analysis_vm.AttachDisk(project.compute.GetDisk(disk_name))
+    analysis_vm.AttachDisk(proj.compute.GetDisk(disk_name))
   return analysis_vm, created
