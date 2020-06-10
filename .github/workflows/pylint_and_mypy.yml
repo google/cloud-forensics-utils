@@ -25,4 +25,4 @@ jobs:
         pylint tests libcloudforensics examples
     - name: Run mypy on all *.py files
       run: |
-        mypy --ignore-missing-imports --strict --no-warn-unused-configs -p tests -p libcloudforensics -p examples
+        mypy --ignore-missing-imports --strict --no-warn-unused-ignores -p tests -p libcloudforensics -p examples
