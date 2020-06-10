@@ -483,7 +483,7 @@ class GoogleComputeInstanceTest(unittest.TestCase):
 
     disks = FAKE_INSTANCE.ListDisks()
     self.assertEqual(2, len(disks))
-    self.assertEqual(['fake-boot-disk', 'fake-disk'], disks)
+    self.assertEqual(['fake-boot-disk', 'fake-disk'], list(disks.keys()))
 
 
 class GoogleComputeDiskTest(unittest.TestCase):
