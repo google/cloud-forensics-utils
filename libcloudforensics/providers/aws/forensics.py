@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Forensics on AWS."""
-from typing import TYPE_CHECKING, Tuple, List
+from typing import TYPE_CHECKING, Tuple, List, Optional
 
 from libcloudforensics.providers.aws.internal.common import UBUNTU_1804_AMI, LOGGER  # pylint: disable=line-too-long
 from libcloudforensics.providers.aws.internal import account
@@ -23,11 +23,11 @@ if TYPE_CHECKING:
 
 
 def CreateVolumeCopy(zone: str,
-                     dst_zone: str = None,
-                     instance_id: str = None,
-                     volume_id: str = None,
-                     src_profile: str = None,
-                     dst_profile: str = None) -> 'ebs.AWSVolume':
+                     dst_zone: Optional[str] = None,
+                     instance_id: Optional[str] = None,
+                     volume_id: Optional[str] = None,
+                     src_profile: Optional[str] = None,
+                     dst_profile: Optional[str] = None) -> 'ebs.AWSVolume':
   """Create a copy of an AWS EBS Volume.
 
   By default, the volume copy will be created in the same AWS account where
@@ -152,14 +152,15 @@ def CreateVolumeCopy(zone: str,
   return new_volume
 
 
-def StartAnalysisVm(vm_name: str,
-                    default_availability_zone: str,
-                    boot_volume_size: int,
-                    ami: str = UBUNTU_1804_AMI,
-                    cpu_cores: int = 4,
-                    attach_volumes: List[Tuple[str, str]] = None,
-                    dst_profile: str = None,
-                    ssh_key_name: str = None) -> Tuple['ec2.AWSInstance', bool]:
+def StartAnalysisVm(
+    vm_name: str,
+    default_availability_zone: str,
+    boot_volume_size: int,
+    ami: str = UBUNTU_1804_AMI,
+    cpu_cores: int = 4,
+    attach_volumes: Optional[List[Tuple[str, str]]] = None,
+    dst_profile: Optional[str] = None,
+    ssh_key_name: Optional[str] = None) -> Tuple['ec2.AWSInstance', bool]:
   """Start a virtual machine for analysis purposes.
 
   Look for an existing AWS instance with tag name vm_name. If found,
@@ -175,7 +176,7 @@ def StartAnalysisVm(vm_name: str,
         Default is a version of Ubuntu 18.04.
     cpu_cores (int): Optional. The number of CPU cores to create the machine
         with. Default is 4.
-    attach_volumes (list[tuple[str, str]]): Optional. List of tuples
+    attach_volumes (List[Tuple[str, str]]): Optional. List of tuples
         containing the volume IDs (str) to attach and their respective device
         name (str, e.g. /dev/sdf). Note that it is mandatory to provide a
         unique device name per volume to attach.
@@ -191,7 +192,7 @@ def StartAnalysisVm(vm_name: str,
         parameter.
 
   Returns:
-    tuple[AWSInstance, bool]: a tuple with a virtual machine object
+    Tuple[AWSInstance, bool]: a tuple with a virtual machine object
         and a boolean indicating if the virtual machine was created or not.
   """
   aws_account = account.AWSAccount(

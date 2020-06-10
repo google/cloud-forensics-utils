@@ -20,7 +20,7 @@ analysis virtual machine to be used in incident response.
 
 import binascii
 import json
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional, Any
 
 import boto3
 import botocore
@@ -43,7 +43,7 @@ class AWSAccount:
 
   def __init__(self,
                default_availability_zone: str,
-               aws_profile: str = None) -> None:
+               aws_profile: Optional[str] = None) -> None:
     """Initialize the AWS account.
 
     Args:
@@ -61,7 +61,7 @@ class AWSAccount:
 
   def ClientApi(self,
                 service: str,
-                region: str = None) -> 'botocore.client.EC2':  # pylint: disable=no-member
+                region: Optional[str] = None) -> 'botocore.client.EC2':  # pylint: disable=no-member
     """Create an AWS client object.
 
     Args:
@@ -82,7 +82,7 @@ class AWSAccount:
   def ResourceApi(self,
                   service: str,
                   # pylint: disable=line-too-long
-                  region: str = None) -> 'boto3.resources.factory.ec2.ServiceResource':  # type: ignore
+                  region: Optional[str] = None) -> 'boto3.resources.factory.ec2.ServiceResource':  # type: ignore
     # pylint: enable=line-too-long
     """Create an AWS resource object.
 
@@ -104,8 +104,8 @@ class AWSAccount:
 
   def ListInstances(
       self,
-      region: str = None,
-      filters: List[Dict] = None,
+      region: Optional[str] = None,
+      filters: Optional[List[Dict[str, Any]]] = None,
       show_terminated: bool = False) -> Dict[str, ec2.AWSInstance]:
     """List instances of an AWS account.
 
@@ -117,14 +117,14 @@ class AWSAccount:
       region (str): Optional. The region from which to list instances.
           If none provided, the default_region associated to the AWSAccount
           object will be used.
-      filters (list[dict]): Optional. Filters for the query. Filters are
+      filters (List[Dict]): Optional. Filters for the query. Filters are
           given as a list of dictionaries, e.g.: {'Name': 'someFilter',
           'Values': ['value1', 'value2']}.
       show_terminated (bool): Optional. Include terminated instances in the
           list.
 
     Returns:
-      dict[str, AWInstance]: Dictionary mapping instance IDs (str) to their
+      Dict[str, AWInstance]: Dictionary mapping instance IDs (str) to their
           respective AWSInstance object.
 
     Raises:
@@ -160,9 +160,12 @@ class AWSAccount:
           instances[instance_id] = aws_instance
     return instances
 
-  def ListVolumes(self,
-                  region: str = None,
-                  filters: List[Dict] = None) -> Dict[str, ebs.AWSVolume]:
+  def ListVolumes(
+      self,
+      region: Optional[str] = None,
+      # pylint: disable=line-too-long
+      filters: Optional[List[Dict[str, Any]]] = None) -> Dict[str, ebs.AWSVolume]:
+      # pylint: enable=line-too-long
     """List volumes of an AWS account.
 
     Example usage:
@@ -174,12 +177,12 @@ class AWSAccount:
       region (str): Optional. The region from which to list the volumes.
           If none provided, the default_region associated to the AWSAccount
           object will be used.
-      filters (list[dict]): Optional. Filters for the query. Filters are
+      filters (List[Dict]): Optional. Filters for the query. Filters are
           given as a list of dictionaries, e.g.: {'Name': 'someFilter',
           'Values': ['value1', 'value2']}.
 
     Returns:
-      dict[str, AWSVolume]: Dictionary mapping volume IDs (str) to their
+      Dict[str, AWSVolume]: Dictionary mapping volume IDs (str) to their
           respective AWSVolume object.
 
     Raises:
@@ -215,10 +218,11 @@ class AWSAccount:
         volumes[volume_id] = aws_volume
     return volumes
 
-  def GetInstancesByNameOrId(self,
-                             instance_name: str = '',
-                             instance_id: str = '',
-                             region: str = None) -> List[ec2.AWSInstance]:
+  def GetInstancesByNameOrId(
+      self,
+      instance_name: str = '',
+      instance_id: str = '',
+      region: Optional[str] = None) -> List[ec2.AWSInstance]:
     """Get instances from an AWS account by their name tag or an ID.
 
     Exactly one of [instance_name, instance_id] must be specified. If looking up
@@ -237,7 +241,7 @@ class AWSAccount:
           object will be used.
 
     Returns:
-      list[AWSInstance]: A list of Amazon EC2 Instance objects.
+      List[AWSInstance]: A list of Amazon EC2 Instance objects.
 
     Raises:
       ValueError: If both instance_name and instance_id are None or if both
@@ -255,7 +259,7 @@ class AWSAccount:
 
   def GetInstancesByName(self,
                          instance_name: str,
-                         region: str = None) -> List[ec2.AWSInstance]:
+                         region: Optional[str] = None) -> List[ec2.AWSInstance]:
     """Get all instances from an AWS account with matching name tag.
 
     Args:
@@ -265,7 +269,7 @@ class AWSAccount:
           object will be used.
 
     Returns:
-      list[AWSInstance]: A list of EC2 Instance objects. If no instance with
+      List[AWSInstance]: A list of EC2 Instance objects. If no instance with
           matching name tag is found, the method returns an empty list.
     """
 
@@ -279,7 +283,7 @@ class AWSAccount:
 
   def GetInstanceById(self,
                       instance_id: str,
-                      region: str = None) -> ec2.AWSInstance:
+                      region: Optional[str] = None) -> ec2.AWSInstance:
     """Get an instance from an AWS account by its ID.
 
     Args:
@@ -306,7 +310,7 @@ class AWSAccount:
   def GetVolumesByNameOrId(self,
                            volume_name: str = '',
                            volume_id: str = '',
-                           region: str = None) -> List[ebs.AWSVolume]:
+                           region: Optional[str] = None) -> List[ebs.AWSVolume]:
     """Get a volume from an AWS account by its name tag or its ID.
 
     Exactly one of [volume_name, volume_id] must be specified. If looking up
@@ -324,7 +328,7 @@ class AWSAccount:
           object will be used.
 
     Returns:
-      list[AWSVolume]: A list of Amazon EC2 Volume objects.
+      List[AWSVolume]: A list of Amazon EC2 Volume objects.
 
     Raises:
       ValueError: If both volume_name and volume_id are None or if both
@@ -342,7 +346,7 @@ class AWSAccount:
 
   def GetVolumesByName(self,
                        volume_name: str,
-                       region: str = None) -> List[ebs.AWSVolume]:
+                       region: Optional[str] = None) -> List[ebs.AWSVolume]:
     """Get all volumes from an AWS account with matching name tag.
 
     Args:
@@ -352,7 +356,7 @@ class AWSAccount:
           object will be used.
 
     Returns:
-      list[AWSVolume]: A list of EC2 Volume objects. If no volume with
+      List[AWSVolume]: A list of EC2 Volume objects. If no volume with
           matching name tag is found, the method returns an empty list.
     """
 
@@ -366,7 +370,7 @@ class AWSAccount:
 
   def GetVolumeById(self,
                     volume_id: str,
-                    region: str = None) -> ebs.AWSVolume:
+                    region: Optional[str] = None) -> ebs.AWSVolume:
     """Get a volume from an AWS account by its ID.
 
     Args:
@@ -390,11 +394,12 @@ class AWSAccount:
       raise RuntimeError(error_msg)
     return volume
 
-  def CreateVolumeFromSnapshot(self,
-                               snapshot: ebs.AWSSnapshot,
-                               volume_name: str = None,
-                               volume_name_prefix: str = '',
-                               kms_key_id: str = None) -> ebs.AWSVolume:
+  def CreateVolumeFromSnapshot(
+      self,
+      snapshot: ebs.AWSSnapshot,
+      volume_name: Optional[str] = None,
+      volume_name_prefix: str = '',
+      kms_key_id: Optional[str] = None) -> ebs.AWSVolume:
     """Create a new volume based on a snapshot.
 
     Args:
@@ -457,8 +462,8 @@ class AWSAccount:
       boot_volume_size: int,
       ami: str,
       cpu_cores: int,
-      packages: List[str] = None,
-      ssh_key_name: str = None) -> Tuple[ec2.AWSInstance, bool]:
+      packages: Optional[List[str]] = None,
+      ssh_key_name: Optional[str] = None) -> Tuple[ec2.AWSInstance, bool]:
     """Get or create a new virtual machine for analysis purposes.
 
     Args:
@@ -466,7 +471,7 @@ class AWSAccount:
       boot_volume_size (int): The size of the analysis VM boot volume (in GB).
       ami (str): The Amazon Machine Image ID to use to create the VM.
       cpu_cores (int): Number of CPU cores for the analysis VM.
-      packages (list[str]): Optional. List of packages to install in the VM.
+      packages (List[str]): Optional. List of packages to install in the VM.
       ssh_key_name (str): Optional. A SSH key pair name linked to the AWS
           account to associate with the VM. If none provided, the VM can only
           be accessed through in-browser SSH from the AWS management console
@@ -476,7 +481,7 @@ class AWSAccount:
           parameter.
 
     Returns:
-      tuple[AWSInstance, bool]: A tuple with an AWSInstance object and a
+      Tuple[AWSInstance, bool]: A tuple with an AWSInstance object and a
           boolean indicating if the virtual machine was created (True) or
           reused (False).
 
@@ -563,10 +568,10 @@ class AWSAccount:
     """
 
     account_information = self.ClientApi(
-        common.ACCOUNT_SERVICE).get_caller_identity()
+        common.ACCOUNT_SERVICE).get_caller_identity()  # type: Dict[str, str]
     if not account_information.get(info):
       raise KeyError('Key must be one of ["UserId", "Account", "Arn"]')
-    return account_information.get(info)
+    return account_information[info]
 
   def CreateKMSKey(self) -> str:
     """Create a KMS key.
@@ -586,7 +591,7 @@ class AWSAccount:
           str(exception)))
 
     # The response contains the key ID
-    return kms_key['KeyMetadata']['KeyId']
+    return kms_key['KeyMetadata']['KeyId']  # type: ignore
 
   def ShareKMSKeyWithAWSAccount(self,
                                 kms_key_id: str,
@@ -631,7 +636,7 @@ class AWSAccount:
       raise RuntimeError('Could not share KMS key {0:s}: {1:s}'.format(
           kms_key_id, str(exception)))
 
-  def DeleteKMSKey(self, kms_key_id: str = None) -> None:
+  def DeleteKMSKey(self, kms_key_id: Optional[str] = None) -> None:
     """Delete a KMS key.
 
     Schedule the KMS key for deletion. By default, users have a 30 days
@@ -656,7 +661,7 @@ class AWSAccount:
 
   def _GenerateVolumeName(self,
                           snapshot: ebs.AWSSnapshot,
-                          volume_name_prefix: str = None) -> str:
+                          volume_name_prefix: Optional[str] = None) -> str:
     """Generate a new volume name given a volume's snapshot.
 
     Args:
@@ -694,7 +699,7 @@ class AWSAccount:
 
   def _GetBootVolumeConfigByAmi(self,
                                 ami: str,
-                                boot_volume_size: int) -> Dict:
+                                boot_volume_size: int) -> Dict[str, Any]:
     """Return a boot volume configuration for a given AMI and boot volume size.
 
     Args:
@@ -702,7 +707,7 @@ class AWSAccount:
       boot_volume_size (int): Size of the boot volume, in GB.
 
     Returns:
-      dict[str, str|dict]]: A BlockDeviceMappings configuration for the
+      Dict[str, str|Dict]]: A BlockDeviceMappings configuration for the
           specified AMI.
 
     Raises:
@@ -720,6 +725,8 @@ class AWSAccount:
     # If the call to describe_images was successful, then the API's response
     # is expected to contain at least one image and its corresponding block
     # device mappings information.
-    block_device_mapping = image['Images'][0]['BlockDeviceMappings'][0]
+    # pylint: disable=line-too-long
+    block_device_mapping = image['Images'][0]['BlockDeviceMappings'][0]  # type: Dict[str, Any]
+    # pylint: enable=line-too-long
     block_device_mapping['Ebs']['VolumeSize'] = boot_volume_size
     return block_device_mapping

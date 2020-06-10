@@ -20,6 +20,8 @@ analysis virtual machine to be used in incident response.
 
 from __future__ import unicode_literals
 
+from typing import Optional
+
 import libcloudforensics.providers.gcp.internal.compute as compute_module
 import libcloudforensics.providers.gcp.internal.function as function_module
 import libcloudforensics.providers.gcp.internal.log as log_module
@@ -40,7 +42,9 @@ class GoogleCloudProject:
 
   COMPUTE_ENGINE_API_VERSION = 'v1'
 
-  def __init__(self, project_id: str, default_zone: str = None) -> None:
+  def __init__(self,
+               project_id: str,
+               default_zone: Optional[str] = None) -> None:
     """Initialize the GoogleCloudProject object.
 
     Args:

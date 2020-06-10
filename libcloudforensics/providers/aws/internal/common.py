@@ -15,7 +15,7 @@
 """Common utilities."""
 import logging
 import re
-from typing import Dict, List, TYPE_CHECKING
+from typing import Dict, List, TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
   import botocore
@@ -32,7 +32,7 @@ REGEX_TAG_VALUE = re.compile('^.{1,255}$')
 LOGGER = logging.getLogger()
 
 
-def GetTagForResourceType(resource: str, name: str) -> Dict:
+def GetTagForResourceType(resource: str, name: str) -> Dict[str, Any]:
   """Create a dictionary for AWS Tag Specifications.
 
   Args:
@@ -40,7 +40,7 @@ def GetTagForResourceType(resource: str, name: str) -> Dict:
     name (str): The name of the resource.
 
   Returns:
-    dict[str, str|list[dict]]: A dictionary for AWS Tag Specifications.
+    Dict[str, str|List[Dict]]: A dictionary for AWS Tag Specifications.
   """
 
   return {
@@ -91,18 +91,18 @@ def GetInstanceTypeByCPU(cpu_cores: int) -> str:
 
 def ExecuteRequest(client: 'botocore.client.EC2',
                    func: str,
-                   kwargs: Dict) -> List[Dict]:
+                   kwargs: Dict[str, Any]) -> List[Dict[str, Any]]:
   """Execute a request to the boto3 API.
 
   Args:
     client (boto3.session.Session): A boto3 client object.
     func (str): A boto3 function to query from the client.
-    kwargs (dict): A dictionary of parameters for the function func. Expected
+    kwargs (Dict): A dictionary of parameters for the function func. Expected
         keys are strings, values can be of multiple types. E.g.:
         {'InstanceIds': ['instance_id'], 'MaxResults': 12}.
 
   Returns:
-    list[dict]: A list of dictionaries (responses from the
+    List[Dict]: A list of dictionaries (responses from the
         request), e.g. [{'Groups': [{...}], 'Instances': [{...}]}, {...}]
 
   Raises:

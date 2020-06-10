@@ -14,7 +14,7 @@
 # limitations under the License.
 """Forensics on GCP."""
 
-from typing import TYPE_CHECKING, List, Tuple
+from typing import TYPE_CHECKING, List, Tuple, Optional
 
 from google.auth.exceptions import RefreshError, DefaultCredentialsError
 from googleapiclient.errors import HttpError
@@ -31,7 +31,7 @@ def CreateDiskCopy(
     dst_proj: str,
     instance_name: str,
     zone: str,
-    disk_name: str = None,
+    disk_name: Optional[str] = None,
     disk_type: str = 'pd-standard') -> 'compute.GoogleComputeDisk':
   """Creates a copy of a Google Compute Disk.
 
@@ -107,7 +107,7 @@ def StartAnalysisVm(
     boot_disk_size: int,
     boot_disk_type: str,
     cpu_cores: int,
-    attach_disks: List[str] = None,
+    attach_disks: Optional[List[str]] = None,
     image_project: str = 'ubuntu-os-cloud',
     image_family: str = 'ubuntu-1804-lts') -> Tuple['compute.GoogleComputeInstance', bool]:  # pylint: disable=line-too-long
   """Start a virtual machine for analysis purposes.
@@ -121,14 +121,14 @@ def StartAnalysisVm(
         which disk type to use to create the disk. Use pd-standard for a
         standard disk and pd-ssd for a SSD disk.
     cpu_cores (int): The number of CPU cores to create the machine with.
-    attach_disks (list[str]): Optional. List of disk names to attach.
+    attach_disks (List[str]): Optional. List of disk names to attach.
     image_project (str): Optional. Name of the project where the analysis VM
         image is hosted.
     image_family (str): Optional. Name of the image to use to create the
         analysis VM.
 
   Returns:
-    tuple(GoogleComputeInstance, bool): A tuple with a virtual machine object
+    Tuple(GoogleComputeInstance, bool): A tuple with a virtual machine object
         and a boolean indicating if the virtual machine was created or not.
   """
 

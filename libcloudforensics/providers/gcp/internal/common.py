@@ -19,7 +19,7 @@ import logging
 import re
 import socket
 import time
-from typing import TYPE_CHECKING, Dict, List
+from typing import TYPE_CHECKING, Dict, List, Optional, Any
 
 from google.auth import default
 from google.auth.exceptions import DefaultCredentialsError, RefreshError
@@ -37,7 +37,7 @@ REGEX_DISK_NAME = re.compile('^(?=.{1,63}$)[a-z]([-a-z0-9]*[a-z0-9])?$')
 
 
 def GenerateDiskName(snapshot: 'compute.GoogleComputeSnapshot',
-                     disk_name_prefix: str = None) -> str:
+                     disk_name_prefix: Optional[str] = None) -> str:
   """Generate a new disk name for the disk to be created from the Snapshot.
 
   The disk name must comply with the following RegEx:
@@ -145,7 +145,7 @@ class GoogleCloudComputeClient:
 
   COMPUTE_ENGINE_API_VERSION = 'v1'
 
-  def __init__(self, project_id: str = None) -> None:
+  def __init__(self, project_id: Optional[str] = None) -> None:
     """Initialize Google Cloud Engine API client object.
 
     Args:
@@ -168,16 +168,18 @@ class GoogleCloudComputeClient:
         'compute', self.COMPUTE_ENGINE_API_VERSION)
     return self._gce_api_client
 
-  def BlockOperation(self, response: Dict, zone: str = None) -> Dict:
+  def BlockOperation(self,
+                     response: Dict[str, Any],
+                     zone: Optional[str] = None) -> Dict[str, Any]:
     """Block until API operation is finished.
 
     Args:
-      response (dict): GCE API response.
+      response (Dict): GCE API response.
       zone (str): Optional. GCP zone to execute the operation in. None means
           GlobalZone.
 
     Returns:
-      dict: Holding the response of a get operation on an API object of type
+      Dict: Holding the response of a get operation on an API object of type
           zoneOperations or globalOperations.
 
     Raises:
@@ -189,7 +191,7 @@ class GoogleCloudComputeClient:
       if zone:
         request = service.zoneOperations().get(
             project=self.project_id, zone=zone, operation=response['name'])
-        result = request.execute()
+        result = request.execute()  # type: Dict[str, Any]
       else:
         request = service.globalOperations().get(
             project=self.project_id, operation=response['name'])
@@ -205,20 +207,20 @@ class GoogleCloudComputeClient:
 
 def ExecuteRequest(client: 'googleapiclient.discovery.Resource',
                    func: str,
-                   kwargs: Dict,
-                   throttle: bool = False) -> List[Dict]:
+                   kwargs: Dict[str, str],
+                   throttle: bool = False) -> List[Dict[str, Any]]:
   """Execute a request to the GCP API.
 
   Args:
     client (googleapiclient.discovery.Resource): A GCP client object.
     func (str): A GCP function to query from the client.
-    kwargs (dict): A dictionary of parameters for the function func.
+    kwargs (Dict): A dictionary of parameters for the function func.
     throttle (bool): A boolean indicating if requests should be throttled. This
         is necessary for some APIs (e.g. list logs) as there is an API rate
         limit. Default is False, i.e. requests are not throttled.
 
   Returns:
-    list[dict]: A list of dictionaries (responses from the request).
+    List[Dict]: A List of dictionaries (responses from the request).
 
   Raises:
     RuntimeError: If the request to the GCP API could not complete.

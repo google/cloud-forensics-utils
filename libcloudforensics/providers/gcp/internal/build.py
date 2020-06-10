@@ -15,7 +15,7 @@
 """Google compute functionality."""
 
 import time
-from typing import TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING, Dict, Any
 
 from libcloudforensics.providers.gcp.internal import common
 
@@ -57,34 +57,35 @@ class GoogleCloudBuild:
         'cloudbuild', self.CLOUD_BUILD_API_VERSION)
     return self.gcb_api_client
 
-  def CreateBuild(self, build_body: Dict) -> Dict:
+  def CreateBuild(self, build_body: Dict[str, Any]) -> Dict[str, Any]:
     """Create a cloud build.
 
     Args:
-      build_body (dict): A dictionary that describes how to find the source
+      build_body (Dict): A dictionary that describes how to find the source
           code and how to build it.
 
     Returns:
-      dict: Represents long-running operation that is the result of a network
+      Dict: Represents long-running operation that is the result of a network
           API call.
     """
     cloud_build_client = self.GcbApi().projects().builds()
     build_info = cloud_build_client.create(
-        projectId=self.project_id, body=build_body).execute()
+        projectId=self.project_id,
+        body=build_body).execute()  # type: Dict[str, Any]
     build_metadata = build_info['metadata']['build']
     common.LOGGER.info(
         'Build started, logs bucket: {0:s}, logs URL: {1:s}'.format(
             build_metadata['logsBucket'], build_metadata['logUrl']))
     return build_info
 
-  def BlockOperation(self, response: Dict) -> Dict:
+  def BlockOperation(self, response: Dict[str, Any]) -> Dict[str, Any]:
     """Block execution until API operation is finished.
 
     Args:
-      response (dict): Google Cloud Build API response.
+      response (Dict): Google Cloud Build API response.
 
     Returns:
-      dict: Holding the response of a get operation on an API object of type
+      Dict: Holding the response of a get operation on an API object of type
           operations.
 
     Raises:

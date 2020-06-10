@@ -29,27 +29,27 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
     project_id (str): Google Cloud project ID.
     zone (str): What zone the resource is in.
     name (str): Name of the resource.
-    labels (dict): Dictionary of labels for the resource, if existing.
+    labels (Dict): Dictionary of labels for the resource, if existing.
   """
 
   def __init__(self,
                project_id: str,
                zone: str,
                name: str,
-               labels: Dict = None) -> None:
+               labels: Optional[Dict[str, Any]] = None) -> None:
     """Initialize the Google Compute Resource base object.
 
     Args:
       project_id (str): Google Cloud project ID.
       zone (str): What zone the resource is in.
       name (str): Name of the resource.
-      labels (dict): Dictionary of labels for the resource, if existing.
+      labels (Dict): Dictionary of labels for the resource, if existing.
     """
 
     self.zone = zone
     self.name = name
     self.labels = labels
-    self._data = None  # type: ignore
+    self._data = None
     self.project_id = project_id  # type: str
     super(GoogleComputeBaseResource, self).__init__(self.project_id)
 
@@ -143,25 +143,24 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
     operation_func_to_call = getattr(module, operation_name)
     return operation_func_to_call
 
-  def GetLabels(self) -> Dict:
+  def GetLabels(self) -> Dict[str, Any]:
     """Get all labels of a compute resource.
 
     Returns:
-      dict: A dictionary of all labels.
+      Dict: A dictionary of all labels.
     """
 
     # pylint: disable=no-member
     operation = self.GetOperation()  # type: ignore
-
-    return operation.get('labels')
+    return operation.get('labels')  # type: ignore
 
   def AddLabels(self,
-                new_labels_dict: Dict,
-                blocking_call: bool = False) -> Optional[Any]:
+                new_labels_dict: Dict[str, Any],
+                blocking_call: Optional[bool] = False) -> Optional[Any]:
     """Add or update labels of a compute resource.
 
     Args:
-      new_labels_dict (dict): A dictionary containing the labels to be added,
+      new_labels_dict (Dict): A dictionary containing the labels to be added,
           ex:{"incident_id": "1234abcd"}.
       blocking_call (bool): Optional. A boolean to decide whether the API call
           should be blocking or not, default is False.

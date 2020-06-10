@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Instance functionality."""
-from typing import TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING, Dict, Optional
 
 from libcloudforensics.providers.aws.internal.common import EC2_SERVICE
 
@@ -40,7 +40,7 @@ class AWSInstance:
                instance_id: str,
                region: str,
                availability_zone: str,
-               name: str = None) -> None:
+               name: Optional[str] = None) -> None:
     """Initialize the AWS EC2 instance.
 
     Args:
@@ -105,7 +105,7 @@ class AWSInstance:
     """List all volumes for the instance.
 
     Returns:
-      dict[str, AWSVolume]: Dictionary mapping volume IDs to their respective
+      Dict[str, AWSVolume]: Dictionary mapping volume IDs to their respective
           AWSVolume object.
     """
 

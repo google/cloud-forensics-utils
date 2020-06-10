@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Log functionality."""
-from typing import TYPE_CHECKING, Dict, List
+from typing import TYPE_CHECKING, Dict, List, Optional, Any
 
 from libcloudforensics.providers.aws.internal import common
 
@@ -40,10 +40,11 @@ class AWSCloudTrail:
 
     self.aws_account = aws_account
 
-  def LookupEvents(self,
-                   qfilter: str = None,
-                   starttime: 'datetime' = None,
-                   endtime: 'datetime' = None) -> List[Dict]:
+  def LookupEvents(
+      self,
+      qfilter: Optional[str] = None,
+      starttime: Optional['datetime'] = None,
+      endtime: Optional['datetime'] = None) -> List[Dict[str, Any]]:
     """Lookup events in the CloudTrail logs of this account.
 
     Example usage:
@@ -60,7 +61,7 @@ class AWSCloudTrail:
       endtime (datetime): Optional. End datetime to add to query filter.
 
     Returns:
-      list[dict]: A list of events. E.g. [{'EventId': 'id', ...},
+      List[Dict]: A list of events. E.g. [{'EventId': 'id', ...},
           {'EventId': ...}]
     """
 
@@ -68,7 +69,7 @@ class AWSCloudTrail:
 
     client = self.aws_account.ClientApi(common.CLOUDTRAIL_SERVICE)
 
-    params = {}  # type: Dict
+    params = {}  # type: Dict[str, Any]
     if qfilter:
       k, v = qfilter.split(',')
       filters = [{'AttributeKey': k, 'AttributeValue': v}]

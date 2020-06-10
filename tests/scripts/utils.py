@@ -18,7 +18,7 @@ import os
 from typing import List, Dict
 
 
-def ReadProjectInfo(keys: List[str]) -> Dict:
+def ReadProjectInfo(keys: List[str]) -> Dict[str, str]:
   """Read project information to run e2e test.
 
   Args:
@@ -42,7 +42,7 @@ def ReadProjectInfo(keys: List[str]) -> Dict:
   try:
     json_file = open(project_info_path)
     try:
-      project_info = json.load(json_file)
+      project_info = json.load(json_file)  # type: Dict[str, str]
     except ValueError as exception:
       raise RuntimeError(
           'Cannot parse JSON file. {0:s}'.format(str(exception)))

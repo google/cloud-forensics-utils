@@ -14,7 +14,7 @@
 # limitations under the License.
 """Log functionality."""
 
-from typing import TYPE_CHECKING, List, Dict
+from typing import TYPE_CHECKING, List, Dict, Any
 
 from libcloudforensics.providers.gcp.internal import common
 
@@ -67,7 +67,7 @@ class GoogleCloudLog:
     """List logs in project.
 
     Returns:
-      list[str]: The project logs available.
+      List[str]: The project logs available.
 
     Raises:
       RuntimeError: If API call failed.
@@ -84,14 +84,14 @@ class GoogleCloudLog:
 
     return logs
 
-  def ExecuteQuery(self, qfilter: str) -> List[Dict]:
+  def ExecuteQuery(self, qfilter: str) -> List[Dict[str, Any]]:
     """Query logs in GCP project.
 
     Args:
       qfilter (str): The query filter to use.
 
     Returns:
-      list[dict]: Log entries returned by the query, e.g. [{'projectIds':
+      List[Dict]: Log entries returned by the query, e.g. [{'projectIds':
           [...], 'resourceNames': [...]}, {...}]
 
     Raises:

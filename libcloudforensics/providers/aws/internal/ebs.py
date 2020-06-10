@@ -15,7 +15,7 @@
 """Disk functionality."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING, Dict, Optional, Union
 
 import botocore
 
@@ -43,7 +43,7 @@ class AWSElasticBlockStore:
                region: str,
                availability_zone: str,
                encrypted: bool,
-               name: str = None) -> None:
+               name: Optional[str] = None) -> None:
     """Initialize the AWS EBS resource.
 
     Args:
@@ -81,8 +81,8 @@ class AWSVolume(AWSElasticBlockStore):
                region: str,
                availability_zone: str,
                encrypted: bool,
-               name: str = None,
-               device_name: str = None) -> None:
+               name: Optional[str] = None,
+               device_name: Optional[str] = None) -> None:
     """Initialize an AWS EBS volume.
 
     Args:
@@ -105,7 +105,7 @@ class AWSVolume(AWSElasticBlockStore):
     self.volume_id = volume_id
     self.device_name = device_name
 
-  def Snapshot(self, snapshot_name: str = None) -> 'AWSSnapshot':
+  def Snapshot(self, snapshot_name: Optional[str] = None) -> 'AWSSnapshot':
     """Create a snapshot of the volume.
 
     Args:
@@ -182,7 +182,7 @@ class AWSSnapshot(AWSElasticBlockStore):
                region: str,
                availability_zone: str,
                volume: AWSVolume,
-               name: str = None) -> None:
+               name: Optional[str] = None) -> None:
     """Initialize an AWS EBS snapshot.
 
     Args:
@@ -203,10 +203,11 @@ class AWSSnapshot(AWSElasticBlockStore):
     self.snapshot_id = snapshot_id
     self.volume = volume
 
-  def Copy(self,
-           kms_key_id: str = None,
-           delete: bool = False,
-           deletion_account: 'account.AWSAccount' = None) -> 'AWSSnapshot':
+  def Copy(
+      self,
+      kms_key_id: Optional[str] = None,
+      delete: bool = False,
+      deletion_account: Optional['account.AWSAccount'] = None) -> 'AWSSnapshot':
     """Copy a snapshot.
 
     Args:
@@ -234,7 +235,7 @@ class AWSSnapshot(AWSElasticBlockStore):
     copy_args = {
         'SourceRegion': self.region,
         'SourceSnapshotId': self.snapshot_id
-    }  # type: Dict
+    }  # type: Dict[str, Union[str, bool]]
     if kms_key_id:
       copy_args['Encrypted'] = True
       copy_args['KmsKeyId'] = kms_key_id
