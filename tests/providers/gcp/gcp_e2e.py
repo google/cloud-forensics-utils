@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """End to end test for the gcp module."""
-
+import typing
 import unittest
 import time
 
@@ -51,6 +51,7 @@ class EndToEndTest(unittest.TestCase):
   """
 
   @classmethod
+  @typing.no_type_check
   def setUpClass(cls):
     try:
       project_info = utils.ReadProjectInfo(['project_id', 'instance', 'zone'])
@@ -64,10 +65,14 @@ class EndToEndTest(unittest.TestCase):
     cls.gcp = gcp_project.GoogleCloudProject(cls.project_id, cls.zone)
     cls.analysis_vm_name = 'new-vm-for-analysis'
     # Create and start the analysis VM
-    cls.analysis_vm, _ = forensics.StartAnalysisVm(
-        project=cls.project_id, vm_name=cls.analysis_vm_name, zone=cls.zone,
-        boot_disk_size=10, boot_disk_type='pd-ssd', cpu_cores=4)
+    cls.analysis_vm, _ = forensics.StartAnalysisVm(project=cls.project_id,
+                                                   vm_name=cls.analysis_vm_name,
+                                                   zone=cls.zone,
+                                                   boot_disk_size=10,
+                                                   boot_disk_type='pd-ssd',
+                                                   cpu_cores=4)
 
+  @typing.no_type_check
   def setUp(self):
     self.project_id = EndToEndTest.project_id
     self.instance_to_analyse = EndToEndTest.instance_to_analyse
@@ -78,6 +83,7 @@ class EndToEndTest(unittest.TestCase):
     self.boot_disk_copy = None
     self.disk_to_forensic_copy = None
 
+  @typing.no_type_check
   def test_end_to_end_boot_disk(self):
     """End to end test on GCP.
 
@@ -110,8 +116,12 @@ class EndToEndTest(unittest.TestCase):
 
     # Get the analysis VM and attach the evidence boot disk
     self.analysis_vm, _ = forensics.StartAnalysisVm(
-        project=self.project_id, vm_name=self.analysis_vm_name, zone=self.zone,
-        boot_disk_size=10, boot_disk_type='pd-ssd', cpu_cores=4,
+        project=self.project_id,
+        vm_name=self.analysis_vm_name,
+        zone=self.zone,
+        boot_disk_size=10,
+        boot_disk_type='pd-ssd',
+        cpu_cores=4,
         attach_disks=[self.boot_disk_copy.name])
 
     # The forensic instance should be live in the analysis GCP project and
@@ -135,6 +145,7 @@ class EndToEndTest(unittest.TestCase):
         'Error: could not find the disk {0:s} in instance {1:s}'.format(
             self.boot_disk_copy.name, self.analysis_vm_name))
 
+  @typing.no_type_check
   def test_end_to_end_other_disk(self):
     """End to end test on GCP.
 
@@ -166,8 +177,12 @@ class EndToEndTest(unittest.TestCase):
 
     # Get the analysis VM and attach the evidence disk to forensic
     self.analysis_vm, _ = forensics.StartAnalysisVm(
-        project=self.project_id, vm_name=self.analysis_vm_name, zone=self.zone,
-        boot_disk_size=10, boot_disk_type='pd-ssd', cpu_cores=4,
+        project=self.project_id,
+        vm_name=self.analysis_vm_name,
+        zone=self.zone,
+        boot_disk_size=10,
+        boot_disk_type='pd-ssd',
+        cpu_cores=4,
         attach_disks=[self.disk_to_forensic_copy.name])
 
     # The forensic instance should be live in the analysis GCP project and
@@ -192,6 +207,7 @@ class EndToEndTest(unittest.TestCase):
             self.disk_to_forensic_copy.name, self.analysis_vm_name))
 
   @classmethod
+  @typing.no_type_check
   def tearDownClass(cls):
     analysis_vm = cls.analysis_vm
     zone = cls.zone

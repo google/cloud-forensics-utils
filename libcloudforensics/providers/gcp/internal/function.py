@@ -16,8 +16,13 @@
 
 import json
 import ssl
+from typing import TYPE_CHECKING, Dict, Any
 from googleapiclient.errors import HttpError
 from libcloudforensics.providers.gcp.internal import common
+
+
+if TYPE_CHECKING:
+  import googleapiclient
 
 
 class GoogleCloudFunction:
@@ -30,7 +35,7 @@ class GoogleCloudFunction:
 
   CLOUD_FUNCTIONS_API_VERSION = 'v1beta2'
 
-  def __init__(self, project_id):
+  def __init__(self, project_id: str) -> None:
     """Initialize the GoogleCloudFunction object.
 
     Args:
@@ -40,11 +45,12 @@ class GoogleCloudFunction:
     self.gcf_api_client = None
     self.project_id = project_id
 
-  def GcfApi(self):
+  def GcfApi(self) -> 'googleapiclient.discovery.Resource':
     """Get a Google Cloud Function service object.
 
     Returns:
-      apiclient.discovery.Resource: A Google Cloud Function service object.
+      googleapiclient.discovery.Resource: A Google Cloud Function service
+          object.
     """
 
     if self.gcf_api_client:
@@ -53,18 +59,21 @@ class GoogleCloudFunction:
         'cloudfunctions', self.CLOUD_FUNCTIONS_API_VERSION)
     return self.gcf_api_client
 
-  def ExecuteFunction(self, function_name, region, args):
+  def ExecuteFunction(self,
+                      function_name: str,
+                      region: str,
+                      args: Dict[str, Any]) -> Dict[str, Any]:
     """Executes a Google Cloud Function.
 
     Args:
       function_name (str): The name of the function to call.
       region (str): Region to execute functions in.
-      args (dict): Arguments to pass to the function. Dictionary content
+      args (Dict): Arguments to pass to the function. Dictionary content
           details can be found in
           https://cloud.google.com/functions/docs/reference/rest/v1/projects.locations.functions  # pylint: disable=line-too-long
 
     Returns:
-      dict[str, str]: Return value from function call.
+      Dict[str, str]: Return value from function call.
 
     Raises:
       RuntimeError: When cloud function arguments cannot be serialized or
@@ -92,7 +101,7 @@ class GoogleCloudFunction:
       function_return = cloud_function.call(
           name=function_path, body={
               'data': json_args
-          }).execute()
+          }).execute()  # type: Dict[str, Any]
     except (HttpError, ssl.SSLError) as e:
       error_msg = 'Cloud function [{0:s}] call failed: {1!s}'.format(
           function_name, e)

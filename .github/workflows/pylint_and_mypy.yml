@@ -1,4 +1,4 @@
-name: Run pylint
+name: Run pylint and mypy on the codebase
 
 on:
   pull_request:
@@ -15,7 +15,7 @@ jobs:
       uses: actions/setup-python@v1
       with:
         python-version: 3.7
-    - name: Install pylint
+    - name: Install pylint and mypy
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
@@ -23,3 +23,6 @@ jobs:
     - name: Run pylint on all *.py files
       run: |
         pylint tests libcloudforensics examples
+    - name: Run mypy on all *.py files
+      run: |
+        mypy --ignore-missing-imports --strict --no-warn-unused-ignores -p tests -p libcloudforensics -p examples

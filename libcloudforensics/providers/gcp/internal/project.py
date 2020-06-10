@@ -20,6 +20,8 @@ analysis virtual machine to be used in incident response.
 
 from __future__ import unicode_literals
 
+from typing import Optional
+
 import libcloudforensics.providers.gcp.internal.compute as compute_module
 import libcloudforensics.providers.gcp.internal.function as function_module
 import libcloudforensics.providers.gcp.internal.log as log_module
@@ -40,7 +42,9 @@ class GoogleCloudProject:
 
   COMPUTE_ENGINE_API_VERSION = 'v1'
 
-  def __init__(self, project_id, default_zone=None):
+  def __init__(self,
+               project_id: str,
+               default_zone: Optional[str] = None) -> None:
     """Initialize the GoogleCloudProject object.
 
     Args:
@@ -57,7 +61,7 @@ class GoogleCloudProject:
     self._log = None
 
   @property
-  def compute(self):
+  def compute(self) -> compute_module.GoogleCloudCompute:
     """Get a GoogleCloudCompute object for the project.
 
     Returns:
@@ -66,12 +70,12 @@ class GoogleCloudProject:
 
     if self._compute:
       return self._compute
-    self._compute = compute_module.GoogleCloudCompute(
+    self._compute = compute_module.GoogleCloudCompute(  # type: ignore
         self.project_id, self.default_zone)
-    return self._compute
+    return self._compute  # type: ignore
 
   @property
-  def function(self):
+  def function(self) -> function_module.GoogleCloudFunction:
     """Get a GoogleCloudFunction object for the project.
 
     Returns:
@@ -80,12 +84,12 @@ class GoogleCloudProject:
 
     if self._function:
       return self._function
-    self._function = function_module.GoogleCloudFunction(
+    self._function = function_module.GoogleCloudFunction(  # type: ignore
         self.project_id)
-    return self._function
+    return self._function  # type: ignore
 
   @property
-  def build(self):
+  def build(self) -> build_module.GoogleCloudBuild:
     """Get a GoogleCloudBuild object for the project.
 
     Returns:
@@ -94,12 +98,12 @@ class GoogleCloudProject:
 
     if self._build:
       return self._build
-    self._build = build_module.GoogleCloudBuild(
+    self._build = build_module.GoogleCloudBuild(  # type: ignore
         self.project_id)
-    return self._build
+    return self._build  # type: ignore
 
   @property
-  def log(self):
+  def log(self) -> log_module.GoogleCloudLog:
     """Get a GoogleCloudLog object for the project.
 
     Returns:
@@ -108,6 +112,6 @@ class GoogleCloudProject:
 
     if self._log:
       return self._log
-    self._log = log_module.GoogleCloudLog(
+    self._log = log_module.GoogleCloudLog(  # type: ignore
         self.project_id)
-    return self._log
+    return self._log  # type: ignore

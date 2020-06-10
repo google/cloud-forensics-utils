@@ -19,6 +19,8 @@
 import sys
 
 import argparse
+from typing import Tuple, List, Union, Optional
+
 from examples import aws_cli, gcp_cli
 
 
@@ -39,7 +41,14 @@ PROVIDER_TO_FUNC = {
 }
 
 
-def AddParser(provider, provider_parser, func, func_helper, args=None):
+def AddParser(
+    provider: str,
+    # pylint: disable=protected-access
+    provider_parser: argparse._SubParsersAction,
+    # pylint: enable=protected-access
+    func: str,
+    func_helper: str,
+    args: Optional[List[Tuple[str, str, Optional[str]]]] = None) -> None:
   """Create a new parser object for a provider's functionality.
 
   Args:
@@ -50,10 +59,10 @@ def AddParser(provider, provider_parser, func, func_helper, args=None):
     func (str): The name of the function to look for in the given provider
         and to add parsing options for.
     func_helper (str): A helper text describing what the function does.
-    args (list[tuple]): Optional. A list of arguments to add
+    args (List[Tuple]): Optional. A list of arguments to add
         to the parser. Each argument is a tuple containing the action (str) to
-        add to the parser, a helper text (str), and a default value (str,
-        optional).
+        add to the parser, a helper text (str), and a default value (str or
+        None).
 
   Raises:
     NotImplementedError: If the requested provider or function is not
@@ -69,11 +78,11 @@ def AddParser(provider, provider_parser, func, func_helper, args=None):
   if args:
     for argument, helper_text, default_value in args:
       kwargs = {'help': helper_text, 'default': default_value}
-      func_parser.add_argument(argument, **kwargs)
+      func_parser.add_argument(argument, **kwargs)  # type: ignore
   func_parser.set_defaults(func=PROVIDER_TO_FUNC[provider][func])
 
 
-def Main():
+def Main() -> None:
   """Main function for libcloudforensics CLI."""
 
   parser = argparse.ArgumentParser(description='CLI tool for AWS and GCP.')
@@ -109,7 +118,7 @@ def Main():
             ])
   AddParser('aws', aws_subparsers, 'querylogs', 'Query AWS CloudTrail logs',
             args=[
-                ('--filter', 'Query filter: \'value,key\'', ()),
+                ('--filter', 'Query filter: \'value,key\'', ''),
                 ('--start', 'Start date for query (2020-05-01 11:13:00)', None),
                 ('--end', 'End date for query (2020-05-01 11:13:00)', None)
             ])

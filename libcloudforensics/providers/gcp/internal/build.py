@@ -15,8 +15,12 @@
 """Google compute functionality."""
 
 import time
+from typing import TYPE_CHECKING, Dict, Any
 
 from libcloudforensics.providers.gcp.internal import common
+
+if TYPE_CHECKING:
+  import googleapiclient
 
 
 class GoogleCloudBuild:
@@ -30,7 +34,7 @@ class GoogleCloudBuild:
   """
   CLOUD_BUILD_API_VERSION = 'v1'
 
-  def __init__(self, project_id):
+  def __init__(self, project_id: str) -> None:
     """Initialize the GoogleCloudBuild object.
 
     Args:
@@ -40,11 +44,11 @@ class GoogleCloudBuild:
     self.gcb_api_client = None
     self.project_id = project_id
 
-  def GcbApi(self):
+  def GcbApi(self) -> 'googleapiclient.discovery.Resource':
     """Get a Google Cloud Build service object.
 
     Returns:
-      apiclient.discovery.Resource: A Google Cloud Build service object.
+      googleapiclient.discovery.Resource: A Google Cloud Build service object.
     """
 
     if self.gcb_api_client:
@@ -53,34 +57,35 @@ class GoogleCloudBuild:
         'cloudbuild', self.CLOUD_BUILD_API_VERSION)
     return self.gcb_api_client
 
-  def CreateBuild(self, build_body):
+  def CreateBuild(self, build_body: Dict[str, Any]) -> Dict[str, Any]:
     """Create a cloud build.
 
     Args:
-      build_body (dict): A dictionary that describes how to find the source
+      build_body (Dict): A dictionary that describes how to find the source
           code and how to build it.
 
     Returns:
-      dict: Represents long-running operation that is the result of a network
+      Dict: Represents long-running operation that is the result of a network
           API call.
     """
     cloud_build_client = self.GcbApi().projects().builds()
     build_info = cloud_build_client.create(
-        projectId=self.project_id, body=build_body).execute()
+        projectId=self.project_id,
+        body=build_body).execute()  # type: Dict[str, Any]
     build_metadata = build_info['metadata']['build']
     common.LOGGER.info(
         'Build started, logs bucket: {0:s}, logs URL: {1:s}'.format(
             build_metadata['logsBucket'], build_metadata['logUrl']))
     return build_info
 
-  def BlockOperation(self, response):  # pylint: disable=arguments-differ
+  def BlockOperation(self, response: Dict[str, Any]) -> Dict[str, Any]:
     """Block execution until API operation is finished.
 
     Args:
-      response (dict): Google Cloud Build API response.
+      response (Dict): Google Cloud Build API response.
 
     Returns:
-      dict: Holding the response of a get operation on an API object of type
+      Dict: Holding the response of a get operation on an API object of type
           operations.
 
     Raises:

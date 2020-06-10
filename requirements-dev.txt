@@ -4,3 +4,4 @@ mock
 pylint
 coverage
 yapf
+mypy

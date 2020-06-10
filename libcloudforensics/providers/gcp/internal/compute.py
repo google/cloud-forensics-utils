@@ -19,12 +19,16 @@ import os
 import re
 import subprocess
 import time
+from typing import Dict, Tuple, List, TYPE_CHECKING, Union, Optional, Any
 
 from googleapiclient.errors import HttpError
 
 from libcloudforensics.providers.gcp.internal import common, build
 from libcloudforensics.providers.gcp.internal import compute_base_resource
 from libcloudforensics.scripts import utils
+
+if TYPE_CHECKING:
+  import googleapiclient
 
 
 class GoogleCloudCompute(common.GoogleCloudComputeClient):
@@ -35,7 +39,9 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     default_zone: Default zone to create new resources in.
   """
 
-  def __init__(self, project_id, default_zone=None):
+  def __init__(self,
+               project_id: str,
+               default_zone: Optional[str] = None) -> None:
     """Initialize the Google Compute Resources in a project.
 
     Args:
@@ -44,47 +50,49 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
           None means GlobalZone.
     """
 
-    self.project_id = project_id
+    self.project_id = project_id  # type: str
     self.default_zone = default_zone
     self._instances = None
     self._disks = None
     super(GoogleCloudCompute, self).__init__(self.project_id)
 
-  def Instances(self, refresh=True):
+  def Instances(self,
+                refresh: bool = True) -> Dict[str, 'GoogleComputeInstance']:
     """Get all instances in the project.
 
     Args:
       refresh (boolean): Optional. Returns refreshed result if True.
 
     Returns:
-      dict[str, GoogleComputeInstance]: Dictionary mapping instance names
+      Dict[str, GoogleComputeInstance]: Dictionary mapping instance names
           (str) to their respective GoogleComputeInstance object.
     """
     if not refresh and self._instances:
       return self._instances
-    self._instances = self.ListInstances()
-    return self._instances
+    self._instances = self.ListInstances()  # type: ignore
+    return self._instances  # type: ignore
 
-  def Disks(self, refresh=True):
+  def Disks(self,
+            refresh: bool = True) -> Dict[str, 'GoogleComputeDisk']:
     """Get all disks in the project.
 
     Args:
       refresh (boolean): Optional. Returns refreshed result if True.
 
     Returns:
-      dict[str, GoogleComputeDisk]: Dictionary mapping disk names (str) to
+      Dict[str, GoogleComputeDisk]: Dictionary mapping disk names (str) to
           their respective GoogleComputeDisk object.
     """
     if not refresh and self._disks:
       return self._disks
-    self._disks = self.ListDisks()
-    return self._disks
+    self._disks = self.ListDisks()  # type: ignore
+    return self._disks  # type: ignore
 
-  def ListInstances(self):
+  def ListInstances(self) -> Dict[str, 'GoogleComputeInstance']:
     """List instances in project.
 
     Returns:
-      dict[str, GoogleComputeInstance]: Dictionary mapping instance names (str)
+      Dict[str, GoogleComputeInstance]: Dictionary mapping instance names (str)
           to their respective GoogleComputeInstance object.
     """
 
@@ -106,11 +114,11 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
 
     return instances
 
-  def ListDisks(self):
+  def ListDisks(self) -> Dict[str, 'GoogleComputeDisk']:
     """List disks in project.
 
     Returns:
-      dict[str, GoogleComputeDisk]: Dictionary mapping disk names (str) to
+      Dict[str, GoogleComputeDisk]: Dictionary mapping disk names (str) to
           their respective GoogleComputeDisk object.
     """
 
@@ -132,7 +140,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
 
     return disks
 
-  def GetInstance(self, instance_name):
+  def GetInstance(self, instance_name: str) -> 'GoogleComputeInstance':
     """Get instance from project.
 
     Args:
@@ -153,7 +161,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       raise RuntimeError(error_msg)
     return instance
 
-  def GetDisk(self, disk_name):
+  def GetDisk(self, disk_name: str) -> 'GoogleComputeDisk':
     """Get a GCP disk object.
 
     Args:
@@ -174,9 +182,12 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       raise RuntimeError(error_msg)
     return disk
 
-  def CreateDiskFromSnapshot(  # pylint: disable=missing-type-doc
-      self, snapshot, disk_name=None, disk_name_prefix='',
-      disk_type='pd-standard'):
+  def CreateDiskFromSnapshot(
+      self,
+      snapshot: 'GoogleComputeSnapshot',
+      disk_name: Optional[str] = None,
+      disk_name_prefix: str = '',
+      disk_type: str = 'pd-standard') -> 'GoogleComputeDisk':
     """Create a new disk based on a Snapshot.
 
     Args:
@@ -220,17 +231,21 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
           'from Snapshot:\n{1!s}').format(exception.resp.status, exception)
       raise RuntimeError(error_msg)
     self.BlockOperation(response, zone=self.default_zone)
-    return GoogleComputeDisk(
-        project_id=self.project_id, zone=self.default_zone, name=disk_name)
+    return GoogleComputeDisk(project_id=self.project_id,
+                             zone=self.default_zone,  # type: ignore
+                             name=disk_name)
 
-  def GetOrCreateAnalysisVm(self,
-                            vm_name,
-                            boot_disk_size,
-                            disk_type='pd-standard',
-                            cpu_cores=4,
-                            image_project='ubuntu-os-cloud',
-                            image_family='ubuntu-1804-lts',
-                            packages=None):
+  def GetOrCreateAnalysisVm(
+      self,
+      vm_name: str,
+      boot_disk_size: int,
+      disk_type: str = 'pd-standard',
+      cpu_cores: int = 4,
+      image_project: str = 'ubuntu-os-cloud',
+      image_family: str = 'ubuntu-1804-lts',
+      # pylint: disable=line-too-long
+      packages: Optional[List[str]] = None) -> Tuple['GoogleComputeInstance', bool]:
+      # pylint: enable=line-too-long
     """Get or create a new virtual machine for analysis purposes.
 
     If none of the optional parameters are specified, then by default the
@@ -249,10 +264,10 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
           image is hosted.
       image_family (str): Optional. Name of the image to use to create the
           analysis VM.
-      packages (list[str]): Optional. List of packages to install in the VM.
+      packages (List[str]): Optional. List of packages to install in the VM.
 
     Returns:
-      tuple(GoogleComputeInstance, bool): A tuple with a virtual machine object
+      Tuple(GoogleComputeInstance, bool): A tuple with a virtual machine object
           and a boolean indicating if the virtual machine was created or not.
 
     Raises:
@@ -332,66 +347,77 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     created = True
     return instance, created
 
-  def ListInstanceByLabels(self, labels_filter, filter_union=True):
+  def ListInstanceByLabels(
+      self,
+      labels_filter: Dict[str, str],
+      filter_union: bool = True) -> Dict[str, 'GoogleComputeInstance']:
     """List VMs in a project with one/all of the provided labels.
 
     This will call the __ListByLabel on instances() API object
-    with the proper labels filter and return a dict with name and metadata
+    with the proper labels filter and return a Dict with name and metadata
     for each instance, e.g.:
         {'instance-1': {'zone': 'us-central1-a', 'labels': {'id': '123'}}
 
     Args:
-      labels_filter (dict[str, str]): A dict of labels to find e.g.
+      labels_filter (Dict[str, str]): A Dict of labels to find e.g.
           {'id': '123'}.
       filter_union (bool): Optional. A Boolean; True to get the union of all
           filters, False to get the intersection.
 
     Returns:
-      dict[str, GoogleComputeInstance]: Dictionary mapping instances to their
+      Dict[str, GoogleComputeInstance]: Dictionary mapping instances to their
           respective GoogleComputeInstance object.
     """
 
     instance_service_object = self.GceApi().instances()
-    return self.__ListByLabel(
+    return self.__ListByLabel(  # type: ignore
         labels_filter, instance_service_object, filter_union)
 
-  def ListDiskByLabels(self, labels_filter, filter_union=True):
+  def ListDiskByLabels(
+      self,
+      labels_filter: Dict[str, str],
+      filter_union: bool = True) -> Dict[str, 'GoogleComputeDisk']:
     """List Disks in a project with one/all of the provided labels.
 
     This will call the __ListByLabel on disks() API object
-    with the proper labels filter and return a dict with name and metadata
+    with the proper labels filter and return a Dict with name and metadata
     for each disk, e.g.:
         {'disk-1': {'zone': 'us-central1-a', 'labels': {'id': '123'}}
 
     Args:
-      labels_filter (dict[str, str]): A dict of labels to find e.g.
+      labels_filter (Dict[str, str]): A Dict of labels to find e.g.
           {'id': '123'}.
       filter_union (bool): Optional. A Boolean; True to get the union of all
           filters, False to get the intersection.
 
     Returns:
-      dict[str, GoogleComputeDisk]: Dictionary mapping disks to their
+      Dict[str, GoogleComputeDisk]: Dictionary mapping disks to their
           respective GoogleComputeDisk object.
     """
 
     disk_service_object = self.GceApi().disks()
-    return self.__ListByLabel(labels_filter, disk_service_object, filter_union)
+    return self.__ListByLabel(  # type: ignore
+        labels_filter, disk_service_object, filter_union)
 
-  def __ListByLabel(self, labels_filter, service_object, filter_union):
+  def __ListByLabel(
+      self,
+      labels_filter: Dict[str, str],
+      service_object: 'googleapiclient.discovery.Resource',
+      filter_union: bool) -> Dict[str, Union['GoogleComputeInstance', 'GoogleComputeDisk']]:  # pylint: disable=line-too-long
     """List Disks/VMs in a project with one/all of the provided labels.
 
     Private method used to select different compute resources by labels.
 
     Args:
-      labels_filter (dict[str, str]): A dict of labels to find e.g.
+      labels_filter (Dict[str, str]): A Dict of labels to find e.g.
           {'id': '123'}.
-      service_object (apiclient.discovery.Resource): Google Compute Engine
+      service_object (googleapiclient.discovery.Resource): Google Compute Engine
           (Disk | Instance) service object.
       filter_union (bool): A boolean; True to get the union of all filters,
           False to get the intersection.
 
     Returns:
-      dict[str, GoogleComputeInstance|GoogleComputeDisk]: Dictionary mapping
+      Dict[str, GoogleComputeInstance|GoogleComputeDisk]: Dictionary mapping
           instances/disks to their respective GoogleComputeInstance /
           GoogleComputeDisk object.
 
@@ -405,7 +431,9 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
           'invalid argument.').format(filter_union)
       raise RuntimeError(error_msg)
 
-    resource_dict = {}
+    # pylint: disable=line-too-long
+    resource_dict = {}  # type: Dict[str, Union[GoogleComputeInstance, GoogleComputeDisk]]
+    # pylint: enable=line-too-long
     filter_expression = ''
     operation = 'AND' if filter_union else 'OR'
     for key, value in labels_filter.items():
@@ -439,7 +467,9 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
           previous_request=request, previous_response=response)
     return resource_dict
 
-  def CreateImageFromDisk(self, src_disk, name=None):
+  def CreateImageFromDisk(self,
+                          src_disk: 'GoogleComputeDisk',
+                          name: Optional[str] = None) -> 'GoogleComputeImage':
     """Creates an image from a persistent disk.
 
     Args:
@@ -465,27 +495,27 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
         project=self.project_id, body=image_body, forceCreate=True)
     response = request.execute()
     self.BlockOperation(response)
-    return GoogleComputeImage(self.project_id, None, name)
+    return GoogleComputeImage(self.project_id, None, name)  # type: ignore
 
 
 class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
   """Class representing a Google Compute Engine virtual machine."""
 
-  def GetOperation(self):
+  def GetOperation(self) -> Dict[str, Any]:
     """Get API operation object for the virtual machine.
 
     Returns:
-      dict: An API operation object for a Google Compute Engine
+      Dict: An API operation object for a Google Compute Engine
           virtual machine.
     """
 
     gce_instance_client = self.GceApi().instances()
     request = gce_instance_client.get(
         instance=self.name, project=self.project_id, zone=self.zone)
-    response = request.execute()
+    response = request.execute()  # type: Dict[str, Any]
     return response
 
-  def GetBootDisk(self):
+  def GetBootDisk(self) -> Union['GoogleComputeDisk', None]:
     """Get the virtual machine boot disk.
 
     Returns:
@@ -493,13 +523,13 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
     """
 
     for disk in self.GetValue('disks'):
-      if disk['boot']:
-        disk_name = disk['source'].split('/')[-1]
+      if disk['boot']:  # type: ignore
+        disk_name = disk['source'].split('/')[-1]  # type: ignore
         return GoogleCloudCompute(
             self.project_id).GetDisk(disk_name=disk_name)
     return None
 
-  def GetDisk(self, disk_name):
+  def GetDisk(self, disk_name: str) -> 'GoogleComputeDisk':
     """Gets a disk attached to this virtual machine disk by name.
 
     Args:
@@ -514,13 +544,13 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
     """
 
     for disk in self.GetValue('disks'):
-      if disk['source'].split('/')[-1] == disk_name:
+      if disk['source'].split('/')[-1] == disk_name:  # type: ignore
         return GoogleCloudCompute(
             self.project_id).GetDisk(disk_name=disk_name)
     error_msg = 'Disk name "{0:s}" not attached to instance'.format(disk_name)
     raise RuntimeError(error_msg)
 
-  def ListDisks(self):
+  def ListDisks(self) -> Dict[str, 'GoogleComputeDisk']:
     """List all disks for the virtual machine.
 
     Returns:
@@ -529,13 +559,13 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
     """
 
     disks = {}
-    disk_names = [disk['source'].split('/')[-1] for disk in self.GetValue(
-        'disks')]
+    disk_names = [disk['source'].split('/')[-1]  # type: ignore
+                  for disk in self.GetValue('disks')]
     for name in disk_names:
       disks[name] = self.GetDisk(name)
     return disks
 
-  def __SshConnection(self):
+  def __SshConnection(self) -> None:
     """Create an SSH connection to the virtual machine."""
 
     devnull = open(os.devnull, 'w')
@@ -544,7 +574,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
         '--zone', self.zone, self.name
     ], stderr=devnull)
 
-  def Ssh(self):
+  def Ssh(self) -> None:
     """Connect to the virtual machine over SSH."""
 
     max_retries = 100  # times to retry the connection
@@ -561,7 +591,9 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
         retries += 1
         time.sleep(5)  # seconds between connections
 
-  def AttachDisk(self, disk, read_write=False):
+  def AttachDisk(self,
+                 disk: 'GoogleComputeDisk',
+                 read_write: bool = False) -> None:
     """Attach a disk to the virtual machine.
 
     Args:
@@ -592,7 +624,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
     response = request.execute()
     self.BlockOperation(response, zone=self.zone)
 
-  def DetachDisk(self, disk):
+  def DetachDisk(self, disk: 'GoogleComputeDisk') -> None:
     """Detach a disk from the virtual machine.
 
     Args:
@@ -611,20 +643,21 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
 class GoogleComputeDisk(compute_base_resource.GoogleComputeBaseResource):
   """Class representing a Compute Engine disk."""
 
-  def GetOperation(self):
+  def GetOperation(self) -> Dict[str, Any]:
     """Get API operation object for the disk.
 
     Returns:
-      dict: An API operation object for a Google Compute Engine disk.
+      Dict: An API operation object for a Google Compute Engine disk.
     """
 
     gce_disk_client = self.GceApi().disks()
     request = gce_disk_client.get(
         disk=self.name, project=self.project_id, zone=self.zone)
-    response = request.execute()
+    response = request.execute()  # type: Dict[str, Any]
     return response
 
-  def Snapshot(self, snapshot_name=None):
+  def Snapshot(
+      self, snapshot_name: Optional[str] = None) -> 'GoogleComputeSnapshot':
     """Create Snapshot of the disk.
 
     The Snapshot name must comply with the following RegEx:
@@ -673,7 +706,7 @@ class GoogleComputeSnapshot(compute_base_resource.GoogleComputeBaseResource):
     disk (GoogleComputeDisk): Disk used for the Snapshot.
   """
 
-  def __init__(self, disk, name):
+  def __init__(self, disk: 'GoogleComputeDisk', name: str) -> None:
     """Initialize the Snapshot object.
 
     Args:
@@ -682,23 +715,23 @@ class GoogleComputeSnapshot(compute_base_resource.GoogleComputeBaseResource):
     """
 
     super(GoogleComputeSnapshot, self).__init__(
-        project_id=disk.project_id, zone=None, name=name)
+        project_id=disk.project_id, zone=disk.zone, name=name)
     self.disk = disk
 
-  def GetOperation(self):
+  def GetOperation(self) -> Dict[str, Any]:
     """Get API operation object for the Snapshot.
 
     Returns:
-      dict: An API operation object for a Google Compute Engine Snapshot.
+      Dict: An API operation object for a Google Compute Engine Snapshot.
     """
 
     gce_snapshot_client = self.GceApi().snapshots()
     request = gce_snapshot_client.get(
         snapshot=self.name, project=self.project_id)
-    response = request.execute()
+    response = request.execute()  # type: Dict[str, Any]
     return response
 
-  def Delete(self):
+  def Delete(self) -> None:
     """Delete a Snapshot."""
 
     common.LOGGER.info(
@@ -718,20 +751,22 @@ class GoogleComputeImage(compute_base_resource.GoogleComputeBaseResource):
     disk (GoogleComputeDisk): Disk used for the Snapshot.
   """
 
-  def GetOperation(self):
+  def GetOperation(self) -> Dict[str, Any]:
     """Get API operation object for the image.
 
     Returns:
-      dict: Holding an API operation object for a Google Compute Engine Image.
+      Dict: Holding an API operation object for a Google Compute Engine Image.
     """
 
     gce_image_client = self.GceApi().images()
     request = gce_image_client.get(
         project=self.project_id, image=self.name)
-    response = request.execute()
+    response = request.execute()  # type: Dict[str, Any]
     return response
 
-  def ExportImage(self, gcs_output_folder, output_name=None):
+  def ExportImage(self,
+                  gcs_output_folder: str,
+                  output_name: Optional[str] = None) -> None:
     """Export compute image to Google Cloud storage.
 
     Exported image is compressed and stored in .tar.gz format.
@@ -773,7 +808,7 @@ class GoogleComputeImage(compute_base_resource.GoogleComputeBaseResource):
     common.LOGGER.info('Image {0:s} exported to {1:s}.'.format(
         self.name, full_path))
 
-  def Delete(self):
+  def Delete(self) -> None:
     """Delete Compute Disk Image from a project.
     """
 

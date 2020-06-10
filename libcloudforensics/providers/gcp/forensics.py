@@ -14,19 +14,25 @@
 # limitations under the License.
 """Forensics on GCP."""
 
+from typing import TYPE_CHECKING, List, Tuple, Optional
+
 from google.auth.exceptions import RefreshError, DefaultCredentialsError
 from googleapiclient.errors import HttpError
 
 from libcloudforensics.providers.gcp.internal import project as gcp_project
 from libcloudforensics.providers.gcp.internal import common
 
+if TYPE_CHECKING:
+  from libcloudforensics.providers.gcp.internal import compute
 
-def CreateDiskCopy(src_proj,
-                   dst_proj,
-                   instance_name,
-                   zone,
-                   disk_name=None,
-                   disk_type='pd-standard'):
+
+def CreateDiskCopy(
+    src_proj: str,
+    dst_proj: str,
+    instance_name: str,
+    zone: str,
+    disk_name: Optional[str] = None,
+    disk_type: str = 'pd-standard') -> 'compute.GoogleComputeDisk':
   """Creates a copy of a Google Compute Disk.
 
   Args:
@@ -47,21 +53,21 @@ def CreateDiskCopy(src_proj,
     RuntimeError: If there are errors copying the disk
   """
 
-  src_proj = gcp_project.GoogleCloudProject(src_proj)
-  dst_proj = gcp_project.GoogleCloudProject(dst_proj, default_zone=zone)
-  instance = src_proj.compute.GetInstance(
+  src_project = gcp_project.GoogleCloudProject(src_proj)
+  dst_project = gcp_project.GoogleCloudProject(dst_proj, default_zone=zone)
+  instance = src_project.compute.GetInstance(
       instance_name) if instance_name else None
 
   try:
     if disk_name:
-      disk_to_copy = src_proj.compute.GetDisk(disk_name)
+      disk_to_copy = src_project.compute.GetDisk(disk_name)
     else:
-      disk_to_copy = instance.GetBootDisk()
+      disk_to_copy = instance.GetBootDisk()  # type: ignore
 
     common.LOGGER.info('Disk copy of {0:s} started...'.format(
         disk_to_copy.name))
     snapshot = disk_to_copy.Snapshot()
-    new_disk = dst_proj.compute.CreateDiskFromSnapshot(
+    new_disk = dst_project.compute.CreateDiskFromSnapshot(
         snapshot, disk_name_prefix='evidence', disk_type=disk_type)
     snapshot.Delete()
     common.LOGGER.info(
@@ -86,7 +92,7 @@ def CreateDiskCopy(src_proj,
       raise RuntimeError(
           'GCP resource not found. Maybe a typo in the project / instance / '
           'disk name?')
-    raise RuntimeError(exception, critical=True)
+    raise RuntimeError(exception)
   except RuntimeError as exception:
     error_msg = 'Cannot copy disk "{0:s}": {1!s}'.format(disk_name, exception)
     raise RuntimeError(error_msg)
@@ -94,15 +100,16 @@ def CreateDiskCopy(src_proj,
   return new_disk
 
 
-def StartAnalysisVm(project,
-                    vm_name,
-                    zone,
-                    boot_disk_size,
-                    boot_disk_type,
-                    cpu_cores,
-                    attach_disks=None,
-                    image_project='ubuntu-os-cloud',
-                    image_family='ubuntu-1804-lts'):
+def StartAnalysisVm(
+    project: str,
+    vm_name: str,
+    zone: str,
+    boot_disk_size: int,
+    boot_disk_type: str,
+    cpu_cores: int,
+    attach_disks: Optional[List[str]] = None,
+    image_project: str = 'ubuntu-os-cloud',
+    image_family: str = 'ubuntu-1804-lts') -> Tuple['compute.GoogleComputeInstance', bool]:  # pylint: disable=line-too-long
   """Start a virtual machine for analysis purposes.
 
   Args:
@@ -114,21 +121,21 @@ def StartAnalysisVm(project,
         which disk type to use to create the disk. Use pd-standard for a
         standard disk and pd-ssd for a SSD disk.
     cpu_cores (int): The number of CPU cores to create the machine with.
-    attach_disks (list[str]): Optional. List of disk names to attach.
+    attach_disks (List[str]): Optional. List of disk names to attach.
     image_project (str): Optional. Name of the project where the analysis VM
         image is hosted.
     image_family (str): Optional. Name of the image to use to create the
         analysis VM.
 
   Returns:
-    tuple(GoogleComputeInstance, bool): A tuple with a virtual machine object
+    Tuple(GoogleComputeInstance, bool): A tuple with a virtual machine object
         and a boolean indicating if the virtual machine was created or not.
   """
 
-  project = gcp_project.GoogleCloudProject(project, default_zone=zone)
-  analysis_vm, created = project.compute.GetOrCreateAnalysisVm(
+  proj = gcp_project.GoogleCloudProject(project, default_zone=zone)
+  analysis_vm, created = proj.compute.GetOrCreateAnalysisVm(
       vm_name, boot_disk_size, disk_type=boot_disk_type, cpu_cores=cpu_cores,
       image_project=image_project, image_family=image_family)
   for disk_name in (attach_disks or []):
-    analysis_vm.AttachDisk(project.compute.GetDisk(disk_name))
+    analysis_vm.AttachDisk(proj.compute.GetDisk(disk_name))
   return analysis_vm, created

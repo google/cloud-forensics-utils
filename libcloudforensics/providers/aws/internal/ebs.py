@@ -15,10 +15,16 @@
 """Disk functionality."""
 
 from datetime import datetime
+from typing import TYPE_CHECKING, Dict, Optional, Union
 
 import botocore
 
 from libcloudforensics.providers.aws.internal import common
+
+if TYPE_CHECKING:
+  # TYPE_CHECKING is always False at runtime, therefore it is safe to ignore
+  # the following cyclic import, as it it only used for type hints
+  from libcloudforensics.providers.aws.internal import account  # pylint: disable=cyclic-import
 
 
 class AWSElasticBlockStore:
@@ -33,11 +39,11 @@ class AWSElasticBlockStore:
   """
 
   def __init__(self,
-               aws_account,
-               region,
-               availability_zone,
-               encrypted,
-               name=None):
+               aws_account: 'account.AWSAccount',
+               region: str,
+               availability_zone: str,
+               encrypted: bool,
+               name: Optional[str] = None) -> None:
     """Initialize the AWS EBS resource.
 
     Args:
@@ -70,13 +76,13 @@ class AWSVolume(AWSElasticBlockStore):
   """
 
   def __init__(self,
-               volume_id,
-               aws_account,
-               region,
-               availability_zone,
-               encrypted,
-               name=None,
-               device_name=None):
+               volume_id: str,
+               aws_account: 'account.AWSAccount',
+               region: str,
+               availability_zone: str,
+               encrypted: bool,
+               name: Optional[str] = None,
+               device_name: Optional[str] = None) -> None:
     """Initialize an AWS EBS volume.
 
     Args:
@@ -99,7 +105,7 @@ class AWSVolume(AWSElasticBlockStore):
     self.volume_id = volume_id
     self.device_name = device_name
 
-  def Snapshot(self, snapshot_name=None):
+  def Snapshot(self, snapshot_name: Optional[str] = None) -> 'AWSSnapshot':
     """Create a snapshot of the volume.
 
     Args:
@@ -147,7 +153,7 @@ class AWSVolume(AWSElasticBlockStore):
                        self,
                        name=snapshot_name)
 
-  def Delete(self):
+  def Delete(self) -> None:
     """Delete a volume."""
     client = self.aws_account.ClientApi(common.EC2_SERVICE)
     try:
@@ -171,12 +177,12 @@ class AWSSnapshot(AWSElasticBlockStore):
   """
 
   def __init__(self,
-               snapshot_id,
-               aws_account,
-               region,
-               availability_zone,
-               volume,
-               name=None):
+               snapshot_id: str,
+               aws_account: 'account.AWSAccount',
+               region: str,
+               availability_zone: str,
+               volume: AWSVolume,
+               name: Optional[str] = None) -> None:
     """Initialize an AWS EBS snapshot.
 
     Args:
@@ -197,7 +203,11 @@ class AWSSnapshot(AWSElasticBlockStore):
     self.snapshot_id = snapshot_id
     self.volume = volume
 
-  def Copy(self, kms_key_id=None, delete=False, deletion_account=None):
+  def Copy(
+      self,
+      kms_key_id: Optional[str] = None,
+      delete: bool = False,
+      deletion_account: Optional['account.AWSAccount'] = None) -> 'AWSSnapshot':
     """Copy a snapshot.
 
     Args:
@@ -225,7 +235,7 @@ class AWSSnapshot(AWSElasticBlockStore):
     copy_args = {
         'SourceRegion': self.region,
         'SourceSnapshotId': self.snapshot_id
-    }
+    }  # type: Dict[str, Union[str, bool]]
     if kms_key_id:
       copy_args['Encrypted'] = True
       copy_args['KmsKeyId'] = kms_key_id
@@ -257,7 +267,7 @@ class AWSSnapshot(AWSElasticBlockStore):
 
     return snapshot_copy
 
-  def Delete(self):
+  def Delete(self) -> None:
     """Delete a snapshot."""
 
     client = self.aws_account.ClientApi(common.EC2_SERVICE)
@@ -267,7 +277,7 @@ class AWSSnapshot(AWSElasticBlockStore):
       raise RuntimeError('Could not delete snapshot {0:s}: {1:s}'.format(
           self.snapshot_id, str(exception)))
 
-  def ShareWithAWSAccount(self, aws_account_id):
+  def ShareWithAWSAccount(self, aws_account_id: str) -> None:
     """Share the snapshot with another AWS account ID.
 
     Args:

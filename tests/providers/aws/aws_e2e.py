@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """End to end test for the aws module."""
-
+import typing
 import unittest
 
 import botocore
@@ -45,6 +45,7 @@ class EndToEndTest(unittest.TestCase):
   """
 
   @classmethod
+  @typing.no_type_check
   def setUpClass(cls):
     try:
       project_info = utils.ReadProjectInfo(['instance', 'zone'])
@@ -62,6 +63,7 @@ class EndToEndTest(unittest.TestCase):
                                                    10)
     cls.volumes = []  # List of (AWSAccount, AWSVolume) tuples
 
+  @typing.no_type_check
   def testBootVolumeCopy(self):
     """End to end test on AWS.
 
@@ -78,6 +80,7 @@ class EndToEndTest(unittest.TestCase):
     self.assertEqual(aws_volume.volume_id, volume_copy.volume_id)
     self._StoreVolumeForCleanup(self.aws, aws_volume)
 
+  @typing.no_type_check
   def testVolumeCopy(self):
     """End to end test on AWS.
 
@@ -94,6 +97,7 @@ class EndToEndTest(unittest.TestCase):
     self.assertEqual(aws_volume.volume_id, volume_copy.volume_id)
     self._StoreVolumeForCleanup(self.aws, aws_volume)
 
+  @typing.no_type_check
   def testVolumeCopyToOtherZone(self):
     """End to end test on AWS.
 
@@ -112,6 +116,7 @@ class EndToEndTest(unittest.TestCase):
     self.assertEqual(aws_volume.volume_id, volume_copy.volume_id)
     self._StoreVolumeForCleanup(aws_account, aws_volume)
 
+  @typing.no_type_check
   def testEncryptedVolumeCopy(self):
     """End to end test on AWS.
 
@@ -128,6 +133,7 @@ class EndToEndTest(unittest.TestCase):
     self.assertEqual(aws_volume.volume_id, volume_copy.volume_id)
     self._StoreVolumeForCleanup(self.aws, aws_volume)
 
+  @typing.no_type_check
   def testEncryptedVolumeCopyToOtherZone(self):
     """End to end test on AWS.
 
@@ -149,6 +155,7 @@ class EndToEndTest(unittest.TestCase):
     self.assertEqual(aws_volume.volume_id, volume_copy.volume_id)
     self._StoreVolumeForCleanup(aws_account, aws_volume)
 
+  @typing.no_type_check
   def testStartVm(self):
     """End to end test on AWS.
 
@@ -174,6 +181,7 @@ class EndToEndTest(unittest.TestCase):
     self.assertIn(volume_copy.volume_id,
                   [vol.volume_id for vol in instance.volumes.all()])
 
+  @typing.no_type_check
   def _StoreVolumeForCleanup(self, aws_account, volume):
     """Store a volume for cleanup when tests finish.
 
@@ -184,6 +192,7 @@ class EndToEndTest(unittest.TestCase):
     self.volumes.append((aws_account, volume))
 
   @classmethod
+  @typing.no_type_check
   def tearDownClass(cls):
     # Delete the instance
     instance = cls.aws.ResourceApi(EC2_SERVICE).Instance(

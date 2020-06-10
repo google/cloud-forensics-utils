@@ -19,7 +19,7 @@ import os
 STARTUP_SCRIPT = 'startup.sh'
 
 
-def ReadStartupScript():
+def ReadStartupScript() -> str:
   """Read and return the startup script that is to be run on the forensics VM.
 
   Users can either write their own script to install custom packages,
@@ -35,16 +35,16 @@ def ReadStartupScript():
   """
 
   try:
-    startup_script = os.environ.get('STARTUP_SCRIPT')
-    if not startup_script:
+    script_path = os.environ.get('STARTUP_SCRIPT')
+    if not script_path:
       # Use the provided script
-      startup_script = os.path.join(
+      script_path = os.path.join(
           os.path.dirname(os.path.realpath(__file__)), STARTUP_SCRIPT)
-    startup_script = open(startup_script)
+    startup_script = open(script_path)
     script = startup_script.read()
     startup_script.close()
     return script
   except OSError as exception:
     raise OSError(
         'Could not open/read/close the startup script {0:s}: {1:s}'.format(
-            startup_script, str(exception)))
+            script_path, str(exception)))

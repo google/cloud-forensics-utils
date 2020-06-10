@@ -13,8 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Instance functionality."""
+from typing import TYPE_CHECKING, Dict, Optional
 
 from libcloudforensics.providers.aws.internal.common import EC2_SERVICE
+
+if TYPE_CHECKING:
+  # TYPE_CHECKING is always False at runtime, therefore it is safe to ignore
+  # the following cyclic import, as it it only used for type hints
+  from libcloudforensics.providers.aws.internal import account, ebs  # pylint: disable=cyclic-import
 
 
 class AWSInstance:
@@ -30,11 +36,11 @@ class AWSInstance:
   """
 
   def __init__(self,
-               aws_account,
-               instance_id,
-               region,
-               availability_zone,
-               name=None):
+               aws_account: 'account.AWSAccount',
+               instance_id: str,
+               region: str,
+               availability_zone: str,
+               name: Optional[str] = None) -> None:
     """Initialize the AWS EC2 instance.
 
     Args:
@@ -52,7 +58,7 @@ class AWSInstance:
     self.availability_zone = availability_zone
     self.name = name
 
-  def GetBootVolume(self):
+  def GetBootVolume(self) -> 'ebs.AWSVolume':
     """Get the instance's boot volume.
 
     Returns:
@@ -74,7 +80,7 @@ class AWSInstance:
         self.instance_id)
     raise RuntimeError(error_msg)
 
-  def GetVolume(self, volume_id):
+  def GetVolume(self, volume_id: str) -> 'ebs.AWSVolume':
     """Get a volume attached to the instance by ID.
 
     Args:
@@ -95,11 +101,11 @@ class AWSInstance:
               volume_id, self.instance_id))
     return volume
 
-  def ListVolumes(self):
+  def ListVolumes(self) -> Dict[str, 'ebs.AWSVolume']:
     """List all volumes for the instance.
 
     Returns:
-      dict[str, AWSVolume]: Dictionary mapping volume IDs to their respective
+      Dict[str, AWSVolume]: Dictionary mapping volume IDs to their respective
           AWSVolume object.
     """
 
@@ -108,7 +114,9 @@ class AWSInstance:
             'Name': 'attachment.instance-id',
             'Values': [self.instance_id]}])
 
-  def AttachVolume(self, volume, device_name):
+  def AttachVolume(self,
+                   volume: 'ebs.AWSVolume',
+                   device_name: str) -> None:
     """Attach a volume to the AWS instance.
 
     Args:

@@ -13,7 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Log functionality."""
+from typing import TYPE_CHECKING, Dict, List, Optional, Any
+
 from libcloudforensics.providers.aws.internal import common
+
+if TYPE_CHECKING:
+  # TYPE_CHECKING is always False at runtime, therefore it is safe to ignore
+  # the following cyclic import, as it it only used for type hints
+  from libcloudforensics.providers.aws.internal import account  # pylint: disable=cyclic-import
+  from datetime import datetime
 
 
 class AWSCloudTrail:
@@ -23,7 +31,7 @@ class AWSCloudTrail:
     aws_account (AWSAccount): The AWS account to use.
   """
 
-  def __init__(self, aws_account):
+  def __init__(self, aws_account: 'account.AWSAccount') -> None:
     """Initialize an AWS CloudTrail client.
 
     Args:
@@ -32,10 +40,11 @@ class AWSCloudTrail:
 
     self.aws_account = aws_account
 
-  def LookupEvents(self,
-                   qfilter=(),
-                   starttime=None,
-                   endtime=None):
+  def LookupEvents(
+      self,
+      qfilter: Optional[str] = None,
+      starttime: Optional['datetime'] = None,
+      endtime: Optional['datetime'] = None) -> List[Dict[str, Any]]:
     """Lookup events in the CloudTrail logs of this account.
 
     Example usage:
@@ -52,7 +61,7 @@ class AWSCloudTrail:
       endtime (datetime): Optional. End datetime to add to query filter.
 
     Returns:
-      list[dict]: A list of events. E.g. [{'EventId': 'id', ...},
+      List[Dict]: A list of events. E.g. [{'EventId': 'id', ...},
           {'EventId': ...}]
     """
 
@@ -60,11 +69,11 @@ class AWSCloudTrail:
 
     client = self.aws_account.ClientApi(common.CLOUDTRAIL_SERVICE)
 
-    params = {}
+    params = {}  # type: Dict[str, Any]
     if qfilter:
       k, v = qfilter.split(',')
-      qfilter = [{'AttributeKey': k, 'AttributeValue': v}]
-      params = {'LookupAttributes': qfilter}
+      filters = [{'AttributeKey': k, 'AttributeValue': v}]
+      params = {'LookupAttributes': filters}
     if starttime:
       params['StartTime'] = starttime
     if endtime:
