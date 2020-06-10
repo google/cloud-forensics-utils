@@ -524,10 +524,16 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
     """List all disks for the virtual machine.
 
     Returns:
-      list(str): List of disk names.
+      Dict[str, GoogleComputeDisk]: Dictionary mapping disk names to their
+          respective GoogleComputeDisk object.
     """
 
-    return [disk['source'].split('/')[-1] for disk in self.GetValue('disks')]
+    disks = {}
+    disk_names = [disk['source'].split('/')[-1] for disk in self.GetValue(
+        'disks')]
+    for name in disk_names:
+      disks[name] = self.GetDisk(name)
+    return disks
 
   def __SshConnection(self):
     """Create an SSH connection to the virtual machine."""
