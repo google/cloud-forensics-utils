@@ -132,9 +132,12 @@ def Main() -> None:
             'List GCE disks in GCP project.')
   AddParser('gcp', gcp_subparsers, 'copydisk', 'Create a GCP disk copy.',
             args=[
-                ('dstproject', 'Destination GCP project.', ''),
-                ('instancename', 'Name of the instance to copy disk from.', ''),
-                ('zone', 'Zone to create the disk in.', '')
+                ('dst_project', 'Destination GCP project.', ''),
+                ('instance_name', 'Name of the instance to copy disk from.',
+                 ''),
+                ('zone', 'Zone to create the disk in.', ''),
+                ('--disk_name', 'Name of the disk to copy. If None, the boot '
+                                'disk of the instance will be copied.', None)
             ])
   AddParser('gcp', gcp_subparsers, 'querylogs', 'Query GCP logs.',
             args=[

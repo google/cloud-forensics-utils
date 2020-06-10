@@ -63,8 +63,11 @@ def CreateDiskCopy(args: 'argparse.Namespace') -> None:
     args (argparse.Namespace): Arguments from ArgumentParser.
   """
 
-  disk = forensics.CreateDiskCopy(
-      args.project, args.dstproject, args.instancename, args.zone)
+  disk = forensics.CreateDiskCopy(args.project,
+                                  args.dstproject,
+                                  args.instancename,
+                                  args.zone,
+                                  disk_name=args.disk_name)
 
   print('Disk copy completed.')
   print('Name: {0:s}'.format(disk.name))
