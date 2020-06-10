@@ -42,10 +42,12 @@ PROVIDER_TO_FUNC = {
 
 
 def AddParser(provider: str,
-              provider_parser: argparse._SubParsersAction,  # pylint: disable=protected-access
+              # pylint: disable=protected-access
+              provider_parser: argparse._SubParsersAction,
+              # pylint: enable=protected-access
               func: str,
               func_helper: str,
-              args: List[Tuple[str, ...]] = None) -> None:
+              args: List[Tuple[str, str, str]] = None) -> None:
   """Create a new parser object for a provider's functionality.
 
   Args:
