@@ -133,7 +133,8 @@ def Main() -> None:
   AddParser('gcp', gcp_subparsers, 'copydisk', 'Create a GCP disk copy.',
             args=[
                 ('--dstproject', 'Destination GCP project.', ''),
-                ('--instancename', 'Name of the instance to copy disk from.', ''),
+                ('--instancename', 'Name of the instance to copy disk '
+                                   'from.', ''),
                 ('--zone', 'Zone to create the disk in.', '')
             ])
   AddParser('gcp', gcp_subparsers, 'querylogs', 'Query GCP logs.',
