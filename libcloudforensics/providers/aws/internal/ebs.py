@@ -133,8 +133,8 @@ class AWSVolume(AWSElasticBlockStore):
     try:
       snapshot = client.create_snapshot(
           VolumeId=self.volume_id,
-          TagSpecifications=[common.GetTagForResourceType(
-              'snapshot', snapshot_name)])
+          TagSpecifications=[common.CreateTags(
+              common.SNAPSHOT, {'Name': snapshot_name})])
 
       snapshot_id = snapshot.get('SnapshotId')
       # Wait for snapshot completion

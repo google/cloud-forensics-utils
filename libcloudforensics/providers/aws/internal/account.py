@@ -430,7 +430,7 @@ class AWSAccount:
         'AvailabilityZone': snapshot.availability_zone,
         'SnapshotId': snapshot.snapshot_id,
         'TagSpecifications':
-            [common.GetTagForResourceType('volume', volume_name)]
+            [common.CreateTags(common.VOLUME, {'Name': volume_name})]
     }
     if kms_key_id:
       create_volume_args['Encrypted'] = True
@@ -518,7 +518,7 @@ class AWSAccount:
         'MaxCount': 1,
         'InstanceType': instance_type,
         'TagSpecifications':
-            [common.GetTagForResourceType('instance', vm_name)],
+            [common.CreateTags(common.INSTANCE, {'Name': vm_name})],
         'UserData': startup_script,
         'Placement': {'AvailabilityZone': self.default_availability_zone}
     }

@@ -15,7 +15,7 @@
 """Instance functionality."""
 from typing import TYPE_CHECKING, Dict, Optional
 
-from libcloudforensics.providers.aws.internal.common import EC2_SERVICE
+from libcloudforensics.providers.aws.internal import common
 
 if TYPE_CHECKING:
   # TYPE_CHECKING is always False at runtime, therefore it is safe to ignore
@@ -69,7 +69,7 @@ class AWSInstance:
     """
 
     boot_device = self.aws_account.ResourceApi(
-        EC2_SERVICE).Instance(self.instance_id).root_device_name
+        common.EC2_SERVICE).Instance(self.instance_id).root_device_name
     volumes = self.ListVolumes()
 
     for volume_id in volumes:
@@ -127,7 +127,7 @@ class AWSInstance:
       RuntimeError: If the volume could not be attached.
     """
 
-    client = self.aws_account.ClientApi(EC2_SERVICE)
+    client = self.aws_account.ClientApi(common.EC2_SERVICE)
     try:
       client.attach_volume(Device=device_name,
                            InstanceId=self.instance_id,
