@@ -99,9 +99,11 @@ class GoogleCloudLog:
     """
 
     body = {
+      'body': {
         'resourceNames': 'projects/' + self.project_id,
         'filter': qfilter,
         'orderBy': 'timestamp desc',
+      }
     }
 
     entries = []
