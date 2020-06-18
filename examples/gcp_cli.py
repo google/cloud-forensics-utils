@@ -17,8 +17,9 @@
 import json
 from typing import TYPE_CHECKING
 
-from libcloudforensics.providers.gcp.internal import project as gcp_project
 from libcloudforensics.providers.gcp.internal import log as gcp_log
+from libcloudforensics.providers.gcp.internal import metrics as gcp_metrics
+from libcloudforensics.providers.gcp.internal import project as gcp_project
 from libcloudforensics.providers.gcp import forensics
 
 if TYPE_CHECKING:
@@ -97,3 +98,16 @@ def QueryLogs(args: 'argparse.Namespace') -> None:
   print('Found {0:d} log entries:'.format(len(results)))
   for line in results:
     print(json.dumps(line))
+
+
+def ListServices(args: 'argparse.Namespace') -> None:
+  """List active GCP APIs for a project.
+
+  Args:
+    args (argparse.Namespace): Arguments from ArgumentParser.
+  """
+  apis = gcp_metrics.GoogleCloudMetrics(args.project)
+  results = apis.ActiveServices()
+  print('Found {0:d} APIs:'.format(len(results)))
+  for service, val in results.items():
+    print("{}: {}".format(service, val))

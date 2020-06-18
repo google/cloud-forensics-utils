@@ -36,7 +36,8 @@ PROVIDER_TO_FUNC = {
         'listdisks': gcp_cli.ListDisks,
         'copydisk': gcp_cli.CreateDiskCopy,
         'querylogs': gcp_cli.QueryLogs,
-        'listlogs': gcp_cli.ListLogs
+        'listlogs': gcp_cli.ListLogs,
+        'listservices': gcp_cli.ListServices
     }
 }
 
@@ -144,6 +145,8 @@ def Main() -> None:
                 ('--filter', 'Query filter.', None)
             ])
   AddParser('gcp', gcp_subparsers, 'listlogs', 'List GCP logs for a project.')
+  AddParser('gcp', gcp_subparsers, 'listservices',
+            'List active APIS for a project.')
 
   if len(sys.argv) == 1:
     parser.print_help()

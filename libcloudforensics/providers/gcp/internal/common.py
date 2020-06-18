@@ -247,3 +247,8 @@ def ExecuteRequest(client: 'googleapiclient.discovery.Resource',
     next_token = response.get('nextPageToken')
     if not next_token:
       return responses
+
+
+def FormatRFC3339(datetime_instance):
+  """Formats a datetime per RFC 3339."""
+  return datetime_instance.isoformat('T') + 'Z'
