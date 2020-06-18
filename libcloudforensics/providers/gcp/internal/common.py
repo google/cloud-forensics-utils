@@ -233,7 +233,7 @@ def ExecuteRequest(client: 'googleapiclient.discovery.Resource',
       time.sleep(1)
     if next_token:
       if 'body' in kwargs:
-        kwargs['pageToken'] = next_token
+        kwargs['body']['pageToken'] = next_token
       else:
          kwargs['pageToken'] = next_token
     try:
