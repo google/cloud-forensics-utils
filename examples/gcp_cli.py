@@ -97,3 +97,19 @@ def QueryLogs(args: 'argparse.Namespace') -> None:
   print('Found {0:d} log entries:'.format(len(results)))
   for line in results:
     print(json.dumps(line))
+
+def StartAnalysisVm(args: 'argparse.Namespace') -> None:
+  """Start forensic analysis VM.
+
+  Args:
+    args (argparse.Namespace): Arguments from ArgumentParser.
+  """
+  vm = forensics.StartAnalysisVm(args.project,
+                                 args.instance_name,
+                                 args.zone,
+                                 args.disk_size,
+                                 args.disk_type,
+                                 args.cpu_cores)
+
+  print('Analysis VM started.')
+  print('Name: {0:s}, Started: {1:s}'.format(vm[0].name, vm[1]))

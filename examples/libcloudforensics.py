@@ -26,17 +26,18 @@ from examples import aws_cli, gcp_cli
 
 PROVIDER_TO_FUNC = {
     'aws': {
+        'copydisk': aws_cli.CreateVolumeCopy,
         'listinstances': aws_cli.ListInstances,
         'listdisks': aws_cli.ListVolumes,
-        'copydisk': aws_cli.CreateVolumeCopy,
         'querylogs': aws_cli.QueryLogs
     },
     'gcp': {
+        'copydisk': gcp_cli.CreateDiskCopy,
         'listinstances': gcp_cli.ListInstances,
         'listdisks': gcp_cli.ListDisks,
-        'copydisk': gcp_cli.CreateDiskCopy,
+        'listlogs': gcp_cli.ListLogs,
         'querylogs': gcp_cli.QueryLogs,
-        'listlogs': gcp_cli.ListLogs
+        'startvm': gcp_cli.StartAnalysisVm
     }
 }
 
@@ -138,6 +139,15 @@ def Main() -> None:
                 ('zone', 'Zone to create the disk in.', ''),
                 ('--disk_name', 'Name of the disk to copy. If None, the boot '
                                 'disk of the instance will be copied.', None)
+            ])
+  AddParser('gcp', gcp_subparsers, 'startvm', 'Start a forensic analysis VM.',
+            args=[
+                ('instance_name', 'Name of the GCE instance to create.',
+                 ''),
+                ('zone', 'Zone to create the instance in.', ''),
+                ('--disk_size', 'Size of disk in GB.', 50),
+                ('--disk_type', 'Type of disk.', 'pd-ssd'),
+                ('--cpu_cores', 'Instance CPU core count.', 4)
             ])
   AddParser('gcp', gcp_subparsers, 'querylogs', 'Query GCP logs.',
             args=[
