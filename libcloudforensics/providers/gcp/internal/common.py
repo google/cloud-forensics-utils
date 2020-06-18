@@ -19,7 +19,7 @@ import logging
 import re
 import socket
 import time
-from typing import TYPE_CHECKING, Dict, List, Optional, Any, Union
+from typing import TYPE_CHECKING, Dict, List, Optional, Any
 
 from google.auth import default
 from google.auth.exceptions import DefaultCredentialsError, RefreshError
