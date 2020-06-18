@@ -235,7 +235,7 @@ def ExecuteRequest(client: 'googleapiclient.discovery.Resource',
       if 'body' in kwargs:
         kwargs['body']['pageToken'] = next_token
       else:
-         kwargs['pageToken'] = next_token
+        kwargs['pageToken'] = next_token
     try:
       request = getattr(client, func)
       response = request(**kwargs).execute()
