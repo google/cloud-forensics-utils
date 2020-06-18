@@ -232,7 +232,10 @@ def ExecuteRequest(client: 'googleapiclient.discovery.Resource',
     if throttle:
       time.sleep(1)
     if next_token:
-      kwargs['pageToken'] = next_token
+      if 'body' in kwargs:
+        kwargs['pageToken'] = next_token
+      else:
+         kwargs['pageToken'] = next_token
     try:
       request = getattr(client, func)
       response = request(**kwargs).execute()
