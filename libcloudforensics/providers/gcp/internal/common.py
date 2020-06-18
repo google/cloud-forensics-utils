@@ -207,7 +207,7 @@ class GoogleCloudComputeClient:
 
 def ExecuteRequest(client: 'googleapiclient.discovery.Resource',
                    func: str,
-                   kwargs: Union[Dict[str, str], Dict[str, Dict[str, str]]],
+                   kwargs: Dict[str, Any],
                    throttle: bool = False) -> List[Dict[str, Any]]:
   """Execute a request to the GCP API.
 
