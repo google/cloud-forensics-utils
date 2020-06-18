@@ -123,6 +123,15 @@ def Main() -> None:
                 ('--start', 'Start date for query (2020-05-01 11:13:00)', None),
                 ('--end', 'End date for query (2020-05-01 11:13:00)', None)
             ])
+  AddParser('aws', aws_subparsers, 'startvm', 'Start a forensic analysis VM.',
+            args=[
+                ('instance_name', 'Name of the EC2 instance to create.',
+                 ''),
+                ('zone', 'Zone to create the instance in.', ''),
+                ('--disk_size', 'Size of disk in GB.', 50),
+                ('--disk_type', 'Type of disk.', 'pd-ssd'),
+                ('--cpu_cores', 'Instance CPU core count.', 4)
+            ])
 
   # GCP parser options
   gcp_parser.add_argument('project', help='Source GCP project.')

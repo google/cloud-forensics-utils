@@ -112,4 +112,4 @@ def StartAnalysisVm(args: 'argparse.Namespace') -> None:
                                  args.cpu_cores)
 
   print('Analysis VM started.')
-  print('Name: {0:s}, Started: {1:s}'.format(vm[0].name, vm[1]))
+  print('Name: {0:s}, Started: {1:s}'.format(vm[0].name, str(vm[1])))
