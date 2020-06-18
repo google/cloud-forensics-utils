@@ -19,7 +19,7 @@ import logging
 import re
 import socket
 import time
-from typing import TYPE_CHECKING, Dict, List, Optional, Any
+from typing import TYPE_CHECKING, Dict, List, Optional, Any, Union
 
 from google.auth import default
 from google.auth.exceptions import DefaultCredentialsError, RefreshError
@@ -207,7 +207,7 @@ class GoogleCloudComputeClient:
 
 def ExecuteRequest(client: 'googleapiclient.discovery.Resource',
                    func: str,
-                   kwargs: Dict[str, str],
+                   kwargs: Union[Dict[str, str], Dict[str, Dict[str, str]]],
                    throttle: bool = False) -> List[Dict[str, Any]]:
   """Execute a request to the GCP API.
 
