@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Forensics on AWS."""
-from typing import TYPE_CHECKING, Tuple, List, Optional
+from typing import TYPE_CHECKING, Tuple, List, Optional, Dict, Any
 
 from libcloudforensics.providers.aws.internal.common import UBUNTU_1804_AMI, LOGGER  # pylint: disable=line-too-long
 from libcloudforensics.providers.aws.internal import account
@@ -27,7 +27,8 @@ def CreateVolumeCopy(zone: str,
                      instance_id: Optional[str] = None,
                      volume_id: Optional[str] = None,
                      src_profile: Optional[str] = None,
-                     dst_profile: Optional[str] = None) -> 'ebs.AWSVolume':
+                     dst_profile: Optional[str] = None,
+                     tags: Optional[Dict[str, str]] = None) -> 'ebs.AWSVolume':
   """Create a copy of an AWS EBS Volume.
 
   By default, the volume copy will be created in the same AWS account where
@@ -83,6 +84,8 @@ def CreateVolumeCopy(zone: str,
     dst_profile (str): Optional. If the volume copy needs to be created in a
         different AWS account, you can specify a different profile name here
         (see example above).
+    tags (Dict[str, str]): Optional. A dictionary of tags to add to the
+          volume copy, for example {'TicketID': 'xxx'}.
 
   Returns:
     AWSVolume: An AWS EBS Volume object.
@@ -136,8 +139,13 @@ def CreateVolumeCopy(zone: str,
       snapshot.aws_account = destination_account
       snapshot = snapshot.Copy(delete=True, deletion_account=source_account)
 
+    kwargs = {'tags': tags}  # type: Dict[str, Any]
+    if tags and tags.get('Name'):
+      kwargs['volume_name'] = tags['Name']
+    else:
+      kwargs['volume_name_prefix'] = 'evidence'
     new_volume = destination_account.CreateVolumeFromSnapshot(
-        snapshot, volume_name_prefix='evidence')
+        snapshot, **kwargs)
     snapshot.Delete()
     # Delete the one-time use KMS key, if one was generated
     source_account.DeleteKMSKey(kms_key_id)
@@ -160,7 +168,8 @@ def StartAnalysisVm(
     cpu_cores: int = 4,
     attach_volumes: Optional[List[Tuple[str, str]]] = None,
     dst_profile: Optional[str] = None,
-    ssh_key_name: Optional[str] = None) -> Tuple['ec2.AWSInstance', bool]:
+    ssh_key_name: Optional[str] = None,
+    tags: Optional[Dict[str, str]] = None) -> Tuple['ec2.AWSInstance', bool]:
   """Start a virtual machine for analysis purposes.
 
   Look for an existing AWS instance with tag name vm_name. If found,
@@ -190,6 +199,9 @@ def StartAnalysisVm(
         that if this package fails to install on the target VM, then the VM
         will not be accessible. It is therefore recommended to fill in this
         parameter.
+    tags (Dict[str, str]): Optional. A dictionary of tags to add to the
+          instance, for example {'TicketID': 'xxx'}. An entry for the instance
+          name is added by default.
 
   Returns:
     Tuple[AWSInstance, bool]: a tuple with a virtual machine object
@@ -202,7 +214,8 @@ def StartAnalysisVm(
       boot_volume_size,
       ami,
       cpu_cores,
-      ssh_key_name=ssh_key_name)
+      ssh_key_name=ssh_key_name,
+      tags=tags)
   for volume_id, device_name in (attach_volumes or []):
     analysis_vm.AttachVolume(aws_account.GetVolumeById(volume_id), device_name)
   return analysis_vm, created

@@ -466,7 +466,7 @@ class AWSVolumeTest(unittest.TestCase):
 
     # Snapshot(snapshot_name='my-Snapshot'). Snapshot should start with
     # 'my-Snapshot'
-    snapshot = FAKE_VOLUME.Snapshot(snapshot_name='my-snapshot')
+    snapshot = FAKE_VOLUME.Snapshot(tags={'Name': 'my-snapshot'})
     self.assertIsInstance(snapshot, ebs.AWSSnapshot)
     # Same as above regarding the timestamp.
     self.assertTrue(snapshot.name.startswith('my-snapshot'))

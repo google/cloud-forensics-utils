@@ -105,11 +105,12 @@ class AWSVolume(AWSElasticBlockStore):
     self.volume_id = volume_id
     self.device_name = device_name
 
-  def Snapshot(self, snapshot_name: Optional[str] = None) -> 'AWSSnapshot':
+  def Snapshot(self, tags: Optional[Dict[str, str]] = None) -> 'AWSSnapshot':
     """Create a snapshot of the volume.
 
     Args:
-      snapshot_name (str): Optional. Name tag of the snapshot.
+      tags (Dict[str, str]): Optional. A dictionary of tags to add to the
+          snapshot, for example {'Name': 'my-snapshot-name', 'TicketID': 'xxx'}.
 
     Returns:
       AWSSnapshot: A snapshot object.
@@ -119,22 +120,24 @@ class AWSVolume(AWSElasticBlockStore):
       RuntimeError: If the snapshot could not be created.
     """
 
+    if not tags:
+      tags = {}
+
+    snapshot_name = tags.get('Name') or self.volume_id
     timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-    if not snapshot_name:
-      snapshot_name = self.volume_id
     truncate_at = 255 - len(timestamp) - 1
     snapshot_name = '{0}-{1}'.format(snapshot_name[:truncate_at], timestamp)
     if not common.REGEX_TAG_VALUE.match(snapshot_name):
       raise ValueError('Snapshot name {0:s} does not comply with '
                        '{1:s}'.format(snapshot_name,
                                       common.REGEX_TAG_VALUE.pattern))
+    tags['Name'] = snapshot_name
 
     client = self.aws_account.ClientApi(common.EC2_SERVICE)
     try:
       snapshot = client.create_snapshot(
           VolumeId=self.volume_id,
-          TagSpecifications=[common.CreateTags(
-              common.SNAPSHOT, {'Name': snapshot_name})])
+          TagSpecifications=[common.CreateTags(common.SNAPSHOT, tags)])
 
       snapshot_id = snapshot.get('SnapshotId')
       # Wait for snapshot completion
