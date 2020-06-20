@@ -457,19 +457,15 @@ class AWSVolumeTest(unittest.TestCase):
     snapshot.return_value = MOCK_CREATE_SNAPSHOT
     mock_ec2_api.return_value.get_waiter.return_value.wait.return_value = None
 
-    # Snapshot(snapshot_name=None). Snapshot should start with the volume's name
+    # Snapshot(tags=None). Snapshot name should be the volume's id.
     snapshot = FAKE_VOLUME.Snapshot()
     self.assertIsInstance(snapshot, ebs.AWSSnapshot)
-    # Part of the snapshot name is taken from a timestamp, therefore we only
-    # assert for the beginning of the string.
-    self.assertTrue(snapshot.name.startswith('fake-volume'))
+    self.assertEqual('fake-volume-id-snapshot', snapshot.name)
 
-    # Snapshot(snapshot_name='my-Snapshot'). Snapshot should start with
-    # 'my-Snapshot'
+    # Snapshot(tags={'Name': 'my-snapshot'}). Snapshot should be 'my-snapshot'.
     snapshot = FAKE_VOLUME.Snapshot(tags={'Name': 'my-snapshot'})
     self.assertIsInstance(snapshot, ebs.AWSSnapshot)
-    # Same as above regarding the timestamp.
-    self.assertTrue(snapshot.name.startswith('my-snapshot'))
+    self.assertEqual('my-snapshot', snapshot.name)
 
 
 class AWSSnapshotTest(unittest.TestCase):

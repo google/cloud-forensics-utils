@@ -14,7 +14,6 @@
 # limitations under the License.
 """Disk functionality."""
 
-from datetime import datetime
 from typing import TYPE_CHECKING, Dict, Optional, Union
 
 import botocore
@@ -123,10 +122,9 @@ class AWSVolume(AWSElasticBlockStore):
     if not tags:
       tags = {}
 
-    snapshot_name = tags.get('Name') or self.volume_id
-    timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-    truncate_at = 255 - len(timestamp) - 1
-    snapshot_name = '{0}-{1}'.format(snapshot_name[:truncate_at], timestamp)
+    snapshot_name = tags.get('Name') or (self.volume_id + '-snapshot')
+    truncate_at = 255 - 1
+    snapshot_name = snapshot_name[:truncate_at]
     if not common.REGEX_TAG_VALUE.match(snapshot_name):
       raise ValueError('Snapshot name {0:s} does not comply with '
                        '{1:s}'.format(snapshot_name,
