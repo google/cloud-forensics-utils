@@ -111,7 +111,8 @@ def StartAnalysisVm(args: 'argparse.Namespace') -> None:
   """
   vm = forensics.StartAnalysisVm(vm_name=args.instance_name,
                                  default_availability_zone=args.zone,
-                                 boot_volume_size=args.disk_size)
+                                 boot_volume_size=args.disk_size,
+                                 ssh_key_name=args.ssh_key_name)
 
   print('Analysis VM started.')
   print('Name: {0:s}, Started: {1:s}, Region: {2:s}'.format(vm[0].name,

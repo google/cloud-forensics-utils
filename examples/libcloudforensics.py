@@ -127,7 +127,8 @@ def Main() -> None:
                 ('instance_name', 'Name of the EC2 instance to create.',
                  ''),
                 ('--disk_size', 'Size of disk in GB.', 50),
-                ('--cpu_cores', 'Instance CPU core count.', 4)
+                ('--cpu_cores', 'Instance CPU core count.', 4),
+                ('--ssh-key-name', 'SSH key pair name.', None)
             ])
 
   # GCP parser options
