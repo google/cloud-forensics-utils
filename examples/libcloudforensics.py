@@ -126,7 +126,8 @@ def Main() -> None:
             args=[
                 ('instance_name', 'Name of the EC2 instance to create.',
                  ''),
-                ('--disk_size', 'Size of disk in GB.', 50)
+                ('--disk_size', 'Size of disk in GB.', 50),
+                ('--cpu_cores', 'Instance CPU core count.', 4)
             ])
 
   # GCP parser options
