@@ -126,8 +126,8 @@ def Main() -> None:
             args=[
                 ('instance_name', 'Name of the EC2 instance to create.',
                  ''),
-                ('--disk_size', 'Size of disk in GB.', 50),
-                ('--cpu_cores', 'Instance CPU core count.', 4),
+                ('--disk_size', 'Size of disk in GB.', '50'),
+                ('--cpu_cores', 'Instance CPU core count.', '4'),
                 ('--ssh-key-name', 'SSH key pair name.', None)
             ])
 
@@ -152,9 +152,9 @@ def Main() -> None:
                 ('instance_name', 'Name of the GCE instance to create.',
                  ''),
                 ('zone', 'Zone to create the instance in.', ''),
-                ('--disk_size', 'Size of disk in GB.', 50),
+                ('--disk_size', 'Size of disk in GB.', '50'),
                 ('--disk_type', 'Type of disk.', 'pd-ssd'),
-                ('--cpu_cores', 'Instance CPU core count.', 4)
+                ('--cpu_cores', 'Instance CPU core count.', '4')
             ])
   AddParser('gcp', gcp_subparsers, 'querylogs', 'Query GCP logs.',
             args=[
