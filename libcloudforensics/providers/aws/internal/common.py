@@ -25,6 +25,11 @@ ACCOUNT_SERVICE = 'sts'
 KMS_SERVICE = 'kms'
 CLOUDTRAIL_SERVICE = 'cloudtrail'
 
+# Resource types constant
+INSTANCE = 'instance'
+VOLUME = 'volume'
+SNAPSHOT = 'snapshot'
+
 # Default Amazon Machine Image to use for bootstrapping instances
 UBUNTU_1804_AMI = 'ami-0013b3aa57f8a4331'
 REGEX_TAG_VALUE = re.compile('^.{1,255}$')
@@ -32,26 +37,27 @@ REGEX_TAG_VALUE = re.compile('^.{1,255}$')
 LOGGER = logging.getLogger()
 
 
-def GetTagForResourceType(resource: str, name: str) -> Dict[str, Any]:
-  """Create a dictionary for AWS Tag Specifications.
+def CreateTags(resource: str, tags: Dict[str, str]) -> Dict[str, Any]:
+  """Create AWS Tag Specifications.
 
   Args:
     resource (str): The type of AWS resource.
-    name (str): The name of the resource.
+    tags (Dict[str, str]): A dictionary of tags to add to the resource.
 
   Returns:
-    Dict[str, str|List[Dict]]: A dictionary for AWS Tag Specifications.
+    Dict[str, Any]: A dictionary for AWS Tag Specifications.
   """
 
-  return {
+  tag_specifications = {
       'ResourceType': resource,
-      'Tags': [
-          {
-              'Key': 'Name',
-              'Value': name
-          }
-      ]
-  }
+      'Tags': []
+  }  # type: Dict[str, Any]
+  for tag in tags:
+    tag_specifications['Tags'].append({
+        'Key': tag,
+        'Value': tags[tag]
+    })
+  return tag_specifications
 
 
 def GetInstanceTypeByCPU(cpu_cores: int) -> str:

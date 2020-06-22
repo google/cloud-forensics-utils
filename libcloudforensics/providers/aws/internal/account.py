@@ -399,7 +399,8 @@ class AWSAccount:
       snapshot: ebs.AWSSnapshot,
       volume_name: Optional[str] = None,
       volume_name_prefix: str = '',
-      kms_key_id: Optional[str] = None) -> ebs.AWSVolume:
+      kms_key_id: Optional[str] = None,
+      tags: Optional[Dict[str, str]] = None) -> ebs.AWSVolume:
     """Create a new volume based on a snapshot.
 
     Args:
@@ -407,6 +408,9 @@ class AWSAccount:
       volume_name (str): Optional. String to use as new volume name.
       volume_name_prefix (str): Optional. String to prefix the volume name with.
       kms_key_id (str): Optional. A KMS key id to encrypt the volume with.
+      tags (Dict[str, str]): Optional. A dictionary of tags to add to the
+          volume, for example {'TicketID': 'xxx'}. An entry for the volume
+          name is added by default.
 
     Returns:
       AWSVolume: An AWS EBS Volume.
@@ -425,12 +429,15 @@ class AWSAccount:
           'Volume name {0:s} does not comply with '
           '{1:s}'.format(volume_name, common.REGEX_TAG_VALUE.pattern))
 
+    if not tags:
+      tags = {}
+    tags['Name'] = volume_name
+
     client = self.ClientApi(common.EC2_SERVICE)
     create_volume_args = {
         'AvailabilityZone': snapshot.availability_zone,
         'SnapshotId': snapshot.snapshot_id,
-        'TagSpecifications':
-            [common.GetTagForResourceType('volume', volume_name)]
+        'TagSpecifications': [common.CreateTags(common.VOLUME, tags)]
     }
     if kms_key_id:
       create_volume_args['Encrypted'] = True
@@ -463,7 +470,8 @@ class AWSAccount:
       ami: str,
       cpu_cores: int,
       packages: Optional[List[str]] = None,
-      ssh_key_name: Optional[str] = None) -> Tuple[ec2.AWSInstance, bool]:
+      ssh_key_name: Optional[str] = None,
+      tags: Optional[Dict[str, str]] = None) -> Tuple[ec2.AWSInstance, bool]:
     """Get or create a new virtual machine for analysis purposes.
 
     Args:
@@ -479,6 +487,9 @@ class AWSAccount:
           that if this package fails to install on the target VM, then the VM
           will not be accessible. It is therefore recommended to fill in this
           parameter.
+      tags (Dict[str, str]): Optional. A dictionary of tags to add to the
+          instance, for example {'TicketID': 'xxx'}. An entry for the instance
+          name is added by default.
 
     Returns:
       Tuple[AWSInstance, bool]: A tuple with an AWSInstance object and a
@@ -509,6 +520,10 @@ class AWSAccount:
         '(exit ${exit_code})',
         'apt -y install ec2-instance-connect && (exit ${exit_code})')
 
+    if not tags:
+      tags = {}
+    tags['Name'] = vm_name
+
     client = self.ClientApi(common.EC2_SERVICE)
     vm_args = {
         'BlockDeviceMappings':
@@ -517,8 +532,7 @@ class AWSAccount:
         'MinCount': 1,
         'MaxCount': 1,
         'InstanceType': instance_type,
-        'TagSpecifications':
-            [common.GetTagForResourceType('instance', vm_name)],
+        'TagSpecifications': [common.CreateTags(common.INSTANCE, tags)],
         'UserData': startup_script,
         'Placement': {'AvailabilityZone': self.default_availability_zone}
     }
