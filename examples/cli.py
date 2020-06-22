@@ -126,11 +126,11 @@ def Main() -> None:
             ])
   AddParser('aws', aws_subparsers, 'startvm', 'Start a forensic analysis VM.',
             args=[
-                ('instance_name', 'Name of the EC2 instance to create.',
+                ('instance_name', 'Name of EC2 instance to re-use or create.',
                  ''),
                 ('--disk_size', 'Size of disk in GB.', '50'),
                 ('--cpu_cores', 'Instance CPU core count.', '4'),
-                ('--ssh-key-name', 'SSH key pair name.', None)
+                ('--ssh_key_name', 'SSH key pair name.', None)
             ])
 
   # GCP parser options
