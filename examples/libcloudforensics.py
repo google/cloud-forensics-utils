@@ -126,7 +126,6 @@ def Main() -> None:
             args=[
                 ('instance_name', 'Name of the EC2 instance to create.',
                  ''),
-                ('zone', 'Zone to create the instance in.', ''),
                 ('--disk_size', 'Size of disk in GB.', 50)
             ])
 
