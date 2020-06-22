@@ -102,19 +102,19 @@ def QueryLogs(args: 'argparse.Namespace') -> None:
     for event in result:
       print(event)
 
+
 def StartAnalysisVm(args: 'argparse.Namespace') -> None:
   """Start forensic analysis VM.
 
   Args:
     args (argparse.Namespace): Arguments from ArgumentParser.
   """
-  vm = forensics.StartAnalysisVm(vm_name=args.vm_name,
+  vm = forensics.StartAnalysisVm(vm_name=args.instance_name,
                                  default_availability_zone=args.zone,
-                                 boot_volume_size=args.disk_size,
-                                 cpu_cores=args.cpu_cores)
+                                 boot_volume_size=args.disk_size)
 
   print('Analysis VM started.')
-  print(dir(vm))
-  print(dir(vm[0]))
-  print('Name: {0:s}, Started: {1:s}'.format(vm[0].name, str(vm[1])))
+  print('Name: {0:s}, Started: {1:s} in Region: {2:s}'.format(vm[0].name,
+                                                              str(vm[1]),
+                                                              vm[0].region))
 
