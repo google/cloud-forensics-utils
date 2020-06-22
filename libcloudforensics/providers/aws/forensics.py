@@ -139,13 +139,13 @@ def CreateVolumeCopy(zone: str,
       snapshot.aws_account = destination_account
       snapshot = snapshot.Copy(delete=True, deletion_account=source_account)
 
-    kwargs = {'tags': tags}  # type: Dict[str, Any]
     if tags and tags.get('Name'):
-      kwargs['volume_name'] = tags['Name']
+      new_volume = destination_account.CreateVolumeFromSnapshot(
+          snapshot, volume_name=tags['Name'], tags=tags)
     else:
-      kwargs['volume_name_prefix'] = 'evidence'
-    new_volume = destination_account.CreateVolumeFromSnapshot(
-        snapshot, **kwargs)
+      new_volume = destination_account.CreateVolumeFromSnapshot(
+          snapshot, volume_name_prefix='evidence', tags=tags)
+
     snapshot.Delete()
     # Delete the one-time use KMS key, if one was generated
     source_account.DeleteKMSKey(kms_key_id)
