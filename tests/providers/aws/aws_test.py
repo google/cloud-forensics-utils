@@ -425,16 +425,6 @@ class AWSAccountTest(unittest.TestCase):
     # pylint: enable=protected-access
     self.assertEqual(50, config['Ebs']['VolumeSize'])
 
-  @typing.no_type_check
-  def testGetInstanceTypeByCPU(self):
-    """Test that the instance type matches the requested amount of CPU cores."""
-    # pylint: disable=protected-access
-    self.assertEqual('m4.large', common.GetInstanceTypeByCPU(2))
-    self.assertEqual('m4.16xlarge', common.GetInstanceTypeByCPU(64))
-    self.assertRaises(ValueError, common.GetInstanceTypeByCPU, 0)
-    self.assertRaises(ValueError, common.GetInstanceTypeByCPU, 256)
-    # pylint: enable=protected-access
-
 
 class AWSInstanceTest(unittest.TestCase):
   """Test AWSInstance class."""
@@ -467,19 +457,15 @@ class AWSVolumeTest(unittest.TestCase):
     snapshot.return_value = MOCK_CREATE_SNAPSHOT
     mock_ec2_api.return_value.get_waiter.return_value.wait.return_value = None
 
-    # Snapshot(snapshot_name=None). Snapshot should start with the volume's name
+    # Snapshot(tags=None). Snapshot name should be the volume's id.
     snapshot = FAKE_VOLUME.Snapshot()
     self.assertIsInstance(snapshot, ebs.AWSSnapshot)
-    # Part of the snapshot name is taken from a timestamp, therefore we only
-    # assert for the beginning of the string.
-    self.assertTrue(snapshot.name.startswith('fake-volume'))
+    self.assertEqual('fake-volume-id-snapshot', snapshot.name)
 
-    # Snapshot(snapshot_name='my-Snapshot'). Snapshot should start with
-    # 'my-Snapshot'
-    snapshot = FAKE_VOLUME.Snapshot(snapshot_name='my-snapshot')
+    # Snapshot(tags={'Name': 'my-snapshot'}). Snapshot should be 'my-snapshot'.
+    snapshot = FAKE_VOLUME.Snapshot(tags={'Name': 'my-snapshot'})
     self.assertIsInstance(snapshot, ebs.AWSSnapshot)
-    # Same as above regarding the timestamp.
-    self.assertTrue(snapshot.name.startswith('my-snapshot'))
+    self.assertEqual('my-snapshot', snapshot.name)
 
 
 class AWSSnapshotTest(unittest.TestCase):
@@ -519,8 +505,35 @@ class AWSCloudTrailTest(unittest.TestCase):
     self.assertEqual(FAKE_EVENT_LIST[0], lookup_events[0])
 
 
+class AWSCommon(unittest.TestCase):
+  """Test the common.py public methods"""
+
+  @typing.no_type_check
+  def testCreateTags(self):
+    """Test that tag specifications are correclty created"""
+    tag_specifications = common.CreateTags(common.VOLUME, {'Name': 'fake-name'})
+    self.assertEqual('volume', tag_specifications['ResourceType'])
+    self.assertEqual(1, len(tag_specifications['Tags']))
+    self.assertEqual('Name', tag_specifications['Tags'][0]['Key'])
+    self.assertEqual('fake-name', tag_specifications['Tags'][0]['Value'])
+
+    tag_specifications = common.CreateTags(
+        common.VOLUME, {'Name': 'fake-name', 'FakeTag': 'fake-tag'})
+    self.assertEqual(2, len(tag_specifications['Tags']))
+    self.assertEqual('FakeTag', tag_specifications['Tags'][1]['Key'])
+    self.assertEqual('fake-tag', tag_specifications['Tags'][1]['Value'])
+
+  @typing.no_type_check
+  def testGetInstanceTypeByCPU(self):
+    """Test that the instance type matches the requested amount of CPU cores."""
+    self.assertEqual('m4.large', common.GetInstanceTypeByCPU(2))
+    self.assertEqual('m4.16xlarge', common.GetInstanceTypeByCPU(64))
+    self.assertRaises(ValueError, common.GetInstanceTypeByCPU, 0)
+    self.assertRaises(ValueError, common.GetInstanceTypeByCPU, 256)
+
+
 class AWSTest(unittest.TestCase):
-  """Test the account.py public methods."""
+  """Test the forensics.py public methods."""
   # pylint: disable=line-too-long
 
   @typing.no_type_check
