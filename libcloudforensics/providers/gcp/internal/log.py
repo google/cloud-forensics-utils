@@ -107,7 +107,7 @@ class GoogleCloudLog:
     entries = []
     gcl_instance_client = self.GclApi().entries()
     responses = common.ExecuteRequest(
-        gcl_instance_client, 'list', body, throttle=True)
+        gcl_instance_client, 'list', {'body': body}, throttle=True)
 
     for response in responses:
       for entry in response.get('entries', []):

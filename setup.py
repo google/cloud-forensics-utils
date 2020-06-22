@@ -60,7 +60,7 @@ setup(
       'libcloudforensics': ['libcloudforensics/scripts/*']
     },
     entry_points={'console_scripts': [
-        'libcloudforensics = examples.libcloudforensics:Main']},
+        'libcloudforensics = examples.cli:Main']},
     zip_safe=False,
     install_requires=[req for req in parse_requirements('requirements.txt')],
     tests_require=[req for req in parse_requirements('requirements-dev.txt')],
