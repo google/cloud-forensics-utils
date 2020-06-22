@@ -22,7 +22,6 @@ import sys
 from typing import Tuple, List, Union, Optional
 from examples import aws_cli, gcp_cli
 
-
 PROVIDER_TO_FUNC = {
     'aws': {
         'copydisk': aws_cli.CreateVolumeCopy,

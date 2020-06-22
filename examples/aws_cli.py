@@ -114,7 +114,7 @@ def StartAnalysisVm(args: 'argparse.Namespace') -> None:
                                  boot_volume_size=args.disk_size)
 
   print('Analysis VM started.')
-  print('Name: {0:s}, Started: {1:s} in Region: {2:s}'.format(vm[0].name,
+  print('Name: {0:s}, Started: {1:s}, Region: {2:s}'.format(vm[0].name,
                                                               str(vm[1]),
                                                               vm[0].region))
 
