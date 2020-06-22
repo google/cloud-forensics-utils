@@ -112,11 +112,26 @@ def StartAnalysisVm(args: 'argparse.Namespace') -> None:
   Args:
     args (argparse.Namespace): Arguments from ArgumentParser.
   """
+  if len(args.attach_volumes) > 11:
+    print('error: --attach_volumes must be < 11')
+    return
+
+  attach_volumes = []
+  if args.attach_volumes:
+    volumes = args.attach_volumes.split(',')
+    # AWS recommends using device names that are within /dev/sd[f-p].
+    device_letter = ord('f')
+    for volume in volumes:
+      attach = (volume, '/dev/sd'+chr(device_letter))
+      attach_volumes.append(attach)
+      device_letter = device_letter + 1
+
   vm = forensics.StartAnalysisVm(vm_name=args.instance_name,
                                  default_availability_zone=args.zone,
                                  boot_volume_size=int(args.disk_size),
                                  cpu_cores=int(args.cpu_cores),
-                                 ssh_key_name=args.ssh_key_name)
+                                 ssh_key_name=args.ssh_key_name,
+                                 attach_volumes=attach_volumes)
 
   print('Analysis VM started.')
   print('Name: {0:s}, Started: {1:s}, Region: {2:s}'.format(vm[0].name,

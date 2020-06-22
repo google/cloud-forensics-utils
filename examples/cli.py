@@ -130,7 +130,9 @@ def Main() -> None:
                  ''),
                 ('--disk_size', 'Size of disk in GB.', '50'),
                 ('--cpu_cores', 'Instance CPU core count.', '4'),
-                ('--ssh_key_name', 'SSH key pair name.', None)
+                ('--ssh_key_name', 'SSH key pair name.', None),
+                ('--attach_volumes', 'Comma seperated list of volume IDs '
+                                     'to attach. Maximum of 11.', None)
             ])
 
   # GCP parser options
@@ -156,7 +158,9 @@ def Main() -> None:
                 ('zone', 'Zone to create the instance in.', ''),
                 ('--disk_size', 'Size of disk in GB.', '50'),
                 ('--disk_type', 'Type of disk.', 'pd-ssd'),
-                ('--cpu_cores', 'Instance CPU core count.', '4')
+                ('--cpu_cores', 'Instance CPU core count.', '4'),
+                ('--attach_disks', 'Comma seperated list of disk names '
+                                   'to attach.', None)
             ])
   AddParser('gcp', gcp_subparsers, 'querylogs', 'Query GCP logs.',
             args=[

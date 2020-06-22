@@ -104,12 +104,17 @@ def StartAnalysisVm(args: 'argparse.Namespace') -> None:
   Args:
     args (argparse.Namespace): Arguments from ArgumentParser.
   """
+  attach_disks = []
+  if args.attach_disks:
+    attach_disks = args.attach_disks.split(',')
+
   vm = forensics.StartAnalysisVm(args.project,
                                  args.instance_name,
                                  args.zone,
-                                 args.disk_size,
+                                 int(args.disk_size),
                                  args.disk_type,
-                                 args.cpu_cores)
+                                 int(args.cpu_cores),
+                                 attach_disks=attach_disks)
 
   print('Analysis VM started.')
   print('Name: {0:s}, Started: {1:s}'.format(vm[0].name, str(vm[1])))
