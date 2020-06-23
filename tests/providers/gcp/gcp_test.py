@@ -812,6 +812,7 @@ class GoogleCloudMetricsTest(unittest.TestCase):
   """Test Google Cloud Metrics class."""
   # pylint: disable=line-too-long
 
+  @typing.no_type_check
   @mock.patch('libcloudforensics.providers.gcp.internal.metrics.GoogleCloudMetrics.GcmApi')
   def testActiveServices(self, mock_gcm_api):
     """Test that validates the parsing of Metrics API TimeSeries data."""
