@@ -55,14 +55,14 @@ class GoogleCloudMetrics:
         'monitoring', self.CLOUD_METRICS_API_VERSION)
     return self.gcm_api_client
 
-  def ActiveServices(self, timeframe: int = 30) -> Dict[str, str]:
+  def ActiveServices(self, timeframe: int = 30) -> Dict[str, int]:
     """List active services in the project (default: last 30 days).
 
     Args:
       timeframe (int): The number (in days) for which to measure activity.
 
     Returns:
-      Dict[str, str]: Dictionary mapping service name to number of uses.
+      Dict[str, int]: Dictionary mapping service name to number of uses.
     """
     start_time = common.FormatRFC3339(
         datetime.datetime.utcnow() - datetime.timedelta(days=timeframe))
@@ -89,5 +89,5 @@ class GoogleCloudMetrics:
           if points:
             val = points[0].get('value', {}).get('int64Value', '')
             if val:
-              ret[service] = val
+              ret[service] = int(val)
     return ret
