@@ -119,13 +119,20 @@ def StartAnalysisVm(args: 'argparse.Namespace') -> None:
   attach_volumes = []
   if args.attach_volumes:
     volumes = args.attach_volumes.split(',')
+    # Check if volumes parameter exists and if there
+    # are any empty entries.
+    if volumes and all(elements for elements in volumes):
     # AWS recommends using device names that are within /dev/sd[f-p].
-    device_letter = ord('f')
-    for volume in volumes:
-      attach = (volume, '/dev/sd'+chr(device_letter))
-      attach_volumes.append(attach)
-      device_letter = device_letter + 1
+      device_letter = ord('f')
+      for volume in volumes:
+        attach = (volume, '/dev/sd'+chr(device_letter))
+        attach_volumes.append(attach)
+        device_letter = device_letter + 1
+    else:
+      print('error: parameter --attach_volumes: {0:s}'.format(args.attach_volumes))
+      return
 
+  print('Starting analysis VM...')
   vm = forensics.StartAnalysisVm(vm_name=args.instance_name,
                                  default_availability_zone=args.zone,
                                  boot_volume_size=int(args.disk_size),

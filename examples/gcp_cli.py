@@ -107,7 +107,15 @@ def StartAnalysisVm(args: 'argparse.Namespace') -> None:
   attach_disks = []
   if args.attach_disks:
     attach_disks = args.attach_disks.split(',')
+    # Check if attach_disks parameter exists and if there
+    # are any empty entries.
+    if attach_disks and all(elements for elements in attach_disks):
+      pass
+    else:
+      print('error: parameter --attach_disks: {0:s}'.format(args.attach_disks))
+      return
 
+  print('Starting analysis VM...')
   vm = forensics.StartAnalysisVm(args.project,
                                  args.instance_name,
                                  args.zone,
