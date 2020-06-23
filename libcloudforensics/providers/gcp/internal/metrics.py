@@ -30,6 +30,7 @@ class GoogleCloudMetrics:
 
   Attributes:
     project_id: Project name.
+    gcm_api_client: Client to interact with Metrics APIs.
   """
   CLOUD_METRICS_API_VERSION = 'v3'
 
@@ -72,7 +73,8 @@ class GoogleCloudMetrics:
     gcm_timeseries_client = service.projects().timeSeries()
     responses = common.ExecuteRequest(gcm_timeseries_client, 'list', {
         'name': 'projects/{}'.format(self.project_id),
-        'filter': 'metric.type="serviceruntime.googleapis.com/api/request_count"',
+        'filter':
+            'metric.type="serviceruntime.googleapis.com/api/request_count"',
         'interval_startTime': start_time,
         'interval_endTime': end_time,
         'aggregation_groupByFields': 'resource.labels.service',
