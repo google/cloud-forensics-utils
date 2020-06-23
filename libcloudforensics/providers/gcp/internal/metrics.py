@@ -12,7 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Google metrics functionality."""
+"""Google Cloud Metrics functionality."""
 
 import datetime
 from typing import TYPE_CHECKING, Dict
@@ -27,6 +27,9 @@ class GoogleCloudMetrics:
   """Class to call Google Metric APIs.
 
   https://cloud.google.com/monitoring/api/ref_v3/rest/v3/projects.timeSeries
+
+  Attributes:
+    project_id: Project name.
   """
   CLOUD_METRICS_API_VERSION = 'v3'
 
@@ -53,13 +56,13 @@ class GoogleCloudMetrics:
     return self.gcm_api_client
 
   def ActiveServices(self, timeframe: int = 30) -> Dict[str, str]:
-    """List active services in the project (default last 30 days).
+    """List active services in the project (default: last 30 days).
 
-      Args:
-        timeframe (int): The number (in days) for which to measure activity.
+    Args:
+      timeframe (int): The number (in days) for which to measure activity.
 
-      Returns:
-        Dict[str, str]: Dictionary mapping service name to number of uses.
+    Returns:
+      Dict[str, str]: Dictionary mapping service name to number of uses.
     """
     start_time = common.FormatRFC3339(
         datetime.datetime.utcnow() - datetime.timedelta(days=timeframe))
@@ -75,7 +78,7 @@ class GoogleCloudMetrics:
         'aggregation_groupByFields': 'resource.labels.service',
         'aggregation_perSeriesAligner': 'ALIGN_SUM',
         'aggregation_alignmentPeriod': '{}s'.format(period),
-        'aggregation_crossSeriesReducer':'REDUCE_SUM',
+        'aggregation_crossSeriesReducer': 'REDUCE_SUM',
     })
     ret = {}
     for response in responses:
@@ -84,7 +87,7 @@ class GoogleCloudMetrics:
         if service:
           points = ts.get('points', [])
           if points:
-            val = (points[0]).get('value', {}).get('int64Value', '')
+            val = points[0].get('value', {}).get('int64Value', '')
             if val:
               ret[service] = val
     return ret

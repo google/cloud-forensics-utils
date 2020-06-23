@@ -109,5 +109,6 @@ def ListServices(args: 'argparse.Namespace') -> None:
   apis = gcp_metrics.GoogleCloudMetrics(args.project)
   results = apis.ActiveServices()
   print('Found {0:d} APIs:'.format(len(results)))
-  for service, val in results.items():
-    print("{}: {}".format(service, val))
+  sorted_apis = sorted(results.items(), key=lambda x: x[1], reverse=True)
+  for i in sorted_apis:
+    print('{}: {}'.format(i[0], i[1]))
