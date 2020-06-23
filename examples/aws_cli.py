@@ -69,13 +69,16 @@ def CreateVolumeCopy(args: 'argparse.Namespace') -> None:
     args (argparse.Namespace): Arguments from ArgumentParser.
   """
   print('Starting volume copy...')
+  tags = None
+  if args.tags:
+    tags = json.loads(args.tags)
   volume_copy = forensics.CreateVolumeCopy(args.zone,
                                            dst_zone=args.dst_zone,
                                            instance_id=args.instance_id,
                                            volume_id=args.volume_id,
                                            src_profile=args.src_profile,
                                            dst_profile=args.dst_profile,
-                                           tags=json.loads(args.tags))
+                                           tags=tags)
   print(
       'Done! Volume {0:s} successfully created. You will find it in '
       'your AWS account under the name {1:s}.'.format(
