@@ -115,7 +115,9 @@ def Main() -> None:
                                   'file.', None),
                 ('--dst_profile', 'The name of the profile for the destination '
                                   'account, as defined in the AWS credentials '
-                                  'file.', None)
+                                  'file.', None),
+                ('--tags', 'A string dictionary of tags to add to the volume '
+                           'copy. ', None)
             ])
   AddParser('aws', aws_subparsers, 'querylogs', 'Query AWS CloudTrail logs',
             args=[

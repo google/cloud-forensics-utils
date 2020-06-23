@@ -17,6 +17,8 @@
 # https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html #pylint: disable=line-too-long
 """Demo CLI tool for AWS."""
 
+import json
+
 from datetime import datetime
 from typing import TYPE_CHECKING
 
@@ -72,7 +74,8 @@ def CreateVolumeCopy(args: 'argparse.Namespace') -> None:
                                            instance_id=args.instance_id,
                                            volume_id=args.volume_id,
                                            src_profile=args.src_profile,
-                                           dst_profile=args.dst_profile)
+                                           dst_profile=args.dst_profile,
+                                           tags=json.loads(args.tags))
   print(
       'Done! Volume {0:s} successfully created. You will find it in '
       'your AWS account under the name {1:s}.'.format(

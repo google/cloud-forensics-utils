@@ -207,7 +207,7 @@ class GoogleCloudComputeClient:
 
 def ExecuteRequest(client: 'googleapiclient.discovery.Resource',
                    func: str,
-                   kwargs: Dict[str, str],
+                   kwargs: Dict[str, Any],
                    throttle: bool = False) -> List[Dict[str, Any]]:
   """Execute a request to the GCP API.
 
@@ -232,7 +232,10 @@ def ExecuteRequest(client: 'googleapiclient.discovery.Resource',
     if throttle:
       time.sleep(1)
     if next_token:
-      kwargs['pageToken'] = next_token
+      if 'body' in kwargs:
+        kwargs['body']['pageToken'] = next_token
+      else:
+        kwargs['pageToken'] = next_token
     try:
       request = getattr(client, func)
       response = request(**kwargs).execute()
