@@ -64,8 +64,8 @@ def CreateDiskCopy(args: 'argparse.Namespace') -> None:
   """
 
   disk = forensics.CreateDiskCopy(args.project,
-                                  args.dstproject,
-                                  args.instancename,
+                                  args.dst_project,
+                                  args.instance_name,
                                   args.zone,
                                   disk_name=args.disk_name)
 
