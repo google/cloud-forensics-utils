@@ -16,27 +16,27 @@
 # Make sure that your AWS/GCP  credentials are configured correclty
 """CLI tools for libcloudforensics"""
 
+import argparse
 import sys
 
-import argparse
 from typing import Tuple, List, Union, Optional
-
 from examples import aws_cli, gcp_cli
-
 
 PROVIDER_TO_FUNC = {
     'aws': {
+        'copydisk': aws_cli.CreateVolumeCopy,
         'listinstances': aws_cli.ListInstances,
         'listdisks': aws_cli.ListVolumes,
-        'copydisk': aws_cli.CreateVolumeCopy,
-        'querylogs': aws_cli.QueryLogs
+        'querylogs': aws_cli.QueryLogs,
+        'startvm': aws_cli.StartAnalysisVm
     },
     'gcp': {
+        'copydisk': gcp_cli.CreateDiskCopy,
         'listinstances': gcp_cli.ListInstances,
         'listdisks': gcp_cli.ListDisks,
-        'copydisk': gcp_cli.CreateDiskCopy,
+        'listlogs': gcp_cli.ListLogs,
         'querylogs': gcp_cli.QueryLogs,
-        'listlogs': gcp_cli.ListLogs
+        'startvm': gcp_cli.StartAnalysisVm
     }
 }
 
@@ -124,6 +124,16 @@ def Main() -> None:
                 ('--start', 'Start date for query (2020-05-01 11:13:00)', None),
                 ('--end', 'End date for query (2020-05-01 11:13:00)', None)
             ])
+  AddParser('aws', aws_subparsers, 'startvm', 'Start a forensic analysis VM.',
+            args=[
+                ('instance_name', 'Name of EC2 instance to re-use or create.',
+                 ''),
+                ('--disk_size', 'Size of disk in GB.', '50'),
+                ('--cpu_cores', 'Instance CPU core count.', '4'),
+                ('--ssh_key_name', 'SSH key pair name.', None),
+                ('--attach_volumes', 'Comma seperated list of volume IDs '
+                                     'to attach. Maximum of 11.', None)
+            ])
 
   # GCP parser options
   gcp_parser.add_argument('project', help='Source GCP project.')
@@ -140,6 +150,17 @@ def Main() -> None:
                 ('zone', 'Zone to create the disk in.', ''),
                 ('--disk_name', 'Name of the disk to copy. If None, the boot '
                                 'disk of the instance will be copied.', None)
+            ])
+  AddParser('gcp', gcp_subparsers, 'startvm', 'Start a forensic analysis VM.',
+            args=[
+                ('instance_name', 'Name of the GCE instance to create.',
+                 ''),
+                ('zone', 'Zone to create the instance in.', ''),
+                ('--disk_size', 'Size of disk in GB.', '50'),
+                ('--disk_type', 'Type of disk.', 'pd-ssd'),
+                ('--cpu_cores', 'Instance CPU core count.', '4'),
+                ('--attach_disks', 'Comma seperated list of disk names '
+                                   'to attach.', None)
             ])
   AddParser('gcp', gcp_subparsers, 'querylogs', 'Query GCP logs.',
             args=[

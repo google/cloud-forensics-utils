@@ -107,3 +107,43 @@ def QueryLogs(args: 'argparse.Namespace') -> None:
     print('Log events found: {0:d}'.format(len(result)))
     for event in result:
       print(event)
+
+
+def StartAnalysisVm(args: 'argparse.Namespace') -> None:
+  """Start forensic analysis VM.
+
+  Args:
+    args (argparse.Namespace): Arguments from ArgumentParser.
+  """
+  if len(args.attach_volumes) > 11:
+    print('error: --attach_volumes must be < 11')
+    return
+
+  attach_volumes = []
+  if args.attach_volumes:
+    volumes = args.attach_volumes.split(',')
+    # Check if volumes parameter exists and if there
+    # are any empty entries.
+    if not (volumes and all(elements for elements in volumes)):
+      print('error: parameter --attach_volumes: {0:s}'.format(args.attach_volumes))
+      return
+
+    # AWS recommends using device names that are within /dev/sd[f-p].
+    device_letter = ord('f')
+    for volume in volumes:
+      attach = (volume, '/dev/sd'+chr(device_letter))
+      attach_volumes.append(attach)
+      device_letter = device_letter + 1
+
+  print('Starting analysis VM...')
+  vm = forensics.StartAnalysisVm(vm_name=args.instance_name,
+                                 default_availability_zone=args.zone,
+                                 boot_volume_size=int(args.disk_size),
+                                 cpu_cores=int(args.cpu_cores),
+                                 ssh_key_name=args.ssh_key_name,
+                                 attach_volumes=attach_volumes)
+
+  print('Analysis VM started.')
+  print('Name: {0:s}, Started: {1:s}, Region: {2:s}'.format(vm[0].name,
+                                                            str(vm[1]),
+                                                            vm[0].region))
