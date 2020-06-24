@@ -744,3 +744,26 @@ class AWSAccount:
     # pylint: enable=line-too-long
     block_device_mapping['Ebs']['VolumeSize'] = boot_volume_size
     return block_device_mapping
+
+  def ListImages(self,
+                 filter: str) -> List[Dict[str, Any]]:
+    """List AMI images.
+
+    Args:
+      filter (List[Dict]): The filter expression.
+      See https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ec2.html#EC2.Client.describe_images  # pylint: disable=line-too-long
+
+    Returns:
+      List[Dict[str, Any]]: The list of images with their properties.
+
+    Raises:
+      RuntimeError: If the images could not be listed.
+    """
+
+    client = self.ClientApi(common.EC2_SERVICE)
+    try:
+      images = client.describe_images(Filters=filter)
+    except client.exceptions.ClientError as exception:
+      raise RuntimeError(str(exception))
+
+    return images['Images']
