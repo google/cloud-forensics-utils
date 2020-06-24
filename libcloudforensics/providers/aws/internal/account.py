@@ -746,7 +746,7 @@ class AWSAccount:
     return block_device_mapping
 
   def ListImages(self,
-                 qfilter: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+                 qfilter: Optional[List[Dict[str, Any]]]) -> List[Dict[str, Any]]:
     """List AMI images.
 
     Args:

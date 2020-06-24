@@ -117,6 +117,20 @@ class EndToEndTest(unittest.TestCase):
     self._StoreVolumeForCleanup(aws_account, aws_volume)
 
   @typing.no_type_check
+  def testListImages(self):
+    """End to end test on AWS.
+
+    Test listing AMI images with a filter.
+    """
+
+    aws_account = account.AWSAccount(self.zone)
+    qfilter = [{'Name':'name', 'Values':['Ubuntu 18.04*']}]
+    images = aws_account.ListImages(qfilter)
+
+    self.assertGreater(len(images), 0)
+    self.assertIn('Name', images[0])
+
+  @typing.no_type_check
   def testEncryptedVolumeCopy(self):
     """End to end test on AWS.
 
