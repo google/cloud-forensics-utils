@@ -20,7 +20,7 @@ analysis virtual machine to be used in incident response.
 
 import binascii
 import json
-from typing import Dict, List, Tuple, Optional, Any
+from typing import Dict, List, Tuple, Optional, Any, cast
 
 import boto3
 import botocore
@@ -766,4 +766,4 @@ class AWSAccount:
     except client.exceptions.ClientError as exception:
       raise RuntimeError(str(exception))
 
-    return images['Images']
+    return cast(List[Dict[str, Any]], images['Images'])
