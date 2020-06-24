@@ -751,7 +751,7 @@ class AWSAccount:
     """List AMI images.
 
     Args:
-      qfilter (List[Dict): The filter expression.
+      qfilter (List[Dict]): The filter expression.
       See https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ec2.html#EC2.Client.describe_images  # pylint: disable=line-too-long
 
     Returns:
