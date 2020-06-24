@@ -18,7 +18,7 @@ import json
 from typing import TYPE_CHECKING
 
 from libcloudforensics.providers.gcp.internal import log as gcp_log
-from libcloudforensics.providers.gcp.internal import metrics as gcp_metrics
+from libcloudforensics.providers.gcp.internal import monitoring as gcp_monitoring
 from libcloudforensics.providers.gcp.internal import project as gcp_project
 from libcloudforensics.providers.gcp import forensics
 
@@ -106,7 +106,7 @@ def ListServices(args: 'argparse.Namespace') -> None:
   Args:
     args (argparse.Namespace): Arguments from ArgumentParser.
   """
-  apis = gcp_metrics.GoogleCloudMetrics(args.project)
+  apis = gcp_monitoring.GoogleCloudMonitoring(args.project)
   results = apis.ActiveServices()
   print('Found {0:d} APIs:'.format(len(results)))
   sorted_apis = sorted(results.items(), key=lambda x: x[1], reverse=True)

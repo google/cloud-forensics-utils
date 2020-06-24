@@ -30,7 +30,7 @@ from libcloudforensics.providers.gcp import forensics
 from libcloudforensics.providers.gcp.internal import common, compute
 from libcloudforensics.providers.gcp.internal import project as gcp_project
 from libcloudforensics.providers.gcp.internal import log as gcp_log
-from libcloudforensics.providers.gcp.internal import metrics as gcp_metrics
+from libcloudforensics.providers.gcp.internal import monitoring as gcp_monitoring
 from libcloudforensics.scripts import utils
 
 # For the forensics analysis
@@ -70,7 +70,7 @@ FAKE_LOG_ENTRIES = [{
     'textPayload': 'insert.compute.create'
 }]
 FAKE_NEXT_PAGE_TOKEN = 'abcdefg1234567'
-FAKE_METRICS = gcp_metrics.GoogleCloudMetrics('fake-target-project')
+FAKE_MONITORING = gcp_monitoring.GoogleCloudMonitoring('fake-target-project')
 
 # Mock struct to mimic GCP's API responses
 MOCK_INSTANCES_AGGREGATED = {
@@ -808,17 +808,17 @@ class GCPTest(unittest.TestCase):
         'Some-prefix-that-starts-with-a-capital-letter')
 
 
-class GoogleCloudMetricsTest(unittest.TestCase):
-  """Test Google Cloud Metrics class."""
+class GoogleCloudMonitoringTest(unittest.TestCase):
+  """Test Google Cloud Monitoring class."""
   # pylint: disable=line-too-long
 
   @typing.no_type_check
-  @mock.patch('libcloudforensics.providers.gcp.internal.metrics.GoogleCloudMetrics.GcmApi')
+  @mock.patch('libcloudforensics.providers.gcp.internal.monitoring.GoogleCloudMonitoring.GcmApi')
   def testActiveServices(self, mock_gcm_api):
-    """Test that validates the parsing of Metrics API TimeSeries data."""
+    """Test that validates the parsing of Monitoring API TimeSeries data."""
     services = mock_gcm_api.return_value.projects.return_value.timeSeries.return_value.list
     services.return_value.execute.return_value = MOCK_GCM_METRICS_COUNT
-    active_services = FAKE_METRICS.ActiveServices()
+    active_services = FAKE_MONITORING.ActiveServices()
     self.assertIn("compute.googleapis.com", active_services)
     self.assertEqual(active_services["compute.googleapis.com"], MOCK_COMPUTE_METRIC)
     self.assertIn("stackdriver.googleapis.com", active_services)

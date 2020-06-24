@@ -12,7 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Google Cloud Metrics functionality."""
+"""Google Cloud Monitoring functionality."""
 
 import datetime
 from typing import TYPE_CHECKING, Dict
@@ -23,19 +23,19 @@ if TYPE_CHECKING:
   import googleapiclient
 
 
-class GoogleCloudMetrics:
+class GoogleCloudMonitoring:
   """Class to call Google Metric APIs.
 
   https://cloud.google.com/monitoring/api/ref_v3/rest/v3/projects.timeSeries
 
   Attributes:
     project_id: Project name.
-    gcm_api_client: Client to interact with Metrics APIs.
+    gcm_api_client: Client to interact with Monitoring APIs.
   """
-  CLOUD_METRICS_API_VERSION = 'v3'
+  CLOUD_MONITORING_API_VERSION = 'v3'
 
   def __init__(self, project_id: str) -> None:
-    """Initialize the GoogleCloudMetrics object.
+    """Initialize the GoogleCloudMonitoring object.
 
     Args:
       project_id (str): The name of the project.
@@ -45,22 +45,24 @@ class GoogleCloudMetrics:
     self.project_id = project_id
 
   def GcmApi(self) -> 'googleapiclient.discovery.Resource':
-    """Get a Google Cloud Metrics service object.
+    """Get a Google Cloud Monitoring service object.
 
     Returns:
-      googleapiclient.discovery.Resource: A Google Cloud Metrics service object.
+      googleapiclient.discovery.Resource: A Google Cloud Monitoring
+          service object.
     """
     if self.gcm_api_client:
       return self.gcm_api_client
     self.gcm_api_client = common.CreateService(
-        'monitoring', self.CLOUD_METRICS_API_VERSION)
+        'monitoring', self.CLOUD_MONITORING_API_VERSION)
     return self.gcm_api_client
 
   def ActiveServices(self, timeframe: int = 30) -> Dict[str, int]:
     """List active services in the project (default: last 30 days).
 
     Args:
-      timeframe (int): The number (in days) for which to measure activity.
+      timeframe (int): Optional. The number (in days) for
+          which to measure activity.
 
     Returns:
       Dict[str, int]: Dictionary mapping service name to number of uses.
