@@ -20,7 +20,7 @@
 import json
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List
+from typing import TYPE_CHECKING
 
 from libcloudforensics.providers.aws.internal import account
 from libcloudforensics.providers.aws.internal import log as aws_log
@@ -156,9 +156,9 @@ def ListImages(args: 'argparse.Namespace') -> None:
   """
   aws_account = account.AWSAccount(args.zone)
 
-  filter = [{'Name':'name','Values':[args.filter]}]
+  qfilter = [{'Name':'name', 'Values':[args.filter]}]
 
-  images = aws_account.ListImages(filter)
+  images = aws_account.ListImages(qfilter)
 
   for image in images:
     print('Name: {0:s}, ImageId: {1:s}'.format(image['Name'],
