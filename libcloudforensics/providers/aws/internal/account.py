@@ -20,7 +20,7 @@ analysis virtual machine to be used in incident response.
 
 import binascii
 import json
-from typing import Dict, List, Tuple, Optional, Any, cast
+from typing import Dict, List, Tuple, Optional, Any
 
 import boto3
 import botocore
@@ -745,8 +745,9 @@ class AWSAccount:
     block_device_mapping['Ebs']['VolumeSize'] = boot_volume_size
     return block_device_mapping
 
+  # pylint: disable=line-too-long
   def ListImages(self,
-                 qfilter: Optional[List[Dict[str, Any]]]) -> List[Dict[str, Any]]:  # pylint: disable=line-too-long
+                 qfilter: Optional[List[Dict[str, Any]]]) -> List[Dict[str, Any]]:
     """List AMI images.
 
     Args:
@@ -762,8 +763,9 @@ class AWSAccount:
 
     client = self.ClientApi(common.EC2_SERVICE)
     try:
-      images = client.describe_images(Filters=qfilter)
+      images = client.describe_images(Filters=qfilter) # type: Dict[str, List[Dict[str, Any]]]
     except client.exceptions.ClientError as exception:
       raise RuntimeError(str(exception))
 
-    return cast(List[Dict[str, Any]], images['Images'])
+    return images['Images']
+  # pylint: enable=line-too-long
