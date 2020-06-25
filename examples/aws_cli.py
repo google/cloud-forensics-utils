@@ -162,6 +162,5 @@ def ListImages(args: 'argparse.Namespace') -> None:
   images = aws_account.ListImages(qfilter)
 
   for image in images:
-    print('Name: {0:s}, ImageId: {1:s}, '
-          'Location: {2:s}'.format(image['Name'], image['ImageId'],
-                                   image['ImageLocation']))
+    print('Name: {0:s}, ImageId: {1:s}, Location: {2:s}'.format(
+        image['Name'], image['ImageId'], image['ImageLocation']))
