@@ -82,9 +82,10 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
     Returns:
       str: Value of key or None if key is missing.
     """
-
-    self._data = self.GetOperation()
-    return self._data.get(key)
+    
+    # pylint: disable=no-member
+    self._data = self.GetOperation()   # type: ignore
+    return self._data.get(key)  # type: ignore
 
   def GetSourceString(self) -> str:
     """API URL to the resource.
@@ -158,8 +159,8 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
       Dict: A dictionary of all labels.
     """
 
-    operation = self.GetOperation()
-    return operation.get('labels')
+    operation = self.GetOperation()  # type: ignore
+    return operation.get('labels')  # type: ignore
 
   def AddLabels(self,
                 new_labels_dict: Dict[str, Any],
@@ -220,6 +221,6 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
           resource=self.name, project=self.project_id,
           body=request_body).execute()
     if blocking_call:
-      self.BlockOperation(response, zone=self.zone)
+      self.BlockOperation(response, zone=self.zone)  # type: ignore
 
     return response

@@ -698,7 +698,8 @@ class GoogleCloudLogTest(unittest.TestCase):
 class GoogleCloudStorageTest(unittest.TestCase):
   """Test Google Cloud Storage class."""
   # pylint: disable=line-too-long
-
+  
+  @typing.no_type_check
   def testSplitGcsPath(self):
     """Tests that GCS path split is correctly done."""
     bucket, object_uri = FAKE_GCS.SplitGcsPath(FAKE_GCS_PATH)

@@ -112,7 +112,7 @@ class GoogleCloudStorage:
     md5_base64 = self.GetOperationObject(gcs_path, user_project)['md5Hash']
     if in_hex:
       return base64.b64decode(md5_base64).hex()
-    return md5_base64
+    return md5_base64  # type: ignore
 
   def GetSizeObject(
       self, gcs_path: str, user_project: Optional[str] = None) -> str:
@@ -129,4 +129,4 @@ class GoogleCloudStorage:
     """
 
     bytes_count = self.GetOperationObject(gcs_path, user_project)['size']
-    return bytes_count
+    return bytes_count  # type: ignore
