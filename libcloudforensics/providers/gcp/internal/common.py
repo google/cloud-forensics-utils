@@ -15,6 +15,7 @@
 """Common utilities."""
 
 import binascii
+import datetime
 import logging
 import re
 import socket
@@ -255,3 +256,15 @@ def ExecuteRequest(
     next_token = response.get('nextPageToken')
     if not next_token:
       return responses
+
+
+def FormatRFC3339(datetime_instance: datetime.datetime) -> str:
+  """Formats a datetime per RFC 3339.
+
+  Args:
+    datetime_instance: The datetime group to be formatted.
+
+  Returns:
+    str: A string formatted as per RFC3339 (e.g 2018-05-11T12:34:56.992Z)
+  """
+  return datetime_instance.isoformat('T') + 'Z'

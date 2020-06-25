@@ -16,27 +16,30 @@
 # Make sure that your AWS/GCP  credentials are configured correclty
 """CLI tools for libcloudforensics"""
 
+import argparse
 import sys
 
-import argparse
 from typing import Tuple, List, Optional
-
 from examples import aws_cli, gcp_cli
 
 PROVIDER_TO_FUNC = {
     'aws': {
+        'copydisk': aws_cli.CreateVolumeCopy,
+        'listimages': aws_cli.ListImages,
         'listinstances': aws_cli.ListInstances,
         'listdisks': aws_cli.ListVolumes,
-        'copydisk': aws_cli.CreateVolumeCopy,
-        'querylogs': aws_cli.QueryLogs
+        'querylogs': aws_cli.QueryLogs,
+        'startvm': aws_cli.StartAnalysisVm
     },
     'gcp': {
-        'listinstances': gcp_cli.ListInstances,
-        'listdisks': gcp_cli.ListDisks,
         'copydisk': gcp_cli.CreateDiskCopy,
-        'querylogs': gcp_cli.QueryLogs,
-        'listlogs': gcp_cli.ListLogs,
         'creatediskgcs': gcp_cli.CreateDiskFromGCSImage,
+        'listdisks': gcp_cli.ListDisks,
+        'listinstances': gcp_cli.ListInstances,
+        'listlogs': gcp_cli.ListLogs,
+        'listservices': gcp_cli.ListServices,
+        'querylogs': gcp_cli.QueryLogs,
+        'startvm': gcp_cli.StartAnalysisVm
     }
 }
 
@@ -97,99 +100,92 @@ def Main() -> None:
       help='The AWS zone in which resources are '
       'located, e.g. us-east-2b')
   aws_subparsers = aws_parser.add_subparsers()
-  AddParser(
-      'aws',
-      aws_subparsers,
-      'listinstances',
-      'List EC2 instances in AWS account.')
-  AddParser(
-      'aws', aws_subparsers, 'listdisks', 'List EBS volumes in AWS account.')
-  AddParser(
-      'aws',
-      aws_subparsers,
-      'copydisk',
-      'Create an AWS volume copy.',
-      args=[(
-          '--dst_zone',
-          'The AWS zone in which to copy the volume. By '
-          'default this is the same as "zone".',
-          None), ('--instance_id', 'The AWS unique instance ID', None),
-            (
-                '--volume_id',
-                'The AWS unique volume ID of the volume to '
-                'copy. If none specified, then --instance_id '
-                'must be specified and the boot volume of the '
-                'AWS instance will be copied.',
-                None),
-            (
-                '--src_profile',
-                'The name of the profile for the source '
-                'account, as defined in the AWS credentials '
-                'file.',
-                None),
-            (
-                '--dst_profile',
-                'The name of the profile for the destination '
-                'account, as defined in the AWS credentials '
-                'file.',
-                None),
-            (
-                '--tags',
-                'A string dictionary of tags to add to the volume '
-                'copy. ',
-                None)])
-  AddParser(
-      'aws',
-      aws_subparsers,
-      'querylogs',
-      'Query AWS CloudTrail logs',
-      args=[('--filter', 'Query filter: \'value,key\'', ''),
-            ('--start', 'Start date for query (2020-05-01 11:13:00)', None),
-            ('--end', 'End date for query (2020-05-01 11:13:00)', None)])
+  AddParser('aws', aws_subparsers, 'listinstances',
+            'List EC2 instances in AWS account.')
+  AddParser('aws', aws_subparsers, 'listdisks',
+            'List EBS volumes in AWS account.')
+  AddParser('aws', aws_subparsers, 'copydisk', 'Create an AWS volume copy.',
+            args=[
+                ('--dst_zone', 'The AWS zone in which to copy the volume. By '
+                               'default this is the same as "zone".',
+                 None),
+                ('--instance_id', 'The AWS unique instance ID', None),
+                ('--volume_id', 'The AWS unique volume ID of the volume to '
+                                'copy. If none specified, then --instance_id '
+                                'must be specified and the boot volume of the '
+                                'AWS instance will be copied.', None),
+                ('--src_profile', 'The name of the profile for the source '
+                                  'account, as defined in the AWS credentials '
+                                  'file.', None),
+                ('--dst_profile', 'The name of the profile for the destination '
+                                  'account, as defined in the AWS credentials '
+                                  'file.', None),
+                ('--tags', 'A string dictionary of tags to add to the volume '
+                           'copy. ', None)
+            ])
+  AddParser('aws', aws_subparsers, 'querylogs', 'Query AWS CloudTrail logs',
+            args=[
+                ('--filter', 'Query filter: \'value,key\'', ''),
+                ('--start', 'Start date for query (2020-05-01 11:13:00)', None),
+                ('--end', 'End date for query (2020-05-01 11:13:00)', None)
+            ])
+  AddParser('aws', aws_subparsers, 'startvm', 'Start a forensic analysis VM.',
+            args=[
+                ('instance_name', 'Name of EC2 instance to re-use or create.',
+                 ''),
+                ('--disk_size', 'Size of disk in GB.', '50'),
+                ('--cpu_cores', 'Instance CPU core count.', '4'),
+                ('--ssh_key_name', 'SSH key pair name.', None),
+                ('--attach_volumes', 'Comma seperated list of volume IDs '
+                                     'to attach. Maximum of 11.', None)
+            ])
+  AddParser('aws', aws_subparsers, 'listimages', 'List AMI images.',
+            args=[
+                ('--filter', 'Filter to apply to Name of AMI image.', None),
+            ])
 
   # GCP parser options
   gcp_parser.add_argument('project', help='GCP project ID.')
   gcp_subparsers = gcp_parser.add_subparsers()
-  AddParser(
-      'gcp',
-      gcp_subparsers,
-      'listinstances',
-      'List GCE instances in GCP project.')
-  AddParser(
-      'gcp', gcp_subparsers, 'listdisks', 'List GCE disks in GCP project.')
-  AddParser(
-      'gcp',
-      gcp_subparsers,
-      'copydisk',
-      'Create a GCP disk copy.',
-      args=[('dst_project', 'Destination GCP project.', ''),
-            ('instance_name', 'Name of the instance to copy disk from.', ''),
-            ('zone', 'Zone to create the disk in.', ''),
-            (
-                '--disk_name',
-                'Name of the disk to copy. If None, the boot '
-                'disk of the instance will be copied.',
-                None)])
-  AddParser(
-      'gcp',
-      gcp_subparsers,
-      'querylogs',
-      'Query GCP logs.',
-      args=[('--filter', 'Query filter.', None)])
+  AddParser('gcp', gcp_subparsers, 'listinstances',
+            'List GCE instances in GCP project.')
+  AddParser('gcp', gcp_subparsers, 'listdisks',
+            'List GCE disks in GCP project.')
+  AddParser('gcp', gcp_subparsers, 'copydisk', 'Create a GCP disk copy.',
+            args=[
+                ('dst_project', 'Destination GCP project.', ''),
+                ('instance_name', 'Name of the instance to copy disk from.',
+                 ''),
+                ('zone', 'Zone to create the disk in.', ''),
+                ('--disk_name', 'Name of the disk to copy. If None, the boot '
+                                'disk of the instance will be copied.', None)
+            ])
+  AddParser('gcp', gcp_subparsers, 'startvm', 'Start a forensic analysis VM.',
+            args=[
+                ('instance_name', 'Name of the GCE instance to create.',
+                 ''),
+                ('zone', 'Zone to create the instance in.', ''),
+                ('--disk_size', 'Size of disk in GB.', '50'),
+                ('--disk_type', 'Type of disk.', 'pd-ssd'),
+                ('--cpu_cores', 'Instance CPU core count.', '4'),
+                ('--attach_disks', 'Comma seperated list of disk names '
+                                   'to attach.', None)
+            ])
+  AddParser('gcp', gcp_subparsers, 'querylogs', 'Query GCP logs.',
+            args=[
+                ('--filter', 'Query filter.', None)
+            ])
   AddParser('gcp', gcp_subparsers, 'listlogs', 'List GCP logs for a project.')
-  AddParser(
-      'gcp',
-      gcp_subparsers,
-      'creatediskgcs',
-      'Creates GCE persistent '
-      'disk from image in GCS.',
-      args=[('gcs_path', 'Path to the source image in GCS.', ''),
-            ('zone', 'Zone to create the disk in.', ''),
-            (
-                '--disk_name',
-                'Name of the disk to create. If None, name '
-                'will be printed at the end.',
-                None)])
+  AddParser('gcp', gcp_subparsers, 'listservices',
+            'List active services for a project.')
+  AddParser('gcp', gcp_subparsers, 'creatediskgcs', 'Creates GCE persistent '
+                                                    'disk from image in GCS.',
+            args=[('gcs_path', 'Path to the source image in GCS.', ''),
+                  ('zone', 'Zone to create the disk in.', ''),
+                  ('--disk_name',
+                   'Name of the disk to create. If None, name '
+                   'will be printed at the end.',
+                   None)])
 
   if len(sys.argv) == 1:
     parser.print_help()
