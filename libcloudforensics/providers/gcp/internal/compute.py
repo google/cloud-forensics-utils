@@ -650,7 +650,8 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     common.LOGGER.info(
         'Image {0:s} imported as GCE image {1:s}.'.format(
             storage_image_path, image_name))
-    return GoogleComputeImage(self.project_id, None, image_name)
+    return GoogleComputeImage(
+        self.project_id, None, image_name)  # type: ignore
 
 
 class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):

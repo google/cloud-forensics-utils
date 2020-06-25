@@ -124,7 +124,8 @@ class GoogleCloudProject:
 
     if self._storage:
       return self._storage
-    self._storage = storage_module.GoogleCloudStorage(self.project_id)  # type: ignore
+    self._storage = storage_module.GoogleCloudStorage(  # type: ignore
+        self.project_id)
     return self._storage
 
   @property
