@@ -219,7 +219,7 @@ def StartAnalysisVm(
   if not ami:
     qfilter = [{'Name':'name', 'Values':[UBUNTU_1804_FILTER]}]
     ami_list = aws_account.ListImages(qfilter)
-    # We should only het 1 AMI image back, if we get multiple we
+    # We should only get 1 AMI image back, if we get multiple we
     # have no way of knowing which one to use.
     if len(ami_list) > 1:
       raise RuntimeError('error - ListImages returns >1 AMI image!')
