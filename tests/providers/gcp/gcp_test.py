@@ -26,11 +26,14 @@ from googleapiclient.errors import HttpError
 import mock
 import six
 
+# pylint: disable=line-too-long
 from libcloudforensics.providers.gcp import forensics
 from libcloudforensics.providers.gcp.internal import common, compute
 from libcloudforensics.providers.gcp.internal import project as gcp_project
 from libcloudforensics.providers.gcp.internal import log as gcp_log
+from libcloudforensics.providers.gcp.internal import monitoring as gcp_monitoring
 from libcloudforensics.scripts import utils
+# pylint: enable=line-too-long
 
 # For the forensics analysis
 FAKE_ANALYSIS_PROJECT = gcp_project.GoogleCloudProject(
@@ -69,6 +72,7 @@ FAKE_LOG_ENTRIES = [{
     'textPayload': 'insert.compute.create'
 }]
 FAKE_NEXT_PAGE_TOKEN = 'abcdefg1234567'
+FAKE_MONITORING = gcp_monitoring.GoogleCloudMonitoring('fake-target-project')
 
 # Mock struct to mimic GCP's API responses
 MOCK_INSTANCES_AGGREGATED = {
@@ -178,6 +182,81 @@ MOCK_GCE_OPERATION_INSTANCES_GET = {
             'diskName': FAKE_DISK.name
         }
     }]
+}
+
+MOCK_STACKDRIVER_METRIC = 6693417
+MOCK_COMPUTE_METRIC = 8093
+MOCK_LOGGING_METRIC = 1
+
+MOCK_GCM_METRICS_COUNT = {
+    'timeSeries': [{
+        'metric': {
+            'type': 'serviceruntime.googleapis.com/api/request_count'
+        },
+        'resource': {
+            'type': 'consumed_api',
+            'labels': {
+                'project_id': 'fake-target-project',
+                'service': 'stackdriver.googleapis.com'
+            }
+        },
+        'metricKind': 'DELTA',
+        'valueType': 'INT64',
+        'points': [{
+            'interval': {
+                'startTime': '2020-05-18T00:00:00Z',
+                'endTime': '2020-06-17T00:00:00Z'
+            },
+            'value': {
+                'int64Value': MOCK_STACKDRIVER_METRIC
+            }
+        }]
+    }, {
+        'metric': {
+            'type': 'serviceruntime.googleapis.com/api/request_count'
+        },
+        'resource': {
+            'type': 'consumed_api',
+            'labels': {
+                'service': 'compute.googleapis.com',
+                'project_id': 'fake-target-project'
+            }
+        },
+        'metricKind': 'DELTA',
+        'valueType': 'INT64',
+        'points': [{
+            'interval': {
+                'startTime': '2020-05-18T00:00:00Z',
+                'endTime': '2020-06-17T00:00:00Z'
+            },
+            'value': {
+                'int64Value': MOCK_COMPUTE_METRIC
+            }
+        }]
+    }, {
+        'metric': {
+            'type': 'serviceruntime.googleapis.com/api/request_count'
+        },
+        'resource': {
+            'type': 'consumed_api',
+            'labels': {
+                'service': 'logging.googleapis.com',
+                'project_id': 'fake-target-project'
+            }
+        },
+        'metricKind': 'DELTA',
+        'valueType': 'INT64',
+        'points': [{
+            'interval': {
+                'startTime': '2020-05-18T00:00:00Z',
+                'endTime': '2020-06-17T00:00:00Z'
+            },
+            'value': {
+                'int64Value': MOCK_LOGGING_METRIC
+            }
+        }]
+    }],
+    'unit': '1'
 }
 
 # See: https://cloud.google.com/compute/docs/reference/rest/v1/disks
@@ -724,6 +803,24 @@ class GCPTest(unittest.TestCase):
         ValueError, common.GenerateDiskName, FAKE_SNAPSHOT,
         'Some-prefix-that-starts-with-a-capital-letter')
 
+
+class GoogleCloudMonitoringTest(unittest.TestCase):
+  """Test Google Cloud Monitoring class."""
+  # pylint: disable=line-too-long
+
+  @typing.no_type_check
+  @mock.patch('libcloudforensics.providers.gcp.internal.monitoring.GoogleCloudMonitoring.GcmApi')
+  def testActiveServices(self, mock_gcm_api):
+    """Validates the parsing of Monitoring API TimeSeries data."""
+    services = mock_gcm_api.return_value.projects.return_value.timeSeries.return_value.list
+    services.return_value.execute.return_value = MOCK_GCM_METRICS_COUNT
+    active_services = FAKE_MONITORING.ActiveServices()
+    self.assertIn('compute.googleapis.com', active_services)
+    self.assertEqual(active_services['compute.googleapis.com'], MOCK_COMPUTE_METRIC)
+    self.assertIn('stackdriver.googleapis.com', active_services)
+    self.assertEqual(active_services['stackdriver.googleapis.com'], MOCK_STACKDRIVER_METRIC)
+    self.assertIn('logging.googleapis.com', active_services)
+    self.assertEqual(active_services['logging.googleapis.com'], MOCK_LOGGING_METRIC)
 
 if __name__ == '__main__':
   unittest.main()
