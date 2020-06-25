@@ -96,6 +96,13 @@ MOCK_DESCRIBE_INSTANCES_TAGS = {
     }]
 }
 
+MOCK_DESCRIBE_IMAGES = {
+    'Images' : [
+        {'Name': 'Ubuntu 18.04 LTS', 'Public': True},
+        {'Name': 'Ubuntu 18.04 with GUI', 'Public': False}
+    ]
+}
+
 MOCK_DESCRIBE_VOLUMES = {
     'Volumes': [{
         'VolumeId': FAKE_VOLUME.volume_id,
@@ -425,6 +432,15 @@ class AWSAccountTest(unittest.TestCase):
     # pylint: enable=protected-access
     self.assertEqual(50, config['Ebs']['VolumeSize'])
 
+  @typing.no_type_check
+  @mock.patch('libcloudforensics.providers.aws.internal.account.AWSAccount.ClientApi')
+  def testListImages(self, mock_ec2_api):
+    """Test that AMI images are correctly listed."""
+    describe_images = mock_ec2_api.return_value.describe_images
+    describe_images.return_value = MOCK_DESCRIBE_IMAGES
+    images = FAKE_AWS_ACCOUNT.ListImages(qfilter=None)
+    self.assertEqual(2, len(images))
+    self.assertIn('Name', images[0])
 
 class AWSInstanceTest(unittest.TestCase):
   """Test AWSInstance class."""

@@ -100,6 +100,34 @@ def QueryLogs(args: 'argparse.Namespace') -> None:
     print(json.dumps(line))
 
 
+def StartAnalysisVm(args: 'argparse.Namespace') -> None:
+  """Start forensic analysis VM.
+
+  Args:
+    args (argparse.Namespace): Arguments from ArgumentParser.
+  """
+  attach_disks = []
+  if args.attach_disks:
+    attach_disks = args.attach_disks.split(',')
+    # Check if attach_disks parameter exists and if there
+    # are any empty entries.
+    if not (attach_disks and all(elements for elements in attach_disks)):
+      print('error: parameter --attach_disks: {0:s}'.format(args.attach_disks))
+      return
+
+  print('Starting analysis VM...')
+  vm = forensics.StartAnalysisVm(args.project,
+                                 args.instance_name,
+                                 args.zone,
+                                 int(args.disk_size),
+                                 args.disk_type,
+                                 int(args.cpu_cores),
+                                 attach_disks=attach_disks)
+
+  print('Analysis VM started.')
+  print('Name: {0:s}, Started: {1:s}'.format(vm[0].name, str(vm[1])))
+
+
 def ListServices(args: 'argparse.Namespace') -> None:
   """List active GCP APIs for a project.
 
