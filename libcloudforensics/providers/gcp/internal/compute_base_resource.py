@@ -32,12 +32,11 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
     labels (Dict): Dictionary of labels for the resource, if existing.
   """
 
-  def __init__(
-      self,
-      project_id: str,
-      zone: str,
-      name: str,
-      labels: Optional[Dict[str, Any]] = None) -> None:
+  def __init__(self,
+               project_id: str,
+               zone: str,
+               name: str,
+               labels: Optional[Dict[str, Any]] = None) -> None:
     """Initialize the Google Compute Resource base object.
 
     Args:
@@ -112,8 +111,8 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
       return self._data['kind']
     return self.GetValue('kind')
 
-  def FormOperation(
-      self, operation_name: str) -> 'googleapiclient.discovery.Resource':
+  def FormOperation(self,
+                    operation_name: str) -> 'googleapiclient.discovery.Resource':
     """Form an API operation object for the compute resource.
 
     Example:[RESOURCE].FormOperation('setLabels')(**kwargs)
@@ -161,10 +160,9 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
     operation = self.GetOperation()
     return operation.get('labels')
 
-  def AddLabels(
-      self,
-      new_labels_dict: Dict[str, Any],
-      blocking_call: Optional[bool] = False) -> Optional[Any]:
+  def AddLabels(self,
+                new_labels_dict: Dict[str, Any],
+                blocking_call: Optional[bool] = False) -> Optional[Any]:
     """Add or update labels of a compute resource.
 
     Args:

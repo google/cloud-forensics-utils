@@ -38,8 +38,9 @@ class GoogleCloudProject:
     gcp.compute.ListInstances()
   """
 
-  def __init__(
-      self, project_id: str, default_zone: Optional[str] = None) -> None:
+  def __init__(self,
+               project_id: str,
+               default_zone: Optional[str] = None) -> None:
     """Initialize the GoogleCloudProject object.
 
     Args:
@@ -58,7 +59,7 @@ class GoogleCloudProject:
     self._monitoring = None
 
   @property
-  def compute(self) -> compute_module.GoogleCloudCompute:
+  def compute(self) -> 'compute_module.GoogleCloudCompute':
     """Get a GoogleCloudCompute object for the project.
 
     Returns:
@@ -67,12 +68,12 @@ class GoogleCloudProject:
 
     if self._compute:
       return self._compute
-    self._compute = compute_module.GoogleCloudCompute(  # type: ignore
+    self._compute = compute_module.GoogleCloudCompute(
         self.project_id, self.default_zone)
-    return self._compute  # type: ignore
+    return self._compute
 
   @property
-  def function(self) -> function_module.GoogleCloudFunction:
+  def function(self) -> 'function_module.GoogleCloudFunction':
     """Get a GoogleCloudFunction object for the project.
 
     Returns:
@@ -81,12 +82,12 @@ class GoogleCloudProject:
 
     if self._function:
       return self._function
-    self._function = function_module.GoogleCloudFunction(  # type: ignore
+    self._function = function_module.GoogleCloudFunction(
         self.project_id)
-    return self._function  # type: ignore
+    return self._function
 
   @property
-  def build(self) -> build_module.GoogleCloudBuild:
+  def build(self) -> 'build_module.GoogleCloudBuild':
     """Get a GoogleCloudBuild object for the project.
 
     Returns:
@@ -95,12 +96,12 @@ class GoogleCloudProject:
 
     if self._build:
       return self._build
-    self._build = build_module.GoogleCloudBuild(  # type: ignore
+    self._build = build_module.GoogleCloudBuild(
         self.project_id)
-    return self._build  # type: ignore
+    return self._build
 
   @property
-  def log(self) -> log_module.GoogleCloudLog:
+  def log(self) -> 'log_module.GoogleCloudLog':
     """Get a GoogleCloudLog object for the project.
 
     Returns:
@@ -109,9 +110,9 @@ class GoogleCloudProject:
 
     if self._log:
       return self._log
-    self._log = log_module.GoogleCloudLog(  # type: ignore
+    self._log = log_module.GoogleCloudLog(
         self.project_id)
-    return self._log  # type: ignore
+    return self._log
 
   @property
   def storage(self) -> 'storage_module.GoogleCloudStorage':
@@ -127,7 +128,7 @@ class GoogleCloudProject:
     return self._storage
 
   @property
-  def monitoring(self) -> monitoring_module.GoogleCloudMonitoring:
+  def monitoring(self) -> 'monitoring_module.GoogleCloudMonitoring':
     """Get a GoogleCloudMonitoring object for the project.
 
     Returns:
@@ -136,6 +137,6 @@ class GoogleCloudProject:
 
     if self._monitoring:
       return self._monitoring
-    self._monitoring = monitoring_module.GoogleCloudMonitoring(  # type: ignore
+    self._monitoring = monitoring_module.GoogleCloudMonitoring( 
         self.project_id)
-    return self._monitoring  # type: ignore
+    return self._monitoring 

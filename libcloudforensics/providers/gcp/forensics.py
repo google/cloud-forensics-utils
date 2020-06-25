@@ -65,8 +65,8 @@ def CreateDiskCopy(
     else:
       disk_to_copy = instance.GetBootDisk()  # type: ignore
 
-    common.LOGGER.info(
-        'Disk copy of {0:s} started...'.format(disk_to_copy.name))
+    common.LOGGER.info('Disk copy of {0:s} started...'.format(
+        disk_to_copy.name))
     snapshot = disk_to_copy.Snapshot()
     new_disk = dst_project.compute.CreateDiskFromSnapshot(
         snapshot, disk_name_prefix='evidence', disk_type=disk_type)

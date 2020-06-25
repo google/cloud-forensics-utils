@@ -74,9 +74,9 @@ def AddParser(
   if provider not in PROVIDER_TO_FUNC:
     raise NotImplementedError('Requested provider is not implemented')
   if func not in PROVIDER_TO_FUNC[provider]:
-    raise NotImplementedError(
-        'Requested functionality {0:s} is not '
-        'implemented for provider {1:s}'.format(func, provider))
+    raise NotImplementedError('Requested functionality {0:s} is not '
+                              'implemented for provider {1:s}'.format(
+                                  func, provider))
   func_parser = provider_parser.add_parser(func, help=func_helper)
   if args:
     for argument, helper_text, default_value in args:
@@ -95,10 +95,8 @@ def Main() -> None:
   gcp_parser = subparsers.add_parser('gcp', help='Tools for GCP')
 
   # AWS parser options
-  aws_parser.add_argument(
-      'zone',
-      help='The AWS zone in which resources are '
-      'located, e.g. us-east-2b')
+  aws_parser.add_argument('zone', help='The AWS zone in which resources are '
+                                       'located, e.g. us-east-2b')
   aws_subparsers = aws_parser.add_subparsers()
   AddParser('aws', aws_subparsers, 'listinstances',
             'List EC2 instances in AWS account.')
