@@ -12,13 +12,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Google Cloud Functions functionality."""
+"""Google Cloud Functions functionalities."""
 
 import json
 import ssl
 from typing import TYPE_CHECKING, Dict, Any
 from googleapiclient.errors import HttpError
 from libcloudforensics.providers.gcp.internal import common
+
 
 if TYPE_CHECKING:
   import googleapiclient
@@ -28,7 +29,7 @@ class GoogleCloudFunction:
   """Class to call Google Cloud Functions.
 
   Attributes:
-    project_id: Project name.
+    project_id: Google Cloud project ID.
     gcf_api_client: Client to interact with GCF APIs.
   """
 
@@ -58,9 +59,10 @@ class GoogleCloudFunction:
         'cloudfunctions', self.CLOUD_FUNCTIONS_API_VERSION)
     return self.gcf_api_client
 
-  def ExecuteFunction(
-      self, function_name: str, region: str, args: Dict[str,
-                                                        Any]) -> Dict[str, Any]:
+  def ExecuteFunction(self,
+                      function_name: str,
+                      region: str,
+                      args: Dict[str, Any]) -> Dict[str, Any]:
     """Executes a Google Cloud Function.
 
     Args:
