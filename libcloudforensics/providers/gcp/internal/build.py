@@ -12,7 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Google compute functionality."""
+"""Google Cloud Build functionalities."""
 
 import time
 from typing import TYPE_CHECKING, Dict, Any
@@ -38,7 +38,7 @@ class GoogleCloudBuild:
     """Initialize the GoogleCloudBuild object.
 
     Args:
-      project_id (str): The name of the project.
+      project_id (str): Google Cloud project ID.
     """
 
     self.gcb_api_client = None
@@ -99,7 +99,8 @@ class GoogleCloudBuild:
         build_metadata = response['metadata']['build']
         raise RuntimeError(
             ': {0:1}, logs bucket: {1:s}, logs URL: {2:s}'.format(
-                response['error']['message'], build_metadata['logsBucket'],
+                response['error']['message'],
+                build_metadata['logsBucket'],
                 build_metadata['logUrl']))
 
       if response.get('done') and response.get('response'):

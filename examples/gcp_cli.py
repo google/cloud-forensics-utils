@@ -63,11 +63,12 @@ def CreateDiskCopy(args: 'argparse.Namespace') -> None:
     args (argparse.Namespace): Arguments from ArgumentParser.
   """
 
-  disk = forensics.CreateDiskCopy(args.project,
-                                  args.dstproject,
-                                  args.instancename,
-                                  args.zone,
-                                  disk_name=args.disk_name)
+  disk = forensics.CreateDiskCopy(
+      args.project,
+      args.dstproject,
+      args.instancename,
+      args.zone,
+      disk_name=args.disk_name)
 
   print('Disk copy completed.')
   print('Name: {0:s}'.format(disk.name))
@@ -97,3 +98,21 @@ def QueryLogs(args: 'argparse.Namespace') -> None:
   print('Found {0:d} log entries:'.format(len(results)))
   for line in results:
     print(json.dumps(line))
+
+
+def CreateDiskFromGCSImage(args: 'argparse.Namespace') -> None:
+  """Creates GCE persistent disk from image in GCS.
+
+  Args:
+      args (argparse.Namespace): Arguments from ArgumentParser.
+  """
+
+  result = forensics.CreateDiskFromGCSImage(
+      args.project, args.gcs_path, args.zone, name=args.disk_name)
+
+  print('Disk creation completed.')
+  print('Project ID: {0:s}'.format(result['project_id']))
+  print('Disk name: {0:s}'.format(result['disk_name']))
+  print('Zone: {0:s}'.format(result['zone']))
+  print('size in bytes: {0:s}'.format(result['bytes_count']))
+  print('MD5 hash of source image in hex: {0:s}'.format(result['md5Hash']))

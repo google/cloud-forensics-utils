@@ -16,6 +16,7 @@
 
 from __future__ import unicode_literals
 
+import base64
 import os
 import typing
 import unittest
@@ -27,9 +28,11 @@ import mock
 import six
 
 from libcloudforensics.providers.gcp import forensics
+from libcloudforensics.providers.gcp.internal import build as gcp_build
 from libcloudforensics.providers.gcp.internal import common, compute
 from libcloudforensics.providers.gcp.internal import project as gcp_project
 from libcloudforensics.providers.gcp.internal import log as gcp_log
+from libcloudforensics.providers.gcp.internal import storage as gcp_storage
 from libcloudforensics.scripts import utils
 
 # For the forensics analysis
@@ -69,6 +72,11 @@ FAKE_LOG_ENTRIES = [{
     'textPayload': 'insert.compute.create'
 }]
 FAKE_NEXT_PAGE_TOKEN = 'abcdefg1234567'
+FAKE_GCS = gcp_storage.GoogleCloudStorage('fake-target-project')
+FAKE_GCS_PATH = 'gs://fake-bucket/fake-folder/fake-object'
+FAKE_GCS_URI = 'fake-folder/fake-object'
+FAKE_GCS_BUCKET = 'fake-bucket'
+FAKE_GCB = gcp_build.GoogleCloudBuild('fake-target-project')
 
 # Mock struct to mimic GCP's API responses
 MOCK_INSTANCES_AGGREGATED = {
@@ -178,6 +186,59 @@ MOCK_GCE_OPERATION_INSTANCES_GET = {
             'diskName': FAKE_DISK.name
         }
     }]
+}
+
+MOCK_GCS_OPERATION_OBJECT_GET = {
+    'kind': 'storage#object',
+    'id': 'fake-bucket/foo/fake.img/12345',
+    'size': '5555555555',
+    'md5Hash': 'fakehash',
+}
+
+MOCK_GCB_BUILDS_CREATE = {
+    'name': 'operations/build/fake-project/12345',
+    'metadata': {
+        'build': {
+            'id': '12345',
+            'timeout': '12345s',
+            'projectId': 'fake-project',
+            'logsBucket': 'gs://fake-uri',
+            "logUrl": "https://fake-url"
+        }
+    }
+}
+
+MOCK_GCB_BUILDS_SUCCESS = {
+    'done': True,
+    'response': {
+        'id': 'fake-id'
+    },
+    'metadata': {
+        'build': {
+            'id': '12345',
+            'timeout': '12345s',
+            'projectId': 'fake-project',
+            'logsBucket': 'gs://fake-uri',
+            "logUrl": "https://fake-url"
+        }
+    }
+}
+
+MOCK_GCB_BUILDS_FAIL = {
+    'done': True,
+    'error': {
+        'code': 2,
+        'message': 'Build failed; check build logs for details'
+    },
+    'metadata': {
+        'build': {
+            'id': '12345',
+            'timeout': '12345s',
+            'projectId': 'fake-project',
+            'logsBucket': 'gs://fake-uri',
+            "logUrl": "https://fake-url"
+        }
+    }
 }
 
 # See: https://cloud.google.com/compute/docs/reference/rest/v1/disks
@@ -555,8 +616,74 @@ class GoogleCloudLogTest(unittest.TestCase):
     self.assertEqual(FAKE_LOG_ENTRIES[0], query_logs[0])
 
 
+class GoogleCloudStorageTest(unittest.TestCase):
+  """Test Google Cloud Storage class."""
+  # pylint: disable=line-too-long
+
+  def testSplitGcsPath(self):
+    """Tests that GCS path split is correctly done."""
+    bucket, object_uri = FAKE_GCS.SplitGcsPath(FAKE_GCS_PATH)
+    self.assertEqual(object_uri, FAKE_GCS_URI)
+    self.assertEqual(bucket, FAKE_GCS_BUCKET)
+
+  @typing.no_type_check
+  @mock.patch('libcloudforensics.providers.gcp.internal.storage.GoogleCloudStorage.GcsApi')
+  def testGetOperationObject(self, mock_gcs_api):
+    """Test GCS object Get operation."""
+    api_get_object = mock_gcs_api.return_value.objects.return_value.get
+    api_get_object.return_value.execute.return_value = MOCK_GCS_OPERATION_OBJECT_GET
+    get_results = FAKE_GCS.GetOperationObject('gs://Fake_Path')
+    self.assertEqual(get_results, MOCK_GCS_OPERATION_OBJECT_GET)
+
+  @typing.no_type_check
+  @mock.patch('libcloudforensics.providers.gcp.internal.storage.GoogleCloudStorage.GcsApi')
+  def testGetMD5Object(self, mock_gcs_api):
+    """Test GCS object MD5 hash."""
+    api_get_object = mock_gcs_api.return_value.objects.return_value.get
+    api_get_object.return_value.execute.return_value = MOCK_GCS_OPERATION_OBJECT_GET
+    md5_base64 = FAKE_GCS.GetMD5Object('gs://Fake_Path')
+    self.assertEqual(md5_base64, MOCK_GCS_OPERATION_OBJECT_GET['md5Hash'])
+    md5_hex = FAKE_GCS.GetMD5Object('gs://Fake_Path', in_hex=True)
+    self.assertEqual(md5_hex, base64.b64decode(MOCK_GCS_OPERATION_OBJECT_GET['md5Hash']).hex())
+
+  @typing.no_type_check
+  @mock.patch('libcloudforensics.providers.gcp.internal.storage.GoogleCloudStorage.GcsApi')
+  def testGetSizeObject(self, mock_gcs_api):
+    """Test GCS object size."""
+    api_get_object = mock_gcs_api.return_value.objects.return_value.get
+    api_get_object.return_value.execute.return_value = MOCK_GCS_OPERATION_OBJECT_GET
+    object_size = FAKE_GCS.GetSizeObject('gs://Fake_Path')
+    self.assertEqual(object_size, MOCK_GCS_OPERATION_OBJECT_GET['size'])
+
+
+class GoogleCloudBuildeTest(unittest.TestCase):
+  """Test Google Cloud Build class."""
+  # pylint: disable=line-too-long
+
+  @typing.no_type_check
+  @mock.patch('libcloudforensics.providers.gcp.internal.build.GoogleCloudBuild.GcbApi')
+  def testCreateBuild(self, mock_gcb_api):
+    """Test that Cloud Builds are correctly created."""
+    build_create_object = mock_gcb_api.return_value.projects.return_value.builds.return_value.create
+    build_create_object.return_value.execute.return_value = MOCK_GCB_BUILDS_CREATE
+    build_response = FAKE_GCB.CreateBuild({'Fake-Build_body': None})
+    self.assertEqual(build_response, MOCK_GCB_BUILDS_CREATE)
+
+  @typing.no_type_check
+  @mock.patch('libcloudforensics.providers.gcp.internal.build.GoogleCloudBuild.GcbApi')
+  def testBlockOperation(self, mock_gcb_api):
+    """Test that Cloud Builds are correctly blocked until done."""
+    build_operation_object = mock_gcb_api.return_value.operations.return_value.get
+    build_operation_object.return_value.execute.return_value = MOCK_GCB_BUILDS_SUCCESS
+    block_build_success = FAKE_GCB.BlockOperation(MOCK_GCB_BUILDS_CREATE)
+    self.assertEqual(block_build_success, MOCK_GCB_BUILDS_SUCCESS)
+    build_operation_object.return_value.execute.return_value = MOCK_GCB_BUILDS_FAIL
+    with self.assertRaises(RuntimeError):
+      FAKE_GCB.BlockOperation(MOCK_GCB_BUILDS_CREATE)
+
+
 class GCPTest(unittest.TestCase):
-  """Test the account.py public methods."""
+  """Test forensics.py methods and common.py helper methods."""
   # pylint: disable=line-too-long
 
   @typing.no_type_check

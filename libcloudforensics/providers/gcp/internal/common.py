@@ -36,8 +36,9 @@ RETRY_MAX = 10
 REGEX_DISK_NAME = re.compile('^(?=.{1,63}$)[a-z]([-a-z0-9]*[a-z0-9])?$')
 
 
-def GenerateDiskName(snapshot: 'compute.GoogleComputeSnapshot',
-                     disk_name_prefix: Optional[str] = None) -> str:
+def GenerateDiskName(
+    snapshot: 'compute.GoogleComputeSnapshot',
+    disk_name_prefix: Optional[str] = None) -> str:
   """Generate a new disk name for the disk to be created from the Snapshot.
 
   The disk name must comply with the following RegEx:
@@ -84,8 +85,9 @@ def GenerateDiskName(snapshot: 'compute.GoogleComputeSnapshot',
   return disk_name
 
 
-def CreateService(service_name: str,
-                  api_version: str) -> 'googleapiclient.discovery.Resource':
+def CreateService(
+    service_name: str,
+    api_version: str) -> 'googleapiclient.discovery.Resource':
   """Creates an GCP API service.
 
   Args:
@@ -113,7 +115,9 @@ def CreateService(service_name: str,
   for retry in range(RETRY_MAX):
     try:
       service = build(
-          service_name, api_version, credentials=credentials,
+          service_name,
+          api_version,
+          credentials=credentials,
           cache_discovery=False)
       service_built = True
     except socket.timeout:
@@ -168,9 +172,9 @@ class GoogleCloudComputeClient:
         'compute', self.COMPUTE_ENGINE_API_VERSION)
     return self._gce_api_client
 
-  def BlockOperation(self,
-                     response: Dict[str, Any],
-                     zone: Optional[str] = None) -> Dict[str, Any]:
+  def BlockOperation(
+      self, response: Dict[str, Any],
+      zone: Optional[str] = None) -> Dict[str, Any]:
     """Block until API operation is finished.
 
     Args:
@@ -205,10 +209,11 @@ class GoogleCloudComputeClient:
       time.sleep(5)  # Seconds between requests
 
 
-def ExecuteRequest(client: 'googleapiclient.discovery.Resource',
-                   func: str,
-                   kwargs: Dict[str, Any],
-                   throttle: bool = False) -> List[Dict[str, Any]]:
+def ExecuteRequest(
+    client: 'googleapiclient.discovery.Resource',
+    func: str,
+    kwargs: Dict[str, Any],
+    throttle: bool = False) -> List[Dict[str, Any]]:
   """Execute a request to the GCP API.
 
   Args:

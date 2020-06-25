@@ -32,11 +32,12 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
     labels (Dict): Dictionary of labels for the resource, if existing.
   """
 
-  def __init__(self,
-               project_id: str,
-               zone: str,
-               name: str,
-               labels: Optional[Dict[str, Any]] = None) -> None:
+  def __init__(
+      self,
+      project_id: str,
+      zone: str,
+      name: str,
+      labels: Optional[Dict[str, Any]] = None) -> None:
     """Initialize the Google Compute Resource base object.
 
     Args:
@@ -65,6 +66,14 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
 
     return 'project:{0} {1}'.format(self.project_id, message)
 
+  def GetOperation(self) -> Dict[str, Any]:
+    """Abstract method to be implemented by child classes.
+
+    Returns:
+      Dict: An API operation object for a Google Compute Engine resource.
+    """
+    return {'GetOperationNotImplemented': None}
+
   def GetValue(self, key: str) -> str:
     """Get specific value from the resource key value store.
 
@@ -75,9 +84,8 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
       str: Value of key or None if key is missing.
     """
 
-    # pylint: disable=no-member
-    self._data = self.GetOperation()  # type: ignore
-    return self._data.get(key)  # type: ignore
+    self._data = self.GetOperation()
+    return self._data.get(key)
 
   def GetSourceString(self) -> str:
     """API URL to the resource.
@@ -105,8 +113,7 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
     return self.GetValue('kind')
 
   def FormOperation(
-      self,
-      operation_name: str) -> 'googleapiclient.discovery.Resource':
+      self, operation_name: str) -> 'googleapiclient.discovery.Resource':
     """Form an API operation object for the compute resource.
 
     Example:[RESOURCE].FormOperation('setLabels')(**kwargs)
@@ -126,7 +133,8 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
 
     resource_type = self.GetResourceType()
     module = None
-    if resource_type not in ['compute#instance', 'compute#Snapshot',
+    if resource_type not in ['compute#instance',
+                             'compute#Snapshot',
                              'compute#disk']:
       error_msg = (
           'Compute resource Type {0:s} is not one of the defined '
@@ -150,13 +158,13 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
       Dict: A dictionary of all labels.
     """
 
-    # pylint: disable=no-member
-    operation = self.GetOperation()  # type: ignore
-    return operation.get('labels')  # type: ignore
+    operation = self.GetOperation()
+    return operation.get('labels')
 
-  def AddLabels(self,
-                new_labels_dict: Dict[str, Any],
-                blocking_call: Optional[bool] = False) -> Optional[Any]:
+  def AddLabels(
+      self,
+      new_labels_dict: Dict[str, Any],
+      blocking_call: Optional[bool] = False) -> Optional[Any]:
     """Add or update labels of a compute resource.
 
     Args:
@@ -174,8 +182,7 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
           disk or snapshot.
     """
 
-    # pylint: disable=no-member
-    get_operation = self.GetOperation()  # type: ignore
+    get_operation = self.GetOperation()
     label_fingerprint = get_operation['labelFingerprint']
 
     existing_labels_dict = {}
@@ -184,13 +191,13 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
     existing_labels_dict.update(new_labels_dict)
     labels_dict = existing_labels_dict
     request_body = {
-        'labels': labels_dict,
-        'labelFingerprint': label_fingerprint
+        'labels': labels_dict, 'labelFingerprint': label_fingerprint
     }
 
     resource_type = self.GetResourceType()
     response = None
-    if resource_type not in ['compute#instance', 'compute#Snapshot',
+    if resource_type not in ['compute#instance',
+                             'compute#Snapshot',
                              'compute#disk']:
       error_msg = (
           'Compute resource Type {0:s} is not one of the defined '
@@ -199,17 +206,21 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
       raise RuntimeError(error_msg)
     if resource_type == 'compute#instance':
       response = self.FormOperation('setLabels')(
-          instance=self.name, project=self.project_id, zone=self.zone,
+          instance=self.name,
+          project=self.project_id,
+          zone=self.zone,
           body=request_body).execute()
     elif resource_type == 'compute#disk':
       response = self.FormOperation('setLabels')(
-          resource=self.name, project=self.project_id, zone=self.zone,
+          resource=self.name,
+          project=self.project_id,
+          zone=self.zone,
           body=request_body).execute()
     elif resource_type == 'compute#Snapshot':
       response = self.FormOperation('setLabels')(
           resource=self.name, project=self.project_id,
           body=request_body).execute()
     if blocking_call:
-      self.BlockOperation(response, zone=self.zone)  # type: ignore
+      self.BlockOperation(response, zone=self.zone)
 
     return response

@@ -20,7 +20,6 @@ from typing import TYPE_CHECKING, Dict, Any
 from googleapiclient.errors import HttpError
 from libcloudforensics.providers.gcp.internal import common
 
-
 if TYPE_CHECKING:
   import googleapiclient
 
@@ -59,10 +58,9 @@ class GoogleCloudFunction:
         'cloudfunctions', self.CLOUD_FUNCTIONS_API_VERSION)
     return self.gcf_api_client
 
-  def ExecuteFunction(self,
-                      function_name: str,
-                      region: str,
-                      args: Dict[str, Any]) -> Dict[str, Any]:
+  def ExecuteFunction(
+      self, function_name: str, region: str, args: Dict[str,
+                                                        Any]) -> Dict[str, Any]:
     """Executes a Google Cloud Function.
 
     Args:
