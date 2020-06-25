@@ -60,6 +60,7 @@ class GoogleCloudProject:
     self._function = None
     self._build = None
     self._log = None
+    self._monitoring = None
 
   @property
   def compute(self) -> compute_module.GoogleCloudCompute:
