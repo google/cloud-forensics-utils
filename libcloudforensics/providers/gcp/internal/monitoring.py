@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 
 
 class GoogleCloudMonitoring:
-  """Class to call Google Metric APIs.
+  """Class to call Google Monitoring APIs.
 
   https://cloud.google.com/monitoring/api/ref_v3/rest/v3/projects.timeSeries
 
