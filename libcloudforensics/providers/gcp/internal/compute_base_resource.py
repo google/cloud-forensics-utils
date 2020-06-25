@@ -111,8 +111,9 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
       return self._data['kind']
     return self.GetValue('kind')
 
-  def FormOperation(self,
-                    operation_name: str) -> 'googleapiclient.discovery.Resource':
+  def FormOperation(
+      self,
+      operation_name: str) -> 'googleapiclient.discovery.Resource':
     """Form an API operation object for the compute resource.
 
     Example:[RESOURCE].FormOperation('setLabels')(**kwargs)

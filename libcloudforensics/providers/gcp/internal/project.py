@@ -137,6 +137,6 @@ class GoogleCloudProject:
 
     if self._monitoring:
       return self._monitoring
-    self._monitoring = monitoring_module.GoogleCloudMonitoring( 
+    self._monitoring = monitoring_module.GoogleCloudMonitoring(
         self.project_id)
-    return self._monitoring 
+    return self._monitoring
