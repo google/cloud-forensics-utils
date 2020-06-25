@@ -208,8 +208,7 @@ def StartAnalysisVm(
         and a boolean indicating if the virtual machine was created or not.
 
   Raises:
-    RuntimeError: If the requested provider or function is not
-        implemented.
+    RuntimeError: When multiple AMI images are returned.
   """
 
   aws_account = account.AWSAccount(
@@ -220,6 +219,8 @@ def StartAnalysisVm(
   if not ami:
     qfilter = [{'Name':'name', 'Values':[UBUNTU_1804_FILTER]}]
     ami_list = aws_account.ListImages(qfilter)
+    # We should only het 1 AMI image back, if we get multiple we
+    # have no way of knowing which one to use.
     if len(ami_list) > 1:
       raise RuntimeError('error - ListImages returns >1 AMI image!')
     ami = ami_list[0]['ImageId']
