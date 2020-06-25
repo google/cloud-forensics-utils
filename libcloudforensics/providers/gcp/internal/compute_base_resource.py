@@ -82,7 +82,7 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
     Returns:
       str: Value of key or None if key is missing.
     """
-    
+
     # pylint: disable=no-member
     self._data = self.GetOperation()   # type: ignore
     return self._data.get(key)  # type: ignore
