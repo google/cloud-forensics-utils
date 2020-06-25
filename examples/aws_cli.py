@@ -147,3 +147,19 @@ def StartAnalysisVm(args: 'argparse.Namespace') -> None:
   print('Name: {0:s}, Started: {1:s}, Region: {2:s}'.format(vm[0].name,
                                                             str(vm[1]),
                                                             vm[0].region))
+
+def ListImages(args: 'argparse.Namespace') -> None:
+  """List AMI images and filter on AMI image 'name'.
+
+  Args:
+    args (argparse.Namespace): Arguments from ArgumentParser.
+  """
+  aws_account = account.AWSAccount(args.zone)
+
+  qfilter = [{'Name':'name', 'Values':[args.filter]}]
+
+  images = aws_account.ListImages(qfilter)
+
+  for image in images:
+    print('Name: {0:s}, ImageId: {1:s}'.format(image['Name'],
+                                               image['ImageId']))

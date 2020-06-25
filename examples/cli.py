@@ -19,12 +19,13 @@
 import argparse
 import sys
 
-from typing import Tuple, List, Union, Optional
+from typing import Tuple, List, Optional
 from examples import aws_cli, gcp_cli
 
 PROVIDER_TO_FUNC = {
     'aws': {
         'copydisk': aws_cli.CreateVolumeCopy,
+        'listimages': aws_cli.ListImages,
         'listinstances': aws_cli.ListInstances,
         'listdisks': aws_cli.ListVolumes,
         'querylogs': aws_cli.QueryLogs,
@@ -133,6 +134,10 @@ def Main() -> None:
                 ('--ssh_key_name', 'SSH key pair name.', None),
                 ('--attach_volumes', 'Comma seperated list of volume IDs '
                                      'to attach. Maximum of 11.', None)
+            ])
+  AddParser('aws', aws_subparsers, 'listimages', 'List AMI images.',
+            args=[
+                ('--filter', 'Filter to apply to Name of AMI image.', None),
             ])
 
   # GCP parser options
