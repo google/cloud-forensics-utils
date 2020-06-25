@@ -17,9 +17,12 @@
 import json
 from typing import TYPE_CHECKING
 
-from libcloudforensics.providers.gcp.internal import project as gcp_project
+# pylint: disable=line-too-long
 from libcloudforensics.providers.gcp.internal import log as gcp_log
+from libcloudforensics.providers.gcp.internal import monitoring as gcp_monitoring
+from libcloudforensics.providers.gcp.internal import project as gcp_project
 from libcloudforensics.providers.gcp import forensics
+# pylint: enable=line-too-long
 
 if TYPE_CHECKING:
   import argparse
@@ -98,6 +101,7 @@ def QueryLogs(args: 'argparse.Namespace') -> None:
   for line in results:
     print(json.dumps(line))
 
+
 def StartAnalysisVm(args: 'argparse.Namespace') -> None:
   """Start forensic analysis VM.
 
@@ -124,3 +128,17 @@ def StartAnalysisVm(args: 'argparse.Namespace') -> None:
 
   print('Analysis VM started.')
   print('Name: {0:s}, Started: {1:s}'.format(vm[0].name, str(vm[1])))
+
+
+def ListServices(args: 'argparse.Namespace') -> None:
+  """List active GCP services (APIs) for a project.
+
+  Args:
+    args (argparse.Namespace): Arguments from ArgumentParser.
+  """
+  apis = gcp_monitoring.GoogleCloudMonitoring(args.project)
+  results = apis.ActiveServices()
+  print('Found {0:d} APIs:'.format(len(results)))
+  sorted_apis = sorted(results.items(), key=lambda x: x[1], reverse=True)
+  for apiname, usage in sorted_apis:
+    print('{}: {}'.format(apiname, usage))
