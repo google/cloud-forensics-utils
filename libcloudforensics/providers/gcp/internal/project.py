@@ -70,7 +70,7 @@ class GoogleCloudProject:
       return self._compute
     self._compute = compute_module.GoogleCloudCompute(  # type: ignore
         self.project_id, self.default_zone)
-    return self._compute
+    return self._compute  # type: ignore
 
   @property
   def function(self) -> 'function_module.GoogleCloudFunction':
@@ -84,7 +84,7 @@ class GoogleCloudProject:
       return self._function
     self._function = function_module.GoogleCloudFunction(  # type: ignore
         self.project_id)
-    return self._function
+    return self._function  # type: ignore
 
   @property
   def build(self) -> 'build_module.GoogleCloudBuild':
@@ -98,7 +98,7 @@ class GoogleCloudProject:
       return self._build
     self._build = build_module.GoogleCloudBuild(  # type: ignore
         self.project_id)
-    return self._build
+    return self._build  # type: ignore
 
   @property
   def log(self) -> 'log_module.GoogleCloudLog':
@@ -112,7 +112,7 @@ class GoogleCloudProject:
       return self._log
     self._log = log_module.GoogleCloudLog(  # type: ignore
         self.project_id)
-    return self._log
+    return self._log  # type: ignore
 
   @property
   def storage(self) -> 'storage_module.GoogleCloudStorage':
@@ -126,7 +126,7 @@ class GoogleCloudProject:
       return self._storage
     self._storage = storage_module.GoogleCloudStorage(  # type: ignore
         self.project_id)
-    return self._storage
+    return self._storage  # type: ignore
 
   @property
   def monitoring(self) -> 'monitoring_module.GoogleCloudMonitoring':
@@ -140,4 +140,4 @@ class GoogleCloudProject:
       return self._monitoring
     self._monitoring = monitoring_module.GoogleCloudMonitoring(  # type: ignore
         self.project_id)
-    return self._monitoring
+    return self._monitoring  # type: ignore
