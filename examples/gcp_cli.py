@@ -129,7 +129,7 @@ def StartAnalysisVm(args: 'argparse.Namespace') -> None:
 
 
 def ListServices(args: 'argparse.Namespace') -> None:
-  """List active GCP APIs for a project.
+  """List active GCP services (APIs) for a project.
 
   Args:
     args (argparse.Namespace): Arguments from ArgumentParser.
@@ -138,5 +138,5 @@ def ListServices(args: 'argparse.Namespace') -> None:
   results = apis.ActiveServices()
   print('Found {0:d} APIs:'.format(len(results)))
   sorted_apis = sorted(results.items(), key=lambda x: x[1], reverse=True)
-  for i in sorted_apis:
-    print('{}: {}'.format(i[0], i[1]))
+  for apiname, usage in sorted_apis:
+    print('{}: {}'.format(apiname, usage))

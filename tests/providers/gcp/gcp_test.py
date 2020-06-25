@@ -198,10 +198,8 @@ MOCK_GCM_METRICS_COUNT = {
                 'service': 'stackdriver.googleapis.com'
             }
         },
-        'metricKind':
-            'DELTA',
-        'valueType':
-            'INT64',
+        'metricKind': 'DELTA',
+        'valueType': 'INT64',
         'points': [{
             'interval': {
                 'startTime': '2020-05-18T00:00:00Z',
@@ -222,10 +220,8 @@ MOCK_GCM_METRICS_COUNT = {
                 'project_id': 'fake-target-project'
             }
         },
-        'metricKind':
-            'DELTA',
-        'valueType':
-            'INT64',
+        'metricKind': 'DELTA',
+        'valueType': 'INT64',
         'points': [{
             'interval': {
                 'startTime': '2020-05-18T00:00:00Z',
@@ -246,10 +242,8 @@ MOCK_GCM_METRICS_COUNT = {
                 'project_id': 'fake-target-project'
             }
         },
-        'metricKind':
-            'DELTA',
-        'valueType':
-            'INT64',
+        'metricKind': 'DELTA',
+        'valueType': 'INT64',
         'points': [{
             'interval': {
                 'startTime': '2020-05-18T00:00:00Z',
@@ -815,16 +809,16 @@ class GoogleCloudMonitoringTest(unittest.TestCase):
   @typing.no_type_check
   @mock.patch('libcloudforensics.providers.gcp.internal.monitoring.GoogleCloudMonitoring.GcmApi')
   def testActiveServices(self, mock_gcm_api):
-    """Test that validates the parsing of Monitoring API TimeSeries data."""
+    """Validates the parsing of Monitoring API TimeSeries data."""
     services = mock_gcm_api.return_value.projects.return_value.timeSeries.return_value.list
     services.return_value.execute.return_value = MOCK_GCM_METRICS_COUNT
     active_services = FAKE_MONITORING.ActiveServices()
-    self.assertIn("compute.googleapis.com", active_services)
-    self.assertEqual(active_services["compute.googleapis.com"], MOCK_COMPUTE_METRIC)
-    self.assertIn("stackdriver.googleapis.com", active_services)
-    self.assertEqual(active_services["stackdriver.googleapis.com"], MOCK_STACKDRIVER_METRIC)
-    self.assertIn("logging.googleapis.com", active_services)
-    self.assertEqual(active_services["logging.googleapis.com"], MOCK_LOGGING_METRIC)
+    self.assertIn('compute.googleapis.com', active_services)
+    self.assertEqual(active_services['compute.googleapis.com'], MOCK_COMPUTE_METRIC)
+    self.assertIn('stackdriver.googleapis.com', active_services)
+    self.assertEqual(active_services['stackdriver.googleapis.com'], MOCK_STACKDRIVER_METRIC)
+    self.assertIn('logging.googleapis.com', active_services)
+    self.assertEqual(active_services['logging.googleapis.com'], MOCK_LOGGING_METRIC)
 
 if __name__ == '__main__':
   unittest.main()

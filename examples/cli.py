@@ -37,7 +37,7 @@ PROVIDER_TO_FUNC = {
         'listdisks': gcp_cli.ListDisks,
         'listlogs': gcp_cli.ListLogs,
         'querylogs': gcp_cli.QueryLogs,
-        'listservices': gcp_cli.ListServices
+        'listservices': gcp_cli.ListServices,
         'startvm': gcp_cli.StartAnalysisVm
     }
 }
@@ -174,7 +174,7 @@ def Main() -> None:
             ])
   AddParser('gcp', gcp_subparsers, 'listlogs', 'List GCP logs for a project.')
   AddParser('gcp', gcp_subparsers, 'listservices',
-            'List active APIS for a project.')
+            'List active services for a project.')
 
   if len(sys.argv) == 1:
     parser.print_help()

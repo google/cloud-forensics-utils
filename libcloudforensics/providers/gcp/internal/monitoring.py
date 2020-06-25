@@ -74,14 +74,14 @@ class GoogleCloudMonitoring:
     service = self.GcmApi()
     gcm_timeseries_client = service.projects().timeSeries()
     responses = common.ExecuteRequest(gcm_timeseries_client, 'list', {
-        'name': 'projects/{}'.format(self.project_id),
+        'name': 'projects/{0:s}'.format(self.project_id),
         'filter':
             'metric.type="serviceruntime.googleapis.com/api/request_count"',
         'interval_startTime': start_time,
         'interval_endTime': end_time,
         'aggregation_groupByFields': 'resource.labels.service',
         'aggregation_perSeriesAligner': 'ALIGN_SUM',
-        'aggregation_alignmentPeriod': '{}s'.format(period),
+        'aggregation_alignmentPeriod': '{0:s}s'.format(period),
         'aggregation_crossSeriesReducer': 'REDUCE_SUM',
     })
     ret = {}
