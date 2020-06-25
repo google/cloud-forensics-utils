@@ -17,10 +17,12 @@
 import json
 from typing import TYPE_CHECKING
 
+# pylint: disable=line-too-long
 from libcloudforensics.providers.gcp.internal import log as gcp_log
 from libcloudforensics.providers.gcp.internal import monitoring as gcp_monitoring
 from libcloudforensics.providers.gcp.internal import project as gcp_project
 from libcloudforensics.providers.gcp import forensics
+# pylint: enable=line-too-long
 
 if TYPE_CHECKING:
   import argparse

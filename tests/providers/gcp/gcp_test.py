@@ -26,12 +26,14 @@ from googleapiclient.errors import HttpError
 import mock
 import six
 
+# pylint: disable=line-too-long
 from libcloudforensics.providers.gcp import forensics
 from libcloudforensics.providers.gcp.internal import common, compute
 from libcloudforensics.providers.gcp.internal import project as gcp_project
 from libcloudforensics.providers.gcp.internal import log as gcp_log
 from libcloudforensics.providers.gcp.internal import monitoring as gcp_monitoring
 from libcloudforensics.scripts import utils
+# pylint: enable=line-too-long
 
 # For the forensics analysis
 FAKE_ANALYSIS_PROJECT = gcp_project.GoogleCloudProject(
