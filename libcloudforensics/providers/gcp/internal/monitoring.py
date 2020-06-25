@@ -81,7 +81,7 @@ class GoogleCloudMonitoring:
         'interval_endTime': end_time,
         'aggregation_groupByFields': 'resource.labels.service',
         'aggregation_perSeriesAligner': 'ALIGN_SUM',
-        'aggregation_alignmentPeriod': '{0:s}s'.format(period),
+        'aggregation_alignmentPeriod': '{0:d}s'.format(period),
         'aggregation_crossSeriesReducer': 'REDUCE_SUM',
     })
     ret = {}
