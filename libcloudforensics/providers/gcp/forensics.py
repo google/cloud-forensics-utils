@@ -14,7 +14,6 @@
 # limitations under the License.
 """Forensics on GCP."""
 
-import datetime
 from typing import TYPE_CHECKING, List, Tuple, Optional, Dict, Any
 
 from google.auth.exceptions import RefreshError, DefaultCredentialsError
@@ -191,11 +190,10 @@ def CreateDiskFromGCSImage(
       raise ValueError(
           'Disk name {0:s} does not comply with {1:s}'.format(
               name, common.REGEX_DISK_NAME.pattern))
-    truncate_at = 63
-    name = name[:truncate_at]
+    name = name[:common.COMPUTE_NAME_LIMIT]
   else:
-    timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-    name = 'imported-disk-{0}'.format(timestamp)
+    name = common.StampAndTruncateName('imported-disk',
+                                       common.COMPUTE_NAME_LIMIT)
 
   project = gcp_project.GoogleCloudProject(project_id)
   image_object = project.compute.ImportImageFromStorage(storage_image_path)

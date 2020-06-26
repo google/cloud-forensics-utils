@@ -14,7 +14,6 @@
 # limitations under the License.
 """Google Compute Engine functionalities."""
 
-import datetime
 import os
 import subprocess
 import time
@@ -482,17 +481,15 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       ValueError: If GCE Image name is invalid.
     """
 
-    truncate_at = 63
     if name:
       if not common.REGEX_DISK_NAME.match(name):
         raise ValueError(
             'Image name {0:s} does not comply with {1:s}'.format(
                 name, common.REGEX_DISK_NAME.pattern))
-      name = name[:truncate_at]
+      name = name[:common.COMPUTE_NAME_LIMIT]
     else:
-      timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-      name = src_disk.name[:truncate_at - len(timestamp) - 1]
-      name = '{0}-{1}'.format(src_disk.name, timestamp)
+      name = common.StampAndTruncateName(src_disk.name,
+                                         common.COMPUTE_NAME_LIMIT)
     image_body = {
         'name':
             name,
@@ -528,17 +525,16 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       ValueError: If GCE disk name is invalid.
     """
 
-    truncate_at = 63
     if name:
       if not common.REGEX_DISK_NAME.match(name):
         raise ValueError(
             'Disk name {0:s} does not comply with {1:s}'.format(
                 name, common.REGEX_DISK_NAME.pattern))
-      name = name[:truncate_at]
+      name = name[:common.COMPUTE_NAME_LIMIT]
     else:
-      timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-      name = src_image.name[:truncate_at - len(timestamp) - 1]
-      name = '{0}-{1}'.format(src_image.name, timestamp)
+      name = common.StampAndTruncateName(src_image.name,
+                                         common.COMPUTE_NAME_LIMIT)
+
     disk_body = {
         'name':
             name,
@@ -558,7 +554,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
                              image_name: Optional[str] = None,
                              bootable: Optional[bool] = False,
                              os_name: Optional[str] = None,
-                             guest_environment: Optional[bool] = False) -> 'GoogleComputeImage':  # pylint: disable=line-too-long
+                             guest_environment: Optional[bool] = True) -> 'GoogleComputeImage':  # pylint: disable=line-too-long
     """Import GCE image from Cloud storage.
 
     The import tool supports raw disk images and most virtual disk
@@ -578,7 +574,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
           For known limitations please see:
           https://googlecloudplatform.github.io/compute-image-tools/image-import.html#compatibility-and-known-limitations  # pylint: disable=line-too-long
       guest_environment (bool): Optional. Install Google Guest Environment on a
-          bootable image. Default False.
+          bootable image. Relevant only if image is bootable. Default True.
 
     Returns:
       GoogleComputeImage: A Google Compute Image object.
@@ -599,7 +595,6 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
          'windows-2019', 'windows-2019-byol', 'windows-7-x64-byol',
          'windows-7-x86-byol', 'windows-8-x64-byol', 'windows-8-x86-byol']
 
-    guest_env = '-no_guest_environment'
     if not bootable:
       img_type = '-data_disk'
     elif not os_name:
@@ -609,33 +604,30 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     elif os_name not in supported_os:
       common.LOGGER.warning(
           ('Operating system of the imported image is not within the '
-           'supported list:\n{0:s}\nFor the uptodate list please refer '
+           'supported list:\n{0:s}\nFor the up-to-date list please refer '
            'to:\n{1:s}').format(
                ', '.join(supported_os),
                'https://cloud.google.com/sdk/gcloud/reference/compute/images/import#--os'))  # pylint: disable=line-too-long
     else:
-      img_type = '-os={0}'.format(os_name)
-      if guest_environment:
-        guest_env = ''
+      img_type = '-os={0:s}'.format(os_name)
     if image_name:
       if not common.REGEX_DISK_NAME.match(image_name):
         raise ValueError(
             'Imported image name {0:s} does not comply with {1:s}'.format(
                 image_name, common.REGEX_DISK_NAME.pattern))
-      truncate_at = 63
-      image_name = image_name[:truncate_at]
+      image_name = image_name[:common.COMPUTE_NAME_LIMIT]
     else:
-      timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-      image_name = 'imported-image-{0}'.format(timestamp)
+      image_name = common.StampAndTruncateName('imported-image',
+                                               common.COMPUTE_NAME_LIMIT)
     args_list = [
-        '-image_name={image_name}'.format(image_name=image_name),
-        '-source_file={source_file}'.format(source_file=storage_image_path),
+        '-image_name={0:s}'.format(image_name),
+        '-source_file={0:s}'.format(storage_image_path),
         '-timeout=86400s',
         '-client_id=api',
-        '{img_type}'.format(img_type=img_type)
+        img_type
     ]
-    if guest_env:
-      args_list.append('{guest_env}'.format(guest_env=guest_env))
+    if bootable and not guest_environment:
+      args_list.append('-no_guest_environment')
     build_body = {
         'steps': [{
             'args': args_list,
@@ -772,7 +764,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
 
     common.LOGGER.info(
         self.FormatLogMessage(
-            'Attaching {0} to VM {1} in {2} mode'.format(
+            'Attaching {0:s} to VM {1:s} in {2:s} mode'.format(
                 disk.name, self.name, mode)))
 
     operation_config = {
@@ -844,17 +836,16 @@ class GoogleComputeDisk(compute_base_resource.GoogleComputeBaseResource):
       ValueError: If the name of the snapshot does not comply with the RegEx.
     """
 
-    timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
     if not snapshot_name:
       snapshot_name = self.name
-    truncate_at = 63 - len(timestamp) - 1
-    snapshot_name = '{0}-{1}'.format(snapshot_name[:truncate_at], timestamp)
+    snapshot_name = common.StampAndTruncateName(snapshot_name,
+                                                common.COMPUTE_NAME_LIMIT)
     if not common.REGEX_DISK_NAME.match(snapshot_name):
       raise ValueError(
           'Snapshot name {0:s} does not comply with '
           '{1:s}'.format(snapshot_name, common.REGEX_DISK_NAME.pattern))
     common.LOGGER.info(
-        self.FormatLogMessage('New Snapshot: {0}'.format(snapshot_name)))
+        self.FormatLogMessage('New Snapshot: {0:s}'.format(snapshot_name)))
     operation_config = {'name': snapshot_name}
     gce_disk_client = self.GceApi().disks()
     request = gce_disk_client.createSnapshot(
@@ -903,7 +894,7 @@ class GoogleComputeSnapshot(compute_base_resource.GoogleComputeBaseResource):
     """Delete a Snapshot."""
 
     common.LOGGER.info(
-        self.FormatLogMessage('Deleted Snapshot: {0}'.format(self.name)))
+        self.FormatLogMessage('Deleted Snapshot: {0:s}'.format(self.name)))
     gce_snapshot_client = self.GceApi().snapshots()
     request = gce_snapshot_client.delete(
         project=self.project_id, snapshot=self.name)
@@ -936,7 +927,7 @@ class GoogleComputeImage(compute_base_resource.GoogleComputeBaseResource):
     Args:
       gcs_output_folder (str): Folder path of the exported image.
       output_name (str): Optional. Name of the output file. Name will be
-          appeneded with .tar.gz. Default is [image_name].tar.gz.
+          appended with .tar.gz. Default is [image_name].tar.gz.
 
     Raises:
       RuntimeError: If exported image name is invalid.
