@@ -16,7 +16,6 @@
 
 from __future__ import unicode_literals
 
-import base64
 import os
 import typing
 import unittest
@@ -722,7 +721,8 @@ class GoogleCloudStorageTest(unittest.TestCase):
     md5_base64 = FAKE_GCS.GetMD5Object('gs://Fake_Path')
     self.assertEqual('fakehash', md5_base64)
     md5_hex = FAKE_GCS.GetMD5Object('gs://Fake_Path', in_hex=True)
-    self.assertEqual(base64.b64decode('fakehash').hex(), md5_hex)
+    # '7da91e85ab21' = base64.b64decode('fakehash').hex()
+    self.assertEqual('7da91e85ab21', md5_hex)
 
 
 class GoogleCloudBuildeTest(unittest.TestCase):
@@ -736,7 +736,7 @@ class GoogleCloudBuildeTest(unittest.TestCase):
     build_create_object = mock_gcb_api.return_value.projects.return_value.builds.return_value.create
     build_create_object.return_value.execute.return_value = MOCK_GCB_BUILDS_CREATE
     build_response = FAKE_GCB.CreateBuild({'Fake-Build_body': None})
-    self.assertEqual(build_response, MOCK_GCB_BUILDS_CREATE)
+    self.assertEqual(MOCK_GCB_BUILDS_CREATE, build_response)
 
   @typing.no_type_check
   @mock.patch('libcloudforensics.providers.gcp.internal.build.GoogleCloudBuild.GcbApi')
