@@ -22,10 +22,11 @@ from __future__ import unicode_literals
 
 from typing import Optional
 
+import libcloudforensics.providers.gcp.internal.build as build_module
 import libcloudforensics.providers.gcp.internal.compute as compute_module
 import libcloudforensics.providers.gcp.internal.function as function_module
 import libcloudforensics.providers.gcp.internal.log as log_module
-import libcloudforensics.providers.gcp.internal.build as build_module
+import libcloudforensics.providers.gcp.internal.monitoring as monitoring_module
 
 
 class GoogleCloudProject:
@@ -59,6 +60,7 @@ class GoogleCloudProject:
     self._function = None
     self._build = None
     self._log = None
+    self._monitoring = None
 
   @property
   def compute(self) -> compute_module.GoogleCloudCompute:
@@ -115,3 +117,17 @@ class GoogleCloudProject:
     self._log = log_module.GoogleCloudLog(  # type: ignore
         self.project_id)
     return self._log  # type: ignore
+
+  @property
+  def monitoring(self) -> monitoring_module.GoogleCloudMonitoring:
+    """Get a GoogleCloudMonitoring object for the project.
+
+    Returns:
+      GoogleCloudMonitoring: Object that represents Google Monitoring.
+    """
+
+    if self._monitoring:
+      return self._monitoring
+    self._monitoring = monitoring_module.GoogleCloudMonitoring(  # type: ignore
+        self.project_id)
+    return self._monitoring  # type: ignore
