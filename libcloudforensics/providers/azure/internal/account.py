@@ -48,9 +48,7 @@ class AZAccount:
 
   def ListInstances(
       self,
-      # pylint: disable=line-too-long
-      resource_group_name: Optional[str] = None) -> Dict[str, compute.AZVirtualMachine]:
-      # pylint: enable=line-too-long
+      resource_group_name: Optional[str] = None) -> Dict[str, compute.AZVirtualMachine]:  # pylint: disable=line-too-long
     """List instances in an Azure subscription / resource group.
 
     Args:
@@ -73,19 +71,17 @@ class AZAccount:
           {'resource_group_name': resource_group_name})  # type: ignore
     for response in responses:
       for instance in response:
-        vm_name = instance.name
-        instances[vm_name] = compute.AZVirtualMachine(self,
-                                                      instance.id,
-                                                      vm_name,
-                                                      instance.location,
-                                                      zones=instance.zones)
+        instances[instance.name] = compute.AZVirtualMachine(
+            self,
+            instance.id,
+            instance.name,
+            instance.location,
+            zones=instance.zones)
     return instances
 
   def ListDisks(
       self,
-      # pylint: disable=line-too-long
       resource_group_name: Optional[str] = None) -> Dict[str, compute.AZDisk]:
-      # pylint: enable=line-too-long
     """List disks in an Azure subscription / resource group.
 
     Args:
@@ -108,10 +104,9 @@ class AZAccount:
           {'resource_group_name': resource_group_name})  # type: ignore
     for response in responses:
       for disk in response:
-        disk_name = disk.name
-        disks[disk_name] = compute.AZDisk(self,
+        disks[disk.name] = compute.AZDisk(self,
                                           disk.id,
-                                          disk_name,
+                                          disk.name,
                                           disk.location,
                                           zones=disk.zones)
     return disks
