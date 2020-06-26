@@ -132,6 +132,9 @@ def Main() -> None:
                  ''),
                 ('--disk_size', 'Size of disk in GB.', '50'),
                 ('--cpu_cores', 'Instance CPU core count.', '4'),
+                ('--ami', 'AMI ID to use as base image. Will search '
+                          'Ubuntu 18.04 LTS server x86_64 for chosen region '
+                          'by default.', ''),
                 ('--ssh_key_name', 'SSH key pair name.', None),
                 ('--attach_volumes', 'Comma seperated list of volume IDs '
                                      'to attach. Maximum of 11.', None)
