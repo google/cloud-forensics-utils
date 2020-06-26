@@ -21,6 +21,21 @@ from libcloudforensics.providers.gcp.internal import common
 if TYPE_CHECKING:
   import googleapiclient
 
+def SplitGcsPath(gcs_path: str) -> Tuple[str, str]:
+  """Split GCS path to bucket name and object URI.
+
+  Args:
+    gcs_path (str): File path to a resource in GCS.
+        Ex: gs://bucket/folder/obj
+
+  Returns:
+    Tuple[str, str]: Bucket name. Object URI.
+  """
+
+  _, _, full_path = gcs_path.partition('//')
+  bucket, _, object_uri = full_path.partition('/')
+  return bucket, object_uri
+
 
 class GoogleCloudStorage:
   """Class to call Google Cloud Storage APIs.
@@ -53,21 +68,6 @@ class GoogleCloudStorage:
         'storage', self.CLOUD_STORAGE_API_VERSION)
     return self.gcs_api_client
 
-  def SplitGcsPath(self, gcs_path: str) -> Tuple[str, str]:
-    """Split GCS path to bucket name and object URI.
-
-    Args:
-      gcs_path (str): File path to a resource in GCS.
-          Ex: gs://bucket/folder/obj
-
-    Returns:
-      Tuple[str, str]: Bucket name. Object URI.
-    """
-
-    _, _, full_path = gcs_path.partition('//')
-    bucket, _, object_uri = full_path.partition('/')
-    return bucket, object_uri
-
   def GetObjectMetadata(self,
                         gcs_path: str,
                         user_project: Optional[str] = None) -> Dict[str, Any]:
@@ -83,7 +83,7 @@ class GoogleCloudStorage:
       Dict: An API operation object for a Google Cloud Storage object.
     """
 
-    bucket, object_path = self.SplitGcsPath(gcs_path)
+    bucket, object_path = SplitGcsPath(gcs_path)
     gcs_api_client = self.GcsApi().objects()
     request = gcs_api_client.get(
         bucket=bucket, object=object_path, userProject=user_project)

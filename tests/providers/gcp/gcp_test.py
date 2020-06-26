@@ -189,7 +189,7 @@ MOCK_GCE_OPERATION_INSTANCES_GET = {
     }]
 }
 
-MOCK_GCS_OPERATION_OBJECT_GET = {
+MOCK_GCS_OBJECT_METADATA = {
     'kind': 'storage#object',
     'id': 'fake-bucket/foo/fake.img/12345',
     'size': '5555555555',
@@ -699,7 +699,7 @@ class GoogleCloudStorageTest(unittest.TestCase):
   @typing.no_type_check
   def testSplitGcsPath(self):
     """Tests that GCS path split is correctly done."""
-    bucket, object_uri = FAKE_GCS.SplitGcsPath('gs://fake-bucket/fake-folder/fake-object')
+    bucket, object_uri = gcp_storage.SplitGcsPath('gs://fake-bucket/fake-folder/fake-object')
     self.assertEqual('fake-folder/fake-object', object_uri)
     self.assertEqual('fake-bucket', bucket)
 
@@ -708,21 +708,21 @@ class GoogleCloudStorageTest(unittest.TestCase):
   def testGetObjectMetadata(self, mock_gcs_api):
     """Test GCS object Get operation."""
     api_get_object = mock_gcs_api.return_value.objects.return_value.get
-    api_get_object.return_value.execute.return_value = MOCK_GCS_OPERATION_OBJECT_GET
+    api_get_object.return_value.execute.return_value = MOCK_GCS_OBJECT_METADATA
     get_results = FAKE_GCS.GetObjectMetadata('gs://Fake_Path')
-    self.assertEqual(MOCK_GCS_OPERATION_OBJECT_GET, get_results)
-    self.assertEqual(MOCK_GCS_OPERATION_OBJECT_GET['size'], get_results['size'])
+    self.assertEqual(MOCK_GCS_OBJECT_METADATA, get_results)
+    self.assertEqual('5555555555', get_results['size'])
 
   @typing.no_type_check
   @mock.patch('libcloudforensics.providers.gcp.internal.storage.GoogleCloudStorage.GcsApi')
   def testGetMD5Object(self, mock_gcs_api):
     """Test GCS object MD5 hash."""
     api_get_object = mock_gcs_api.return_value.objects.return_value.get
-    api_get_object.return_value.execute.return_value = MOCK_GCS_OPERATION_OBJECT_GET
+    api_get_object.return_value.execute.return_value = MOCK_GCS_OBJECT_METADATA
     md5_base64 = FAKE_GCS.GetMD5Object('gs://Fake_Path')
-    self.assertEqual(MOCK_GCS_OPERATION_OBJECT_GET['md5Hash'], md5_base64)
+    self.assertEqual('fakehash', md5_base64)
     md5_hex = FAKE_GCS.GetMD5Object('gs://Fake_Path', in_hex=True)
-    self.assertEqual(base64.b64decode(MOCK_GCS_OPERATION_OBJECT_GET['md5Hash']).hex(), md5_hex)
+    self.assertEqual(base64.b64decode('fakehash').hex(), md5_hex)
 
 
 class GoogleCloudBuildeTest(unittest.TestCase):

@@ -147,10 +147,10 @@ def CreateDiskFromGCSImage(
     storage_image_path: str,
     zone: str,
     name: Optional[str] = None) -> Dict[str, Any]:
-  """Creates GCE persistent disk from image in GCS.
+  """Creates a GCE persistent disk from a image in GCS.
 
   The method supports raw disk images and most virtual disk
-  file formats, valid import formats are:
+  file formats. Valid import formats are:
   [raw (dd), qcow2, qcow , vmdk, vdi, vhd, vhdx, qed, vpc].
 
   The created GCE disk might be larger than the original raw (dd)
@@ -173,7 +173,7 @@ def CreateDiskFromGCSImage(
         is imported-disk-[TIMESTAMP('%Y%m%d%H%M%S')].
 
   Returns:
-    Dict: A key value descrbing the imported GCE disk.
+    Dict: A key value describing the imported GCE disk.
         Ex: {
           'project_id': 'fake-project',
           'disk_name': 'fake-imported-disk',
@@ -183,12 +183,12 @@ def CreateDiskFromGCSImage(
         }
 
   Raises:
-    RuntimeError: If GCE Disk name is invalid.
+    ValueError: If the GCE disk name is invalid.
   """
 
   if name:
     if not common.REGEX_DISK_NAME.match(name):
-      raise RuntimeError(
+      raise ValueError(
           'Disk name {0:s} does not comply with {1:s}'.format(
               name, common.REGEX_DISK_NAME.pattern))
     truncate_at = 63

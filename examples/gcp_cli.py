@@ -105,6 +105,9 @@ def QueryLogs(args: 'argparse.Namespace') -> None:
 def CreateDiskFromGCSImage(args: 'argparse.Namespace') -> None:
   """Creates GCE persistent disk from image in GCS.
 
+  Please refer to doc string of forensics.CreateDiskFromGCSImage
+  function for more details on how the image is created.
+
   Args:
       args (argparse.Namespace): Arguments from ArgumentParser.
   """

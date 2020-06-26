@@ -284,8 +284,9 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     except RuntimeError:
       pass
 
-    machine_type = 'zones/{0}/machineTypes/n1-standard-{1:d}'.format(  # type: ignore
-        self.default_zone, cpu_cores)
+    machine_type = \
+        'zones/{0}/machineTypes/n1-standard-{1:d}'.format(  # type: ignore
+            self.default_zone, cpu_cores)
     ubuntu_image = self.GceApi().images().getFromFamily(
         project=image_project, family=image_family).execute()
     source_disk_image = ubuntu_image['selfLink']
@@ -478,13 +479,13 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       GoogleComputeImage: A Google Compute Image object.
 
     Raises:
-      RuntimeError: If GCE Image name is invalid.
+      ValueError: If GCE Image name is invalid.
     """
 
     truncate_at = 63
     if name:
       if not common.REGEX_DISK_NAME.match(name):
-        raise RuntimeError(
+        raise ValueError(
             'Image name {0:s} does not comply with {1:s}'.format(
                 name, common.REGEX_DISK_NAME.pattern))
       name = name[:truncate_at]
@@ -524,13 +525,13 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       GoogleComputeDisk: A Google Compute Disk object.
 
     Raises:
-      RuntimeError: If GCE disk name is invalid.
+      ValueError: If GCE disk name is invalid.
     """
 
     truncate_at = 63
     if name:
       if not common.REGEX_DISK_NAME.match(name):
-        raise RuntimeError(
+        raise ValueError(
             'Disk name {0:s} does not comply with {1:s}'.format(
                 name, common.REGEX_DISK_NAME.pattern))
       name = name[:truncate_at]
@@ -583,7 +584,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       GoogleComputeImage: A Google Compute Image object.
 
     Raises:
-      RuntimeError: If bootable is True and os_name not specified or
+      ValueError: If bootable is True and os_name not specified or
           if imported image name is invalid.
     """
 
@@ -602,7 +603,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     if not bootable:
       img_type = '-data_disk'
     elif not os_name:
-      raise RuntimeError(
+      raise ValueError(
           'For bootable images, operating system name'
           ' (os_name) must be specified.')
     elif os_name not in supported_os:
@@ -618,7 +619,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
         guest_env = ''
     if image_name:
       if not common.REGEX_DISK_NAME.match(image_name):
-        raise RuntimeError(
+        raise ValueError(
             'Imported image name {0:s} does not comply with {1:s}'.format(
                 image_name, common.REGEX_DISK_NAME.pattern))
       truncate_at = 63
