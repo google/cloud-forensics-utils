@@ -217,7 +217,7 @@ def StartAnalysisVm(
   # If no AMI ID is given we use the default Ubuntu 18.04
   # in the region requested.
   if not ami:
-    qfilter = [{'Name':'name', 'Values':[UBUNTU_1804_FILTER]}]
+    qfilter = [{'Name': 'name', 'Values': [UBUNTU_1804_FILTER]}]
     ami_list = aws_account.ListImages(qfilter)
     # We should only get 1 AMI image back, if we get multiple we
     # have no way of knowing which one to use.
