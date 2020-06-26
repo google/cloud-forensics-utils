@@ -79,7 +79,7 @@ class AZVirtualMachine(AZComputeResource):
                name: str,
                region: str,
                zones: Optional[List[str]] = None) -> None:
-    """Initialize the AZCompute class.
+    """Initialize the AZVirtualMachine class.
 
     Args:
       az_account (AZAccount): An Azure account object.
@@ -127,11 +127,10 @@ class AZVirtualMachine(AZComputeResource):
       RuntimeError: If disk_name is not found amongst the disks attached
           to the instance.
     """
-    disks = self.az_account.ListDisks(
-        resource_group_name=self.resource_group_name)  # type: Dict[str, AZDisk]
+    disks = self.ListDisks()
     if disk_name not in disks:
-      error_msg = 'Boot disk not found for instance: {0:s}'.format(
-          self.resource_id)
+      error_msg = 'Disk {0:s} not found in instance: {1:s}'.format(
+          disk_name, self.resource_id)
       raise RuntimeError(error_msg)
     return disks[disk_name]
 

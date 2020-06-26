@@ -39,7 +39,7 @@ def CreateDiskCopy(
           Standard_LRS, Premium_LRS, StandardSSD_LRS, or UltraSSD_LRS.
 
   Returns:
-    GoogleComputeDisk: A Google Compute Disk object.
+    AZDisk: An Azure Compute Disk object.
 
   Raises:
     RuntimeError: If there are errors copying the disk

@@ -59,8 +59,8 @@ class AZAccount:
           subscription will be listed.
 
     Returns:
-      Dict[str, AZCompute]: Dictionary mapping instance names (str)
-          to their respective AZCompute object.
+      Dict[str, AZCompute]: Dictionary mapping instance names (str) to their
+          respective AZCompute object.
     """
     instances = {}  # type: Dict[str, compute.AZVirtualMachine]
     az_vm_client = self.compute_client.virtual_machines
@@ -86,7 +86,7 @@ class AZAccount:
       # pylint: disable=line-too-long
       resource_group_name: Optional[str] = None) -> Dict[str, compute.AZDisk]:
       # pylint: enable=line-too-long
-    """List instances in an Azure subscription / resource group.
+    """List disks in an Azure subscription / resource group.
 
     Args:
       resource_group_name (str): Optional. The resource group name to list
@@ -94,8 +94,8 @@ class AZAccount:
           subscription will be listed.
 
     Returns:
-      Dict[str, AZDisk]: Dictionary mapping instance names (str)
-          to their respective AZDisk object.
+      Dict[str, AZDisk]: Dictionary mapping disk names (str) to their
+          respective AZDisk object.
     """
     disks = {}  # type: Dict[str, compute.AZDisk]
     az_disk_client = self.compute_client.disks
@@ -187,7 +187,7 @@ class AZAccount:
       AZDisk: Azure Compute Disk.
 
     Raises:
-      RuntimeError: If the disk exists already.
+      RuntimeError: If the disk could not be created.
     """
 
     if not disk_name:
