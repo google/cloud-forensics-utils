@@ -197,16 +197,17 @@ def CreateDiskFromGCSImage(
     timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
     name = 'imported-disk-{0}'.format(timestamp)
 
-  result = {}
   project = gcp_project.GoogleCloudProject(project_id)
   image_object = project.compute.ImportImageFromStorage(storage_image_path)
   disk_object = project.compute.CreateDiskFromImage(
       image_object, zone=zone, name=name)
-  bytes_count = project.storage.GetSizeObject(storage_image_path)
+  bytes_count = project.storage.GetObjectMetadata(storage_image_path)['size']
   md5_hash = project.storage.GetMD5Object(storage_image_path, in_hex=True)
-  result['project_id'] = disk_object.project_id
-  result['disk_name'] = disk_object.name
-  result['zone'] = disk_object.zone
-  result['bytes_count'] = bytes_count
-  result['md5Hash'] = md5_hash
+  result = {
+      'project_id': disk_object.project_id,
+      'disk_name': disk_object.name,
+      'zone': disk_object.zone,
+      'bytes_count': bytes_count,
+      'md5Hash': md5_hash
+  }
   return result

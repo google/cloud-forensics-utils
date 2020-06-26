@@ -59,7 +59,7 @@ class GoogleCloudProject:
     self._monitoring = None
 
   @property
-  def compute(self) -> 'compute_module.GoogleCloudCompute':
+  def compute(self) -> compute_module.GoogleCloudCompute:
     """Get a GoogleCloudCompute object for the project.
 
     Returns:
@@ -73,7 +73,7 @@ class GoogleCloudProject:
     return self._compute  # type: ignore
 
   @property
-  def function(self) -> 'function_module.GoogleCloudFunction':
+  def function(self) -> function_module.GoogleCloudFunction:
     """Get a GoogleCloudFunction object for the project.
 
     Returns:
@@ -87,7 +87,7 @@ class GoogleCloudProject:
     return self._function  # type: ignore
 
   @property
-  def build(self) -> 'build_module.GoogleCloudBuild':
+  def build(self) -> build_module.GoogleCloudBuild:
     """Get a GoogleCloudBuild object for the project.
 
     Returns:
@@ -101,7 +101,7 @@ class GoogleCloudProject:
     return self._build  # type: ignore
 
   @property
-  def log(self) -> 'log_module.GoogleCloudLog':
+  def log(self) -> log_module.GoogleCloudLog:
     """Get a GoogleCloudLog object for the project.
 
     Returns:
@@ -115,8 +115,8 @@ class GoogleCloudProject:
     return self._log  # type: ignore
 
   @property
-  def storage(self) -> 'storage_module.GoogleCloudStorage':
-    """Get a GoogleCloudLog object for the project.
+  def storage(self) -> storage_module.GoogleCloudStorage:
+    """Get a GoogleCloudStorage object for the project.
 
     Returns:
       GoogleCloudLog: Object that represents Google Cloud Logging.
@@ -129,7 +129,7 @@ class GoogleCloudProject:
     return self._storage  # type: ignore
 
   @property
-  def monitoring(self) -> 'monitoring_module.GoogleCloudMonitoring':
+  def monitoring(self) -> monitoring_module.GoogleCloudMonitoring:
     """Get a GoogleCloudMonitoring object for the project.
 
     Returns:

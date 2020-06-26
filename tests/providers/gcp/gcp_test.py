@@ -76,9 +76,6 @@ FAKE_LOG_ENTRIES = [{
 }]
 FAKE_NEXT_PAGE_TOKEN = 'abcdefg1234567'
 FAKE_GCS = gcp_storage.GoogleCloudStorage('fake-target-project')
-FAKE_GCS_PATH = 'gs://fake-bucket/fake-folder/fake-object'
-FAKE_GCS_URI = 'fake-folder/fake-object'
-FAKE_GCS_BUCKET = 'fake-bucket'
 FAKE_GCB = gcp_build.GoogleCloudBuild('fake-target-project')
 FAKE_MONITORING = gcp_monitoring.GoogleCloudMonitoring('fake-target-project')
 
@@ -702,18 +699,19 @@ class GoogleCloudStorageTest(unittest.TestCase):
   @typing.no_type_check
   def testSplitGcsPath(self):
     """Tests that GCS path split is correctly done."""
-    bucket, object_uri = FAKE_GCS.SplitGcsPath(FAKE_GCS_PATH)
-    self.assertEqual(object_uri, FAKE_GCS_URI)
-    self.assertEqual(bucket, FAKE_GCS_BUCKET)
+    bucket, object_uri = FAKE_GCS.SplitGcsPath('gs://fake-bucket/fake-folder/fake-object')
+    self.assertEqual('fake-folder/fake-object', object_uri)
+    self.assertEqual('fake-bucket', bucket)
 
   @typing.no_type_check
   @mock.patch('libcloudforensics.providers.gcp.internal.storage.GoogleCloudStorage.GcsApi')
-  def testGetOperationObject(self, mock_gcs_api):
+  def testGetObjectMetadata(self, mock_gcs_api):
     """Test GCS object Get operation."""
     api_get_object = mock_gcs_api.return_value.objects.return_value.get
     api_get_object.return_value.execute.return_value = MOCK_GCS_OPERATION_OBJECT_GET
-    get_results = FAKE_GCS.GetOperationObject('gs://Fake_Path')
-    self.assertEqual(get_results, MOCK_GCS_OPERATION_OBJECT_GET)
+    get_results = FAKE_GCS.GetObjectMetadata('gs://Fake_Path')
+    self.assertEqual(MOCK_GCS_OPERATION_OBJECT_GET, get_results)
+    self.assertEqual(MOCK_GCS_OPERATION_OBJECT_GET['size'], get_results['size'])
 
   @typing.no_type_check
   @mock.patch('libcloudforensics.providers.gcp.internal.storage.GoogleCloudStorage.GcsApi')
@@ -722,18 +720,9 @@ class GoogleCloudStorageTest(unittest.TestCase):
     api_get_object = mock_gcs_api.return_value.objects.return_value.get
     api_get_object.return_value.execute.return_value = MOCK_GCS_OPERATION_OBJECT_GET
     md5_base64 = FAKE_GCS.GetMD5Object('gs://Fake_Path')
-    self.assertEqual(md5_base64, MOCK_GCS_OPERATION_OBJECT_GET['md5Hash'])
+    self.assertEqual(MOCK_GCS_OPERATION_OBJECT_GET['md5Hash'], md5_base64)
     md5_hex = FAKE_GCS.GetMD5Object('gs://Fake_Path', in_hex=True)
-    self.assertEqual(md5_hex, base64.b64decode(MOCK_GCS_OPERATION_OBJECT_GET['md5Hash']).hex())
-
-  @typing.no_type_check
-  @mock.patch('libcloudforensics.providers.gcp.internal.storage.GoogleCloudStorage.GcsApi')
-  def testGetSizeObject(self, mock_gcs_api):
-    """Test GCS object size."""
-    api_get_object = mock_gcs_api.return_value.objects.return_value.get
-    api_get_object.return_value.execute.return_value = MOCK_GCS_OPERATION_OBJECT_GET
-    object_size = FAKE_GCS.GetSizeObject('gs://Fake_Path')
-    self.assertEqual(object_size, MOCK_GCS_OPERATION_OBJECT_GET['size'])
+    self.assertEqual(base64.b64decode(MOCK_GCS_OPERATION_OBJECT_GET['md5Hash']).hex(), md5_hex)
 
 
 class GoogleCloudBuildeTest(unittest.TestCase):
@@ -756,7 +745,7 @@ class GoogleCloudBuildeTest(unittest.TestCase):
     build_operation_object = mock_gcb_api.return_value.operations.return_value.get
     build_operation_object.return_value.execute.return_value = MOCK_GCB_BUILDS_SUCCESS
     block_build_success = FAKE_GCB.BlockOperation(MOCK_GCB_BUILDS_CREATE)
-    self.assertEqual(block_build_success, MOCK_GCB_BUILDS_SUCCESS)
+    self.assertEqual(MOCK_GCB_BUILDS_SUCCESS, block_build_success)
     build_operation_object.return_value.execute.return_value = MOCK_GCB_BUILDS_FAIL
     with self.assertRaises(RuntimeError):
       FAKE_GCB.BlockOperation(MOCK_GCB_BUILDS_CREATE)

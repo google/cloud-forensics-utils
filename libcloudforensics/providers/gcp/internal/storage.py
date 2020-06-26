@@ -68,10 +68,10 @@ class GoogleCloudStorage:
     bucket, _, object_uri = full_path.partition('/')
     return bucket, object_uri
 
-  def GetOperationObject(
-      self, gcs_path: str,
-      user_project: Optional[str] = None) -> Dict[str, Any]:
-    """Get API operation object for Google Cloud Storage object.
+  def GetObjectMetadata(self,
+                        gcs_path: str,
+                        user_project: Optional[str] = None) -> Dict[str, Any]:
+    """Get API operation object metadata for Google Cloud Storage object.
 
     Args:
       gcs_path (str): File path to a resource in GCS.
@@ -90,11 +90,10 @@ class GoogleCloudStorage:
     response = request.execute()  # type: Dict[str, Any]
     return response
 
-  def GetMD5Object(
-      self,
-      gcs_path: str,
-      user_project: Optional[str] = None,
-      in_hex: Optional[bool] = False) -> str:
+  def GetMD5Object(self,
+                   gcs_path: str,
+                   user_project: Optional[str] = None,
+                   in_hex: Optional[bool] = False) -> str:
     """"Gets MD5 hash value of the object as a (base64 | hex) string.
 
     Args:
@@ -109,24 +108,7 @@ class GoogleCloudStorage:
       str: MD5 hash of the object as a (base64 | hex) string.
     """
 
-    md5_base64 = self.GetOperationObject(gcs_path, user_project)['md5Hash']
+    md5_base64 = self.GetObjectMetadata(gcs_path, user_project)['md5Hash']
     if in_hex:
       return base64.b64decode(md5_base64).hex()
     return md5_base64  # type: ignore
-
-  def GetSizeObject(
-      self, gcs_path: str, user_project: Optional[str] = None) -> str:
-    """"Gets Content-Length of the object in bytes.
-
-    Args:
-      gcs_path (str): File path to a resource in GCS.
-          Ex: gs://bucket/folder/obj
-      user_project (str): The project ID to be billed for this request.
-          Required for Requester Pays buckets.
-
-    Returns:
-      str: Content-Length of the data in bytes.
-    """
-
-    bytes_count = self.GetOperationObject(gcs_path, user_project)['size']
-    return bytes_count  # type: ignore

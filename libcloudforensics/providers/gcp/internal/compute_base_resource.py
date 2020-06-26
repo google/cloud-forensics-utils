@@ -65,13 +65,13 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
 
     return 'project:{0} {1}'.format(self.project_id, message)
 
-  def GetOperation(self) -> Dict[str, Any]:
+  def GetOperation(self) -> 'Dict[str, Any]':
     """Abstract method to be implemented by child classes.
 
-    Returns:
-      Dict: An API operation object for a Google Compute Engine resource.
+    Raises:
+      NotImplementedError: If the child class doesn't implement GetOperation.
     """
-    return {'GetOperationNotImplemented': None}
+    raise NotImplementedError("GetOperation is not implemented by this class.")
 
   def GetValue(self, key: str) -> str:
     """Get specific value from the resource key value store.
@@ -83,8 +83,7 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
       str: Value of key or None if key is missing.
     """
 
-    # pylint: disable=no-member
-    self._data = self.GetOperation()   # type: ignore
+    self._data = self.GetOperation()  # type: ignore
     return self._data.get(key)  # type: ignore
 
   def GetSourceString(self) -> str:
