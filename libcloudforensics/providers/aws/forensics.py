@@ -222,8 +222,9 @@ def StartAnalysisVm(
     # We should only get 1 AMI image back, if we get multiple we
     # have no way of knowing which one to use.
     if len(ami_list) > 1:
+      image_names = [image['Name'] for image in ami_list]
       raise RuntimeError('error - ListImages returns >1 AMI image: [{0:s}]'
-                         .format(', '.join([image['Name'] for image in ami_list]))) # pylint: disable=line-too-long
+                         .format(', '.join(image_names)))
     ami = ami_list[0]['ImageId']
 
   analysis_vm, created = aws_account.GetOrCreateAnalysisVm(
