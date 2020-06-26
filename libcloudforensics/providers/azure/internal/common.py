@@ -27,11 +27,6 @@ if TYPE_CHECKING:
   # the following cyclic import, as it it only used for type hints
   from libcloudforensics.providers.azure.internal import compute  # pylint: disable=cyclic-import
 
-
-TENANT_ID = os.environ["AZURE_TENANT_ID"]
-CLIENT_ID = os.environ["AZURE_CLIENT_ID"]
-CLIENT_SECRET = os.environ["AZURE_CLIENT_SECRET"]
-
 # pylint: disable=line-too-long
 # See https://docs.microsoft.com/en-us/azure/azure-resource-manager/management/resource-name-rules
 # pylint: enable=line-too-long
@@ -47,9 +42,9 @@ def GetCredentials() -> ServicePrincipalCredentials:
   Returns:
     ServicePrincipalCredentials: Azure credentials.
   """
-  return ServicePrincipalCredentials(tenant=TENANT_ID,
-                                     client_id=CLIENT_ID,
-                                     secret=CLIENT_SECRET)
+  return ServicePrincipalCredentials(tenant=os.environ["AZURE_TENANT_ID"],
+                                     client_id=os.environ["AZURE_CLIENT_ID"],
+                                     secret=os.environ["AZURE_CLIENT_SECRET"])
 
 
 def ExecuteRequest(
