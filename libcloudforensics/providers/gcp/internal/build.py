@@ -90,8 +90,8 @@ class GoogleCloudBuild:
           operations.
 
     Raises:
-      RuntimeError: If API call failed or if Blocking the cloud build
-          operation failed.
+      RuntimeError: If API call failed or if getting the Cloud Build
+          API operation object failed.
     """
     service = self.GcbApi()
     while True:
