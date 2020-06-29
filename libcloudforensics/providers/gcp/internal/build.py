@@ -14,14 +14,15 @@
 # limitations under the License.
 """Google Cloud Build functionalities."""
 
+import logging
 import time
-from typing import TYPE_CHECKING, Dict, Any
+from typing import Dict, Any
+import googleapiclient
+
 
 from libcloudforensics.providers.gcp.internal import common
 
-if TYPE_CHECKING:
-  import googleapiclient
-
+BLOCK_RETRY_MAX = 10
 
 class GoogleCloudBuild:
   """Class to call Google Cloud Build APIs.
@@ -89,12 +90,25 @@ class GoogleCloudBuild:
           operations.
 
     Raises:
-      RuntimeError: If API call failed.
+      RuntimeError: If API call failed or if Blocking the cloud build
+          operation failed.
     """
     service = self.GcbApi()
     while True:
       request = service.operations().get(name=response['name'])
-      response = request.execute()
+      for block_retry in range(BLOCK_RETRY_MAX):
+        try:
+          response = request.execute()
+        except googleapiclient.errors.HttpError as error:
+          if error.resp.status in [503]:
+            logging.info(
+                'cloudbuild.googleapis.com serivce is currently unavailable. '
+                '(try {0:d} of {1:d})'.format(
+                    block_retry, BLOCK_RETRY_MAX))
+          if block_retry == BLOCK_RETRY_MAX - 1:
+            raise RuntimeError(
+                'Faliure blocking Cloud Build operation: {0:s}'.format(
+                    response['name']))
       if response.get('done') and response.get('error'):
         build_metadata = response['metadata']['build']
         raise RuntimeError(
