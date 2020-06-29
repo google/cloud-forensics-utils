@@ -100,11 +100,10 @@ class GoogleCloudBuild:
         try:
           response = request.execute()
         except googleapiclient.errors.HttpError as error:
-          if error.resp.status in [503]:
-            logging.info(
-                'cloudbuild.googleapis.com serivce is currently unavailable. '
-                '(try {0:d} of {1:d})'.format(
-                    block_retry, BLOCK_RETRY_MAX))
+          logging.info(
+              'build.BlockOperation: Get request to cloudbuild.googleapis.com '
+              'failed.\nTry {0:d} of {1:d}. Error: {2!s} '.format(
+                  block_retry, BLOCK_RETRY_MAX, error))
           if block_retry == BLOCK_RETRY_MAX - 1:
             raise RuntimeError(
                 'Faliure blocking Cloud Build operation: {0:s}'.format(
