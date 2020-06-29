@@ -115,7 +115,7 @@ def StartAnalysisVm(args: 'argparse.Namespace') -> None:
   Args:
     args (argparse.Namespace): Arguments from ArgumentParser.
   """
-  if len(args.attach_volumes) > 11:
+  if args.attach_volumes and len(args.attach_volumes) > 11:
     print('error: --attach_volumes must be < 11')
     return
 
@@ -140,6 +140,7 @@ def StartAnalysisVm(args: 'argparse.Namespace') -> None:
                                  default_availability_zone=args.zone,
                                  boot_volume_size=int(args.disk_size),
                                  cpu_cores=int(args.cpu_cores),
+                                 ami=args.ami,
                                  ssh_key_name=args.ssh_key_name,
                                  attach_volumes=attach_volumes)
 
@@ -161,5 +162,5 @@ def ListImages(args: 'argparse.Namespace') -> None:
   images = aws_account.ListImages(qfilter)
 
   for image in images:
-    print('Name: {0:s}, ImageId: {1:s}'.format(image['Name'],
-                                               image['ImageId']))
+    print('Name: {0:s}, ImageId: {1:s}, Location: {2:s}'.format(
+        image['Name'], image['ImageId'], image['ImageLocation']))
