@@ -14,7 +14,6 @@
 # limitations under the License.
 """Google Cloud Storage functionalities."""
 
-import base64
 from typing import TYPE_CHECKING, Dict, Any, Optional, Tuple
 from libcloudforensics.providers.gcp.internal import common
 
@@ -81,6 +80,7 @@ class GoogleCloudStorage:
 
     Returns:
       Dict: An API operation object for a Google Cloud Storage object.
+           https://cloud.google.com/storage/docs/json_api/v1/objects#resource
     """
 
     bucket, object_path = SplitGcsPath(gcs_path)
@@ -89,26 +89,3 @@ class GoogleCloudStorage:
         bucket=bucket, object=object_path, userProject=user_project)
     response = request.execute()  # type: Dict[str, Any]
     return response
-
-  def GetMD5Object(self,
-                   gcs_path: str,
-                   user_project: Optional[str] = None,
-                   in_hex: Optional[bool] = False) -> str:
-    """"Gets MD5 hash value of the object as a (base64 | hex) string.
-
-    Args:
-      gcs_path (str): File path to a resource in GCS.
-          Ex: gs://bucket/folder/obj
-      user_project (str): The project ID to be billed for this request.
-          Required for Requester Pays buckets.
-      in_hex (boolean): Optional. Return the result as a hex string.
-          Default is False.
-
-    Returns:
-      str: MD5 hash of the object as a (base64 | hex) string.
-    """
-
-    md5_base64 = self.GetObjectMetadata(gcs_path, user_project)['md5Hash']
-    if in_hex:
-      return base64.b64decode(md5_base64).hex()
-    return md5_base64  # type: ignore
