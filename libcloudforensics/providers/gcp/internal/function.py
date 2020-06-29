@@ -33,7 +33,7 @@ class GoogleCloudFunction:
     gcf_api_client: Client to interact with GCF APIs.
   """
 
-  CLOUD_FUNCTIONS_API_VERSION = 'v1beta2'
+  CLOUD_FUNCTIONS_API_VERSION = 'v1'
 
   def __init__(self, project_id: str) -> None:
     """Initialize the GoogleCloudFunction object.
