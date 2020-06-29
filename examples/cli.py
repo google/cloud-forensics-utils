@@ -173,7 +173,10 @@ def Main() -> None:
             ])
   AddParser('gcp', gcp_subparsers, 'querylogs', 'Query GCP logs.',
             args=[
-                ('--filter', 'Query filter.', None)
+                ('--filter', 'Query filter', None),
+                ('--start', 'Start date for query (2020-05-01T11:13:00Z)',
+                 None),
+                ('--end', 'End date for query (2020-05-01T11:13:00Z)', None)
             ])
   AddParser('gcp', gcp_subparsers, 'listlogs', 'List GCP logs for a project.')
   AddParser('gcp', gcp_subparsers, 'listservices',

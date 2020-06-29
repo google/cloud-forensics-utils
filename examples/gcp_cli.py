@@ -96,7 +96,18 @@ def QueryLogs(args: 'argparse.Namespace') -> None:
     args (argparse.Namespace): Arguments from ArgumentParser.
   """
   logs = gcp_log.GoogleCloudLog(args.project)
-  results = logs.ExecuteQuery(args.filter)
+
+  qfilter = ''
+  if args.start:
+    qfilter += 'timestamp>=\"{0:s}\" '.format(args.start)
+  if args.start and args.end:
+    qfilter += 'AND '
+  if args.end:
+    qfilter += 'timestamp<=\"{0:s}\" '.format(args.end)
+  if args.filter:
+    qfilter += args.filter
+
+  results = logs.ExecuteQuery(qfilter)
   print('Found {0:d} log entries:'.format(len(results)))
   for line in results:
     print(json.dumps(line))
