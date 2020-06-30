@@ -14,6 +14,7 @@
 # limitations under the License.
 """Forensics on GCP."""
 
+import base64
 from typing import TYPE_CHECKING, List, Tuple, Optional, Dict, Any
 
 from google.auth.exceptions import RefreshError, DefaultCredentialsError
@@ -192,20 +193,23 @@ def CreateDiskFromGCSImage(
               name, common.REGEX_DISK_NAME.pattern))
     name = name[:common.COMPUTE_NAME_LIMIT]
   else:
-    name = common.StampAndTruncateName('imported-disk',
-                                       common.COMPUTE_NAME_LIMIT)
+    name = common.GenerateUniqueInstanceName('imported-disk',
+                                             common.COMPUTE_NAME_LIMIT)
 
   project = gcp_project.GoogleCloudProject(project_id)
   image_object = project.compute.ImportImageFromStorage(storage_image_path)
   disk_object = project.compute.CreateDiskFromImage(
       image_object, zone=zone, name=name)
-  bytes_count = project.storage.GetObjectMetadata(storage_image_path)['size']
-  md5_hash = project.storage.GetMD5Object(storage_image_path, in_hex=True)
+  bytes_count = project.storage.GetObjectMetadata(
+      storage_image_path)['size']
+  md5_hash_b64 = project.storage.GetObjectMetadata(
+      storage_image_path)['md5Hash']
+  md5_hash_hex = base64.b64decode(md5_hash_b64).hex()
   result = {
       'project_id': disk_object.project_id,
       'disk_name': disk_object.name,
       'zone': disk_object.zone,
       'bytes_count': bytes_count,
-      'md5Hash': md5_hash
+      'md5Hash': md5_hash_hex
   }
   return result

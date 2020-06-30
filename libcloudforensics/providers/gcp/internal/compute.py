@@ -428,8 +428,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       raise RuntimeError(error_msg)
 
     # pylint: disable=line-too-long
-    resource_dict = {
-    }  # type: Dict[str, Union[GoogleComputeInstance, GoogleComputeDisk]]
+    resource_dict = {}  # type: Dict[str, Union[GoogleComputeInstance, GoogleComputeDisk]]
     # pylint: enable=line-too-long
     filter_expression = ''
     operation = 'AND' if filter_union else 'OR'
@@ -478,7 +477,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       GoogleComputeImage: A Google Compute Image object.
 
     Raises:
-      ValueError: If GCE Image name is invalid.
+      ValueError: If the GCE Image name is invalid.
     """
 
     if name:
@@ -488,8 +487,8 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
                 name, common.REGEX_DISK_NAME.pattern))
       name = name[:common.COMPUTE_NAME_LIMIT]
     else:
-      name = common.StampAndTruncateName(src_disk.name,
-                                         common.COMPUTE_NAME_LIMIT)
+      name = common.GenerateUniqueInstanceName(src_disk.name,
+                                               common.COMPUTE_NAME_LIMIT)
     image_body = {
         'name':
             name,
@@ -532,8 +531,8 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
                 name, common.REGEX_DISK_NAME.pattern))
       name = name[:common.COMPUTE_NAME_LIMIT]
     else:
-      name = common.StampAndTruncateName(src_image.name,
-                                         common.COMPUTE_NAME_LIMIT)
+      name = common.GenerateUniqueInstanceName(src_image.name,
+                                               common.COMPUTE_NAME_LIMIT)
 
     disk_body = {
         'name':
@@ -584,16 +583,16 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
           if imported image name is invalid.
     """
 
-    supported_os = \
-        ['centos-6', 'centos-7', 'centos-8', 'debian-8', 'debian-9',
-         'opensuse-15', 'rhel-6', 'rhel-6-byol', 'rhel-7', 'rhel-7-byol',
-         'rhel-8', 'rhel-8-byol', 'sles-12-byol', 'sles-15-byol',
-         'ubuntu-1404', 'ubuntu-1604', 'ubuntu-1804', 'windows-10-x64-byol',
-         'windows-10-x86-byol', 'windows-2008r2', 'windows-2008r2-byol',
-         'windows-2012', 'windows-2012-byol', 'windows-2012r2',
-         'windows-2012r2-byol', 'windows-2016', 'windows-2016-byol',
-         'windows-2019', 'windows-2019-byol', 'windows-7-x64-byol',
-         'windows-7-x86-byol', 'windows-8-x64-byol', 'windows-8-x86-byol']
+    supported_os = [
+        'centos-6', 'centos-7', 'centos-8', 'debian-8', 'debian-9',
+        'opensuse-15', 'rhel-6', 'rhel-6-byol', 'rhel-7', 'rhel-7-byol',
+        'rhel-8', 'rhel-8-byol', 'sles-12-byol', 'sles-15-byol',
+        'ubuntu-1404', 'ubuntu-1604', 'ubuntu-1804', 'windows-10-x64-byol',
+        'windows-10-x86-byol', 'windows-2008r2', 'windows-2008r2-byol',
+        'windows-2012', 'windows-2012-byol', 'windows-2012r2',
+        'windows-2012r2-byol', 'windows-2016', 'windows-2016-byol',
+        'windows-2019', 'windows-2019-byol', 'windows-7-x64-byol',
+        'windows-7-x86-byol', 'windows-8-x64-byol', 'windows-8-x86-byol']
 
     if not bootable:
       img_type = '-data_disk'
@@ -617,8 +616,8 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
                 image_name, common.REGEX_DISK_NAME.pattern))
       image_name = image_name[:common.COMPUTE_NAME_LIMIT]
     else:
-      image_name = common.StampAndTruncateName('imported-image',
-                                               common.COMPUTE_NAME_LIMIT)
+      image_name = common.GenerateUniqueInstanceName('imported-image',
+                                                     common.COMPUTE_NAME_LIMIT)
     args_list = [
         '-image_name={0:s}'.format(image_name),
         '-source_file={0:s}'.format(storage_image_path),
@@ -656,6 +655,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
     Returns:
       Dict: An API operation object for a Google Compute Engine
           virtual machine.
+          https://cloud.google.com/compute/docs/reference/rest/v1/instances/get#response-body
     """
 
     gce_instance_client = self.GceApi().instances()
@@ -718,17 +718,15 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
     """Create an SSH connection to the virtual machine."""
 
     devnull = open(os.devnull, 'w')
-    subprocess.check_call([
-        'gcloud',
-        'compute',
-        '--project',
-        self.project_id,
-        'ssh',
-        '--zone',
-        self.zone,
-        self.name
-    ],
-                          stderr=devnull)
+    cmd_list = ['gcloud',
+                'compute',
+                '--project',
+                self.project_id,
+                'ssh',
+                '--zone',
+                self.zone,
+                self.name]
+    subprocess.check_call(cmd_list, stderr=devnull)
 
   def Ssh(self) -> None:
     """Connect to the virtual machine over SSH."""
@@ -807,6 +805,7 @@ class GoogleComputeDisk(compute_base_resource.GoogleComputeBaseResource):
 
     Returns:
       Dict: An API operation object for a Google Compute Engine disk.
+          https://cloud.google.com/compute/docs/reference/rest/v1/disks/get#response-body
     """
 
     gce_disk_client = self.GceApi().disks()
@@ -838,8 +837,8 @@ class GoogleComputeDisk(compute_base_resource.GoogleComputeBaseResource):
 
     if not snapshot_name:
       snapshot_name = self.name
-    snapshot_name = common.StampAndTruncateName(snapshot_name,
-                                                common.COMPUTE_NAME_LIMIT)
+    snapshot_name = common.GenerateUniqueInstanceName(snapshot_name,
+                                                      common.COMPUTE_NAME_LIMIT)
     if not common.REGEX_DISK_NAME.match(snapshot_name):
       raise ValueError(
           'Snapshot name {0:s} does not comply with '
@@ -882,6 +881,7 @@ class GoogleComputeSnapshot(compute_base_resource.GoogleComputeBaseResource):
 
     Returns:
       Dict: An API operation object for a Google Compute Engine Snapshot.
+          https://cloud.google.com/compute/docs/reference/rest/v1/snapshots/get#response-body
     """
 
     gce_snapshot_client = self.GceApi().snapshots()
@@ -910,6 +910,7 @@ class GoogleComputeImage(compute_base_resource.GoogleComputeBaseResource):
 
     Returns:
       Dict: Holding an API operation object for a Google Compute Engine Image.
+          https://cloud.google.com/compute/docs/reference/rest/v1/images/get#response-body
     """
 
     gce_image_client = self.GceApi().images()

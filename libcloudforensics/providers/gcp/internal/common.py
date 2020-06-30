@@ -86,8 +86,8 @@ def GenerateDiskName(snapshot: 'compute.GoogleComputeSnapshot',
   return disk_name
 
 
-def StampAndTruncateName(prefix: str,
-                         truncate_at: Optional[int] = None) -> str:
+def GenerateUniqueInstanceName(prefix: str,
+                               truncate_at: Optional[int] = None) -> str:
   """Add a timestamp as a suffix to provided name and truncate at max limit.
 
   Args:

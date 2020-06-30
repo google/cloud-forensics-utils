@@ -65,7 +65,7 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
 
     return 'project:{0} {1}'.format(self.project_id, message)
 
-  def GetOperation(self) -> 'Dict[str, Any]':
+  def GetOperation(self) -> Dict[str, Any]:
     """Abstract method to be implemented by child classes.
 
     Raises:
