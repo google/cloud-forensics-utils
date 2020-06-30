@@ -438,9 +438,10 @@ class AWSAccountTest(unittest.TestCase):
     """Test that AMI images are correctly listed."""
     describe_images = mock_ec2_api.return_value.describe_images
     describe_images.return_value = MOCK_DESCRIBE_IMAGES
-    images = FAKE_AWS_ACCOUNT.ListImages(qfilter=None)
+    images = FAKE_AWS_ACCOUNT.ListImages()
     self.assertEqual(2, len(images))
     self.assertIn('Name', images[0])
+
 
 class AWSInstanceTest(unittest.TestCase):
   """Test AWSInstance class."""

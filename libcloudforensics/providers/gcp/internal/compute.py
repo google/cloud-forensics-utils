@@ -55,7 +55,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
 
   def Instances(self,
                 refresh: Optional[bool] = True
-               ) -> Dict[str, 'GoogleComputeInstance']:
+                ) -> Dict[str, 'GoogleComputeInstance']:
     """Get all instances in the project.
 
     Args:
@@ -72,7 +72,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
 
   def Disks(self,
             refresh: Optional[bool] = True
-           ) -> Dict[str, 'GoogleComputeDisk']:
+            ) -> Dict[str, 'GoogleComputeDisk']:
     """Get all disks in the project.
 
     Args:
@@ -243,7 +243,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
                             image_project: Optional[str] = 'ubuntu-os-cloud',
                             image_family: Optional[str] = 'ubuntu-1804-lts',
                             packages: Optional[List[str]] = None
-                           ) -> Tuple['GoogleComputeInstance', bool]:
+                            ) -> Tuple['GoogleComputeInstance', bool]:
     """Get or create a new virtual machine for analysis purposes.
 
     If none of the optional parameters are specified, then by default the
@@ -347,7 +347,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
   def ListInstanceByLabels(self,
                            labels_filter: Dict[str, str],
                            filter_union: Optional[bool] = True
-                          )-> Dict[str, 'GoogleComputeInstance']:
+                           )-> Dict[str, 'GoogleComputeInstance']:
     """List VMs in a project with one/all of the provided labels.
 
     This will call the _ListByLabel function on an instances() API object
@@ -373,7 +373,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
   def ListDiskByLabels(self,
                        labels_filter: Dict[str, str],
                        filter_union: Optional[bool] = True
-                      ) -> Dict[str, 'GoogleComputeDisk']:
+                       ) -> Dict[str, 'GoogleComputeDisk']:
     """List Disks in a project with one/all of the provided labels.
 
     This will call the _ListByLabel function on a disks() API object
@@ -567,9 +567,9 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
           in "%Y%m%d%H%M%S" format.
       bootable (bool): Optional. True if the imported image is bootable.
           Default is False. If True the os_name must be specified.
-      os_name (str): Optional. Name of the operating system on the bootable image.
-          For supported versions please see:
-          https://cloud.google.com/sdk/gcloud/reference/compute/images/import#--os
+      os_name (str): Optional. Name of the operating system on the bootable
+          image. For supported versions please see:
+          https://cloud.google.com/sdk/gcloud/reference/compute/images/import#--os  # pylint: disable=line-too-long
           For known limitations please see:
           https://googlecloudplatform.github.io/compute-image-tools/image-import.html#compatibility-and-known-limitations  # pylint: disable=line-too-long
       guest_environment (bool): Optional. Install Google Guest Environment on a
