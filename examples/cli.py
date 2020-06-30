@@ -170,8 +170,8 @@ def Main() -> None:
   AddParser('az', az_subparsers, 'listdisks',
             'List disks in Azure subscription.',
             args=[
-              ('--resource_group_name', 'The resource group name from '
-                                        'which to list disks.', None)
+                ('--resource_group_name', 'The resource group name from '
+                                          'which to list disks.', None)
             ])
   AddParser('az', az_subparsers, 'copydisk', 'Create an Azure disk copy.',
             args=[
