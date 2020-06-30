@@ -14,6 +14,7 @@
 # limitations under the License.
 """Demo CLI tool for GCP."""
 
+from datetime import datetime
 import json
 from typing import TYPE_CHECKING
 
@@ -94,16 +95,27 @@ def QueryLogs(args: 'argparse.Namespace') -> None:
 
   Args:
     args (argparse.Namespace): Arguments from ArgumentParser.
+
+  Raises:
+    ValueError: If the start or end date is not properly formatted.
   """
   logs = gcp_log.GoogleCloudLog(args.project)
 
+  try:
+    if args.start:
+      datetime.strptime(args.start, '%Y-%m-%dT%H:%M:%SZ')
+    if args.end:
+      datetime.strptime(args.end, '%Y-%m-%dT%H:%M:%SZ')
+  except ValueError as error:
+    raise error
+
   qfilter = ''
   if args.start:
-    qfilter += 'timestamp>=\"{0:s}\" '.format(args.start)
+    qfilter += 'timestamp>="{0:s}" '.format(args.start)
   if args.start and args.end:
     qfilter += 'AND '
   if args.end:
-    qfilter += 'timestamp<=\"{0:s}\" '.format(args.end)
+    qfilter += 'timestamp<="{0:s}" '.format(args.end)
   if args.filter:
     qfilter += args.filter
 
