@@ -97,7 +97,7 @@ class GoogleCloudBuild:
     get_success = False
     for block_retry in range(block_retry_max):
       try:
-        response = request.execute()
+        response = request.execute()  # type: Dict[str, Any]
         get_success = True
       except googleapiclient.errors.HttpError as error:
         logging.info(
