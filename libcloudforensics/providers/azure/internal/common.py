@@ -119,7 +119,9 @@ def GenerateDiskName(snapshot: 'compute.AZSnapshot',
   else:
     disk_name = '{0:s}_{1:s}_copy'.format(
         snapshot.name[:truncate_at], disk_id_crc32)
-
+  # Azure doesn't allow dashes in disk names, only underscores. If the
+  # name of the source snapshot contained dashes, we need to replace them.
+  disk_name = disk_name.replace('-', '_')
   if not REGEX_DISK_NAME.match(disk_name):
     raise ValueError(
         'Disk name {0:s} does not comply with '
