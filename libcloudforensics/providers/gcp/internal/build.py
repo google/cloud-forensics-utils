@@ -96,18 +96,22 @@ class GoogleCloudBuild:
     service = self.GcbApi()
     while True:
       request = service.operations().get(name=response['name'])
+      get_success = False
       for block_retry in range(BLOCK_RETRY_MAX):
         try:
           response = request.execute()
+          get_success = True
         except googleapiclient.errors.HttpError as error:
           logging.info(
               'build.BlockOperation: Get request to cloudbuild.googleapis.com '
               'failed.\nTry {0:d} of {1:d}. Error: {2!s} '.format(
                   block_retry, BLOCK_RETRY_MAX, error))
-          if block_retry == BLOCK_RETRY_MAX - 1:
-            raise RuntimeError(
-                'Faliure blocking Cloud Build operation: {0:s}'.format(
-                    response['name']))
+        if get_success:
+          break
+        if block_retry == BLOCK_RETRY_MAX - 1:
+          raise RuntimeError(
+              'Faliure blocking Cloud Build operation: {0:s}'.format(
+                  response['name']))
       if response.get('done') and response.get('error'):
         build_metadata = response['metadata']['build']
         raise RuntimeError(
