@@ -15,7 +15,7 @@
 """Google Cloud Monitoring functionality."""
 
 import datetime
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING, Dict
 
 from libcloudforensics.providers.gcp.internal import common
 
