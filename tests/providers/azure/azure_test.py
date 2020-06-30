@@ -374,7 +374,7 @@ class TestForensics(unittest.TestCase):
     # CreateDiskCopy(zone, disk_name='fake-disk-name'). This should grab
     # the disk 'fake-disk-name'.
     disk_copy = forensics.CreateDiskCopy(
-        FAKE_ACCOUNT.subscription_id, None, disk_name=FAKE_DISK.name)
+        FAKE_ACCOUNT.subscription_id, disk_name=FAKE_DISK.name)
     mock_get_instance.assert_not_called()
     mock_get_boot_disk.assert_not_called()
     mock_get_disk.assert_called_once()
@@ -394,15 +394,13 @@ class TestForensics(unittest.TestCase):
     # non-existent instance.
     with self.assertRaises(RuntimeError):
       forensics.CreateDiskCopy(
-          FAKE_ACCOUNT.subscription_id, 'non-existent-vm-name')
+          FAKE_ACCOUNT.subscription_id, instance_name='non-existent-vm-name')
 
     # Should raise a RuntimeError in GetDisk as we are querying a
     # non-existent disk.
     with self.assertRaises(RuntimeError):
       forensics.CreateDiskCopy(
-          FAKE_ACCOUNT.subscription_id,
-          None,
-          disk_name='non-existent-disk-name')
+          FAKE_ACCOUNT.subscription_id, disk_name='non-existent-disk-name')
 
 
 if __name__ == '__main__':
