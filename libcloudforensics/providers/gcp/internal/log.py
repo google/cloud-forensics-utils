@@ -12,7 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Log functionality."""
+"""Google Cloud Logging functionalities."""
 
 from typing import TYPE_CHECKING, List, Dict, Any
 
@@ -26,7 +26,7 @@ class GoogleCloudLog:
   """Class representing a Google Cloud Logs interface.
 
   Attributes:
-    project_id: Project name.
+    project_id: Google Cloud project ID.
     gcl_api_client: Client to interact with GCP logging API.
 
   Example use:
