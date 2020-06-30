@@ -350,7 +350,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
                           )-> Dict[str, 'GoogleComputeInstance']:
     """List VMs in a project with one/all of the provided labels.
 
-    This will call the __ListByLabel on instances() API object
+    This will call the _ListByLabel on instances() API object
     with the proper labels filter and return a Dict with name and metadata
     for each instance, e.g.:
         {'instance-1': {'zone': 'us-central1-a', 'labels': {'id': '123'}}
@@ -367,7 +367,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     """
 
     instance_service_object = self.GceApi().instances()
-    return self.__ListByLabel(  # type: ignore
+    return self._ListByLabel(  # type: ignore
         labels_filter, instance_service_object, filter_union)  # type: ignore
 
   def ListDiskByLabels(self,
@@ -376,7 +376,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
                       ) -> Dict[str, 'GoogleComputeDisk']:
     """List Disks in a project with one/all of the provided labels.
 
-    This will call the __ListByLabel on disks() API object
+    This will call the _ListByLabel on disks() API object
     with the proper labels filter and return a Dict with name and metadata
     for each disk, e.g.:
         {'disk-1': {'zone': 'us-central1-a', 'labels': {'id': '123'}}
@@ -393,13 +393,13 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     """
 
     disk_service_object = self.GceApi().disks()
-    return self.__ListByLabel(  # type: ignore
+    return self._ListByLabel(  # type: ignore
         labels_filter, disk_service_object, filter_union)  # type: ignore
 
-  def __ListByLabel(self,
-                    labels_filter: Dict[str, str],
-                    service_object: 'googleapiclient.discovery.Resource',
-                    filter_union: bool) -> Dict[str, Union['GoogleComputeInstance', 'GoogleComputeDisk']]:  # pylint: disable=line-too-long
+  def _ListByLabel(self,
+                   labels_filter: Dict[str, str],
+                   service_object: 'googleapiclient.discovery.Resource',
+                   filter_union: bool) -> Dict[str, Union['GoogleComputeInstance', 'GoogleComputeDisk']]:  # pylint: disable=line-too-long
     """List Disks/VMs in a project with one/all of the provided labels.
 
     Private method used to select different compute resources by labels.
@@ -714,7 +714,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
       disks[name] = self.GetDisk(name)
     return disks
 
-  def __SshConnection(self) -> None:
+  def _SshConnection(self) -> None:
     """Create an SSH connection to the virtual machine."""
 
     devnull = open(os.devnull, 'w')
@@ -739,7 +739,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
 
     while retries < max_retries:
       try:
-        self.__SshConnection()
+        self._SshConnection()
         break
       except subprocess.CalledProcessError:
         retries += 1
