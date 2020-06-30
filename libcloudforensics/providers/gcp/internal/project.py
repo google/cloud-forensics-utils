@@ -16,7 +16,7 @@
 
 from __future__ import unicode_literals
 
-from typing import Optional, Any
+from typing import Optional
 
 import libcloudforensics.providers.gcp.internal.build as build_module
 import libcloudforensics.providers.gcp.internal.compute as compute_module
