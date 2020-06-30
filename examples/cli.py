@@ -160,7 +160,8 @@ def Main() -> None:
                  ''),
                 ('--disk_name', 'Name of the disk to copy. If none specified, '
                                 'then --instance_name must be specified and '
-                                'the boot disk of the will be copied.', None)
+                                'the boot disk of the instance will be copied.',
+                 None)
             ])
   AddParser('gcp', gcp_subparsers, 'startvm', 'Start a forensic analysis VM.',
             args=[
