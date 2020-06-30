@@ -350,7 +350,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
                           )-> Dict[str, 'GoogleComputeInstance']:
     """List VMs in a project with one/all of the provided labels.
 
-    This will call the _ListByLabel on instances() API object
+    This will call the _ListByLabel function on an instances() API object
     with the proper labels filter and return a Dict with name and metadata
     for each instance, e.g.:
         {'instance-1': {'zone': 'us-central1-a', 'labels': {'id': '123'}}
@@ -376,7 +376,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
                       ) -> Dict[str, 'GoogleComputeDisk']:
     """List Disks in a project with one/all of the provided labels.
 
-    This will call the _ListByLabel on disks() API object
+    This will call the _ListByLabel function on a disks() API object
     with the proper labels filter and return a Dict with name and metadata
     for each disk, e.g.:
         {'disk-1': {'zone': 'us-central1-a', 'labels': {'id': '123'}}
