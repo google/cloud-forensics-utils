@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 
 def CreateDiskCopy(
     subscription_id: str,
-    instance_name: str,
+    instance_name: Optional[str] = None,
     disk_name: Optional[str] = None,
     disk_type: Optional[str] = 'Standard_LRS') -> 'compute.AZDisk':
   """Creates a copy of an Azure Compute Disk.
@@ -42,16 +42,21 @@ def CreateDiskCopy(
     AZDisk: An Azure Compute Disk object.
 
   Raises:
-    RuntimeError: If there are errors copying the disk
+    RuntimeError: If there are errors copying the disk.
+    ValueError: If both instance_name and disk_name are missing.
   """
 
+  if not instance_name and not disk_name:
+    raise ValueError(
+        'You must specify at least one of [instance_name, disk_name].')
+
   az_account = account.AZAccount(subscription_id)
-  instance = az_account.GetInstance(instance_name) if instance_name else None
 
   try:
     if disk_name:
       disk_to_copy = az_account.GetDisk(disk_name)
-    else:
+    elif instance_name:
+      instance = az_account.GetInstance(instance_name)
       disk_to_copy = instance.GetBootDisk()  # type: ignore
     common.LOGGER.info('Disk copy of {0:s} started...'.format(
         disk_to_copy.name))
