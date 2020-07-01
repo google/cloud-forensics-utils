@@ -33,7 +33,7 @@ def CreateDiskCopy(
     instance_name: str,
     zone: str,
     disk_name: Optional[str] = None,
-    disk_type: Optional[str] = 'pd-standard') -> 'compute.GoogleComputeDisk':
+    disk_type: str = 'pd-standard') -> 'compute.GoogleComputeDisk':
   """Creates a copy of a Google Compute Disk.
 
   Args:
@@ -109,8 +109,8 @@ def StartAnalysisVm(
     boot_disk_type: str,
     cpu_cores: int,
     attach_disks: Optional[List[str]] = None,
-    image_project: Optional[str] = 'ubuntu-os-cloud',
-    image_family: Optional[str] = 'ubuntu-1804-lts') -> Tuple['compute.GoogleComputeInstance', bool]:  # pylint: disable=line-too-long
+    image_project: str = 'ubuntu-os-cloud',
+    image_family: str = 'ubuntu-1804-lts') -> Tuple['compute.GoogleComputeInstance', bool]:  # pylint: disable=line-too-long
   """Start a virtual machine for analysis purposes.
 
   Args:

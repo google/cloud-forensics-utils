@@ -106,7 +106,7 @@ class AWSAccount:
       self,
       region: Optional[str] = None,
       filters: Optional[List[Dict[str, Any]]] = None,
-      show_terminated: Optional[bool] = False) -> Dict[str, ec2.AWSInstance]:
+      show_terminated: bool = False) -> Dict[str, ec2.AWSInstance]:
     """List instances of an AWS account.
 
     Example usage:
@@ -220,7 +220,7 @@ class AWSAccount:
 
   def GetInstancesByNameOrId(
       self,
-      instance_name: Optional[str] = '',
+      instance_name: str = '',
       instance_id: str = '',
       region: Optional[str] = None) -> List[ec2.AWSInstance]:
     """Get instances from an AWS account by their name tag or an ID.
@@ -308,7 +308,7 @@ class AWSAccount:
     return instance
 
   def GetVolumesByNameOrId(self,
-                           volume_name: Optional[str] = '',
+                           volume_name: str = '',
                            volume_id: str = '',
                            region: Optional[str] = None) -> List[ebs.AWSVolume]:
     """Get a volume from an AWS account by its name tag or its ID.
@@ -398,7 +398,7 @@ class AWSAccount:
       self,
       snapshot: ebs.AWSSnapshot,
       volume_name: Optional[str] = None,
-      volume_name_prefix: Optional[str] = '',
+      volume_name_prefix: str = '',
       kms_key_id: Optional[str] = None,
       tags: Optional[Dict[str, str]] = None) -> ebs.AWSVolume:
     """Create a new volume based on a snapshot.

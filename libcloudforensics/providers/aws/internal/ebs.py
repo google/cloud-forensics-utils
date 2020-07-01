@@ -207,7 +207,7 @@ class AWSSnapshot(AWSElasticBlockStore):
   def Copy(
       self,
       kms_key_id: Optional[str] = None,
-      delete: Optional[bool] = False,
+      delete: bool = False,
       deletion_account: Optional['account.AWSAccount'] = None) -> 'AWSSnapshot':
     """Copy a snapshot.
 
