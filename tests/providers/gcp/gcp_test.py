@@ -708,7 +708,7 @@ class GoogleCloudStorageTest(unittest.TestCase):
     """Test GCS object Get operation."""
     api_get_object = mock_gcs_api.return_value.objects.return_value.get
     api_get_object.return_value.execute.return_value = MOCK_GCS_OBJECT_METADATA
-    get_results = FAKE_GCS.GetObjectMetadata('gs://Fake_Path')
+    get_results = FAKE_GCS.GetObjectMetadata('gs://fake-bucket/foo/fake.img')
     self.assertEqual(MOCK_GCS_OBJECT_METADATA, get_results)
     self.assertEqual('5555555555', get_results['size'])
     self.assertEqual('MzFiYWIzY2M0MTJjNGMzNjUyZDMyNWFkYWMwODA5YTEgIGNvdW50MQo=', get_results['md5Hash'])
