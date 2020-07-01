@@ -27,7 +27,7 @@ def CreateDiskCopy(
     subscription_id: str,
     instance_name: Optional[str] = None,
     disk_name: Optional[str] = None,
-    disk_type: Optional[str] = 'Standard_LRS') -> 'compute.AZDisk':
+    disk_type: str = 'Standard_LRS') -> 'compute.AZDisk':
   """Creates a copy of an Azure Compute Disk.
 
   Args:

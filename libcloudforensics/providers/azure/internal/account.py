@@ -167,8 +167,8 @@ class AZAccount:
       self,
       snapshot: compute.AZSnapshot,
       disk_name: Optional[str] = None,
-      disk_name_prefix: Optional[str] = '',
-      disk_type: Optional[str] = 'Standard_LRS') -> compute.AZDisk:
+      disk_name_prefix: Optional[str] = None,
+      disk_type: str = 'Standard_LRS') -> compute.AZDisk:
     """Create a new disk based on a Snapshot.
 
     Args:
