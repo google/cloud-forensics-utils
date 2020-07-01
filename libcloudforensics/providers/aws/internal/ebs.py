@@ -42,7 +42,7 @@ class AWSElasticBlockStore:
                region: str,
                availability_zone: str,
                encrypted: bool,
-               name: str = '') -> None:
+               name: Optional[str] = None) -> None:
     """Initialize the AWS EBS resource.
 
     Args:
@@ -80,7 +80,7 @@ class AWSVolume(AWSElasticBlockStore):
                region: str,
                availability_zone: str,
                encrypted: bool,
-               name: str = '',
+               name: Optional[str] = None,
                device_name: Optional[str] = None) -> None:
     """Initialize an AWS EBS volume.
 
@@ -183,7 +183,7 @@ class AWSSnapshot(AWSElasticBlockStore):
                region: str,
                availability_zone: str,
                volume: AWSVolume,
-               name: str = '') -> None:
+               name: Optional[str] = None) -> None:
     """Initialize an AWS EBS snapshot.
 
     Args:
