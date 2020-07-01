@@ -1,13 +1,6 @@
 Welcome to libcloudforensics's documentation!
 =============================================
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
-
-   source/libcloudforensics
-
-
 API documentation
 =================
 
