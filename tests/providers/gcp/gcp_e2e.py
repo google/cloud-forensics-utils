@@ -100,8 +100,8 @@ class EndToEndTest(unittest.TestCase):
     self.boot_disk_copy = forensics.CreateDiskCopy(
         src_proj=self.project_id,
         dst_proj=self.project_id,
-        instance_name=self.instance_to_analyse,
         zone=self.zone,
+        instance_name=self.instance_to_analyse,
         # disk_name=None by default, boot disk will be copied
     )
 
@@ -161,8 +161,10 @@ class EndToEndTest(unittest.TestCase):
 
     # Make a copy of another disk of the instance to analyse
     self.disk_to_forensic_copy = forensics.CreateDiskCopy(
-        src_proj=self.project_id, dst_proj=self.project_id,
-        instance_name=self.instance_to_analyse, zone=self.zone,
+        src_proj=self.project_id,
+        dst_proj=self.project_id,
+        zone=self.zone,
+        instance_name=self.instance_to_analyse,
         disk_name=self.disk_to_forensic)
 
     gcp_client_api = common.GoogleCloudComputeClient(self.project_id).GceApi()

@@ -44,13 +44,13 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     Args:
       project_id (str): Google Cloud project ID.
       default_zone (str): Optional. Default zone to create new resources in.
-          None means GlobalZone.
+          Default is us-central1-f.
     """
 
     self.project_id = project_id  # type: str
-    self.default_zone = default_zone
-    self._instances = None
-    self._disks = None
+    self.default_zone = default_zone or 'us-central1-f'
+    self._instances = {}  # type: Dict[str, GoogleComputeInstance]
+    self._disks = {}  # type: Dict[str, GoogleComputeDisk]
     super(GoogleCloudCompute, self).__init__(self.project_id)
 
   def Instances(self,
@@ -67,8 +67,8 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     """
     if not refresh and self._instances:
       return self._instances
-    self._instances = self.ListInstances()  # type: ignore
-    return self._instances  # type: ignore
+    self._instances = self.ListInstances()
+    return self._instances
 
   def Disks(self,
             refresh: bool = True
@@ -84,8 +84,8 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     """
     if not refresh and self._disks:
       return self._disks
-    self._disks = self.ListDisks()  # type: ignore
-    return self._disks  # type: ignore
+    self._disks = self.ListDisks()
+    return self._disks
 
   def ListInstances(self) -> Dict[str, 'GoogleComputeInstance']:
     """List instances in project.
@@ -232,7 +232,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     self.BlockOperation(response, zone=self.default_zone)
     return GoogleComputeDisk(
         project_id=self.project_id,
-        zone=self.default_zone,  # type: ignore
+        zone=self.default_zone,
         name=disk_name)
 
   def GetOrCreateAnalysisVm(self,
@@ -284,7 +284,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       pass
 
     machine_type = \
-        'zones/{0}/machineTypes/n1-standard-{1:d}'.format(  # type: ignore
+        'zones/{0:s}/machineTypes/n1-standard-{1:d}'.format(
             self.default_zone, cpu_cores)
     ubuntu_image = self.GceApi().images().getFromFamily(
         project=image_project, family=image_family).execute()
@@ -367,8 +367,8 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     """
 
     instance_service_object = self.GceApi().instances()
-    return self._ListByLabel(  # type: ignore
-        labels_filter, instance_service_object, filter_union)  # type: ignore
+    return self._ListByLabel(
+        labels_filter, instance_service_object, filter_union)
 
   def ListDiskByLabels(self,
                        labels_filter: Dict[str, str],
@@ -393,13 +393,13 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     """
 
     disk_service_object = self.GceApi().disks()
-    return self._ListByLabel(  # type: ignore
-        labels_filter, disk_service_object, filter_union)  # type: ignore
+    return self._ListByLabel(
+        labels_filter, disk_service_object, filter_union)
 
   def _ListByLabel(self,
                    labels_filter: Dict[str, str],
                    service_object: 'googleapiclient.discovery.Resource',
-                   filter_union: bool) -> Dict[str, Union['GoogleComputeInstance', 'GoogleComputeDisk']]:  # pylint: disable=line-too-long
+                   filter_union: bool) -> Dict[str, Any]:
     """List Disks/VMs in a project with one/all of the provided labels.
 
     Private method used to select different compute resources by labels.
@@ -503,7 +503,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
         project=self.project_id, body=image_body, forceCreate=True)
     response = request.execute()
     self.BlockOperation(response)
-    return GoogleComputeImage(self.project_id, None, name)  # type: ignore
+    return GoogleComputeImage(self.project_id, '', name)
 
   def CreateDiskFromImage(self,
                           src_image: 'GoogleComputeImage',
@@ -642,8 +642,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     common.LOGGER.info(
         'Image {0:s} imported as GCE image {1:s}.'.format(
             storage_image_path, image_name))
-    return GoogleComputeImage(
-        self.project_id, None, image_name)  # type: ignore
+    return GoogleComputeImage(self.project_id, '', image_name)
 
 
 class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
@@ -664,18 +663,22 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
     response = request.execute()  # type: Dict[str, Any]
     return response
 
-  def GetBootDisk(self) -> Union['GoogleComputeDisk', None]:
+  def GetBootDisk(self) -> 'GoogleComputeDisk':
     """Get the virtual machine boot disk.
 
     Returns:
-      GoogleComputeDisk: Disk object or None if no disk can be found.
+      GoogleComputeDisk: Disk object.
+
+    Raises:
+      RuntimeError: If no boot disk could be found.
     """
 
     for disk in self.GetValue('disks'):
-      if disk['boot']:  # type: ignore
-        disk_name = disk['source'].split('/')[-1]  # type: ignore
+      if disk['boot']:
+        disk_name = disk['source'].split('/')[-1]
         return GoogleCloudCompute(self.project_id).GetDisk(disk_name=disk_name)
-    return None
+    raise RuntimeError(
+        'Boot disk not found for instance: {0:s}'.format(self.name))
 
   def GetDisk(self, disk_name: str) -> 'GoogleComputeDisk':
     """Gets a disk attached to this virtual machine disk by name.
@@ -692,7 +695,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
     """
 
     for disk in self.GetValue('disks'):
-      if disk['source'].split('/')[-1] == disk_name:  # type: ignore
+      if disk['source'].split('/')[-1] == disk_name:
         return GoogleCloudCompute(self.project_id).GetDisk(disk_name=disk_name)
     error_msg = 'Disk name "{0:s}" not attached to instance'.format(disk_name)
     raise RuntimeError(error_msg)
@@ -707,7 +710,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
 
     disks = {}
     disk_names = [
-        disk['source'].split('/')[-1]  # type: ignore
+        disk['source'].split('/')[-1]
         for disk in self.GetValue('disks')
     ]
     for name in disk_names:
