@@ -33,11 +33,12 @@ PROVIDER_TO_FUNC = {
     },
     'gcp': {
         'copydisk': gcp_cli.CreateDiskCopy,
-        'listinstances': gcp_cli.ListInstances,
+        'creatediskgcs': gcp_cli.CreateDiskFromGCSImage,
         'listdisks': gcp_cli.ListDisks,
+        'listinstances': gcp_cli.ListInstances,
         'listlogs': gcp_cli.ListLogs,
-        'querylogs': gcp_cli.QueryLogs,
         'listservices': gcp_cli.ListServices,
+        'querylogs': gcp_cli.QueryLogs,
         'startvm': gcp_cli.StartAnalysisVm
     }
 }
@@ -145,7 +146,7 @@ def Main() -> None:
             ])
 
   # GCP parser options
-  gcp_parser.add_argument('project', help='Source GCP project.')
+  gcp_parser.add_argument('project', help='GCP project ID.')
   gcp_subparsers = gcp_parser.add_subparsers()
   AddParser('gcp', gcp_subparsers, 'listinstances',
             'List GCE instances in GCP project.')
@@ -154,11 +155,13 @@ def Main() -> None:
   AddParser('gcp', gcp_subparsers, 'copydisk', 'Create a GCP disk copy.',
             args=[
                 ('dst_project', 'Destination GCP project.', ''),
-                ('instance_name', 'Name of the instance to copy disk from.',
-                 ''),
                 ('zone', 'Zone to create the disk in.', ''),
-                ('--disk_name', 'Name of the disk to copy. If None, the boot '
-                                'disk of the instance will be copied.', None)
+                ('--instance_name', 'Name of the instance to copy disk from.',
+                 ''),
+                ('--disk_name', 'Name of the disk to copy. If none specified, '
+                                'then --instance_name must be specified and '
+                                'the boot disk of the instance will be copied.',
+                 None)
             ])
   AddParser('gcp', gcp_subparsers, 'startvm', 'Start a forensic analysis VM.',
             args=[
@@ -181,6 +184,14 @@ def Main() -> None:
   AddParser('gcp', gcp_subparsers, 'listlogs', 'List GCP logs for a project.')
   AddParser('gcp', gcp_subparsers, 'listservices',
             'List active services for a project.')
+  AddParser('gcp', gcp_subparsers, 'creatediskgcs', 'Creates GCE persistent '
+                                                    'disk from image in GCS.',
+            args=[('gcs_path', 'Path to the source image in GCS.', ''),
+                  ('zone', 'Zone to create the disk in.', ''),
+                  ('--disk_name',
+                   'Name of the disk to create. If None, name '
+                   'will be printed at the end.',
+                   None)])
 
   if len(sys.argv) == 1:
     parser.print_help()

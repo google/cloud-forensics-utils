@@ -35,6 +35,7 @@ if TYPE_CHECKING:
 LOGGER = logging.getLogger()
 RETRY_MAX = 10
 REGEX_DISK_NAME = re.compile('^(?=.{1,63}$)[a-z]([-a-z0-9]*[a-z0-9])?$')
+COMPUTE_NAME_LIMIT = 63
 
 
 def GenerateDiskName(snapshot: 'compute.GoogleComputeSnapshot',
@@ -85,6 +86,26 @@ def GenerateDiskName(snapshot: 'compute.GoogleComputeSnapshot',
   return disk_name
 
 
+def GenerateUniqueInstanceName(prefix: str,
+                               truncate_at: Optional[int] = None) -> str:
+  """Add a timestamp as a suffix to provided name and truncate at max limit.
+
+  Args:
+    prefix (str): The name prefix to add the timestamp to and truncate.
+    truncate_at (int): Optional. The maximum length of the generated name.
+        Default no limit.
+
+  Returns:
+    str: The name after adding a timestamp.
+        Ex: [prefix]-[TIMESTAMP('%Y%m%d%H%M%S')]
+  """
+  timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+  if truncate_at:
+    truncate_at = truncate_at - len(timestamp) - 1
+  name = '{0:s}-{1:s}'.format(prefix[:truncate_at], timestamp)
+  return name
+
+
 def CreateService(service_name: str,
                   api_version: str) -> 'googleapiclient.discovery.Resource':
   """Creates an GCP API service.
@@ -114,7 +135,9 @@ def CreateService(service_name: str,
   for retry in range(RETRY_MAX):
     try:
       service = build(
-          service_name, api_version, credentials=credentials,
+          service_name,
+          api_version,
+          credentials=credentials,
           cache_discovery=False)
       service_built = True
     except socket.timeout:

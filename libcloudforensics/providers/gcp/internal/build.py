@@ -12,15 +12,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Google compute functionality."""
+"""Google Cloud Build functionalities."""
 
+import logging
 import time
-from typing import TYPE_CHECKING, Dict, Any
+from typing import Dict, Any
+import googleapiclient
+
 
 from libcloudforensics.providers.gcp.internal import common
-
-if TYPE_CHECKING:
-  import googleapiclient
 
 
 class GoogleCloudBuild:
@@ -38,7 +38,7 @@ class GoogleCloudBuild:
     """Initialize the GoogleCloudBuild object.
 
     Args:
-      project_id (str): The name of the project.
+      project_id (str): Google Cloud project ID.
     """
 
     self.gcb_api_client = None
@@ -78,6 +78,40 @@ class GoogleCloudBuild:
             build_metadata['logsBucket'], build_metadata['logUrl']))
     return build_info
 
+  def _RetryExecuteRequest(self, operation_name: str) -> Dict[str, Any]:
+    """Execut GCB operation.get request and retry if error.
+
+    Args:
+      operation_name (str): The name of the operation resource,
+
+    Returns:
+      Dict: Represents long-running operation that is the result of a network
+          API call.
+
+    Raises:
+      RuntimeError: If getting the Cloud Build API operation object failed.
+    """
+    block_retry_max = 10
+    service = self.GcbApi()
+    request = service.operations().get(name=operation_name)
+    get_success = False
+    for block_retry in range(block_retry_max):
+      try:
+        response = request.execute()  # type: Dict[str, Any]
+        get_success = True
+      except googleapiclient.errors.HttpError as error:
+        logging.info(
+            'build.BlockOperation: Get request to cloudbuild.googleapis.com '
+            'failed.\nTry {0:d} of {1:d}. Error: {2!s} '.format(
+                block_retry, block_retry_max, error))
+      if get_success:
+        break
+      if block_retry == block_retry_max - 1:
+        raise RuntimeError(
+            'Faliure blocking Cloud Build operation: {0:s}'.format(
+                operation_name))
+    return response
+
   def BlockOperation(self, response: Dict[str, Any]) -> Dict[str, Any]:
     """Block execution until API operation is finished.
 
@@ -89,17 +123,17 @@ class GoogleCloudBuild:
           operations.
 
     Raises:
-      RuntimeError: If API call failed.
+      RuntimeError: If the Cloud Build failed or if getting the Cloud Build
+          API operation object failed.
     """
-    service = self.GcbApi()
     while True:
-      request = service.operations().get(name=response['name'])
-      response = request.execute()
+      response = self._RetryExecuteRequest(response['name'])
       if response.get('done') and response.get('error'):
         build_metadata = response['metadata']['build']
         raise RuntimeError(
             ': {0:1}, logs bucket: {1:s}, logs URL: {2:s}'.format(
-                response['error']['message'], build_metadata['logsBucket'],
+                response['error']['message'],
+                build_metadata['logsBucket'],
                 build_metadata['logUrl']))
 
       if response.get('done') and response.get('response'):

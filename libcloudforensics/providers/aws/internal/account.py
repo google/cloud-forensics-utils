@@ -81,9 +81,11 @@ class AWSAccount:
 
   def ResourceApi(self,
                   service: str,
+                  # The return type doesn't exist until Runtime, therefore we
+                  # need to ignore the type hint
                   # pylint: disable=line-too-long
                   region: Optional[str] = None) -> 'boto3.resources.factory.ec2.ServiceResource':  # type: ignore
-    # pylint: enable=line-too-long
+                  # pylint: enable=line-too-long
     """Create an AWS resource object.
 
     Args:
@@ -605,7 +607,8 @@ class AWSAccount:
           str(exception)))
 
     # The response contains the key ID
-    return kms_key['KeyMetadata']['KeyId']  # type: ignore
+    key_id = kms_key['KeyMetadata']['KeyId']  # type: str
+    return key_id
 
   def ShareKMSKeyWithAWSAccount(self,
                                 kms_key_id: str,
@@ -703,11 +706,11 @@ class AWSAccount:
       truncate_at -= len(volume_name_prefix)
       volume_name = '{0:s}{1:s}-{2:s}-copy'.format(
           volume_name_prefix,
-          snapshot.name[:truncate_at],  # type: ignore
+          snapshot.name[:truncate_at],
           volume_id_crc32)
     else:
       volume_name = '{0:s}-{1:s}-copy'.format(
-          snapshot.name[:truncate_at], volume_id_crc32)  # type: ignore
+          snapshot.name[:truncate_at], volume_id_crc32)
 
     return volume_name
 
@@ -745,9 +748,9 @@ class AWSAccount:
     block_device_mapping['Ebs']['VolumeSize'] = boot_volume_size
     return block_device_mapping
 
-  # pylint: disable=line-too-long
-  def ListImages(self,
-                 qfilter: Optional[List[Dict[str, Any]]]) -> List[Dict[str, Any]]:
+  def ListImages(
+      self,
+      qfilter: Optional[List[Dict[str, Any]]] = None) -> List[Dict[str, Any]]:
     """List AMI images.
 
     Args:
@@ -760,12 +763,14 @@ class AWSAccount:
     Raises:
       RuntimeError: If the images could not be listed.
     """
+    if not qfilter:
+      qfilter = []
 
     client = self.ClientApi(common.EC2_SERVICE)
     try:
-      images = client.describe_images(Filters=qfilter) # type: Dict[str, List[Dict[str, Any]]]
+      images = client.describe_images(
+          Filters=qfilter)  # type: Dict[str, List[Dict[str, Any]]]
     except client.exceptions.ClientError as exception:
       raise RuntimeError(str(exception))
 
     return images['Images']
-  # pylint: enable=line-too-long

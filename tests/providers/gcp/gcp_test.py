@@ -28,10 +28,12 @@ import six
 
 # pylint: disable=line-too-long
 from libcloudforensics.providers.gcp import forensics
+from libcloudforensics.providers.gcp.internal import build as gcp_build
 from libcloudforensics.providers.gcp.internal import common, compute
 from libcloudforensics.providers.gcp.internal import project as gcp_project
 from libcloudforensics.providers.gcp.internal import log as gcp_log
 from libcloudforensics.providers.gcp.internal import monitoring as gcp_monitoring
+from libcloudforensics.providers.gcp.internal import storage as gcp_storage
 from libcloudforensics.scripts import utils
 # pylint: enable=line-too-long
 
@@ -72,6 +74,8 @@ FAKE_LOG_ENTRIES = [{
     'textPayload': 'insert.compute.create'
 }]
 FAKE_NEXT_PAGE_TOKEN = 'abcdefg1234567'
+FAKE_GCS = gcp_storage.GoogleCloudStorage('fake-target-project')
+FAKE_GCB = gcp_build.GoogleCloudBuild('fake-target-project')
 FAKE_MONITORING = gcp_monitoring.GoogleCloudMonitoring('fake-target-project')
 
 # Mock struct to mimic GCP's API responses
@@ -182,6 +186,59 @@ MOCK_GCE_OPERATION_INSTANCES_GET = {
             'diskName': FAKE_DISK.name
         }
     }]
+}
+
+MOCK_GCS_OBJECT_METADATA = {
+    'kind': 'storage#object',
+    'id': 'fake-bucket/foo/fake.img/12345',
+    'size': '5555555555',
+    'md5Hash': 'MzFiYWIzY2M0MTJjNGMzNjUyZDMyNWFkYWMwODA5YTEgIGNvdW50MQo=',
+}
+
+MOCK_GCB_BUILDS_CREATE = {
+    'name': 'operations/build/fake-project/12345',
+    'metadata': {
+        'build': {
+            'id': '12345',
+            'timeout': '12345s',
+            'projectId': 'fake-project',
+            'logsBucket': 'gs://fake-uri',
+            "logUrl": "https://fake-url"
+        }
+    }
+}
+
+MOCK_GCB_BUILDS_SUCCESS = {
+    'done': True,
+    'response': {
+        'id': 'fake-id'
+    },
+    'metadata': {
+        'build': {
+            'id': '12345',
+            'timeout': '12345s',
+            'projectId': 'fake-project',
+            'logsBucket': 'gs://fake-uri',
+            "logUrl": "https://fake-url"
+        }
+    }
+}
+
+MOCK_GCB_BUILDS_FAIL = {
+    'done': True,
+    'error': {
+        'code': 2,
+        'message': 'Build failed; check build logs for details'
+    },
+    'metadata': {
+        'build': {
+            'id': '12345',
+            'timeout': '12345s',
+            'projectId': 'fake-project',
+            'logsBucket': 'gs://fake-uri',
+            "logUrl": "https://fake-url"
+        }
+    }
 }
 
 MOCK_STACKDRIVER_METRIC = 6693417
@@ -634,8 +691,57 @@ class GoogleCloudLogTest(unittest.TestCase):
     self.assertEqual(FAKE_LOG_ENTRIES[0], query_logs[0])
 
 
+class GoogleCloudStorageTest(unittest.TestCase):
+  """Test Google Cloud Storage class."""
+  # pylint: disable=line-too-long
+
+  @typing.no_type_check
+  def testSplitGcsPath(self):
+    """Tests that GCS path split is correctly done."""
+    bucket, object_uri = gcp_storage.SplitGcsPath('gs://fake-bucket/fake-folder/fake-object')
+    self.assertEqual('fake-folder/fake-object', object_uri)
+    self.assertEqual('fake-bucket', bucket)
+
+  @typing.no_type_check
+  @mock.patch('libcloudforensics.providers.gcp.internal.storage.GoogleCloudStorage.GcsApi')
+  def testGetObjectMetadata(self, mock_gcs_api):
+    """Test GCS object Get operation."""
+    api_get_object = mock_gcs_api.return_value.objects.return_value.get
+    api_get_object.return_value.execute.return_value = MOCK_GCS_OBJECT_METADATA
+    get_results = FAKE_GCS.GetObjectMetadata('gs://Fake_Path')
+    self.assertEqual(MOCK_GCS_OBJECT_METADATA, get_results)
+    self.assertEqual('5555555555', get_results['size'])
+    self.assertEqual('MzFiYWIzY2M0MTJjNGMzNjUyZDMyNWFkYWMwODA5YTEgIGNvdW50MQo=', get_results['md5Hash'])
+
+
+class GoogleCloudBuildeTest(unittest.TestCase):
+  """Test Google Cloud Build class."""
+  # pylint: disable=line-too-long
+
+  @typing.no_type_check
+  @mock.patch('libcloudforensics.providers.gcp.internal.build.GoogleCloudBuild.GcbApi')
+  def testCreateBuild(self, mock_gcb_api):
+    """Test that Cloud Builds are correctly created."""
+    build_create_object = mock_gcb_api.return_value.projects.return_value.builds.return_value.create
+    build_create_object.return_value.execute.return_value = MOCK_GCB_BUILDS_CREATE
+    build_response = FAKE_GCB.CreateBuild({'Fake-Build_body': None})
+    self.assertEqual(MOCK_GCB_BUILDS_CREATE, build_response)
+
+  @typing.no_type_check
+  @mock.patch('libcloudforensics.providers.gcp.internal.build.GoogleCloudBuild.GcbApi')
+  def testBlockOperation(self, mock_gcb_api):
+    """Test that Cloud Builds are correctly blocked until done."""
+    build_operation_object = mock_gcb_api.return_value.operations.return_value.get
+    build_operation_object.return_value.execute.return_value = MOCK_GCB_BUILDS_SUCCESS
+    block_build_success = FAKE_GCB.BlockOperation(MOCK_GCB_BUILDS_CREATE)
+    self.assertEqual(MOCK_GCB_BUILDS_SUCCESS, block_build_success)
+    build_operation_object.return_value.execute.return_value = MOCK_GCB_BUILDS_FAIL
+    with self.assertRaises(RuntimeError):
+      FAKE_GCB.BlockOperation(MOCK_GCB_BUILDS_CREATE)
+
+
 class GCPTest(unittest.TestCase):
-  """Test the account.py public methods."""
+  """Test forensics.py methods and common.py helper methods."""
   # pylint: disable=line-too-long
 
   @typing.no_type_check
@@ -658,13 +764,16 @@ class GCPTest(unittest.TestCase):
     mock_get_boot_disk.return_value = FAKE_BOOT_DISK
     mock_block_operation.return_value = None
 
-    # create_disk_copy(src_proj, dst_proj, instance_name='fake-instance',
-    #     zone='fake-zone', disk_name=None) Should grab the boot disk
+    # create_disk_copy(
+    #     src_proj,
+    #     dst_proj,
+    #     zone='fake-zone',
+    #     instance_name='fake-instance',
+    #     disk_name=None) Should grab the boot disk
     new_disk = forensics.CreateDiskCopy(FAKE_SOURCE_PROJECT.project_id,
                                         FAKE_ANALYSIS_PROJECT.project_id,
-                                        instance_name=FAKE_INSTANCE.name,
                                         zone=FAKE_INSTANCE.zone,
-                                        disk_name=None)
+                                        instance_name=FAKE_INSTANCE.name)
     mock_get_instance.assert_called_with(FAKE_INSTANCE.name)
     mock_get_disk.assert_not_called()
     self.assertIsInstance(new_disk, compute.GoogleComputeDisk)
@@ -692,12 +801,11 @@ class GCPTest(unittest.TestCase):
     # create_disk_copy(
     #     src_proj,
     #     dst_proj,
-    #     instance_name=None,
     #     zone='fake-zone',
+    #     instance_name=None,
     #     disk_name='fake-disk') Should grab 'fake-disk'
     new_disk = forensics.CreateDiskCopy(FAKE_SOURCE_PROJECT.project_id,
                                         FAKE_ANALYSIS_PROJECT.project_id,
-                                        instance_name=None,
                                         zone=FAKE_INSTANCE.zone,
                                         disk_name=FAKE_DISK.name)
     mock_get_disk.assert_called_with(FAKE_DISK.name)
@@ -719,14 +827,13 @@ class GCPTest(unittest.TestCase):
     # create_disk_copy(
     #     src_proj,
     #     dst_proj,
-    #     instance_name=None,
     #     zone='fake-zone',
+    #     instance_name=None,
     #     disk_name='non-existent-disk') Should raise an exception
     self.assertRaises(RuntimeError,
                       forensics.CreateDiskCopy,
                       FAKE_SOURCE_PROJECT.project_id,
                       FAKE_ANALYSIS_PROJECT.project_id,
-                      instance_name=None,
                       zone=FAKE_INSTANCE.zone,
                       disk_name='non-existent-disk')
 
@@ -821,6 +928,7 @@ class GoogleCloudMonitoringTest(unittest.TestCase):
     self.assertEqual(active_services['stackdriver.googleapis.com'], MOCK_STACKDRIVER_METRIC)
     self.assertIn('logging.googleapis.com', active_services)
     self.assertEqual(active_services['logging.googleapis.com'], MOCK_LOGGING_METRIC)
+
 
 if __name__ == '__main__':
   unittest.main()
