@@ -33,11 +33,12 @@ PROVIDER_TO_FUNC = {
     },
     'gcp': {
         'copydisk': gcp_cli.CreateDiskCopy,
-        'listinstances': gcp_cli.ListInstances,
+        'creatediskgcs': gcp_cli.CreateDiskFromGCSImage,
         'listdisks': gcp_cli.ListDisks,
+        'listinstances': gcp_cli.ListInstances,
         'listlogs': gcp_cli.ListLogs,
-        'querylogs': gcp_cli.QueryLogs,
         'listservices': gcp_cli.ListServices,
+        'querylogs': gcp_cli.QueryLogs,
         'startvm': gcp_cli.StartAnalysisVm
     }
 }
@@ -132,6 +133,9 @@ def Main() -> None:
                  ''),
                 ('--disk_size', 'Size of disk in GB.', '50'),
                 ('--cpu_cores', 'Instance CPU core count.', '4'),
+                ('--ami', 'AMI ID to use as base image. Will search '
+                          'Ubuntu 18.04 LTS server x86_64 for chosen region '
+                          'by default.', ''),
                 ('--ssh_key_name', 'SSH key pair name.', None),
                 ('--attach_volumes', 'Comma seperated list of volume IDs '
                                      'to attach. Maximum of 11.', None)
@@ -142,7 +146,7 @@ def Main() -> None:
             ])
 
   # GCP parser options
-  gcp_parser.add_argument('project', help='Source GCP project.')
+  gcp_parser.add_argument('project', help='GCP project ID.')
   gcp_subparsers = gcp_parser.add_subparsers()
   AddParser('gcp', gcp_subparsers, 'listinstances',
             'List GCE instances in GCP project.')
@@ -175,6 +179,14 @@ def Main() -> None:
   AddParser('gcp', gcp_subparsers, 'listlogs', 'List GCP logs for a project.')
   AddParser('gcp', gcp_subparsers, 'listservices',
             'List active services for a project.')
+  AddParser('gcp', gcp_subparsers, 'creatediskgcs', 'Creates GCE persistent '
+                                                    'disk from image in GCS.',
+            args=[('gcs_path', 'Path to the source image in GCS.', ''),
+                  ('zone', 'Zone to create the disk in.', ''),
+                  ('--disk_name',
+                   'Name of the disk to create. If None, name '
+                   'will be printed at the end.',
+                   None)])
 
   if len(sys.argv) == 1:
     parser.print_help()

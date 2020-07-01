@@ -13,9 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Forensics on AWS."""
-from typing import TYPE_CHECKING, Tuple, List, Optional, Dict, Any
+from typing import TYPE_CHECKING, Tuple, List, Optional, Dict
 
-from libcloudforensics.providers.aws.internal.common import UBUNTU_1804_AMI, LOGGER  # pylint: disable=line-too-long
+from libcloudforensics.providers.aws.internal.common import UBUNTU_1804_FILTER, LOGGER  # pylint: disable=line-too-long
 from libcloudforensics.providers.aws.internal import account
 
 if TYPE_CHECKING:
@@ -164,7 +164,7 @@ def StartAnalysisVm(
     vm_name: str,
     default_availability_zone: str,
     boot_volume_size: int,
-    ami: str = UBUNTU_1804_AMI,
+    ami: str = '',
     cpu_cores: int = 4,
     attach_volumes: Optional[List[Tuple[str, str]]] = None,
     dst_profile: Optional[str] = None,
@@ -206,9 +206,27 @@ def StartAnalysisVm(
   Returns:
     Tuple[AWSInstance, bool]: a tuple with a virtual machine object
         and a boolean indicating if the virtual machine was created or not.
+
+  Raises:
+    RuntimeError: When multiple AMI images are returned.
   """
+
   aws_account = account.AWSAccount(
       default_availability_zone, aws_profile=dst_profile)
+
+  # If no AMI ID is given we use the default Ubuntu 18.04
+  # in the region requested.
+  if not ami:
+    qfilter = [{'Name': 'name', 'Values': [UBUNTU_1804_FILTER]}]
+    ami_list = aws_account.ListImages(qfilter)
+    # We should only get 1 AMI image back, if we get multiple we
+    # have no way of knowing which one to use.
+    if len(ami_list) > 1:
+      image_names = [image['Name'] for image in ami_list]
+      raise RuntimeError('error - ListImages returns >1 AMI image: [{0:s}]'
+                         .format(', '.join(image_names)))
+    ami = ami_list[0]['ImageId']
+
   analysis_vm, created = aws_account.GetOrCreateAnalysisVm(
       vm_name,
       boot_volume_size,

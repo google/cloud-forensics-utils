@@ -12,7 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Google Cloud Functions functionality."""
+"""Google Cloud Functions functionalities."""
 
 import json
 import ssl
@@ -29,11 +29,11 @@ class GoogleCloudFunction:
   """Class to call Google Cloud Functions.
 
   Attributes:
-    project_id: Project name.
+    project_id: Google Cloud project ID.
     gcf_api_client: Client to interact with GCF APIs.
   """
 
-  CLOUD_FUNCTIONS_API_VERSION = 'v1beta2'
+  CLOUD_FUNCTIONS_API_VERSION = 'v1'
 
   def __init__(self, project_id: str) -> None:
     """Initialize the GoogleCloudFunction object.

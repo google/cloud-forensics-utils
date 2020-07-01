@@ -12,11 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Library for incident response operations on Google Cloud Compute Engine.
-
-Library to make forensic images of Google Compute Engine disk and create
-analysis virtual machine to be used in incident response.
-"""
+"""Google Cloud Project resources and services."""
 
 from __future__ import unicode_literals
 
@@ -27,21 +23,20 @@ import libcloudforensics.providers.gcp.internal.compute as compute_module
 import libcloudforensics.providers.gcp.internal.function as function_module
 import libcloudforensics.providers.gcp.internal.log as log_module
 import libcloudforensics.providers.gcp.internal.monitoring as monitoring_module
+import libcloudforensics.providers.gcp.internal.storage as storage_module
 
 
 class GoogleCloudProject:
   """Class representing a Google Cloud Project.
 
   Attributes:
-    project_id: Project name.
+    project_id: Google Cloud project ID.
     default_zone: Default zone to create new resources in.
 
   Example use:
     gcp = GoogleCloudProject("your_project_name", "us-east")
-    gcp.ListInstances()
+    gcp.compute.ListInstances()
   """
-
-  COMPUTE_ENGINE_API_VERSION = 'v1'
 
   def __init__(self,
                project_id: str,
@@ -60,6 +55,7 @@ class GoogleCloudProject:
     self._function = None
     self._build = None
     self._log = None
+    self._storage = None
     self._monitoring = None
 
   @property
@@ -117,6 +113,20 @@ class GoogleCloudProject:
     self._log = log_module.GoogleCloudLog(  # type: ignore
         self.project_id)
     return self._log  # type: ignore
+
+  @property
+  def storage(self) -> storage_module.GoogleCloudStorage:
+    """Get a GoogleCloudStorage object for the project.
+
+    Returns:
+      GoogleCloudLog: Object that represents Google Cloud Logging.
+    """
+
+    if self._storage:
+      return self._storage
+    self._storage = storage_module.GoogleCloudStorage(  # type: ignore
+        self.project_id)
+    return self._storage  # type: ignore
 
   @property
   def monitoring(self) -> monitoring_module.GoogleCloudMonitoring:

@@ -102,6 +102,27 @@ def QueryLogs(args: 'argparse.Namespace') -> None:
     print(json.dumps(line))
 
 
+def CreateDiskFromGCSImage(args: 'argparse.Namespace') -> None:
+  """Creates GCE persistent disk from image in GCS.
+
+  Please refer to doc string of forensics.CreateDiskFromGCSImage
+  function for more details on how the image is created.
+
+  Args:
+      args (argparse.Namespace): Arguments from ArgumentParser.
+  """
+
+  result = forensics.CreateDiskFromGCSImage(
+      args.project, args.gcs_path, args.zone, name=args.disk_name)
+
+  print('Disk creation completed.')
+  print('Project ID: {0:s}'.format(result['project_id']))
+  print('Disk name: {0:s}'.format(result['disk_name']))
+  print('Zone: {0:s}'.format(result['zone']))
+  print('size in bytes: {0:s}'.format(result['bytes_count']))
+  print('MD5 hash of source image in hex: {0:s}'.format(result['md5Hash']))
+
+
 def StartAnalysisVm(args: 'argparse.Namespace') -> None:
   """Start forensic analysis VM.
 

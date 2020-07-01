@@ -14,7 +14,8 @@
 # limitations under the License.
 """Forensics on GCP."""
 
-from typing import TYPE_CHECKING, List, Tuple, Optional
+import base64
+from typing import TYPE_CHECKING, List, Tuple, Optional, Dict, Any
 
 from google.auth.exceptions import RefreshError, DefaultCredentialsError
 from googleapiclient.errors import HttpError
@@ -139,3 +140,76 @@ def StartAnalysisVm(
   for disk_name in (attach_disks or []):
     analysis_vm.AttachDisk(proj.compute.GetDisk(disk_name))
   return analysis_vm, created
+
+
+def CreateDiskFromGCSImage(
+    project_id: str,
+    storage_image_path: str,
+    zone: str,
+    name: Optional[str] = None) -> Dict[str, Any]:
+  """Creates a GCE persistent disk from a image in GCS.
+
+  The method supports raw disk images and most virtual disk
+  file formats. Valid import formats are:
+  [raw (dd), qcow2, qcow , vmdk, vdi, vhd, vhdx, qed, vpc].
+
+  The created GCE disk might be larger than the original raw (dd)
+  image stored in GCS to satisfy GCE capacity requirements:
+  https://cloud.google.com/compute/docs/disks/#introduction
+  However the bytes_count and the md5_hash values of the source
+  image are returned with the newly created disk.
+  The md5_hash can be used to verify the integrity of the
+  created GCE disk, it must be compared with the hash of the
+  created GCE disk from byte 0 to bytes_count. i.e:
+  result['md5Hash'] = hash(created_gce_disk,
+                            start_byte=0,
+                            end_byte=result['bytes_count'])
+
+  Args:
+    project_id (str): Google Cloud Project ID.
+    storage_image_path (str): Path to the source image in GCS.
+    zone (str): Zone to create the new disk in.
+    name (str): Optional. Name of the disk to create. Default
+        is imported-disk-[TIMESTAMP('%Y%m%d%H%M%S')].
+
+  Returns:
+    Dict: A key value describing the imported GCE disk.
+        Ex: {
+          'project_id': 'fake-project',
+          'disk_name': 'fake-imported-disk',
+          'zone': 'fake-zone',
+          'bytes_count': '1234'  # Content-Length of source image in bytes.
+          'md5Hash': 'Source Image MD5 hash string in hex'
+        }
+
+  Raises:
+    ValueError: If the GCE disk name is invalid.
+  """
+
+  if name:
+    if not common.REGEX_DISK_NAME.match(name):
+      raise ValueError(
+          'Disk name {0:s} does not comply with {1:s}'.format(
+              name, common.REGEX_DISK_NAME.pattern))
+    name = name[:common.COMPUTE_NAME_LIMIT]
+  else:
+    name = common.GenerateUniqueInstanceName('imported-disk',
+                                             common.COMPUTE_NAME_LIMIT)
+
+  project = gcp_project.GoogleCloudProject(project_id)
+  image_object = project.compute.ImportImageFromStorage(storage_image_path)
+  disk_object = project.compute.CreateDiskFromImage(
+      image_object, zone=zone, name=name)
+  bytes_count = project.storage.GetObjectMetadata(
+      storage_image_path)['size']
+  md5_hash_b64 = project.storage.GetObjectMetadata(
+      storage_image_path)['md5Hash']
+  md5_hash_hex = base64.b64decode(md5_hash_b64).hex()
+  result = {
+      'project_id': disk_object.project_id,
+      'disk_name': disk_object.name,
+      'zone': disk_object.zone,
+      'bytes_count': bytes_count,
+      'md5Hash': md5_hash_hex
+  }
+  return result
