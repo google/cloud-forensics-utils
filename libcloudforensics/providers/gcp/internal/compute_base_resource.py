@@ -163,7 +163,7 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
 
   def AddLabels(self,
                 new_labels_dict: Dict[str, Any],
-                blocking_call: Optional[bool] = False) -> Optional[Any]:
+                blocking_call: bool = False) -> Optional[Any]:
     """Add or update labels of a compute resource.
 
     Args:

@@ -745,9 +745,9 @@ class AWSAccount:
     block_device_mapping['Ebs']['VolumeSize'] = boot_volume_size
     return block_device_mapping
 
-  # pylint: disable=line-too-long
-  def ListImages(self,
-                 qfilter: Optional[List[Dict[str, Any]]]) -> List[Dict[str, Any]]:
+  def ListImages(
+      self,
+      qfilter: Optional[List[Dict[str, Any]]] = None) -> List[Dict[str, Any]]:
     """List AMI images.
 
     Args:
@@ -760,12 +760,14 @@ class AWSAccount:
     Raises:
       RuntimeError: If the images could not be listed.
     """
+    if not qfilter:
+      qfilter = []
 
     client = self.ClientApi(common.EC2_SERVICE)
     try:
-      images = client.describe_images(Filters=qfilter) # type: Dict[str, List[Dict[str, Any]]]
+      images = client.describe_images(
+          Filters=qfilter)  # type: Dict[str, List[Dict[str, Any]]]
     except client.exceptions.ClientError as exception:
       raise RuntimeError(str(exception))
 
     return images['Images']
-  # pylint: enable=line-too-long

@@ -20,6 +20,7 @@ from libcloudforensics.providers.gcp.internal import common
 if TYPE_CHECKING:
   import googleapiclient
 
+
 def SplitGcsPath(gcs_path: str) -> Tuple[str, str]:
   """Split GCS path to bucket name and object URI.
 

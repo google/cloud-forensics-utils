@@ -124,7 +124,7 @@ class EndToEndTest(unittest.TestCase):
     """
 
     aws_account = account.AWSAccount(self.zone)
-    qfilter = [{'Name':'name', 'Values':['Ubuntu 18.04*']}]
+    qfilter = [{'Name': 'name', 'Values': ['Ubuntu 18.04*']}]
     images = aws_account.ListImages(qfilter)
 
     self.assertGreater(len(images), 0)

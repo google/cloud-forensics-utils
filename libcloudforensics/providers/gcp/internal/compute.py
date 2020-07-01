@@ -54,8 +54,8 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     super(GoogleCloudCompute, self).__init__(self.project_id)
 
   def Instances(self,
-                refresh: Optional[bool] = True
-               ) -> Dict[str, 'GoogleComputeInstance']:
+                refresh: bool = True
+                ) -> Dict[str, 'GoogleComputeInstance']:
     """Get all instances in the project.
 
     Args:
@@ -71,8 +71,8 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     return self._instances  # type: ignore
 
   def Disks(self,
-            refresh: Optional[bool] = True
-           ) -> Dict[str, 'GoogleComputeDisk']:
+            refresh: bool = True
+            ) -> Dict[str, 'GoogleComputeDisk']:
     """Get all disks in the project.
 
     Args:
@@ -185,8 +185,8 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       self,
       snapshot: 'GoogleComputeSnapshot',
       disk_name: Optional[str] = None,
-      disk_name_prefix: Optional[str] = '',
-      disk_type: Optional[str] = 'pd-standard') -> 'GoogleComputeDisk':
+      disk_name_prefix: str = '',
+      disk_type: str = 'pd-standard') -> 'GoogleComputeDisk':
     """Create a new disk based on a Snapshot.
 
     Args:
@@ -238,12 +238,12 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
   def GetOrCreateAnalysisVm(self,
                             vm_name: str,
                             boot_disk_size: int,
-                            disk_type: Optional[str] = 'pd-standard',
-                            cpu_cores: Optional[int] = 4,
-                            image_project: Optional[str] = 'ubuntu-os-cloud',
-                            image_family: Optional[str] = 'ubuntu-1804-lts',
+                            disk_type: str = 'pd-standard',
+                            cpu_cores: int = 4,
+                            image_project: str = 'ubuntu-os-cloud',
+                            image_family: str = 'ubuntu-1804-lts',
                             packages: Optional[List[str]] = None
-                           ) -> Tuple['GoogleComputeInstance', bool]:
+                            ) -> Tuple['GoogleComputeInstance', bool]:
     """Get or create a new virtual machine for analysis purposes.
 
     If none of the optional parameters are specified, then by default the
@@ -346,8 +346,8 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
 
   def ListInstanceByLabels(self,
                            labels_filter: Dict[str, str],
-                           filter_union: Optional[bool] = True
-                          )-> Dict[str, 'GoogleComputeInstance']:
+                           filter_union: bool = True
+                           )-> Dict[str, 'GoogleComputeInstance']:
     """List VMs in a project with one/all of the provided labels.
 
     This will call the _ListByLabel function on an instances() API object
@@ -372,8 +372,8 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
 
   def ListDiskByLabels(self,
                        labels_filter: Dict[str, str],
-                       filter_union: Optional[bool] = True
-                      ) -> Dict[str, 'GoogleComputeDisk']:
+                       filter_union: bool = True
+                       ) -> Dict[str, 'GoogleComputeDisk']:
     """List Disks in a project with one/all of the provided labels.
 
     This will call the _ListByLabel function on a disks() API object
@@ -551,9 +551,9 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
   def ImportImageFromStorage(self,
                              storage_image_path: str,
                              image_name: Optional[str] = None,
-                             bootable: Optional[bool] = False,
+                             bootable: bool = False,
                              os_name: Optional[str] = None,
-                             guest_environment: Optional[bool] = True) -> 'GoogleComputeImage':  # pylint: disable=line-too-long
+                             guest_environment: bool = True) -> 'GoogleComputeImage':  # pylint: disable=line-too-long
     """Import GCE image from Cloud storage.
 
     The import tool supports raw disk images and most virtual disk
@@ -567,9 +567,9 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
           in "%Y%m%d%H%M%S" format.
       bootable (bool): Optional. True if the imported image is bootable.
           Default is False. If True the os_name must be specified.
-      os_name (str): Optional. Name of the operating system on the bootable image.
-          For supported versions please see:
-          https://cloud.google.com/sdk/gcloud/reference/compute/images/import#--os
+      os_name (str): Optional. Name of the operating system on the bootable
+          image. For supported versions please see:
+          https://cloud.google.com/sdk/gcloud/reference/compute/images/import#--os  # pylint: disable=line-too-long
           For known limitations please see:
           https://googlecloudplatform.github.io/compute-image-tools/image-import.html#compatibility-and-known-limitations  # pylint: disable=line-too-long
       guest_environment (bool): Optional. Install Google Guest Environment on a
@@ -747,7 +747,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
 
   def AttachDisk(self,
                  disk: 'GoogleComputeDisk',
-                 read_write: Optional[bool] = False) -> None:
+                 read_write: bool = False) -> None:
     """Attach a disk to the virtual machine.
 
     Args:
