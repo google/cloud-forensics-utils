@@ -14,7 +14,6 @@
 # limitations under the License.
 """Common utilities."""
 import logging
-import re
 from typing import Dict, List, TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -32,7 +31,6 @@ SNAPSHOT = 'snapshot'
 
 # Default Amazon Machine Image to use for bootstrapping instances
 UBUNTU_1804_FILTER = 'ubuntu/images/hvm-ssd/ubuntu-bionic-18.04-amd64-server-20200611'  # pylint: disable=line-too-long
-REGEX_TAG_VALUE = re.compile('^.{1,255}$')
 
 LOGGER = logging.getLogger()
 
