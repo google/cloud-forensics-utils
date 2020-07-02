@@ -30,8 +30,8 @@ if TYPE_CHECKING:
 def CreateDiskCopy(
     src_proj: str,
     dst_proj: str,
-    instance_name: str,
     zone: str,
+    instance_name: Optional[str] = None,
     disk_name: Optional[str] = None,
     disk_type: str = 'pd-standard') -> 'compute.GoogleComputeDisk':
   """Creates a copy of a Google Compute Disk.
@@ -39,10 +39,10 @@ def CreateDiskCopy(
   Args:
     src_proj (str): Name of project that holds the disk to be copied.
     dst_proj (str): Name of project to put the copied disk in.
-    instance_name (str): Instance using the disk to be copied.
     zone (str): Zone where the new disk is to be created.
-    disk_name (str): Optional. Name of the disk to copy. If None, boot disk
-        will be copied.
+    instance_name (str): Optional. Instance using the disk to be copied.
+    disk_name (str): Optional. Name of the disk to copy. If None,
+        instance_name must be specified and the boot disk will be copied.
     disk_type (str): Optional. URL of the disk type resource describing
         which disk type to use to create the disk. Default is pd-standard. Use
         pd-ssd to have a SSD disk.
@@ -51,19 +51,23 @@ def CreateDiskCopy(
     GoogleComputeDisk: A Google Compute Disk object.
 
   Raises:
-    RuntimeError: If there are errors copying the disk
+    RuntimeError: If there are errors copying the disk.
+    ValueError: If both instance_name and disk_name are missing.
   """
+
+  if not instance_name and not disk_name:
+    raise ValueError(
+        'You must specify at least one of [instance_name, disk_name].')
 
   src_project = gcp_project.GoogleCloudProject(src_proj)
   dst_project = gcp_project.GoogleCloudProject(dst_proj, default_zone=zone)
-  instance = src_project.compute.GetInstance(
-      instance_name) if instance_name else None
 
   try:
     if disk_name:
       disk_to_copy = src_project.compute.GetDisk(disk_name)
-    else:
-      disk_to_copy = instance.GetBootDisk()  # type: ignore
+    elif instance_name:
+      instance = src_project.compute.GetInstance(instance_name)
+      disk_to_copy = instance.GetBootDisk()
 
     common.LOGGER.info('Disk copy of {0:s} started...'.format(
         disk_to_copy.name))

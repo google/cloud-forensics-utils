@@ -155,11 +155,13 @@ def Main() -> None:
   AddParser('gcp', gcp_subparsers, 'copydisk', 'Create a GCP disk copy.',
             args=[
                 ('dst_project', 'Destination GCP project.', ''),
-                ('instance_name', 'Name of the instance to copy disk from.',
-                 ''),
                 ('zone', 'Zone to create the disk in.', ''),
-                ('--disk_name', 'Name of the disk to copy. If None, the boot '
-                                'disk of the instance will be copied.', None)
+                ('--instance_name', 'Name of the instance to copy disk from.',
+                 ''),
+                ('--disk_name', 'Name of the disk to copy. If none specified, '
+                                'then --instance_name must be specified and '
+                                'the boot disk of the instance will be copied.',
+                 None)
             ])
   AddParser('gcp', gcp_subparsers, 'startvm', 'Start a forensic analysis VM.',
             args=[

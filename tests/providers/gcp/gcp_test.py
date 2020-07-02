@@ -764,13 +764,16 @@ class GCPTest(unittest.TestCase):
     mock_get_boot_disk.return_value = FAKE_BOOT_DISK
     mock_block_operation.return_value = None
 
-    # create_disk_copy(src_proj, dst_proj, instance_name='fake-instance',
-    #     zone='fake-zone', disk_name=None) Should grab the boot disk
+    # create_disk_copy(
+    #     src_proj,
+    #     dst_proj,
+    #     zone='fake-zone',
+    #     instance_name='fake-instance',
+    #     disk_name=None) Should grab the boot disk
     new_disk = forensics.CreateDiskCopy(FAKE_SOURCE_PROJECT.project_id,
                                         FAKE_ANALYSIS_PROJECT.project_id,
-                                        instance_name=FAKE_INSTANCE.name,
                                         zone=FAKE_INSTANCE.zone,
-                                        disk_name=None)
+                                        instance_name=FAKE_INSTANCE.name)
     mock_get_instance.assert_called_with(FAKE_INSTANCE.name)
     mock_get_disk.assert_not_called()
     self.assertIsInstance(new_disk, compute.GoogleComputeDisk)
@@ -798,12 +801,11 @@ class GCPTest(unittest.TestCase):
     # create_disk_copy(
     #     src_proj,
     #     dst_proj,
-    #     instance_name=None,
     #     zone='fake-zone',
+    #     instance_name=None,
     #     disk_name='fake-disk') Should grab 'fake-disk'
     new_disk = forensics.CreateDiskCopy(FAKE_SOURCE_PROJECT.project_id,
                                         FAKE_ANALYSIS_PROJECT.project_id,
-                                        instance_name=None,
                                         zone=FAKE_INSTANCE.zone,
                                         disk_name=FAKE_DISK.name)
     mock_get_disk.assert_called_with(FAKE_DISK.name)
@@ -825,14 +827,13 @@ class GCPTest(unittest.TestCase):
     # create_disk_copy(
     #     src_proj,
     #     dst_proj,
-    #     instance_name=None,
     #     zone='fake-zone',
+    #     instance_name=None,
     #     disk_name='non-existent-disk') Should raise an exception
     self.assertRaises(RuntimeError,
                       forensics.CreateDiskCopy,
                       FAKE_SOURCE_PROJECT.project_id,
                       FAKE_ANALYSIS_PROJECT.project_id,
-                      instance_name=None,
                       zone=FAKE_INSTANCE.zone,
                       disk_name='non-existent-disk')
 
@@ -927,6 +928,7 @@ class GoogleCloudMonitoringTest(unittest.TestCase):
     self.assertEqual(active_services['stackdriver.googleapis.com'], MOCK_STACKDRIVER_METRIC)
     self.assertIn('logging.googleapis.com', active_services)
     self.assertEqual(active_services['logging.googleapis.com'], MOCK_LOGGING_METRIC)
+
 
 if __name__ == '__main__':
   unittest.main()

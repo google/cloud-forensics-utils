@@ -49,7 +49,7 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
     self.zone = zone
     self.name = name
     self.labels = labels
-    self._data = None
+    self._data = {}  # type: Dict[str, Any]
     self.project_id = project_id  # type: str
     super(GoogleComputeBaseResource, self).__init__(self.project_id)
 
@@ -73,18 +73,18 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
     """
     raise NotImplementedError("GetOperation is not implemented by this class.")
 
-  def GetValue(self, key: str) -> str:
+  def GetValue(self, key: str) -> Any:
     """Get specific value from the resource key value store.
 
     Args:
       key (str): A key of type String to get key's corresponding value.
 
     Returns:
-      str: Value of key or None if key is missing.
+      str|Dict: Value of key/dictionary or None if key is missing.
     """
 
-    self._data = self.GetOperation()  # type: ignore
-    return self._data.get(key)  # type: ignore
+    self._data = self.GetOperation()
+    return self._data.get(key)
 
   def GetSourceString(self) -> str:
     """API URL to the resource.
@@ -94,8 +94,10 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
     """
 
     if self._data:
-      return self._data['selfLink']
-    return self.GetValue('selfLink')
+      url = self._data['selfLink']  # type: str
+      return url
+    url = self.GetValue('selfLink')
+    return url
 
   def GetResourceType(self) -> str:
     """Get the resource type from the resource key-value store.
@@ -108,8 +110,10 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
     """
 
     if self._data:
-      return self._data['kind']
-    return self.GetValue('kind')
+      resource_type = self._data['kind']  # type: str
+      return resource_type
+    resource_type = self.GetValue('kind')
+    return resource_type
 
   def FormOperation(
       self,
@@ -158,12 +162,15 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
       Dict: A dictionary of all labels.
     """
 
-    operation = self.GetOperation()  # type: ignore
-    return operation.get('labels')  # type: ignore
+    operation = self.GetOperation()  # type: Dict[str, Dict[str, Any]]
+    labels = operation.get('labels')
+    if labels:
+      return labels
+    return {}
 
   def AddLabels(self,
                 new_labels_dict: Dict[str, Any],
-                blocking_call: Optional[bool] = False) -> Optional[Any]:
+                blocking_call: bool = False) -> Optional[Any]:
     """Add or update labels of a compute resource.
 
     Args:
@@ -184,7 +191,7 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
     get_operation = self.GetOperation()
     label_fingerprint = get_operation['labelFingerprint']
 
-    existing_labels_dict = {}
+    existing_labels_dict = {}  # type: Dict[str, Any]
     if self.GetLabels() is not None:
       existing_labels_dict = self.GetLabels()
     existing_labels_dict.update(new_labels_dict)
@@ -194,7 +201,7 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
     }
 
     resource_type = self.GetResourceType()
-    response = None
+    response = {}
     if resource_type not in ['compute#instance',
                              'compute#Snapshot',
                              'compute#disk']:
@@ -220,6 +227,6 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
           resource=self.name, project=self.project_id,
           body=request_body).execute()
     if blocking_call:
-      self.BlockOperation(response, zone=self.zone)  # type: ignore
+      self.BlockOperation(response, zone=self.zone)
 
     return response
