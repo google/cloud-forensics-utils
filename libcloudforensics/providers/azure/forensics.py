@@ -32,11 +32,15 @@ def CreateDiskCopy(
 
   Args:
     subscription_id (str): The Azure subscription ID to use.
-    instance_name (str): Instance name using the disk to be copied.
-    disk_name (str): Optional. Name of the disk to copy. If None, boot disk
-        will be copied.
+    instance_name (str): Optional. Instance name of the instance using the
+        disk to be copied. If specified, the boot disk of the instance will be
+        copied. If disk_name is also specified, then the disk pointed to by
+        disk_name will be copied.
+    disk_name (str): Optional. Name of the disk to copy. If not set,
+        then instance_name needs to be set and the boot disk will be copied.
     disk_type (str): Optional. The sku name for the disk to create. Can be
-          Standard_LRS, Premium_LRS, StandardSSD_LRS, or UltraSSD_LRS.
+          Standard_LRS, Premium_LRS, StandardSSD_LRS, or UltraSSD_LRS. The
+          default value is Standard_LRS.
 
   Returns:
     AZDisk: An Azure Compute Disk object.
@@ -62,7 +66,9 @@ def CreateDiskCopy(
         disk_to_copy.name))
     snapshot = disk_to_copy.Snapshot()
     new_disk = az_account.CreateDiskFromSnapshot(
-        snapshot, disk_name_prefix='evidence', disk_type=disk_type)
+        snapshot,
+        disk_name_prefix=common.DEFAULT_DISK_COPY_PREFIX,
+        disk_type=disk_type)
     snapshot.Delete()
     common.LOGGER.info(
         'Disk {0:s} successfully copied to {1:s}'.format(

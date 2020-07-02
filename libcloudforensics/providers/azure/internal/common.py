@@ -33,6 +33,8 @@ if TYPE_CHECKING:
 REGEX_DISK_NAME = re.compile('^[\\w]{1,80}$')
 REGEX_SNAPSHOT_NAME = re.compile('^(?=.{1,80}$)[a-zA-Z0-9]([\\w,-]*[\\w])?$')
 
+DEFAULT_DISK_COPY_PREFIX = 'evidence'
+
 LOGGER = logging.getLogger()
 
 
