@@ -275,3 +275,20 @@ class AZSnapshot(AZComputeResource):
     except CloudError as exception:
       raise RuntimeError('Could not delete snapshot {0:s}: {1:s}'
                          .format(self.resource_id, str(exception)))
+
+  def GrantAccessAndGetURI(self) -> str:
+    """Grant access to a snapshot and return its access URI.
+
+    Returns:
+      str: The access URI for the snapshot.
+    """
+    snapshot = self.az_account.compute_client.snapshots.grant_access(
+        self.resource_group_name, self.name, 'Read', 3600)
+    snapshot_uri = snapshot.result().access_sas  # type: str
+    return snapshot_uri
+
+  def RevokeAccessURI(self) -> None:
+    """Revoke access to a snapshot."""
+    request = self.az_account.compute_client.snapshots.revoke_access(
+        self.resource_group_name, self.name)
+    request.wait()

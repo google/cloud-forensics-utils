@@ -9,5 +9,7 @@ azure-core
 azure-identity
 azure-mgmt-compute==13.0.0
 azure-mgmt-resource
+azure-mgmt-storage
+azure-storage-blob
 msrest
 msrestazure
