@@ -21,6 +21,7 @@ from typing import TYPE_CHECKING
 from libcloudforensics.providers.gcp.internal import log as gcp_log
 from libcloudforensics.providers.gcp.internal import monitoring as gcp_monitoring
 from libcloudforensics.providers.gcp.internal import project as gcp_project
+from libcloudforensics.providers.gcp.internal import storage as gcp_storage
 from libcloudforensics.providers.gcp import forensics
 # pylint: enable=line-too-long
 
@@ -163,3 +164,45 @@ def ListServices(args: 'argparse.Namespace') -> None:
   sorted_apis = sorted(results.items(), key=lambda x: x[1], reverse=True)
   for apiname, usage in sorted_apis:
     print('{}: {}'.format(apiname, usage))
+
+
+def GetBucketACLs(args: 'argparse.Namespace') -> None:
+  """Retrieve the Access Controls for a GCS bucket.
+
+  Args:
+    args (argparse.Namespace): Arguments from ArgumentParser.
+  """
+  gcs = gcp_storage.GoogleCloudStorage(args.project)
+  bucket_acls = gcs.GetBucketACLs(args.path)
+  for role in bucket_acls:
+    print('{}: {}'.format(role, ', '.join(bucket_acls[role])))
+
+
+def GetGCSObjectMetadata(args: 'argparse.Namespace') -> None:
+  """List the details of an object in a GCS bucket.
+
+  Args:
+    args (argparse.Namespace): Arguments from ArgumentParser.
+  """
+  gcs = gcp_storage.GoogleCloudStorage(args.project)
+  results = gcs.GetObjectMetadata(args.path)
+  if results.get('kind', '') == 'storage#objects':
+    for item in results.get('items', []):
+      for k, v in item.items():
+        print('{}: {}'.format(k, v))
+      print('---------')
+  else:
+    for k, v in results.items():
+      print('{}: {}'.format(k, v))
+
+
+def ListBucketObjects(args: 'argparse.Namespace') -> None:
+  """List the objects in a GCS bucket.
+
+  Args:
+    args (argparse.Namespace): Arguments from ArgumentParser.
+  """
+  gcs = gcp_storage.GoogleCloudStorage(args.project)
+  results = gcs.ListBucketObjects(args.path)
+  for obj in results:
+    print('{}: {}'.format(obj.get('id', ''), obj.get('size', '?')))
