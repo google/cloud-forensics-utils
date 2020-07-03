@@ -163,7 +163,7 @@ def ListServices(args: 'argparse.Namespace') -> None:
   print('Found {0:d} APIs:'.format(len(results)))
   sorted_apis = sorted(results.items(), key=lambda x: x[1], reverse=True)
   for apiname, usage in sorted_apis:
-    print('{}: {}'.format(apiname, usage))
+    print('{0:s}: {1:s}'.format(apiname, usage))
 
 
 def GetBucketACLs(args: 'argparse.Namespace') -> None:
@@ -175,7 +175,7 @@ def GetBucketACLs(args: 'argparse.Namespace') -> None:
   gcs = gcp_storage.GoogleCloudStorage(args.project)
   bucket_acls = gcs.GetBucketACLs(args.path)
   for role in bucket_acls:
-    print('{}: {}'.format(role, ', '.join(bucket_acls[role])))
+    print('{0:s}: {1:s}'.format(role, ', '.join(bucket_acls[role])))
 
 
 def GetGCSObjectMetadata(args: 'argparse.Namespace') -> None:
@@ -186,14 +186,14 @@ def GetGCSObjectMetadata(args: 'argparse.Namespace') -> None:
   """
   gcs = gcp_storage.GoogleCloudStorage(args.project)
   results = gcs.GetObjectMetadata(args.path)
-  if results.get('kind', '') == 'storage#objects':
+  if results.get('kind') == 'storage#objects':
     for item in results.get('items', []):
-      for k, v in item.items():
-        print('{}: {}'.format(k, v))
+      for key, value in item.items():
+        print('{0:s}: {1:s}'.format(key, value))
       print('---------')
   else:
-    for k, v in results.items():
-      print('{}: {}'.format(k, v))
+    for key, value in results.items():
+      print('{0:s}: {1:s}'.format(key, value))
 
 
 def ListBucketObjects(args: 'argparse.Namespace') -> None:
@@ -205,4 +205,6 @@ def ListBucketObjects(args: 'argparse.Namespace') -> None:
   gcs = gcp_storage.GoogleCloudStorage(args.project)
   results = gcs.ListBucketObjects(args.path)
   for obj in results:
-    print('{}: {}'.format(obj.get('id', ''), obj.get('size', '?')))
+    print('{0:s} {1:s}b [{2:s}]'.format(
+        obj.get('id', 'ID not found'), obj.get('size', 'Unknown size'),
+        obj.get('contentType', 'Unknown Content-Type')))

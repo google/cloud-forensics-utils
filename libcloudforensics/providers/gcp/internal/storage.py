@@ -120,7 +120,7 @@ class GoogleCloudStorage:
     # https://cloud.google.com/storage/docs/json_api/v1/bucketAccessControls#resource
     ac_response = request.execute()
     for item in ac_response.get('items', []):
-      if item.get('kind', '') == 'storage#bucketAccessControl':  # Sanity check
+      if item.get('kind') == 'storage#bucketAccessControl':  # Sanity check
         ret[item['role']].append(item['entity'])
     gcs_buckets = self.GcsApi().buckets()
     request = gcs_buckets.getIamPolicy(bucket=bucket)

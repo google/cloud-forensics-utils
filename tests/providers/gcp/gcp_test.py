@@ -753,7 +753,7 @@ class GoogleCloudStorageTest(unittest.TestCase):
     api_list_object = mock_gcs_api.return_value.objects.return_value.list
     api_list_object.return_value.execute.return_value = MOCK_GCS_BUCKET_OBJECTS
     list_results = FAKE_GCS.ListBucketObjects('gs://fake-bucket')
-    self.assertEqual(len(list_results), 1)
+    self.assertEqual(1, len(list_results))
     self.assertEqual('5555555555', list_results[0]['size'])
     self.assertEqual('MzFiYWIzY2M0MTJjNGMzNjUyZDMyNWFkYWMwODA5YTEgIGNvdW50MQo=', list_results[0]['md5Hash'])
 
@@ -766,9 +766,9 @@ class GoogleCloudStorageTest(unittest.TestCase):
     api_iam_object = mock_gcs_api.return_value.buckets.return_value.getIamPolicy
     api_iam_object.return_value.execute.return_value = MOCK_GCS_BUCKET_IAM
     acl_results = FAKE_GCS.GetBucketACLs('gs://fake-bucket')
-    self.assertEqual(len(acl_results), 2)
-    self.assertEqual(len(acl_results['OWNER']), 2)
-    self.assertEqual(len(acl_results['roles/storage.legacyBucketOwner']), 2)
+    self.assertEqual(2, len(acl_results))
+    self.assertEqual(2, len(acl_results['OWNER']))
+    self.assertEqual(2, len(acl_results['roles/storage.legacyBucketOwner']))
 
 
 class GoogleCloudBuildeTest(unittest.TestCase):
