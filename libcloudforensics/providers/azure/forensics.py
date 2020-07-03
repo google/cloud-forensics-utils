@@ -74,7 +74,8 @@ def CreateDiskCopy(
         'Disk {0:s} successfully copied to {1:s}'.format(
             disk_to_copy.name, new_disk.name))
   except RuntimeError as exception:
-    error_msg = 'Cannot copy disk "{0:s}": {1!s}'.format(disk_name, exception)
+    error_msg = 'Cannot copy disk "{0:s}": {1!s}'.format(
+        str(disk_name), str(exception))
     raise RuntimeError(error_msg)
 
   return new_disk
