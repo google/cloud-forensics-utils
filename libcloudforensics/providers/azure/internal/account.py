@@ -68,7 +68,7 @@ class AZAccount:
       responses = common.ExecuteRequest(
           az_vm_client,
           'list',
-          {'resource_group_name': resource_group_name})  # type: ignore
+          {'resource_group_name': resource_group_name})
     for response in responses:
       for instance in response:
         instances[instance.name] = compute.AZVirtualMachine(
@@ -101,7 +101,7 @@ class AZAccount:
       responses = common.ExecuteRequest(
           az_disk_client,
           'list_by_resource_group',
-          {'resource_group_name': resource_group_name})  # type: ignore
+          {'resource_group_name': resource_group_name})
     for response in responses:
       for disk in response:
         disks[disk.name] = compute.AZDisk(self,

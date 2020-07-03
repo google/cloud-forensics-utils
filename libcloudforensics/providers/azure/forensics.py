@@ -61,7 +61,7 @@ def CreateDiskCopy(
       disk_to_copy = az_account.GetDisk(disk_name)
     elif instance_name:
       instance = az_account.GetInstance(instance_name)
-      disk_to_copy = instance.GetBootDisk()  # type: ignore
+      disk_to_copy = instance.GetBootDisk()
     common.LOGGER.info('Disk copy of {0:s} started...'.format(
         disk_to_copy.name))
     snapshot = disk_to_copy.Snapshot()
