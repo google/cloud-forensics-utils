@@ -57,8 +57,8 @@ class AZAccount:
           subscription will be listed.
 
     Returns:
-      Dict[str, AZCompute]: Dictionary mapping instance names (str) to their
-          respective AZCompute object.
+      Dict[str, AZVirtualMachine]: Dictionary mapping instance names (str) to
+          their respective AZVirtualMachine object.
     """
     instances = {}  # type: Dict[str, compute.AZVirtualMachine]
     az_vm_client = self.compute_client.virtual_machines
@@ -124,7 +124,7 @@ class AZAccount:
           from the AZ subscription.
 
     Returns:
-      AZCompute: An Azure Compute Instance object.
+      AZVirtualMachine: An Azure virtual machine object.
 
     Raises:
       RuntimeError: If the instance was not found in the subscription / resource
@@ -176,7 +176,8 @@ class AZAccount:
       disk_name (str): Optional. String to use as new disk name.
       disk_name_prefix (str): Optional. String to prefix the disk name with.
       disk_type (str): Optional. The sku name for the disk to create. Can be
-          Standard_LRS, Premium_LRS, StandardSSD_LRS, or UltraSSD_LRS.
+          Standard_LRS, Premium_LRS, StandardSSD_LRS, or UltraSSD_LRS. The
+          default value is Standard_LRS.
 
     Returns:
       AZDisk: Azure Compute Disk.
