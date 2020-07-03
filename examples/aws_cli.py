@@ -115,7 +115,7 @@ def StartAnalysisVm(args: 'argparse.Namespace') -> None:
   Args:
     args (argparse.Namespace): Arguments from ArgumentParser.
   """
-  if args.attach_volumes and len(args.attach_volumes) > 11:
+  if args.attach_volumes and len(args.attach_volumes.split(',')) > 11:
     print('error: --attach_volumes must be < 11')
     return
 
