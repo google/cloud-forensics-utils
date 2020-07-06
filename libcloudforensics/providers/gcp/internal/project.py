@@ -12,11 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Library for incident response operations on Google Cloud Compute Engine.
-
-Library to make forensic images of Google Compute Engine disk and create
-analysis virtual machine to be used in incident response.
-"""
+"""Google Cloud Project resources and services."""
 
 from __future__ import unicode_literals
 
@@ -27,21 +23,20 @@ import libcloudforensics.providers.gcp.internal.compute as compute_module
 import libcloudforensics.providers.gcp.internal.function as function_module
 import libcloudforensics.providers.gcp.internal.log as log_module
 import libcloudforensics.providers.gcp.internal.monitoring as monitoring_module
+import libcloudforensics.providers.gcp.internal.storage as storage_module
 
 
 class GoogleCloudProject:
   """Class representing a Google Cloud Project.
 
   Attributes:
-    project_id: Project name.
+    project_id: Google Cloud project ID.
     default_zone: Default zone to create new resources in.
 
   Example use:
     gcp = GoogleCloudProject("your_project_name", "us-east")
-    gcp.ListInstances()
+    gcp.compute.ListInstances()
   """
-
-  COMPUTE_ENGINE_API_VERSION = 'v1'
 
   def __init__(self,
                project_id: str,
@@ -56,11 +51,14 @@ class GoogleCloudProject:
 
     self.project_id = project_id
     self.default_zone = default_zone
-    self._compute = None
-    self._function = None
-    self._build = None
-    self._log = None
-    self._monitoring = None
+    self._compute = None  # type: Optional[compute_module.GoogleCloudCompute]
+    self._function = None  # type: Optional[function_module.GoogleCloudFunction]
+    self._build = None  # type: Optional[build_module.GoogleCloudBuild]
+    self._log = None  # type: Optional[log_module.GoogleCloudLog]
+    self._storage = None  # type: Optional[storage_module.GoogleCloudStorage]
+    # pylint: disable=line-too-long
+    self._monitoring = None  # type: Optional[monitoring_module.GoogleCloudMonitoring]
+    # pylint: enable=line-too-long
 
   @property
   def compute(self) -> compute_module.GoogleCloudCompute:
@@ -72,9 +70,9 @@ class GoogleCloudProject:
 
     if self._compute:
       return self._compute
-    self._compute = compute_module.GoogleCloudCompute(  # type: ignore
+    self._compute = compute_module.GoogleCloudCompute(
         self.project_id, self.default_zone)
-    return self._compute  # type: ignore
+    return self._compute
 
   @property
   def function(self) -> function_module.GoogleCloudFunction:
@@ -86,9 +84,9 @@ class GoogleCloudProject:
 
     if self._function:
       return self._function
-    self._function = function_module.GoogleCloudFunction(  # type: ignore
+    self._function = function_module.GoogleCloudFunction(
         self.project_id)
-    return self._function  # type: ignore
+    return self._function
 
   @property
   def build(self) -> build_module.GoogleCloudBuild:
@@ -100,9 +98,9 @@ class GoogleCloudProject:
 
     if self._build:
       return self._build
-    self._build = build_module.GoogleCloudBuild(  # type: ignore
+    self._build = build_module.GoogleCloudBuild(
         self.project_id)
-    return self._build  # type: ignore
+    return self._build
 
   @property
   def log(self) -> log_module.GoogleCloudLog:
@@ -114,9 +112,23 @@ class GoogleCloudProject:
 
     if self._log:
       return self._log
-    self._log = log_module.GoogleCloudLog(  # type: ignore
+    self._log = log_module.GoogleCloudLog(
         self.project_id)
-    return self._log  # type: ignore
+    return self._log
+
+  @property
+  def storage(self) -> storage_module.GoogleCloudStorage:
+    """Get a GoogleCloudStorage object for the project.
+
+    Returns:
+      GoogleCloudLog: Object that represents Google Cloud Logging.
+    """
+
+    if self._storage:
+      return self._storage
+    self._storage = storage_module.GoogleCloudStorage(
+        self.project_id)
+    return self._storage
 
   @property
   def monitoring(self) -> monitoring_module.GoogleCloudMonitoring:
@@ -128,6 +140,6 @@ class GoogleCloudProject:
 
     if self._monitoring:
       return self._monitoring
-    self._monitoring = monitoring_module.GoogleCloudMonitoring(  # type: ignore
+    self._monitoring = monitoring_module.GoogleCloudMonitoring(
         self.project_id)
-    return self._monitoring  # type: ignore
+    return self._monitoring
