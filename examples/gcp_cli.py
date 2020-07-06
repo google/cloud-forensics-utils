@@ -110,13 +110,18 @@ def QueryLogs(args: 'argparse.Namespace') -> None:
     raise error
 
   qfilter = ''
+
   if args.start:
     qfilter += 'timestamp>="{0:s}" '.format(args.start)
   if args.start and args.end:
     qfilter += 'AND '
   if args.end:
     qfilter += 'timestamp<="{0:s}" '.format(args.end)
-  if args.filter:
+
+  if args.filter and (args.start or args.end):
+    qfilter += 'AND '
+    qfilter += args.filter
+  elif args.filter:
     qfilter += args.filter
 
   results = logs.ExecuteQuery(qfilter)
