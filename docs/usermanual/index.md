@@ -1,17 +1,32 @@
-# libcldouforensics features
+# libcldouforensics capabilities
 
 ## GCP
 
 ### Disk snapshot
 
+TODO
+
+### GCS to persistent disk
+
+TODO
 
 ### Analysis VM
 
-
+TODO
 
 
 ## AWS
 
+TODO
+
 ### Disk snapshot
 
-### analysis VMs
+TODO
+
+#### EBS encryption
+
+TODO
+
+### Analysis VMs
+
+TODO

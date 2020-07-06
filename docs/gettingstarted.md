@@ -11,4 +11,4 @@ and you're done!
 
 ## Using the CLI
 
-*insert examples here*
+TODO
