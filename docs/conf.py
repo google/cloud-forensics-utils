@@ -28,12 +28,15 @@ author = 'Google'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    'recommonmark',
     'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
-    'sphinx_autodoc_typehints'
+    'sphinx_autodoc_typehints',
 ]
 
 # set_type_checking_flag = True
+
+master_doc = 'index'
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -55,3 +58,19 @@ html_theme = 'sphinx_rtd_theme'
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+
+source_suffix = {
+    '.rst': 'restructuredtext',
+    '.txt': 'markdown',
+    '.md': 'markdown',
+}
+
+from recommonmark.transform import AutoStructify
+
+github_doc_root = 'https://github.com/google/libcloudforensics/tree/master/doc/'
+
+def setup(app):
+  app.add_config_value('recommonmark_config', {
+    'enable_auto_doc_ref': False,
+  }, True)
+  app.add_transform(AutoStructify)
