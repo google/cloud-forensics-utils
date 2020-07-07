@@ -88,8 +88,8 @@ class GoogleCloudStorage:
     if not gcs_path.startswith('gs://'):
       gcs_path = 'gs://' + gcs_path
     bucket, object_path = SplitGcsPath(gcs_path)
-    gcs_api_client = self.GcsApi().objects()
-    request = gcs_api_client.get(
+    gcs_objects = self.GcsApi().objects()
+    request = gcs_objects.get(
         bucket=bucket, object=object_path, userProject=user_project)
     response = request.execute()  # type: Dict[str, Any]
     return response
@@ -143,7 +143,7 @@ class GoogleCloudStorage:
     if bucket.startswith('gs://'):
       # Can change to removeprefix() in 3.9
       bucket = bucket[5:]
-    gcs_api_client = self.GcsApi().objects()
-    request = gcs_api_client.list(bucket=bucket)
+    gcs_objects = self.GcsApi().objects()
+    request = gcs_objects.list(bucket=bucket)
     objects = request.execute()  # type: Dict[str, Any]
     return objects.get('items', [])
