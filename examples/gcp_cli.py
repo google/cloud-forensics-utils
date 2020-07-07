@@ -16,6 +16,7 @@
 
 from datetime import datetime
 import json
+import sys
 from typing import TYPE_CHECKING
 
 # pylint: disable=line-too-long
@@ -107,7 +108,7 @@ def QueryLogs(args: 'argparse.Namespace') -> None:
     if args.end:
       datetime.strptime(args.end, '%Y-%m-%dT%H:%M:%SZ')
   except ValueError as error:
-    raise error
+    sys.exit(str(error))
 
   qfilter = ''
 
