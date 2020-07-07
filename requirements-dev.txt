@@ -5,3 +5,6 @@ pylint
 coverage
 yapf
 mypy
+sphinx
+sphinx-rtd-theme
+sphinx-autodoc-typehints
