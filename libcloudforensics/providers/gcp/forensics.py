@@ -204,16 +204,13 @@ def CreateDiskFromGCSImage(
   image_object = project.compute.ImportImageFromStorage(storage_image_path)
   disk_object = project.compute.CreateDiskFromImage(
       image_object, zone=zone, name=name)
-  bytes_count = project.storage.GetObjectMetadata(
-      storage_image_path)['size']
-  md5_hash_b64 = project.storage.GetObjectMetadata(
-      storage_image_path)['md5Hash']
-  md5_hash_hex = base64.b64decode(md5_hash_b64).hex()
+  storage_object_md = project.storage.GetObjectMetadata(storage_image_path)
+  md5_hash_hex = base64.b64decode(storage_object_md['md5Hash']).hex()
   result = {
       'project_id': disk_object.project_id,
       'disk_name': disk_object.name,
       'zone': disk_object.zone,
-      'bytes_count': bytes_count,
+      'bytes_count': storage_object_md['size'],
       'md5Hash': md5_hash_hex
   }
   return result
