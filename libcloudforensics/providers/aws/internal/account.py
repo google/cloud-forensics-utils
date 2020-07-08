@@ -256,7 +256,7 @@ class AWSAccount:
                        '{1:s}'.format(str(instance_name), str(instance_id)))
     if instance_name:
       return self.GetInstancesByName(instance_name, region=region)
-    assert instance_id  # Mypy: assert not None
+    assert instance_id  # Mypy: assert that instance_id is not None
     return [self.GetInstanceById(instance_id, region=region)]
 
   def GetInstancesByName(self,
@@ -343,7 +343,7 @@ class AWSAccount:
                        '{1:s}'.format(str(volume_name), str(volume_id)))
     if volume_name:
       return self.GetVolumesByName(volume_name, region=region)
-    assert volume_id  # Mypy: assert not None
+    assert volume_id  # Mypy: assert that volume_id is not None
     return [self.GetVolumeById(volume_id, region=region)]
 
   def GetVolumesByName(self,
@@ -698,7 +698,7 @@ class AWSAccount:
     volume_id_crc32 = '{0:08x}'.format(
         binascii.crc32(volume_id.encode()) & 0xffffffff)
     truncate_at = 255 - len(volume_id_crc32) - len('-copy') - 1
-    assert snapshot.name  # Mypy: assert not None
+    assert snapshot.name  # Mypy: assert that snapshot.name is not None
     if volume_name_prefix:
       volume_name_prefix += '-'
       if len(volume_name_prefix) > truncate_at:

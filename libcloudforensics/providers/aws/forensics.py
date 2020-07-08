@@ -226,7 +226,7 @@ def StartAnalysisVm(
       raise RuntimeError('error - ListImages returns >1 AMI image: [{0:s}]'
                          .format(', '.join(image_names)))
     ami = ami_list[0]['ImageId']
-  assert ami  # Mypy: assert not None
+  assert ami  # Mypy: assert that ami is not None
 
   analysis_vm, created = aws_account.GetOrCreateAnalysisVm(
       vm_name,
