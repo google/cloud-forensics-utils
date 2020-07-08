@@ -14,7 +14,9 @@
 # limitations under the License.
 """Demo CLI tool for GCP."""
 
+from datetime import datetime
 import json
+import sys
 from typing import TYPE_CHECKING
 
 # pylint: disable=line-too-long
@@ -95,9 +97,36 @@ def QueryLogs(args: 'argparse.Namespace') -> None:
 
   Args:
     args (argparse.Namespace): Arguments from ArgumentParser.
+
+  Raises:
+    ValueError: If the start or end date is not properly formatted.
   """
   logs = gcp_log.GoogleCloudLog(args.project)
-  results = logs.ExecuteQuery(args.filter)
+
+  try:
+    if args.start:
+      datetime.strptime(args.start, '%Y-%m-%dT%H:%M:%SZ')
+    if args.end:
+      datetime.strptime(args.end, '%Y-%m-%dT%H:%M:%SZ')
+  except ValueError as error:
+    sys.exit(str(error))
+
+  qfilter = ''
+
+  if args.start:
+    qfilter += 'timestamp>="{0:s}" '.format(args.start)
+  if args.start and args.end:
+    qfilter += 'AND '
+  if args.end:
+    qfilter += 'timestamp<="{0:s}" '.format(args.end)
+
+  if args.filter and (args.start or args.end):
+    qfilter += 'AND '
+    qfilter += args.filter
+  elif args.filter:
+    qfilter += args.filter
+
+  results = logs.ExecuteQuery(qfilter)
   print('Found {0:d} log entries:'.format(len(results)))
   for line in results:
     print(json.dumps(line))
