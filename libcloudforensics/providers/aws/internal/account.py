@@ -222,8 +222,8 @@ class AWSAccount:
 
   def GetInstancesByNameOrId(
       self,
-      instance_name: str = '',
-      instance_id: str = '',
+      instance_name: Optional[str] = None,
+      instance_id: Optional[str] = None,
       region: Optional[str] = None) -> List[ec2.AWSInstance]:
     """Get instances from an AWS account by their name tag or an ID.
 
@@ -253,10 +253,10 @@ class AWSAccount:
     if (not instance_name and not instance_id) or (instance_name and instance_id):  # pylint: disable=line-too-long
       raise ValueError('You must specify exactly one of [instance_name, '
                        'instance_id]. Got instance_name: {0:s}, instance_id: '
-                       '{1:s}'.format(instance_name, instance_id))
+                       '{1:s}'.format(str(instance_name), str(instance_id)))
     if instance_name:
       return self.GetInstancesByName(instance_name, region=region)
-
+    assert instance_id  # Mypy: assert that instance_id is not None
     return [self.GetInstanceById(instance_id, region=region)]
 
   def GetInstancesByName(self,
@@ -310,8 +310,8 @@ class AWSAccount:
     return instance
 
   def GetVolumesByNameOrId(self,
-                           volume_name: str = '',
-                           volume_id: str = '',
+                           volume_name: Optional[str] = None,
+                           volume_id: Optional[str] = None,
                            region: Optional[str] = None) -> List[ebs.AWSVolume]:
     """Get a volume from an AWS account by its name tag or its ID.
 
@@ -340,10 +340,10 @@ class AWSAccount:
     if (not volume_name and not volume_id) or (volume_name and volume_id):
       raise ValueError('You must specify exactly one of [volume_name, '
                        'volume_id]. Got volume_name: {0:s}, volume_id: '
-                       '{1:s}'.format(volume_name, volume_id))
+                       '{1:s}'.format(str(volume_name), str(volume_id)))
     if volume_name:
       return self.GetVolumesByName(volume_name, region=region)
-
+    assert volume_id  # Mypy: assert that volume_id is not None
     return [self.GetVolumeById(volume_id, region=region)]
 
   def GetVolumesByName(self,
@@ -400,7 +400,7 @@ class AWSAccount:
       self,
       snapshot: ebs.AWSSnapshot,
       volume_name: Optional[str] = None,
-      volume_name_prefix: str = '',
+      volume_name_prefix: Optional[str] = None,
       kms_key_id: Optional[str] = None,
       tags: Optional[Dict[str, str]] = None) -> ebs.AWSVolume:
     """Create a new volume based on a snapshot.
@@ -697,6 +697,7 @@ class AWSAccount:
     volume_id_crc32 = '{0:08x}'.format(
         binascii.crc32(volume_id.encode()) & 0xffffffff)
     truncate_at = 255 - len(volume_id_crc32) - len('-copy') - 1
+    assert snapshot.name  # Mypy: assert that snapshot.name is not None
     if volume_name_prefix:
       volume_name_prefix += '-'
       if len(volume_name_prefix) > truncate_at:
