@@ -36,6 +36,7 @@ LOGGER = logging.getLogger()
 RETRY_MAX = 10
 REGEX_DISK_NAME = re.compile('^(?=.{1,63}$)[a-z]([-a-z0-9]*[a-z0-9])?$')
 COMPUTE_NAME_LIMIT = 63
+STORAGE_LINK_URL = 'https://storage.cloud.google.com'
 
 
 def GenerateDiskName(snapshot: 'compute.GoogleComputeSnapshot',

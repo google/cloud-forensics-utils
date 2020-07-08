@@ -596,6 +596,15 @@ class GoogleCloudProjectTest(unittest.TestCase):
     image_object = FAKE_ANALYSIS_PROJECT.compute.CreateImageFromGcsTarGz(
         'gs://fake-bucket/fake-folder/image.tar.gz', 'fake-image')
     self.assertIn('fake-image', image_object.name)
+    fake_image_body = {
+        'name': 'fake-image',
+        "rawDisk": {
+            'source': 'https://storage.cloud.google.com/fake-bucket/fake-folder/image.tar.gz'
+        }
+    }
+    image_insert.assert_called_with(project=FAKE_ANALYSIS_PROJECT.project_id,
+                                    body=fake_image_body,
+                                    forceCreate=True)
 
   @typing.no_type_check
   def testReadStartupScript(self):

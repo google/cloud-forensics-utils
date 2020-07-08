@@ -539,20 +539,18 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       name = common.GenerateUniqueInstanceName('imported-image',
                                                common.COMPUTE_NAME_LIMIT)
 
-    ext = (os.path.split(gcs_uri)[-1]).partition('.')[-1].lower()
-    if ext != 'tar.gz':
+    if not gcs_uri.lower().endswith('.tar.gz'):
       raise ValueError(
           'Image imported from {0:s} must be a GZIP compressed TAR '
           'archive with the extension: .tar.gz'.format(gcs_uri))
     gcs_uri = os.path.relpath(gcs_uri, 'gs://')
-    storage_link_url = 'https://storage.cloud.google.com'
-    if not gcs_uri.startswith(storage_link_url):
-      gcs_uri = os.path.join(storage_link_url, gcs_uri)
+    if not gcs_uri.startswith(common.STORAGE_LINK_URL):
+      gcs_uri = os.path.join(common.STORAGE_LINK_URL, gcs_uri)
     image_body = {
         'name': name,
         "rawDisk": {
             'source': gcs_uri
-            }
+        }
     }
     gce_image_client = self.GceApi().images()
     request = gce_image_client.insert(
