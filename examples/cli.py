@@ -134,14 +134,18 @@ def Main() -> None:
             args=[
                 ('instance_name', 'Name of EC2 instance to re-use or create.',
                  ''),
-                ('--disk_size', 'Size of disk in GB.', '50'),
+                ('--boot_volume_size', 'Size of instance boot volume in GB.',
+                 '50'),
                 ('--cpu_cores', 'Instance CPU core count.', '4'),
                 ('--ami', 'AMI ID to use as base image. Will search '
                           'Ubuntu 18.04 LTS server x86_64 for chosen region '
                           'by default.', ''),
                 ('--ssh_key_name', 'SSH key pair name.', None),
                 ('--attach_volumes', 'Comma seperated list of volume IDs '
-                                     'to attach. Maximum of 11.', None)
+                                     'to attach. Maximum of 11.', None),
+                ('--dst_profile', 'The name of the profile for the destination '
+                                  'account, as defined in the AWS credentials '
+                                  'file.', None)
             ])
   AddParser('aws', aws_subparsers, 'listimages', 'List AMI images.',
             args=[
