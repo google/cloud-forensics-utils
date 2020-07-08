@@ -14,13 +14,16 @@
 # limitations under the License.
 """Demo CLI tool for GCP."""
 
+from datetime import datetime
 import json
+import sys
 from typing import TYPE_CHECKING
 
 # pylint: disable=line-too-long
 from libcloudforensics.providers.gcp.internal import log as gcp_log
 from libcloudforensics.providers.gcp.internal import monitoring as gcp_monitoring
 from libcloudforensics.providers.gcp.internal import project as gcp_project
+from libcloudforensics.providers.gcp.internal import storage as gcp_storage
 from libcloudforensics.providers.gcp import forensics
 # pylint: enable=line-too-long
 
@@ -94,9 +97,36 @@ def QueryLogs(args: 'argparse.Namespace') -> None:
 
   Args:
     args (argparse.Namespace): Arguments from ArgumentParser.
+
+  Raises:
+    ValueError: If the start or end date is not properly formatted.
   """
   logs = gcp_log.GoogleCloudLog(args.project)
-  results = logs.ExecuteQuery(args.filter)
+
+  try:
+    if args.start:
+      datetime.strptime(args.start, '%Y-%m-%dT%H:%M:%SZ')
+    if args.end:
+      datetime.strptime(args.end, '%Y-%m-%dT%H:%M:%SZ')
+  except ValueError as error:
+    sys.exit(str(error))
+
+  qfilter = ''
+
+  if args.start:
+    qfilter += 'timestamp>="{0:s}" '.format(args.start)
+  if args.start and args.end:
+    qfilter += 'AND '
+  if args.end:
+    qfilter += 'timestamp<="{0:s}" '.format(args.end)
+
+  if args.filter and (args.start or args.end):
+    qfilter += 'AND '
+    qfilter += args.filter
+  elif args.filter:
+    qfilter += args.filter
+
+  results = logs.ExecuteQuery(qfilter)
   print('Found {0:d} log entries:'.format(len(results)))
   for line in results:
     print(json.dumps(line))
@@ -162,4 +192,48 @@ def ListServices(args: 'argparse.Namespace') -> None:
   print('Found {0:d} APIs:'.format(len(results)))
   sorted_apis = sorted(results.items(), key=lambda x: x[1], reverse=True)
   for apiname, usage in sorted_apis:
-    print('{}: {}'.format(apiname, usage))
+    print('{0:s}: {1:s}'.format(apiname, usage))
+
+
+def GetBucketACLs(args: 'argparse.Namespace') -> None:
+  """Retrieve the Access Controls for a GCS bucket.
+
+  Args:
+    args (argparse.Namespace): Arguments from ArgumentParser.
+  """
+  gcs = gcp_storage.GoogleCloudStorage(args.project)
+  bucket_acls = gcs.GetBucketACLs(args.path)
+  for role in bucket_acls:
+    print('{0:s}: {1:s}'.format(role, ', '.join(bucket_acls[role])))
+
+
+def GetGCSObjectMetadata(args: 'argparse.Namespace') -> None:
+  """List the details of an object in a GCS bucket.
+
+  Args:
+    args (argparse.Namespace): Arguments from ArgumentParser.
+  """
+  gcs = gcp_storage.GoogleCloudStorage(args.project)
+  results = gcs.GetObjectMetadata(args.path)
+  if results.get('kind') == 'storage#objects':
+    for item in results.get('items', []):
+      for key, value in item.items():
+        print('{0:s}: {1:s}'.format(key, value))
+      print('---------')
+  else:
+    for key, value in results.items():
+      print('{0:s}: {1:s}'.format(key, value))
+
+
+def ListBucketObjects(args: 'argparse.Namespace') -> None:
+  """List the objects in a GCS bucket.
+
+  Args:
+    args (argparse.Namespace): Arguments from ArgumentParser.
+  """
+  gcs = gcp_storage.GoogleCloudStorage(args.project)
+  results = gcs.ListBucketObjects(args.path)
+  for obj in results:
+    print('{0:s} {1:s}b [{2:s}]'.format(
+        obj.get('id', 'ID not found'), obj.get('size', 'Unknown size'),
+        obj.get('contentType', 'Unknown Content-Type')))

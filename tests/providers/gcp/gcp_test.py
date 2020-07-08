@@ -197,6 +197,39 @@ MOCK_GCS_OBJECT_METADATA = {
     'md5Hash': 'MzFiYWIzY2M0MTJjNGMzNjUyZDMyNWFkYWMwODA5YTEgIGNvdW50MQo=',
 }
 
+MOCK_GCS_BUCKET_OBJECTS = {
+    'items': [
+        MOCK_GCS_OBJECT_METADATA
+    ]
+}
+
+MOCK_GCS_BUCKET_ACLS = {
+    'kind': 'storage#bucketAccessControls',
+    'items': [
+        {
+            'kind': 'storage#bucketAccessControl',
+            'id': 'test_bucket_1/project-editors-1',
+            'bucket': 'test_bucket_1',
+            'entity': 'project-editors-1',
+            'role': 'OWNER',
+        },
+        {
+            'kind': 'storage#bucketAccessControl',
+            'id': 'test_bucket_1/project-owners-1',
+            'bucket': 'test_bucket_1',
+            'entity': 'project-owners-1',
+            'role': 'OWNER',
+        }
+    ]
+}
+
+MOCK_GCS_BUCKET_IAM = {
+        'bindings': [{
+            'role': 'roles/storage.legacyBucketOwner',
+            'members': ['projectEditor:project1', 'projectOwner:project1'],
+        }]
+}
+
 MOCK_GCB_BUILDS_CREATE = {
     'name': 'operations/build/fake-project/12345',
     'metadata': {
@@ -724,10 +757,34 @@ class GoogleCloudStorageTest(unittest.TestCase):
     """Test GCS object Get operation."""
     api_get_object = mock_gcs_api.return_value.objects.return_value.get
     api_get_object.return_value.execute.return_value = MOCK_GCS_OBJECT_METADATA
-    get_results = FAKE_GCS.GetObjectMetadata('gs://Fake_Path')
+    get_results = FAKE_GCS.GetObjectMetadata('gs://fake-bucket/foo/fake.img')
     self.assertEqual(MOCK_GCS_OBJECT_METADATA, get_results)
     self.assertEqual('5555555555', get_results['size'])
     self.assertEqual('MzFiYWIzY2M0MTJjNGMzNjUyZDMyNWFkYWMwODA5YTEgIGNvdW50MQo=', get_results['md5Hash'])
+
+  @typing.no_type_check
+  @mock.patch('libcloudforensics.providers.gcp.internal.storage.GoogleCloudStorage.GcsApi')
+  def testListBucketObjects(self, mock_gcs_api):
+    """Test GCS object List operation."""
+    api_list_object = mock_gcs_api.return_value.objects.return_value.list
+    api_list_object.return_value.execute.return_value = MOCK_GCS_BUCKET_OBJECTS
+    list_results = FAKE_GCS.ListBucketObjects('gs://fake-bucket')
+    self.assertEqual(1, len(list_results))
+    self.assertEqual('5555555555', list_results[0]['size'])
+    self.assertEqual('MzFiYWIzY2M0MTJjNGMzNjUyZDMyNWFkYWMwODA5YTEgIGNvdW50MQo=', list_results[0]['md5Hash'])
+
+  @typing.no_type_check
+  @mock.patch('libcloudforensics.providers.gcp.internal.storage.GoogleCloudStorage.GcsApi')
+  def testGetBucketACLs(self, mock_gcs_api):
+    """Test GCS ACL List operation."""
+    api_acl_object = mock_gcs_api.return_value.bucketAccessControls.return_value.list
+    api_acl_object.return_value.execute.return_value = MOCK_GCS_BUCKET_ACLS
+    api_iam_object = mock_gcs_api.return_value.buckets.return_value.getIamPolicy
+    api_iam_object.return_value.execute.return_value = MOCK_GCS_BUCKET_IAM
+    acl_results = FAKE_GCS.GetBucketACLs('gs://fake-bucket')
+    self.assertEqual(2, len(acl_results))
+    self.assertEqual(2, len(acl_results['OWNER']))
+    self.assertEqual(2, len(acl_results['roles/storage.legacyBucketOwner']))
 
 
 class GoogleCloudBuildeTest(unittest.TestCase):
