@@ -125,10 +125,9 @@ class AWSVolume(AWSElasticBlockStore):
     snapshot_name = tags.get('Name') or (self.volume_id + '-snapshot')
     truncate_at = 255 - 1
     snapshot_name = snapshot_name[:truncate_at]
-    if not common.REGEX_TAG_VALUE.match(snapshot_name):
-      raise ValueError('Snapshot name {0:s} does not comply with '
-                       '{1:s}'.format(snapshot_name,
-                                      common.REGEX_TAG_VALUE.pattern))
+    if len(snapshot_name) > 255:
+      raise ValueError('Snapshot name {0:s} is too long (>255 chars)'.format(
+          snapshot_name))
     tags['Name'] = snapshot_name
 
     client = self.aws_account.ClientApi(common.EC2_SERVICE)
