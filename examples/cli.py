@@ -134,7 +134,8 @@ def Main() -> None:
             args=[
                 ('instance_name', 'Name of EC2 instance to re-use or create.',
                  ''),
-                ('--boot_volume_size', 'Size of instance boot volume in GB.', '50'),
+                ('--boot_volume_size', 'Size of instance boot volume in GB.',
+                 '50'),
                 ('--cpu_cores', 'Instance CPU core count.', '4'),
                 ('--ami', 'AMI ID to use as base image. Will search '
                           'Ubuntu 18.04 LTS server x86_64 for chosen region '
