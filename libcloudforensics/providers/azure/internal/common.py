@@ -61,7 +61,7 @@ def ExecuteRequest(
     kwargs (Dict): Optional. A dictionary of parameters for the function func.
 
   Returns:
-    List[Dict]: A List of dictionaries (responses from the request).
+    List[Any]: A List of Azure response objects (VirtualMachines, Disks, etc).
 
   Raises:
     RuntimeError: If the request to the Azure API could not complete.

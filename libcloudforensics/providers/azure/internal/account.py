@@ -46,14 +46,14 @@ class AZAccount:
     self.compute_client = ComputeManagementClient(
         self.credentials, self.subscription_id)
 
-  def ListInstances(
-      self,
-      resource_group_name: Optional[str] = None) -> Dict[str, compute.AZVirtualMachine]:  # pylint: disable=line-too-long
+  def ListInstances(self,
+                    resource_group_name: Optional[str] = None
+                    ) -> Dict[str, compute.AZVirtualMachine]:
     """List instances in an Azure subscription / resource group.
 
     Args:
       resource_group_name (str): Optional. The resource group name to list
-          instances from. If none specified, then all instances in the AZ
+          instances from. If none specified, then all instances in the Azure
           subscription will be listed.
 
     Returns:

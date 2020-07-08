@@ -245,7 +245,7 @@ class AZSnapshot(AZComputeResource):
                resource_id: str,
                name: str,
                region: str,
-               disk: AZDisk) -> None:
+               source_disk: AZDisk) -> None:
     """Initialize the AZDisk class.
 
     Args:
@@ -253,14 +253,14 @@ class AZSnapshot(AZComputeResource):
       resource_id (str): The Azure ID of the snapshot.
       name (str): The snapshot name.
       region (str): The region in which the snapshot is located.
-      disk (AZDisk): The disk from which the snapshot was taken.
+      source_disk (AZDisk): The disk from which the snapshot was taken.
     """
     super(AZSnapshot, self).__init__(az_account,
                                      resource_id,
                                      name,
                                      region)
 
-    self.disk = disk
+    self.disk = source_disk
 
   def Delete(self) -> None:
     """Delete a snapshot."""
