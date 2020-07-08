@@ -14,7 +14,7 @@
 # limitations under the License.
 
 # Make sure that your AWS/GCP  credentials are configured correclty
-"""CLI tools for libcloudforensics"""
+"""CLI tools for libcloudforensics."""
 
 import argparse
 import sys
@@ -39,7 +39,10 @@ PROVIDER_TO_FUNC = {
         'listlogs': gcp_cli.ListLogs,
         'listservices': gcp_cli.ListServices,
         'querylogs': gcp_cli.QueryLogs,
-        'startvm': gcp_cli.StartAnalysisVm
+        'startvm': gcp_cli.StartAnalysisVm,
+        'bucketacls': gcp_cli.GetBucketACLs,
+        'objectmetadata': gcp_cli.GetGCSObjectMetadata,
+        'listobjects': gcp_cli.ListBucketObjects
     }
 }
 
@@ -192,6 +195,20 @@ def Main() -> None:
                    'Name of the disk to create. If None, name '
                    'will be printed at the end.',
                    None)])
+  AddParser('gcp', gcp_subparsers, 'bucketacls', 'List ACLs of a GCS bucket.',
+            args=[
+                ('path', 'Path to bucket.', None),
+            ])
+  AddParser('gcp', gcp_subparsers, 'objectmetadata', 'List the details of an '
+                                                     'object in a GCS bucket.',
+            args=[
+                ('path', 'Path to object.', None)
+            ])
+  AddParser('gcp', gcp_subparsers, 'listobjects', 'List the objects in a '
+                                                  'GCS bucket.',
+            args=[
+                ('path', 'Path to bucket.', None),
+            ])
 
   if len(sys.argv) == 1:
     parser.print_help()
