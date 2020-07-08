@@ -426,10 +426,9 @@ class AWSAccount:
       volume_name = self._GenerateVolumeName(
           snapshot, volume_name_prefix=volume_name_prefix)
 
-    if not common.REGEX_TAG_VALUE.match(volume_name):
+    if len(volume_name) > 255:
       raise ValueError(
-          'Volume name {0:s} does not comply with '
-          '{1:s}'.format(volume_name, common.REGEX_TAG_VALUE.pattern))
+          'Volume name {0:s} is too long (>255 chars)'.format(volume_name))
 
     if not tags:
       tags = {}
