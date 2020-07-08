@@ -513,7 +513,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
 
     Args:
       gcs_uri (str): Path to the compressed image archive
-          (image.tar.gz) in Cloud Storage. It must be gzip compressed
+          (image.tar.gz) in Cloud Storage. It must be a gzip compressed
           tar archive with the extension .tar.gz.
           ex: 'https://storage.cloud.google.com/foo/bar.tar.gz'
           'gs://foo/bar.tar.gz'
@@ -525,7 +525,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       GoogleComputeImage: A Google Compute Image object.
 
     Raises:
-      ValueError: If the GCE Image name is invalid. If the extension of
+      ValueError: If the GCE Image name is invalid, or if the extension of
           the archived image is not valid.
     """
 
@@ -543,11 +543,11 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     if ext != 'tar.gz':
       raise ValueError(
           'Image imported from {0:s} must be a GZIP compressed TAR '
-          'archive with the extension: .tar.gz'.format(
-              gcs_uri))
+          'archive with the extension: .tar.gz'.format(gcs_uri))
     gcs_uri = os.path.relpath(gcs_uri, 'gs://')
-    if not gcs_uri.startswith('https://storage.cloud.google.com'):
-      gcs_uri = os.path.join('https://storage.cloud.google.com', gcs_uri)
+    storage_link_url = 'https://storage.cloud.google.com'
+    if not gcs_uri.startswith(storage_link_url):
+      gcs_uri = os.path.join(storage_link_url, gcs_uri)
     image_body = {
         'name': name,
         "rawDisk": {
