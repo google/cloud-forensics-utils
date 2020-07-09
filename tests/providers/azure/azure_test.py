@@ -183,7 +183,7 @@ class TestAccount(unittest.TestCase):
     self.assertEqual('fake-region', disk.region)
     self.assertEqual(['fake-zone'], disk.zones)
 
-  @mock.patch('azure.mgmt.compute.v2019_11_01.operations._disks_operations.DisksOperations.create_or_update')
+  @mock.patch('azure.mgmt.compute.v2020_05_01.operations._disks_operations.DisksOperations.create_or_update')
   @typing.no_type_check
   def testCreateDiskFromSnapshot(self, mock_create_disk):
     """Test that a disk can be created from a snapshot."""
@@ -258,7 +258,7 @@ class TestAZVirtualMachine(unittest.TestCase):
   # pylint: disable=line-too-long
 
   @mock.patch('libcloudforensics.providers.azure.internal.account.AZAccount.ListDisks')
-  @mock.patch('azure.mgmt.compute.v2019_12_01.operations._virtual_machines_operations.VirtualMachinesOperations.get')
+  @mock.patch('azure.mgmt.compute.v2020_06_01.operations._virtual_machines_operations.VirtualMachinesOperations.get')
   @typing.no_type_check
   def testGetBootDisk(self, mock_get_vm, mock_list_disk):
     """Test that the boot disk from an instance is retrieved."""
@@ -283,7 +283,7 @@ class TestAZVirtualMachine(unittest.TestCase):
       FAKE_INSTANCE.GetDisk('non-existent-disk-name')
 
   @mock.patch('libcloudforensics.providers.azure.internal.account.AZAccount.ListDisks')
-  @mock.patch('azure.mgmt.compute.v2019_12_01.operations._virtual_machines_operations.VirtualMachinesOperations.get')
+  @mock.patch('azure.mgmt.compute.v2020_06_01.operations._virtual_machines_operations.VirtualMachinesOperations.get')
   @typing.no_type_check
   def testListDisks(self, mock_get_vm, mock_list_disk):
     """Test that disks from an instance are correctly listed."""
@@ -326,7 +326,7 @@ class TestForensics(unittest.TestCase):
   @mock.patch('libcloudforensics.providers.azure.internal.account.AZAccount.GetDisk')
   @mock.patch('libcloudforensics.providers.azure.internal.compute.AZVirtualMachine.GetBootDisk')
   @mock.patch('libcloudforensics.providers.azure.internal.account.AZAccount.GetInstance')
-  @mock.patch('azure.mgmt.compute.v2019_11_01.operations._disks_operations.DisksOperations.create_or_update')
+  @mock.patch('azure.mgmt.compute.v2020_05_01.operations._disks_operations.DisksOperations.create_or_update')
   @typing.no_type_check
   def testCreateDiskCopy1(self,
                           mock_create_disk,
@@ -362,7 +362,7 @@ class TestForensics(unittest.TestCase):
   @mock.patch('libcloudforensics.providers.azure.internal.account.AZAccount.GetDisk')
   @mock.patch('libcloudforensics.providers.azure.internal.compute.AZVirtualMachine.GetBootDisk')
   @mock.patch('libcloudforensics.providers.azure.internal.account.AZAccount.GetInstance')
-  @mock.patch('azure.mgmt.compute.v2019_11_01.operations._disks_operations.DisksOperations.create_or_update')
+  @mock.patch('azure.mgmt.compute.v2020_05_01.operations._disks_operations.DisksOperations.create_or_update')
   @typing.no_type_check
   def testCreateDiskCopy2(self,
                           mock_create_disk,
