@@ -232,10 +232,8 @@ class AWSAccountTest(unittest.TestCase):
     self.assertEqual('fake-instance-id', found_instance.instance_id)
     self.assertEqual('fake-zone-2', found_instance.region)
     self.assertEqual('fake-zone-2b', found_instance.availability_zone)
-    self.assertRaises(
-        RuntimeError,
-        FAKE_AWS_ACCOUNT.GetInstanceById,
-        'non-existent-instance-id')
+    with self.assertRaises(RuntimeError):
+      FAKE_AWS_ACCOUNT.GetInstanceById('non-existent-instance-id')
 
   @typing.no_type_check
   @mock.patch('libcloudforensics.providers.aws.internal.account.AWSAccount.ListInstances')
@@ -271,12 +269,13 @@ class AWSAccountTest(unittest.TestCase):
     self.assertEqual(
         'fake-instance-with-name-id', found_instances[0].instance_id)
 
-    self.assertRaises(ValueError, FAKE_AWS_ACCOUNT.GetInstancesByNameOrId)
-    self.assertRaises(
-        ValueError,
-        FAKE_AWS_ACCOUNT.GetInstancesByNameOrId,
-        instance_id=FAKE_INSTANCE.instance_id,
-        instance_name=FAKE_INSTANCE_WITH_NAME.name)
+    with self.assertRaises(ValueError):
+      FAKE_AWS_ACCOUNT.GetInstancesByNameOrId()
+
+    with self.assertRaises(ValueError):
+      FAKE_AWS_ACCOUNT.GetInstancesByNameOrId(
+          instance_id=FAKE_INSTANCE.instance_id,
+          instance_name=FAKE_INSTANCE_WITH_NAME.name)
 
   @typing.no_type_check
   @mock.patch('libcloudforensics.providers.aws.internal.account.AWSAccount.ListVolumes')
@@ -322,12 +321,13 @@ class AWSAccountTest(unittest.TestCase):
     self.assertEqual(
         'fake-boot-volume-id', found_volumes[0].volume_id)
 
-    self.assertRaises(ValueError, FAKE_AWS_ACCOUNT.GetVolumesByNameOrId)
-    self.assertRaises(
-        ValueError,
-        FAKE_AWS_ACCOUNT.GetVolumesByNameOrId,
-        volume_id=FAKE_VOLUME.volume_id,
-        volume_name=FAKE_BOOT_VOLUME.name)
+    with self.assertRaises(ValueError):
+      FAKE_AWS_ACCOUNT.GetVolumesByNameOrId()
+
+    with self.assertRaises(ValueError):
+      FAKE_AWS_ACCOUNT.GetVolumesByNameOrId(
+          volume_id=FAKE_VOLUME.volume_id,
+          volume_name=FAKE_BOOT_VOLUME.name)
 
   @typing.no_type_check
   @mock.patch('libcloudforensics.providers.aws.internal.account.AWSAccount.ClientApi')
@@ -545,8 +545,10 @@ class AWSCommon(unittest.TestCase):
     """Test that the instance type matches the requested amount of CPU cores."""
     self.assertEqual('m4.large', common.GetInstanceTypeByCPU(2))
     self.assertEqual('m4.16xlarge', common.GetInstanceTypeByCPU(64))
-    self.assertRaises(ValueError, common.GetInstanceTypeByCPU, 0)
-    self.assertRaises(ValueError, common.GetInstanceTypeByCPU, 256)
+    with self.assertRaises(ValueError):
+      common.GetInstanceTypeByCPU(0)
+    with self.assertRaises(ValueError):
+      common.GetInstanceTypeByCPU(256)
 
 
 class AWSTest(unittest.TestCase):
@@ -617,24 +619,24 @@ class AWSTest(unittest.TestCase):
     """Test that a volume is correctly cloned."""
     # Should raise a ValueError exception  as no volume_id or instance_id is
     # specified.
-    self.assertRaises(
-        ValueError, forensics.CreateVolumeCopy, FAKE_INSTANCE.availability_zone)
+    with self.assertRaises(ValueError):
+      forensics.CreateVolumeCopy(FAKE_INSTANCE.availability_zone)
 
     # Should raise a RuntimeError in GetInstanceById as we are querying a
     # non-existent instance.
     mock_list_instances.return_value = {}
-    self.assertRaises(RuntimeError,
-                      forensics.CreateVolumeCopy,
-                      FAKE_INSTANCE.availability_zone,
-                      instance_id='non-existent-instance-id')
+    with self.assertRaises(RuntimeError):
+      forensics.CreateVolumeCopy(
+          FAKE_INSTANCE.availability_zone,
+          instance_id='non-existent-instance-id')
 
     # Should raise a RuntimeError in GetVolumeById as we are querying a
     # non-existent volume.
     mock_list_volumes.return_value = {}
-    self.assertRaises(RuntimeError,
-                      forensics.CreateVolumeCopy,
-                      FAKE_INSTANCE.availability_zone,
-                      volume_id='non-existent-volume-id')
+    with self.assertRaises(RuntimeError):
+      forensics.CreateVolumeCopy(
+          FAKE_INSTANCE.availability_zone,
+          volume_id='non-existent-volume-id')
 
 
 if __name__ == '__main__':
