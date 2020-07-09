@@ -505,6 +505,60 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     self.BlockOperation(response)
     return GoogleComputeImage(self.project_id, '', name)
 
+  def CreateImageFromGcsTarGz(
+      self,
+      gcs_uri: str,
+      name: Optional[str] = None) -> 'GoogleComputeImage':
+    """Creates a GCE image from a Gzip compressed Tar archive in GCS.
+
+    Args:
+      gcs_uri (str): Path to the compressed image archive
+          (image.tar.gz) in Cloud Storage. It must be a gzip compressed
+          tar archive with the extension .tar.gz.
+          ex: 'https://storage.cloud.google.com/foo/bar.tar.gz'
+          'gs://foo/bar.tar.gz'
+          'foo/bar.tar.gz'
+      name (str): Optional. Name of the image to create. Default
+          is [src_disk.name]-[TIMESTAMP('%Y%m%d%H%M%S')].
+
+    Returns:
+      GoogleComputeImage: A Google Compute Image object.
+
+    Raises:
+      ValueError: If the GCE Image name is invalid, or if the extension of
+          the archived image is not valid.
+    """
+
+    if name:
+      if not common.REGEX_DISK_NAME.match(name):
+        raise ValueError(
+            'Image name {0:s} does not comply with {1:s}'.format(
+                name, common.REGEX_DISK_NAME.pattern))
+      name = name[:common.COMPUTE_NAME_LIMIT]
+    else:
+      name = common.GenerateUniqueInstanceName('imported-image',
+                                               common.COMPUTE_NAME_LIMIT)
+
+    if not gcs_uri.lower().endswith('.tar.gz'):
+      raise ValueError(
+          'Image imported from {0:s} must be a GZIP compressed TAR '
+          'archive with the extension: .tar.gz'.format(gcs_uri))
+    gcs_uri = os.path.relpath(gcs_uri, 'gs://')
+    if not gcs_uri.startswith(common.STORAGE_LINK_URL):
+      gcs_uri = os.path.join(common.STORAGE_LINK_URL, gcs_uri)
+    image_body = {
+        'name': name,
+        "rawDisk": {
+            'source': gcs_uri
+        }
+    }
+    gce_image_client = self.GceApi().images()
+    request = gce_image_client.insert(
+        project=self.project_id, body=image_body, forceCreate=True)
+    response = request.execute()
+    self.BlockOperation(response)
+    return GoogleComputeImage(self.project_id, '', name)
+
   def CreateDiskFromImage(self,
                           src_image: 'GoogleComputeImage',
                           zone: str,

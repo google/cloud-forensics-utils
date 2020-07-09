@@ -42,6 +42,8 @@ FAKE_ANALYSIS_PROJECT = gcp_project.GoogleCloudProject(
     'fake-target-project', 'fake-zone')
 FAKE_ANALYSIS_VM = compute.GoogleComputeInstance(
     FAKE_ANALYSIS_PROJECT.project_id, 'fake-zone', 'fake-analysis-vm')
+FAKE_IMAGE = compute.GoogleComputeImage(
+    FAKE_ANALYSIS_PROJECT.project_id, '', 'fake-image')
 
 # Source project with the instance that needs forensicating
 FAKE_SOURCE_PROJECT = gcp_project.GoogleCloudProject(
@@ -552,7 +554,7 @@ class GoogleCloudProjectTest(unittest.TestCase):
   @typing.no_type_check
   @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleCloudCompute.ListDiskByLabels')
   @mock.patch('libcloudforensics.providers.gcp.internal.common.GoogleCloudComputeClient.GceApi')
-  def testListDisksByLabels(self, mock_gce_api, mock_labels):
+  def testListDiskByLabels(self, mock_gce_api, mock_labels):
     """Test that disks are correctly listed when searching with a filter."""
     mock_gce_api.return_value.disks.return_value = None
     mock_labels.return_value = MOCK_GCE_OPERATION_DISKS_LABELS_SUCCESS
@@ -579,6 +581,29 @@ class GoogleCloudProjectTest(unittest.TestCase):
     else:
       disk_names = []
     self.assertEqual(0, len(disk_names))
+
+  @typing.no_type_check
+  @mock.patch('libcloudforensics.providers.gcp.internal.common.GoogleCloudComputeClient.BlockOperation')
+  @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleComputeImage')
+  @mock.patch('libcloudforensics.providers.gcp.internal.common.GoogleCloudComputeClient.GceApi')
+  def testCreateImageFromGcsTarGz(self, mock_gce_api, mock_gce_image, mock_block_operation):
+    """Test that images are correctly imported from compressed tar archives in GCS."""
+    mock_block_operation.return_value = None
+    mock_gce_image.return_value = FAKE_IMAGE
+    image_insert = mock_gce_api.return_value.images.return_value.insert
+    image_insert.return_value.execute.return_value = {'name': 'fake-image'}
+    image_object = FAKE_ANALYSIS_PROJECT.compute.CreateImageFromGcsTarGz(
+        'gs://fake-bucket/fake-folder/image.tar.gz', 'fake-image')
+    self.assertIn('fake-image', image_object.name)
+    fake_image_body = {
+        'name': 'fake-image',
+        "rawDisk": {
+            'source': 'https://storage.cloud.google.com/fake-bucket/fake-folder/image.tar.gz'
+        }
+    }
+    image_insert.assert_called_with(project=FAKE_ANALYSIS_PROJECT.project_id,
+                                    body=fake_image_body,
+                                    forceCreate=True)
 
   @typing.no_type_check
   def testReadStartupScript(self):
