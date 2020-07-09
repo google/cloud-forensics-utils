@@ -4,3 +4,10 @@ google-api-python-client
 google-auth
 boto3
 botocore
+azure-common
+azure-core
+azure-identity
+azure-mgmt-compute
+azure-mgmt-resource
+msrest
+msrestazure
