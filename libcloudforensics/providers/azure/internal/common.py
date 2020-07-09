@@ -20,6 +20,8 @@ import os
 import re
 
 from typing import Any, List, Dict, Optional, TYPE_CHECKING
+# Pylint complains about the import but the library imports just fine,
+# so we can ignore the warning.
 from azure.common.credentials import ServicePrincipalCredentials  # pylint: disable=import-error
 
 if TYPE_CHECKING:

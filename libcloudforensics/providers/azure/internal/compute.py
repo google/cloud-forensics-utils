@@ -17,6 +17,8 @@
 from time import sleep
 from typing import Optional, List, Dict, TYPE_CHECKING
 
+# Pylint complains about the import but the library imports just fine,
+# so we can ignore the warning.
 # pylint: disable=import-error
 from azure.mgmt.compute.v2016_04_30_preview.models import DiskCreateOption
 from msrestazure.azure_exceptions import CloudError
