@@ -164,7 +164,7 @@ def StartAnalysisVm(
     vm_name: str,
     default_availability_zone: str,
     boot_volume_size: int,
-    ami: str = '',
+    ami: Optional[str] = None,
     cpu_cores: int = 4,
     attach_volumes: Optional[List[Tuple[str, str]]] = None,
     dst_profile: Optional[str] = None,
@@ -226,6 +226,7 @@ def StartAnalysisVm(
       raise RuntimeError('error - ListImages returns >1 AMI image: [{0:s}]'
                          .format(', '.join(image_names)))
     ami = ami_list[0]['ImageId']
+  assert ami  # Mypy: assert that ami is not None
 
   analysis_vm, created = aws_account.GetOrCreateAnalysisVm(
       vm_name,

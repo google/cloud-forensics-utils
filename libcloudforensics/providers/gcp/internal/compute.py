@@ -185,7 +185,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       self,
       snapshot: 'GoogleComputeSnapshot',
       disk_name: Optional[str] = None,
-      disk_name_prefix: str = '',
+      disk_name_prefix: Optional[str] = None,
       disk_type: str = 'pd-standard') -> 'GoogleComputeDisk':
     """Create a new disk based on a Snapshot.
 

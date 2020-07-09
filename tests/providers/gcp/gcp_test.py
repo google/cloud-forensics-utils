@@ -405,9 +405,8 @@ class GoogleCloudProjectTest(unittest.TestCase):
     # pylint: disable=protected-access
     self.assertEqual(FAKE_INSTANCE._data, found_instance._data)
     # pylint: enable=protected-access
-    self.assertRaises(RuntimeError,
-                      FAKE_SOURCE_PROJECT.compute.GetInstance,
-                      'non-existent-instance')
+    with self.assertRaises(RuntimeError):
+      FAKE_SOURCE_PROJECT.compute.GetInstance('non-existent-instance')
 
   @typing.no_type_check
   @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleCloudCompute.ListDisks')
@@ -419,8 +418,8 @@ class GoogleCloudProjectTest(unittest.TestCase):
     self.assertEqual(FAKE_SOURCE_PROJECT.project_id, found_disk.project_id)
     self.assertEqual('fake-disk', found_disk.name)
     self.assertEqual('fake-zone', found_disk.zone)
-    self.assertRaises(
-        RuntimeError, FAKE_SOURCE_PROJECT.compute.GetDisk, 'non-existent-disk')
+    with self.assertRaises(RuntimeError):
+      FAKE_SOURCE_PROJECT.compute.GetDisk('non-existent-disk')
 
   @typing.no_type_check
   @mock.patch('libcloudforensics.providers.gcp.internal.common.GoogleCloudComputeClient.BlockOperation')
@@ -624,7 +623,8 @@ class GoogleCloudProjectTest(unittest.TestCase):
 
     # Bogus environment variable, should raise an exception
     os.environ['STARTUP_SCRIPT'] = '/bogus/path'
-    self.assertRaises(OSError, utils.ReadStartupScript)
+    with self.assertRaises(OSError):
+      utils.ReadStartupScript()
     os.environ['STARTUP_SCRIPT'] = ''
     # pylint: enable=protected-access
 
@@ -680,7 +680,8 @@ class GoogleComputeInstanceTest(unittest.TestCase):
     self.assertEqual('fake-boot-disk', disk.name)
 
     # Disk that's not attached to the instance
-    self.assertRaises(RuntimeError, FAKE_INSTANCE.GetDisk, 'non-existent-disk')
+    with self.assertRaises(RuntimeError):
+      FAKE_INSTANCE.GetDisk('non-existent-disk')
 
   @typing.no_type_check
   @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleCloudCompute.ListDisks')
@@ -720,7 +721,8 @@ class GoogleComputeDiskTest(unittest.TestCase):
     self.assertTrue(snapshot.name.startswith('my-snapshot'))
 
     # Snapshot(snapshot_name='Non-compliant-name'). Should raise a ValueError
-    self.assertRaises(ValueError, FAKE_DISK.Snapshot, 'Non-compliant-name')
+    with self.assertRaises(ValueError):
+      FAKE_DISK.Snapshot('Non-compliant-name')
 
 
 class GoogleCloudLogTest(unittest.TestCase):
@@ -912,12 +914,11 @@ class GCPTest(unittest.TestCase):
     #     zone='fake-zone',
     #     instance_name=None,
     #     disk_name='non-existent-disk') Should raise an exception
-    self.assertRaises(RuntimeError,
-                      forensics.CreateDiskCopy,
-                      FAKE_SOURCE_PROJECT.project_id,
-                      FAKE_ANALYSIS_PROJECT.project_id,
-                      zone=FAKE_INSTANCE.zone,
-                      disk_name='non-existent-disk')
+    with self.assertRaises(RuntimeError):
+      forensics.CreateDiskCopy(FAKE_SOURCE_PROJECT.project_id,
+                               FAKE_ANALYSIS_PROJECT.project_id,
+                               zone=FAKE_INSTANCE.zone,
+                               disk_name='non-existent-disk')
 
     # create_disk_copy(
     #     src_proj,
@@ -925,12 +926,11 @@ class GCPTest(unittest.TestCase):
     #     instance_name='non-existent-instance',
     #     zone='fake-zone',
     #     disk_name=None) Should raise an exception
-    self.assertRaises(RuntimeError,
-                      forensics.CreateDiskCopy,
-                      FAKE_SOURCE_PROJECT.project_id,
-                      FAKE_ANALYSIS_PROJECT.project_id,
-                      instance_name='non-existent-instance',
-                      zone=FAKE_INSTANCE.zone, disk_name='')
+    with self.assertRaises(RuntimeError):
+      forensics.CreateDiskCopy(FAKE_SOURCE_PROJECT.project_id,
+                               FAKE_ANALYSIS_PROJECT.project_id,
+                               instance_name='non-existent-instance',
+                               zone=FAKE_INSTANCE.zone, disk_name='')
 
   @typing.no_type_check
   def testGenerateDiskName(self):
@@ -988,9 +988,9 @@ class GCPTest(unittest.TestCase):
     self.assertTrue(REGEX_DISK_NAME.match(disk_name))
 
     # Disk prefix cannot start with a capital letter
-    self.assertRaises(
-        ValueError, common.GenerateDiskName, FAKE_SNAPSHOT,
-        'Some-prefix-that-starts-with-a-capital-letter')
+    with self.assertRaises(ValueError):
+      common.GenerateDiskName(
+          FAKE_SNAPSHOT, 'Some-prefix-that-starts-with-a-capital-letter')
 
 
 class GoogleCloudMonitoringTest(unittest.TestCase):
