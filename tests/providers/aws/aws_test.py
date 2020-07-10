@@ -568,14 +568,14 @@ class AWSTest(unittest.TestCase):
                             mock_account,
                             mock_get_volume,
                             mock_snapshot,
-                            mock_session):
+                            mock_loader):
     """Test that a volume is correctly cloned."""
     FAKE_SNAPSHOT.name = FAKE_VOLUME.volume_id
     mock_ec2_api.return_value.create_volume.return_value = MOCK_CREATE_VOLUME
     mock_account.return_value = 'fake-account-id'
     mock_get_volume.return_value = FAKE_VOLUME
     mock_snapshot.return_value = FAKE_SNAPSHOT
-    mock_session.return_value = None
+    mock_loader.return_value = None
 
     # CreateVolumeCopy(zone, volume_id='fake-volume-id'). This should grab
     # the volume 'fake-volume-id'.
@@ -600,7 +600,7 @@ class AWSTest(unittest.TestCase):
                             mock_get_instance,
                             mock_get_volume,
                             mock_snapshot,
-                            mock_session):
+                            mock_loader):
     """Test that a volume is correctly cloned."""
     FAKE_SNAPSHOT.name = FAKE_BOOT_VOLUME.volume_id
     mock_ec2_api.return_value.create_volume.return_value = MOCK_CREATE_VOLUME
@@ -608,7 +608,7 @@ class AWSTest(unittest.TestCase):
     mock_get_instance.return_value = FAKE_INSTANCE
     mock_get_volume.return_value = FAKE_BOOT_VOLUME
     mock_snapshot.return_value = FAKE_SNAPSHOT
-    mock_session.return_value = None
+    mock_loader.return_value = None
 
     # CreateVolumeCopy(zone, instance='fake-instance-id'). This should grab
     # the boot volume of the instance.
@@ -627,9 +627,9 @@ class AWSTest(unittest.TestCase):
   def testCreateVolumeCopy3(self,
                             mock_list_instances,
                             mock_list_volumes,
-                            mock_session):
+                            mock_loader):
     """Test that a volume is correctly cloned."""
-    mock_session.return_value = None
+    mock_loader.return_value = None
     # Should raise a ValueError exception  as no volume_id or instance_id is
     # specified.
     with self.assertRaises(ValueError):
