@@ -57,7 +57,7 @@ class AWSAccount:
       aws_access_key_id (str): Optional. If provided together with
           aws_secret_access_key and aws_session_token, authenticate to AWS
           using these parameters instead of the credential file.
-      aws_secret_access_key (str): Optional.  If provided together with
+      aws_secret_access_key (str): Optional. If provided together with
           aws_access_key_id and aws_session_token, authenticate to AWS
           using these parameters instead of the credential file.
       aws_session_token (str): Optional.   If provided together with
