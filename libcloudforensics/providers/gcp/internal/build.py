@@ -73,7 +73,7 @@ class GoogleCloudBuild:
         projectId=self.project_id,
         body=build_body).execute()  # type: Dict[str, Any]
     build_metadata = build_info['metadata']['build']
-    common.LOGGER.info(
+    common.logger.info(
         'Build started, logs bucket: {0:s}, logs URL: {1:s}'.format(
             build_metadata['logsBucket'], build_metadata['logUrl']))
     return build_info
