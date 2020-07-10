@@ -22,7 +22,7 @@ from libcloudforensics.providers.aws.internal import account, common, ebs, ec2
 from libcloudforensics.providers.aws.internal import log as aws_log
 from libcloudforensics.providers.aws import forensics
 
-with mock.patch('boto3.session.Session.__init__') as mock_session:
+with mock.patch('boto3.session.Session._setup_loader') as mock_session:
   mock_session.return_value = None
   FAKE_AWS_ACCOUNT = account.AWSAccount(
       default_availability_zone='fake-zone-2b')
