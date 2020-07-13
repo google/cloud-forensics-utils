@@ -43,7 +43,7 @@ aws_access_key_id = zzz
 aws_secret_access_key = zzz
 ```
 
-### Using the library and the CLI
+#### Using the library and the CLI
 
 To make the copy, import the `forensics` package and use the `CreateVolumeCopy` method.
 
