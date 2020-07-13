@@ -20,7 +20,7 @@ import argparse
 import sys
 
 from typing import Tuple, List, Optional
-from examples import aws_cli, gcp_cli
+from examples import aws_cli, az_cli, gcp_cli
 
 PROVIDER_TO_FUNC = {
     'aws': {
@@ -30,6 +30,11 @@ PROVIDER_TO_FUNC = {
         'listdisks': aws_cli.ListVolumes,
         'querylogs': aws_cli.QueryLogs,
         'startvm': aws_cli.StartAnalysisVm
+    },
+    'az': {
+        'copydisk': az_cli.CreateDiskCopy,
+        'listinstances': az_cli.ListInstances,
+        'listdisks': az_cli.ListDisks
     },
     'gcp': {
         'copydisk': gcp_cli.CreateDiskCopy,
@@ -95,6 +100,7 @@ def Main() -> None:
   subparsers = parser.add_subparsers()
 
   aws_parser = subparsers.add_parser('aws', help='Tools for AWS')
+  az_parser = subparsers.add_parser('az', help='Tools for Azure')
   gcp_parser = subparsers.add_parser('gcp', help='Tools for GCP')
 
   # AWS parser options
@@ -150,6 +156,34 @@ def Main() -> None:
   AddParser('aws', aws_subparsers, 'listimages', 'List AMI images.',
             args=[
                 ('--filter', 'Filter to apply to Name of AMI image.', None),
+            ])
+
+  # Azure parser options
+  az_parser.add_argument('subscription_id', help='The Azure subscription ID.')
+  az_subparsers = az_parser.add_subparsers()
+  AddParser('az', az_subparsers, 'listinstances',
+            'List instances in Azure subscription.',
+            args=[
+                ('--resource_group_name', 'The resource group name from '
+                                          'which to list instances.', None)
+            ])
+  AddParser('az', az_subparsers, 'listdisks',
+            'List disks in Azure subscription.',
+            args=[
+                ('--resource_group_name', 'The resource group name from '
+                                          'which to list disks.', None)
+            ])
+  AddParser('az', az_subparsers, 'copydisk', 'Create an Azure disk copy.',
+            args=[
+                ('--instance_name', 'The instance name.', None),
+                ('--disk_name', 'The name of the disk to copy. If none '
+                                'specified, then --instance_name must be '
+                                'specified and the boot disk of the Azure '
+                                'instance will be copied.', None),
+                ('--disk_type', 'The SKU name for the disk to create. '
+                                'Can be Standard_LRS, Premium_LRS, '
+                                'StandardSSD_LRS, or UltraSSD_LRS.',
+                 None)
             ])
 
   # GCP parser options
