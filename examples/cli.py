@@ -176,7 +176,7 @@ def Main() -> None:
   AddParser('az', az_subparsers, 'copydisk', 'Create an Azure disk copy.',
             args=[
                 ('--instance_name', 'The instance name.', None),
-                ('--disk_name', 'The disk name of the disk to copy. If none '
+                ('--disk_name', 'The name of the disk to copy. If none '
                                 'specified, then --instance_name must be '
                                 'specified and the boot disk of the Azure '
                                 'instance will be copied.', None),
