@@ -34,6 +34,7 @@ from libcloudforensics.providers.gcp.internal import project as gcp_project
 from libcloudforensics.providers.gcp.internal import log as gcp_log
 from libcloudforensics.providers.gcp.internal import monitoring as gcp_monitoring
 from libcloudforensics.providers.gcp.internal import storage as gcp_storage
+from libcloudforensics.providers.gcp.internal import gke
 from libcloudforensics.scripts import utils
 # pylint: enable=line-too-long
 
@@ -822,6 +823,26 @@ class GoogleCloudBuildeTest(unittest.TestCase):
     build_operation_object.return_value.execute.return_value = MOCK_GCB_BUILDS_FAIL
     with self.assertRaises(RuntimeError):
       FAKE_GCB.BlockOperation(MOCK_GCB_BUILDS_CREATE)
+
+
+class GoogleKubernetesEngineTest(unittest.TestCase):
+  """Test Google Kubernetes Engine class."""
+  # pylint: disable=line-too-long
+
+  FAKE_GKE = gke.GoogleKubernetesEngine('fake-target-project')
+  MOCK_GKE_CLUSTER_OBJECT = {
+      "name": "test-cluster",
+      "location": "fake-region"
+  }
+
+  @typing.no_type_check
+  @mock.patch('libcloudforensics.providers.gcp.internal.gke.GoogleKubernetesEngine.GkeApi')
+  def testGetCluster(self, mock_gke_api):
+    """Test GKE cluster Get operation."""
+    api_cluster_object = mock_gke_api.return_value.projects.return_value.locations.return_value.clusters.return_value
+    api_cluster_object.get.return_value.execute.return_value = GoogleKubernetesEngineTest.MOCK_GKE_CLUSTER_OBJECT
+    get_results = GoogleKubernetesEngineTest.FAKE_GKE.GetCluster('projects/fake-project/locations/fake-region/clusters/fake-cluster')
+    self.assertEqual(GoogleKubernetesEngineTest.MOCK_GKE_CLUSTER_OBJECT, get_results)
 
 
 class GCPTest(unittest.TestCase):
