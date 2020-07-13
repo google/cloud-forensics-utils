@@ -43,7 +43,10 @@ class AWSAccount:
 
   def __init__(self,
                default_availability_zone: str,
-               aws_profile: Optional[str] = None) -> None:
+               aws_profile: Optional[str] = None,
+               aws_access_key_id: Optional[str] = None,
+               aws_secret_access_key: Optional[str] = None,
+               aws_session_token: Optional[str] = None) -> None:
     """Initialize the AWS account.
 
     Args:
@@ -51,6 +54,15 @@ class AWSAccount:
           new resources in.
       aws_profile (str): Optional. The AWS profile defined in the AWS
           credentials file to use.
+      aws_access_key_id (str): Optional. If provided together with
+          aws_secret_access_key and aws_session_token, authenticate to AWS
+          using these parameters instead of the credential file.
+      aws_secret_access_key (str): Optional. If provided together with
+          aws_access_key_id and aws_session_token, authenticate to AWS
+          using these parameters instead of the credential file.
+      aws_session_token (str): Optional. If provided together with
+          aws_access_key_id and aws_secret_access_key, authenticate to AWS
+          using these parameters instead of the credential file.
     """
 
     self.aws_profile = aws_profile or 'default'
@@ -58,6 +70,14 @@ class AWSAccount:
     # The region is given by the zone minus the last letter
     # https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#using-regions-availability-zones-describe # pylint: disable=line-too-long
     self.default_region = self.default_availability_zone[:-1]
+
+    if aws_access_key_id and aws_secret_access_key and aws_session_token:
+      self.session = boto3.session.Session(
+          aws_access_key_id=aws_access_key_id,
+          aws_secret_access_key=aws_secret_access_key,
+          aws_session_token=aws_session_token)
+    else:
+      self.session = boto3.session.Session(profile_name=self.aws_profile)
 
   def ClientApi(self,
                 service: str,
@@ -74,9 +94,8 @@ class AWSAccount:
     """
 
     if region:
-      return boto3.session.Session(profile_name=self.aws_profile).client(
-          service_name=service, region_name=region)
-    return boto3.session.Session(profile_name=self.aws_profile).client(
+      return self.session.client(service_name=service, region_name=region)
+    return self.session.client(
         service_name=service, region_name=self.default_region)
 
   def ResourceApi(self,
@@ -99,9 +118,8 @@ class AWSAccount:
     """
 
     if region:
-      return boto3.session.Session(profile_name=self.aws_profile).resource(
-          service_name=service, region_name=region)
-    return boto3.session.Session(profile_name=self.aws_profile).resource(
+      return self.session.resource(service_name=service, region_name=region)
+    return self.session.resource(
         service_name=service, region_name=self.default_region)
 
   def ListInstances(
