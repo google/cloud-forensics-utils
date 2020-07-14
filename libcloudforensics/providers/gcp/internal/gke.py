@@ -26,8 +26,9 @@ class GoogleKubernetesEngine:
   https://cloud.google.com/kubernetes-engine/docs/reference/rest
 
   Attributes:
-    gke_api_client: Client to interact with GKE APIs.
-    project_id: Google Cloud project ID.
+    gke_api_client (googleapiclient.discovery.Resource): Client to interact
+        with GKE APIs.
+    project_id (str): Google Cloud project ID.
   """
   GKE_API_VERSION = 'v1'
 
@@ -60,7 +61,7 @@ class GoogleKubernetesEngine:
     """ Gets the details of a specific cluster.
 
     Args:
-      name (string): The name (project, location, cluster) of the cluster to retrieve.
+      name (str): The name (project, location, cluster) of the cluster to retrieve.
           Specified in the format `projects/*/locations/*/clusters/*`.
           For regional cluster: `/locations/[GCP_REGION]`.
           For zonal cluster: `/locations/[GCP_ZONE]`.
