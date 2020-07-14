@@ -17,10 +17,7 @@ TODO
 
 ## AWS
 
-### Disk snapshot
-
-Use case: you have a volume `vol1` in an AWS account (Account A, in zone `us-east-2b`) which you would like to make a copy 
-of in a different account (Account B).
+### Prerequisites
 
 Your AWS credentials configuration (`~/.aws/credentials`) should look like this:
 
@@ -42,6 +39,11 @@ aws_secret_access_key = yyy
 aws_access_key_id = zzz
 aws_secret_access_key = zzz
 ```
+
+### Disk snapshot
+
+Use case: you have a volume `vol1` in an AWS account (Account A, in zone `us-east-2b`) which you would like to make a copy 
+of in a different account (Account B).
 
 #### Using the library and the CLI
 
@@ -118,7 +120,7 @@ Both the CMK key and the snapshot copy need to then be shared with the destinati
 To reduce key management hassle, libcloudforensics allows you to transfer encrypted EBS resources between accounts by 
 generating a one-time use CMK key. This key is deleted once the process completes. The process is depicted below:
 
-![ebs-encryption](https://lh4.googleusercontent.com/U_DxaWaZqx00gSG8kfhlwB6dkGGcPi5_Cd_qgZR9VMdW0rWmrHD-VDeChMKNBfJJ86qBJC9duaZzHbmBxWU1WpsNkNYmp3UQvmU2R9EuDmn0vJJqy0rZVTjZVBePIXvb8QlJmBgq)
+![ebs-encryption](https://github.com/google/cloud-forensics-utils/tree/master/docs/source/images/cfu.png)
 
 All of the code snippets and command lines given in the [previous section](#using-the-library-and-the-cli) can be 
 applied as-is, regardless of the target volume using EBS encryption or not.
