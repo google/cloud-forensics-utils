@@ -340,7 +340,11 @@ class TestForensics(unittest.TestCase):
                           mock_snapshot,
                           mock_snapshot_delete,
                           mock_credentials):
-    """Test that a disk copy is correctly created."""
+    """Test that a disk copy is correctly created.
+
+    CreateDiskCopy(zone, instance_name='fake-vm-name'). This should grab
+    the boot disk of the instance.
+    """
     mock_create_disk.return_value.done.return_value = True
     mock_create_disk.return_value.result.return_value = MOCK_DISK_COPY
     mock_get_instance.return_value = FAKE_INSTANCE
@@ -349,8 +353,6 @@ class TestForensics(unittest.TestCase):
     mock_snapshot_delete.return_value = None
     mock_credentials.return_value = mock.Mock()
 
-    # CreateDiskCopy(zone, instance_name='fake-vm-name'). This should grab
-    # the boot disk of the instance.
     disk_copy = forensics.CreateDiskCopy(
         FAKE_ACCOUNT.subscription_id, instance_name=FAKE_INSTANCE.name)
     mock_get_instance.assert_called_once()
@@ -376,7 +378,10 @@ class TestForensics(unittest.TestCase):
                           mock_snapshot,
                           mock_snapshot_delete,
                           mock_credentials):
-    """Test that a disk copy is correctly created."""
+    """Test that a disk copy is correctly created.
+
+    CreateDiskCopy(zone, disk_name='fake-disk-name'). This should grab
+    the disk 'fake-disk-name'."""
     mock_create_disk.return_value.done.return_value = True
     mock_create_disk.return_value.result.return_value = MOCK_DISK_COPY
     mock_get_instance.return_value = FAKE_INSTANCE
@@ -385,8 +390,6 @@ class TestForensics(unittest.TestCase):
     mock_snapshot_delete.return_value = None
     mock_credentials.return_value = mock.Mock()
 
-    # CreateDiskCopy(zone, disk_name='fake-disk-name'). This should grab
-    # the disk 'fake-disk-name'.
     disk_copy = forensics.CreateDiskCopy(
         FAKE_ACCOUNT.subscription_id, disk_name=FAKE_DISK.name)
     mock_get_instance.assert_not_called()
@@ -404,19 +407,19 @@ class TestForensics(unittest.TestCase):
                           mock_list_instances,
                           mock_list_disk,
                           mock_credentials):
-    """Test that a disk copy is correctly created."""
+    """Test that a disk copy is correctly created.
+
+    The first call should raise a RuntimeError in GetInstance as we are
+    querying a non-existent instance. The second call should raise a
+    RuntimeError in GetDisk as we are querying a non-existent disk."""
     mock_list_instances.return_value = {}
     mock_list_disk.return_value = {}
     mock_credentials.return_value = mock.Mock()
 
-    # Should raise a RuntimeError in GetInstance as we are querying a
-    # non-existent instance.
     with self.assertRaises(RuntimeError):
       forensics.CreateDiskCopy(
           FAKE_ACCOUNT.subscription_id, instance_name='non-existent-vm-name')
 
-    # Should raise a RuntimeError in GetDisk as we are querying a
-    # non-existent disk.
     with self.assertRaises(RuntimeError):
       forensics.CreateDiskCopy(
           FAKE_ACCOUNT.subscription_id, disk_name='non-existent-disk-name')
