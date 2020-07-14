@@ -14,7 +14,7 @@
 # limitations under the License.
 """Google Kubernetes Engine functionalities."""
 
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict
 from libcloudforensics.providers.gcp.internal import common
 
 if TYPE_CHECKING:
@@ -28,19 +28,14 @@ class GoogleKubernetesEngine:
   Attributes:
     gke_api_client (googleapiclient.discovery.Resource): Client to interact
         with GKE APIs.
-    project_id (str): Google Cloud project ID.
   """
   GKE_API_VERSION = 'v1'
 
-  def __init__(self, project_id: Optional[str] = None) -> None:
+  def __init__(self) -> None:
     """Initialize the GoogleCloudStorage object.
-
-    Args:
-      project_id (str): Optional. Google Cloud project ID.
     """
 
     self.gke_api_client = None
-    self.project_id = project_id
 
   def GkeApi(self) -> 'googleapiclient.discovery.Resource':
     """Gets a Google Container service object.

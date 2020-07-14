@@ -100,8 +100,7 @@ class GoogleCloudProject:
 
     if self._gke:
       return self._gke
-    self._gke = gke_module.GoogleKubernetesEngine(
-        self.project_id)
+    self._gke = gke_module.GoogleKubernetesEngine()
     return self._gke
 
   @property
