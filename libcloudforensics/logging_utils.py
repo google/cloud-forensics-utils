@@ -111,7 +111,8 @@ def GetLogger(name: str) -> logging.Logger:
   Returns:
     logging.Logger: A logger.
   """
-  add_handler = name not in logging.Logger.manager.loggerDict
+  # We can ignore the mypy warning below since the manager is created at runtime
+  add_handler = name not in logging.root.manager.loggerDict  # type: ignore
   logger = logging.getLogger(name)
   logger.setLevel(logging.INFO)
   if add_handler:
