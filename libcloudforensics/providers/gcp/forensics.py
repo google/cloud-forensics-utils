@@ -75,12 +75,14 @@ def CreateDiskCopy(
     logger.info('Disk copy of {0:s} started...'.format(
         disk_to_copy.name))
     snapshot = disk_to_copy.Snapshot()
+    logger.debug('Snapshot created: {0:s}'.format(snapshot.name))
     new_disk = dst_project.compute.CreateDiskFromSnapshot(
         snapshot, disk_name_prefix='evidence', disk_type=disk_type)
-    snapshot.Delete()
     logger.info(
         'Disk {0:s} successfully copied to {1:s}'.format(
             disk_to_copy.name, new_disk.name))
+    snapshot.Delete()
+    logger.debug('Snapshot {0:s} deleted.'.format(snapshot.name))
 
   except RefreshError as exception:
     error_msg = ('Something is wrong with your gcloud access token: '

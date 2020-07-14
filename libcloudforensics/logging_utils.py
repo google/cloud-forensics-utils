@@ -111,10 +111,12 @@ def GetLogger(name: str) -> logging.Logger:
   Returns:
     logging.Logger: A logger.
   """
+  add_handler = name not in logging.Logger.manager.loggerDict
   logger = logging.getLogger(name)
   logger.setLevel(logging.INFO)
-  console_handler = logging.StreamHandler(sys.stdout)
-  formatter = Formatter(random_color=True)
-  console_handler.setFormatter(formatter)
-  logger.addHandler(console_handler)
+  if add_handler:
+    console_handler = logging.StreamHandler(sys.stdout)
+    formatter = Formatter(random_color=True)
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
   return logger

@@ -142,7 +142,7 @@ def CreateService(service_name: str,
           cache_discovery=False)
       service_built = True
     except socket.timeout:
-      logger.info(
+      logger.warning(
           'Timeout trying to build service {0:s} (try {1:d} of {2:d})'.format(
               service_name, retry, RETRY_MAX))
 
