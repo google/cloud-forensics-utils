@@ -65,6 +65,8 @@ MOCK_INSTANCE = mock.Mock(
     location='fake-region',
     zones=['fake-zone']
 )
+# Name attributes for Mock objects have to be added in a separate statement,
+# otherwise it becomes itself a mock object.
 MOCK_INSTANCE.name = 'fake-vm-name'
 MOCK_REQUEST_INSTANCES = [[MOCK_INSTANCE]]
 MOCK_LIST_INSTANCES = {
@@ -163,6 +165,7 @@ class TestAccount(unittest.TestCase):
     """Test that a particular instance from an account is retrieved."""
     mock_list_instances.return_value = MOCK_LIST_INSTANCES
     instance = FAKE_ACCOUNT.GetInstance('fake-vm-name')
+    mock_list_instances.assert_called_once()
     self.assertEqual('fake-vm-name', instance.name)
     self.assertEqual(
         '/a/b/c/fake-resource-group/fake-vm-name', instance.resource_id)
@@ -176,6 +179,7 @@ class TestAccount(unittest.TestCase):
     """Test that a particular disk from an account is retrieved."""
     mock_list_disks.return_value = MOCK_LIST_DISKS
     disk = FAKE_ACCOUNT.GetDisk('fake-disk-name')
+    mock_list_disks.assert_called_once()
     self.assertEqual('fake-disk-name', disk.name)
     self.assertEqual(
         '/a/b/c/fake-resource-group/fake-disk-name', disk.resource_id)
