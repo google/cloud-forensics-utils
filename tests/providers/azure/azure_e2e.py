@@ -26,6 +26,7 @@ from tests.scripts import utils
 
 
 class EndToEndTest(unittest.TestCase):
+  # pylint: disable=line-too-long
   """End to end test on Azure.
 
   To run these tests, add your project information to a project_info.json file:
@@ -40,11 +41,10 @@ class EndToEndTest(unittest.TestCase):
   Export a PROJECT_INFO environment variable with the absolute path to your
   file: "user@terminal:~$ export PROJECT_INFO='absolute/path/project_info.json'"
 
-  # pylint: disable=line-too-long
   You will also need to configure your AZ account credentials as per the
   guidelines in https://docs.microsoft.com/en-us/azure/developer/python/azure-sdk-authenticate?tabs=cmd
-  # pylint: enable=line-too-long
   """
+  # pylint: enable=line-too-long
 
   @classmethod
   @typing.no_type_check
@@ -55,7 +55,7 @@ class EndToEndTest(unittest.TestCase):
       raise unittest.SkipTest(str(exception))
     cls.subscription_id = project_info['subscription_id']
     cls.instance_to_analyse = project_info['instance_name']
-    cls.disk_to_copy = project_info.get('disk_name', None)
+    cls.disk_to_copy = project_info.get('disk_name')
     cls.az = account.AZAccount(cls.subscription_id)
     cls.disks = []  # List of AZDisks for test cleanup
 
