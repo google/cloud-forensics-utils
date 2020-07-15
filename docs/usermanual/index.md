@@ -52,7 +52,7 @@ To make the copy, import the `forensics` package and use the `CreateVolumeCopy` 
 ```python
 from libcloudforensics.providers.aws import forensics
 
-# Create a forensic copy of the volume 'vol1' from one account to another 
+# Create a copy of the volume 'vol1' from one account to another 
 
 copy = forensics.CreateVolumeCopy('us-east-2b',
                                   volume_id='vol1', 
@@ -63,7 +63,7 @@ copy = forensics.CreateVolumeCopy('us-east-2b',
 The equivalent CLI command is:
 
 ```bash
-# Create a forensic copy of the volume 'vol1' from one account to another 
+# Create a copy of the volume 'vol1' from one account to another 
 libcloudforensics aws 'us-east-2b' copydisk --volume_id='vol1' --src_profile='src_profile' --dst_profile='dst_profile' 
 ```
 
@@ -73,7 +73,7 @@ You can also pass a dictionary of tags to add to the volume copy.
 ```python
 from libcloudforensics.providers.aws import forensics
 
-# Create a forensic copy of the volume 'vol1' from one account to another, in a different zone
+# Create a copy of the volume 'vol1' from one account to another, in a different zone
 
 copy = forensics.CreateVolumeCopy('us-east-2b',
                                   dst_zone='us-west-2a',
@@ -86,7 +86,7 @@ copy = forensics.CreateVolumeCopy('us-east-2b',
 The equivalent CLI command is:
 
 ```bash
-# Create a forensic copy of the volume 'vol1' from one account to another, in a different zone
+# Create a copy of the volume 'vol1' from one account to another, in a different zone
 libcloudforensics aws 'us-east-2b' copydisk --dst_zone='us-west-2a' --volume_id='vol1' --src_profile='src_profile' --dst_profile='dst_profile' --tags="{'customTag': 'customValue'}" 
 ```
 
@@ -96,7 +96,7 @@ If you do so, then the boot volume of the instance pointed to by `instance_id` w
 ```python
 from libcloudforensics.providers.aws import forensics
 
-# Create a forensic copy of the boot volume of instance 'inst1' in the default account.
+# Create a copy of the boot volume of instance 'inst1' in the default account.
 
 copy = forensics.CreateVolumeCopy('us-east-2b',
                                   instance_id='inst1')
@@ -105,7 +105,7 @@ copy = forensics.CreateVolumeCopy('us-east-2b',
 The equivalent CLI command is:
 
 ```bash
-# Create a forensic copy of the boot volume of instance 'inst1' in the default account
+# Create a copy of the boot volume of instance 'inst1' in the default account
 libcloudforensics aws 'us-east-2b' copydisk --instance_id='inst1'
 ```    
 
@@ -113,32 +113,32 @@ libcloudforensics aws 'us-east-2b' copydisk --instance_id='inst1'
 
 Making copies of encrypted resources is a bit more involved. By default, encrypted Elastic Block Store (EBS) resources 
 use the aws/ebs key that is associated with the AWS account. Snapshots that are encrypted with this key cannot be shared 
-directly. Instead, you must first make a copy of the snapshot, and re-encrypt it with a Customer Managed Key (CMK) key. 
-Both the CMK key and the snapshot copy need to then be shared with the destination account.
+directly. Instead, you must first make a copy of the snapshot, and re-encrypt it with a Customer Managed Key (CMK). 
+Both the CMK and the snapshot copy need to then be shared with the destination account.
 
 
 To reduce key management hassle, libcloudforensics allows you to transfer encrypted EBS resources between accounts by 
-generating a one-time use CMK key. This key is deleted once the process completes. The process is depicted below:
+generating a one-time use CMK. This key is deleted once the process completes. The process is depicted below:
 
 ![ebs-encryption](https://github.com/google/cloud-forensics-utils/tree/master/docs/source/images/ebs.png)
 
 All of the code snippets and command lines given in the [previous section](#using-the-library-and-the-cli) can be 
-applied as-is, regardless of the target volume using EBS encryption or not.
+applied as-is, regardless of whether the target volume uses EBS encryption or not.
 
 ### Analysis VMs
 
 Use case: you have a volume `vol1` in an AWS account (Account A, in zone `us-east-2b`) which you would like to make a copy 
 of in a different account (Account B). Afterwards, you want to start an analysis VM in Account B, and attach the disk 
-copy that you created to start with your investigation.
+copy that you created to begin your investigation.
 
 Your AWS credentials configuration should be similar to what is described [above](#aws).
 
-Using the library, you can start an analysis VM as follow:
+Using the library, you can start an analysis VM as follows:
 
 ```python
 from libcloudforensics.providers.aws import forensics
 
-# Create a forensic copy of the volume 'vol1' from one account to another 
+# Create a copy of the volume 'vol1' from one account to another 
 
 copy = forensics.CreateVolumeCopy('us-east-2b',
                                   volume_id='vol1', 
@@ -159,7 +159,7 @@ analysis_vm, _ = forensics.StartAnalysisVm('vm-forensics',
 The equivalent CLI command is:
 
 ```bash
-# Create a forensic copy of the volume 'vol1' in the dst_account AWS account.
+# Create a copy of the volume 'vol1' in the dst_account AWS account.
 # In this scenario we consider that the final volume copy name is 'vol1-copy' for illustration purpose. 
 libcloudforensics aws 'us-east-2b' copydisk --volume_id='vol1' --src_profile='src_profile' --dst_profile='dst_profile' 
 
@@ -171,7 +171,7 @@ libcloudforensics aws 'us-east-2b' startvm 'vm-forensics' --boot_volume_size=50 
 You're now ready to go! Log in your AWS account, find the instance (you can search it based on the name tag 
 `vm-forensics`) and click on `Connect`.
 
-``` important:: Pro tip: you can export an environment variable 'STARTUP_SCRIPT' that points to a custom bash script of
-    yours. This script will be shipped to the instance being created and executed during the first boot. You can 
-    therefore do any kind of pre-processing you want in this script.
+``` important:: Pro tip: you can export an environment variable 'STARTUP_SCRIPT' that points to a custom bash script. 
+This script will be shipped to the instance being created and executed during the first boot. You can do any kind of 
+pre-processing you want in this script.
 ```
