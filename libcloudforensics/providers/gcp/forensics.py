@@ -27,6 +27,7 @@ from libcloudforensics import logging_utils
 if TYPE_CHECKING:
   from libcloudforensics.providers.gcp.internal import compute
 
+logging_utils.SetUpLogger(__name__)
 logger = logging_utils.GetLogger(__name__)
 
 

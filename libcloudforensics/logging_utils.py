@@ -102,14 +102,11 @@ class Formatter(logging.Formatter):
     return super(Formatter, self).format(record)
 
 
-def GetLogger(name: str) -> logging.Logger:
-  """Return a logger.
+def SetUpLogger(name: str) -> None:
+  """Setup a logger.
 
   Args:
     name (str): The name for the logger.
-
-  Returns:
-    logging.Logger: A logger.
   """
   # We can ignore the mypy warning below since the manager is created at runtime
   add_handler = name not in logging.root.manager.loggerDict  # type: ignore
@@ -120,4 +117,19 @@ def GetLogger(name: str) -> logging.Logger:
     formatter = Formatter(random_color=True)
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
-  return logger
+
+
+def GetLogger(name: str) -> logging.Logger:
+  """Return a logger.
+
+  This is a wrapper around logging.getLogger that is intended to be used by
+  the other modules so that they don't have to import the logging module +
+  this module.
+
+  Args:
+    name (str); The name for the logger.
+
+  Returns:
+    logging.Logger: The logger.
+  """
+  return logging.getLogger(name)

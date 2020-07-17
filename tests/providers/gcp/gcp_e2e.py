@@ -26,12 +26,20 @@ from libcloudforensics.providers.gcp import forensics
 from libcloudforensics import logging_utils
 from tests.scripts import utils
 
+logging_utils.SetUpLogger(__name__)
 logger = logging_utils.GetLogger(__name__)
 
 
 @typing.no_type_check
 def IgnoreWarnings(test_func):
-  """Disable logging of warning messages."""
+  """Disable logging of warning messages.
+
+  If placed above test methods, this annotation will ignore warnings
+  displayed by third parties, such as ResourceWarnings due to 'unclosed ssl
+  sockets' which are printed in high quantity while running the e2e tests.
+  Instead, we can ignore them so that the user can focus on the output from the
+  logger.
+  """
   def DoTest(self, *args, **kwargs):
     with warnings.catch_warnings():
       warnings.simplefilter("ignore", ResourceWarning)

@@ -22,6 +22,7 @@ from libcloudforensics import logging_utils
 if TYPE_CHECKING:
   from libcloudforensics.providers.aws.internal import ebs, ec2
 
+logging_utils.SetUpLogger(__name__)
 logger = logging_utils.GetLogger(__name__)
 
 

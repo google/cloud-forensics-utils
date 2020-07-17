@@ -21,6 +21,7 @@ from googleapiclient.errors import HttpError
 from libcloudforensics.providers.gcp.internal import common
 from libcloudforensics import logging_utils
 
+logging_utils.SetUpLogger(__name__)
 logger = logging_utils.GetLogger(__name__)
 
 if TYPE_CHECKING:

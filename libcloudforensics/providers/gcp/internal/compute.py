@@ -29,6 +29,7 @@ from libcloudforensics import logging_utils
 if TYPE_CHECKING:
   import googleapiclient
 
+logging_utils.SetUpLogger(__name__)
 logger = logging_utils.GetLogger(__name__)
 
 
