@@ -30,7 +30,7 @@ def ListInstances(args: 'argparse.Namespace') -> None:
     args (argparse.Namespace): Arguments from ArgumentParser.
   """
 
-  az_account = account.AZAccount(args.subscription_id)
+  az_account = account.AZAccount(args.default_resource_group_name)
   instances = az_account.ListInstances(
       resource_group_name=args.resource_group_name)
 
@@ -47,7 +47,7 @@ def ListDisks(args: 'argparse.Namespace') -> None:
     args (argparse.Namespace): Arguments from ArgumentParser.
   """
 
-  az_account = account.AZAccount(args.subscription_id)
+  az_account = account.AZAccount(args.default_resource_group_name)
   disks = az_account.ListDisks(resource_group_name=args.resource_group_name)
 
   print('Disks found:')
@@ -62,8 +62,11 @@ def CreateDiskCopy(args: 'argparse.Namespace') -> None:
     args (argparse.Namespace): Arguments from ArgumentParser.
   """
   print('Starting disk copy...')
-  disk_copy = forensics.CreateDiskCopy(args.subscription_id,
-                                       args.instance_name,
-                                       args.disk_name,
-                                       args.disk_type)
+  disk_copy = forensics.CreateDiskCopy(args.default_resource_group_name,
+                                       instance_name=args.instance_name,
+                                       disk_name=args.disk_name,
+                                       disk_type=args.disk_type,
+                                       region=args.region,
+                                       src_profile=args.src_profile,
+                                       dst_profile=args.dst_profile)
   print('Done! Disk {0:s} successfully created.'.format(disk_copy.name))

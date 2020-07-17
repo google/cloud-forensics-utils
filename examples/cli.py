@@ -159,7 +159,9 @@ def Main() -> None:
             ])
 
   # Azure parser options
-  az_parser.add_argument('subscription_id', help='The Azure subscription ID.')
+  az_parser.add_argument('default_resource_group_name',
+                         help='The default resource group name in which to '
+                              'create resources')
   az_subparsers = az_parser.add_subparsers()
   AddParser('az', az_subparsers, 'listinstances',
             'List instances in Azure subscription.',
@@ -182,8 +184,19 @@ def Main() -> None:
                                 'instance will be copied.', None),
                 ('--disk_type', 'The SKU name for the disk to create. '
                                 'Can be Standard_LRS, Premium_LRS, '
-                                'StandardSSD_LRS, or UltraSSD_LRS.',
-                 None)
+                                'StandardSSD_LRS, or UltraSSD_LRS.', None),
+                ('--region', 'The region in which to create the disk copy. If '
+                             'not provided, the disk copy will be created in '
+                             'the "eastus" region.', None),
+                ('--src_profile', 'The Azure profile information to use as '
+                                  'source account for the disk copy. Default '
+                                  'will look into environment variables to '
+                                  'authenticate the requests.', None),
+                ('--dst_profile', 'The Azure profile information to use as '
+                                  'destination account for the disk copy. If '
+                                  'not provided, the default behavior is to '
+                                  'use the same destination profile as the '
+                                  'source profile.', None)
             ])
 
   # GCP parser options

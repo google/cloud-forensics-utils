@@ -32,9 +32,10 @@ class EndToEndTest(unittest.TestCase):
   To run these tests, add your project information to a project_info.json file:
 
   {
-    "subscription_id": xxx,  # required
+    "resource_group_name": xxx,  # required
     "instance_name": xxx,  # required
-    "disk_name": xxx,  # optional
+    "disk_name": xxx,  # optional,
+    "dst_region": xxx  # optional
   }
 
 
@@ -50,13 +51,15 @@ class EndToEndTest(unittest.TestCase):
   @typing.no_type_check
   def setUpClass(cls):
     try:
-      project_info = utils.ReadProjectInfo(['subscription_id', 'instance_name'])
+      project_info = utils.ReadProjectInfo(
+          ['resource_group_name', 'instance_name'])
     except (OSError, RuntimeError, ValueError) as exception:
       raise unittest.SkipTest(str(exception))
-    cls.subscription_id = project_info['subscription_id']
+    cls.resource_group_name = project_info['resource_group_name']
     cls.instance_to_analyse = project_info['instance_name']
     cls.disk_to_copy = project_info.get('disk_name')
-    cls.az = account.AZAccount(cls.subscription_id)
+    cls.dst_region = project_info.get('dst_region')
+    cls.az = account.AZAccount(cls.resource_group_name)
     cls.disks = []  # List of AZDisks for test cleanup
 
   @typing.no_type_check
@@ -67,7 +70,7 @@ class EndToEndTest(unittest.TestCase):
     """
 
     disk_copy = forensics.CreateDiskCopy(
-        self.subscription_id,
+        self.resource_group_name,
         instance_name=self.instance_to_analyse
         # disk_name=None by default, boot disk of instance will be copied
     )
@@ -89,12 +92,40 @@ class EndToEndTest(unittest.TestCase):
       return
 
     disk_copy = forensics.CreateDiskCopy(
-        self.subscription_id, disk_name=self.disk_to_copy)
+        self.resource_group_name,
+        disk_name=self.disk_to_copy)
     # The disk should be present in Azure
     remote_disk = self.az.compute_client.disks.get(
         disk_copy.resource_group_name, disk_copy.name)
     self.assertIsNotNone(remote_disk)
     self.assertEqual(disk_copy.name, remote_disk.name)
+
+    # Since we make a copy of the same disk but in a different region in next
+    # test, we need to delete the copy we just created as Azure does not
+    # permit same-name disks in different regions.
+    self.az.compute_client.disks.delete(
+        disk_copy.resource_group_name, disk_copy.name)
+
+  @typing.no_type_check
+  def testDiskCopyToOtherZone(self):
+    """End to end test on Azure.
+
+    Test copying a specific disk to a different Azure region.
+    """
+
+    if not (self.disk_to_copy and self.dst_region):
+      return
+
+    disk_copy = forensics.CreateDiskCopy(
+        self.resource_group_name,
+        disk_name=self.disk_to_copy,
+        region=self.dst_region)
+    # The disk should be present in Azure and be in self.dst_region
+    remote_disk = self.az.compute_client.disks.get(
+        disk_copy.resource_group_name, disk_copy.name)
+    self.assertIsNotNone(remote_disk)
+    self.assertEqual(disk_copy.name, remote_disk.name)
+    self.assertEqual(self.dst_region, remote_disk.location)
     self._StoreDiskForCleanup(disk_copy)
 
   @typing.no_type_check
