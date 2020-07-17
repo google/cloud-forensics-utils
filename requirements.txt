@@ -7,7 +7,7 @@ botocore
 azure-common
 azure-core
 azure-identity
-azure-mgmt-compute
+azure-mgmt-compute==13.0.0
 azure-mgmt-resource
 msrest
 msrestazure
