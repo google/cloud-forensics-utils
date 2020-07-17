@@ -22,9 +22,13 @@ from googleapiclient.errors import HttpError
 
 from libcloudforensics.providers.gcp.internal import project as gcp_project
 from libcloudforensics.providers.gcp.internal import common
+from libcloudforensics import logging_utils
 
 if TYPE_CHECKING:
   from libcloudforensics.providers.gcp.internal import compute
+
+logging_utils.SetUpLogger(__name__)
+logger = logging_utils.GetLogger(__name__)
 
 
 def CreateDiskCopy(
@@ -69,15 +73,17 @@ def CreateDiskCopy(
       instance = src_project.compute.GetInstance(instance_name)
       disk_to_copy = instance.GetBootDisk()
 
-    common.LOGGER.info('Disk copy of {0:s} started...'.format(
+    logger.info('Disk copy of {0:s} started...'.format(
         disk_to_copy.name))
     snapshot = disk_to_copy.Snapshot()
+    logger.debug('Snapshot created: {0:s}'.format(snapshot.name))
     new_disk = dst_project.compute.CreateDiskFromSnapshot(
         snapshot, disk_name_prefix='evidence', disk_type=disk_type)
-    snapshot.Delete()
-    common.LOGGER.info(
+    logger.info(
         'Disk {0:s} successfully copied to {1:s}'.format(
             disk_to_copy.name, new_disk.name))
+    snapshot.Delete()
+    logger.debug('Snapshot {0:s} deleted.'.format(snapshot.name))
 
   except RefreshError as exception:
     error_msg = ('Something is wrong with your gcloud access token: '
@@ -138,11 +144,15 @@ def StartAnalysisVm(
   """
 
   proj = gcp_project.GoogleCloudProject(project, default_zone=zone)
+  logger.info('Starting analysis VM {0:s}'.format(vm_name))
   analysis_vm, created = proj.compute.GetOrCreateAnalysisVm(
       vm_name, boot_disk_size, disk_type=boot_disk_type, cpu_cores=cpu_cores,
       image_project=image_project, image_family=image_family)
+  logger.info('VM started.')
   for disk_name in (attach_disks or []):
+    logger.info('Attaching disk {0:s}'.format(disk_name))
     analysis_vm.AttachDisk(proj.compute.GetDisk(disk_name))
+  logger.info('VM ready.')
   return analysis_vm, created
 
 
