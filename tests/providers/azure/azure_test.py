@@ -23,9 +23,9 @@ from libcloudforensics.providers.azure import forensics
 
 # pylint: disable=line-too-long
 with mock.patch('libcloudforensics.providers.azure.internal.common.GetCredentials') as mock_creds:
-  # pylint: enable=line-too-long
   mock_creds.return_value = ('fake-subscription-id', mock.Mock())
   with mock.patch('libcloudforensics.providers.azure.internal.account.AZAccount._GetOrCreateResourceGroup') as mock_resource:
+    # pylint: enable=line-too-long
     mock_resource.return_value = 'fake-resource-group'
     FAKE_ACCOUNT = account.AZAccount(
         'fake-resource-group',
