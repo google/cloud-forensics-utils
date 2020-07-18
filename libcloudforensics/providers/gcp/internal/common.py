@@ -16,7 +16,6 @@
 
 import binascii
 import datetime
-import logging
 import re
 import socket
 import time
@@ -25,6 +24,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Any
 from google.auth import default
 from google.auth.exceptions import DefaultCredentialsError, RefreshError
 from googleapiclient.discovery import build
+from libcloudforensics import logging_utils  # pylint: disable=ungrouped-imports
 
 if TYPE_CHECKING:
   import googleapiclient
@@ -32,11 +32,12 @@ if TYPE_CHECKING:
   # the following cyclic import, as it it only used for type hints
   from libcloudforensics.providers.gcp.internal import compute  # pylint: disable=cyclic-import
 
-LOGGER = logging.getLogger()
 RETRY_MAX = 10
 REGEX_DISK_NAME = re.compile('^(?=.{1,63}$)[a-z]([-a-z0-9]*[a-z0-9])?$')
 COMPUTE_NAME_LIMIT = 63
 STORAGE_LINK_URL = 'https://storage.cloud.google.com'
+logging_utils.SetUpLogger(__name__)
+logger = logging_utils.GetLogger(__name__)
 
 
 def GenerateDiskName(snapshot: 'compute.GoogleComputeSnapshot',
@@ -142,7 +143,7 @@ def CreateService(service_name: str,
           cache_discovery=False)
       service_built = True
     except socket.timeout:
-      LOGGER.info(
+      logger.warning(
           'Timeout trying to build service {0:s} (try {1:d} of {2:d})'.format(
               service_name, retry, RETRY_MAX))
 

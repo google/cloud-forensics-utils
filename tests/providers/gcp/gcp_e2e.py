@@ -16,13 +16,36 @@
 import typing
 import unittest
 import time
+import warnings
 
 from googleapiclient.errors import HttpError
 
 from libcloudforensics.providers.gcp.internal import common
 from libcloudforensics.providers.gcp.internal import project as gcp_project
 from libcloudforensics.providers.gcp import forensics
+from libcloudforensics import logging_utils
 from tests.scripts import utils
+
+logging_utils.SetUpLogger(__name__)
+logger = logging_utils.GetLogger(__name__)
+
+
+@typing.no_type_check
+def IgnoreWarnings(test_func):
+  """Disable logging of warning messages.
+
+  If placed above test methods, this annotation will ignore warnings
+  displayed by third parties, such as ResourceWarnings due to 'unclosed ssl
+  sockets' which are printed in high quantity while running the e2e tests.
+  Instead, we can ignore them so that the user can focus on the output from the
+  logger.
+  """
+  def DoTest(self, *args, **kwargs):
+    with warnings.catch_warnings():
+      warnings.simplefilter("ignore", ResourceWarning)
+      warnings.simplefilter("ignore", UserWarning)
+      test_func(self, *args, **kwargs)
+  return DoTest
 
 
 class EndToEndTest(unittest.TestCase):
@@ -52,6 +75,7 @@ class EndToEndTest(unittest.TestCase):
 
   @classmethod
   @typing.no_type_check
+  @IgnoreWarnings
   def setUpClass(cls):
     try:
       project_info = utils.ReadProjectInfo(['project_id', 'instance', 'zone'])
@@ -73,6 +97,7 @@ class EndToEndTest(unittest.TestCase):
                                                    cpu_cores=4)
 
   @typing.no_type_check
+  @IgnoreWarnings
   def setUp(self):
     self.project_id = EndToEndTest.project_id
     self.instance_to_analyse = EndToEndTest.instance_to_analyse
@@ -84,6 +109,7 @@ class EndToEndTest(unittest.TestCase):
     self.disk_to_forensic_copy = None
 
   @typing.no_type_check
+  @IgnoreWarnings
   def test_end_to_end_boot_disk(self):
     """End to end test on GCP.
 
@@ -146,6 +172,7 @@ class EndToEndTest(unittest.TestCase):
             self.boot_disk_copy.name, self.analysis_vm_name))
 
   @typing.no_type_check
+  @IgnoreWarnings
   def test_end_to_end_other_disk(self):
     """End to end test on GCP.
 
@@ -210,6 +237,7 @@ class EndToEndTest(unittest.TestCase):
 
   @classmethod
   @typing.no_type_check
+  @IgnoreWarnings
   def tearDownClass(cls):
     analysis_vm = cls.analysis_vm
     zone = cls.zone
@@ -217,7 +245,7 @@ class EndToEndTest(unittest.TestCase):
     disks = analysis_vm.ListDisks()
     gcp_client = common.GoogleCloudComputeClient(project.project_id)
     # delete the created forensics VMs
-    common.LOGGER.info('Deleting analysis instance: {0:s}.'.format(
+    logger.info('Deleting analysis instance: {0:s}.'.format(
         analysis_vm.name))
     gce_instance_client = gcp_client.GceApi().instances()
     request = gce_instance_client.delete(
@@ -231,14 +259,14 @@ class EndToEndTest(unittest.TestCase):
       # operation has finished and thus the associated ID doesn't exists
       # anymore, throwing an HttpError. We can ignore this.
       pass
-    common.LOGGER.info('Instance {0:s} successfully deleted.'.format(
+    logger.info('Instance {0:s} successfully deleted.'.format(
         analysis_vm.name))
 
     # delete the copied disks
     # we ignore the disk that was created for the analysis VM (disks[0]) as
     # it is deleted in the previous operation
     for disk in list(disks.keys())[1:]:
-      common.LOGGER.info('Deleting disk: {0:s}.'.format(disk))
+      logger.info('Deleting disk: {0:s}.'.format(disk))
       while True:
         try:
           gce_disk_client = gcp_client.GceApi().disks()
@@ -254,13 +282,13 @@ class EndToEndTest(unittest.TestCase):
           if exception.resp.status == 404:
             break
           if exception.resp.status != 400:
-            common.LOGGER.warning(
+            logger.warning(
                 'Could not delete the disk {0:s}: {1:s}'.format(
                     disk, str(exception)))
           # Throttle the requests to one every 10 seconds
           time.sleep(10)
 
-      common.LOGGER.info('Disk {0:s} successfully deleted.'.format(disk))
+      logger.info('Disk {0:s} successfully deleted.'.format(disk))
 
 
 if __name__ == '__main__':

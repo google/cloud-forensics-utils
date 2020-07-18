@@ -15,11 +15,15 @@
 """Forensics on AWS."""
 from typing import TYPE_CHECKING, Tuple, List, Optional, Dict
 
-from libcloudforensics.providers.aws.internal.common import UBUNTU_1804_FILTER, LOGGER  # pylint: disable=line-too-long
+from libcloudforensics.providers.aws.internal.common import UBUNTU_1804_FILTER
 from libcloudforensics.providers.aws.internal import account
+from libcloudforensics import logging_utils
 
 if TYPE_CHECKING:
   from libcloudforensics.providers.aws.internal import ebs, ec2
+
+logging_utils.SetUpLogger(__name__)
+logger = logging_utils.GetLogger(__name__)
 
 
 def CreateVolumeCopy(zone: str,
@@ -111,16 +115,22 @@ def CreateVolumeCopy(zone: str,
       instance = source_account.GetInstanceById(instance_id)
       volume_to_copy = instance.GetBootVolume()
 
-    LOGGER.info('Volume copy of {0:s} started...'.format(
+    logger.info('Volume copy of {0:s} started...'.format(
         volume_to_copy.volume_id))
     snapshot = volume_to_copy.Snapshot()
+    logger.info('Created snapshot: {0:s}'.format(snapshot.snapshot_id))
 
     source_account_id = source_account.GetAccountInformation('Account')
     destination_account_id = destination_account.GetAccountInformation(
         'Account')
 
     if source_account_id != destination_account_id:
+      logger.info('External account detected: source account ID is {0:s} and '
+                  'destination account ID is {1:s}'.format(
+                      source_account, destination_account))
       if volume_to_copy.encrypted:
+        logger.info(
+            'Encrypted volume detected, generating one-time use CMK key')
         # Generate one-time use KMS key that will be shared with the
         # destination account.
         kms_key_id = source_account.CreateKMSKey()
@@ -130,6 +140,7 @@ def CreateVolumeCopy(zone: str,
         # shared key
         snapshot = snapshot.Copy(kms_key_id=kms_key_id, delete=True)
       snapshot.ShareWithAWSAccount(destination_account_id)
+      logger.info('Snapshot successfully shared with external account')
 
     if dst_zone and dst_zone != zone:
       # Assign the new zone to the destination account and assign it to the
@@ -146,12 +157,14 @@ def CreateVolumeCopy(zone: str,
       new_volume = destination_account.CreateVolumeFromSnapshot(
           snapshot, volume_name_prefix='evidence', tags=tags)
 
+    logger.info('Volume {0:s} successfully copied to {1:s}'.format(
+        volume_to_copy.volume_id, new_volume.volume_id))
+    logger.info('Cleaning up...')
+
     snapshot.Delete()
     # Delete the one-time use KMS key, if one was generated
     source_account.DeleteKMSKey(kms_key_id)
-    LOGGER.info('Volume {0:s} successfully copied to {1:s}'.format(
-        volume_to_copy.volume_id, new_volume.volume_id))
-
+    logger.info('Done')
   except RuntimeError as exception:
     error_msg = 'Copying volume {0:s}: {1!s}'.format(
         (volume_id or instance_id), exception)
@@ -217,6 +230,7 @@ def StartAnalysisVm(
   # If no AMI ID is given we use the default Ubuntu 18.04
   # in the region requested.
   if not ami:
+    logger.info('No AMI provided, fetching one for Ubuntu 18.04')
     qfilter = [{'Name': 'name', 'Values': [UBUNTU_1804_FILTER]}]
     ami_list = aws_account.ListImages(qfilter)
     # We should only get 1 AMI image back, if we get multiple we
@@ -228,6 +242,7 @@ def StartAnalysisVm(
     ami = ami_list[0]['ImageId']
   assert ami  # Mypy: assert that ami is not None
 
+  logger.info('Starting analysis VM {0:s}'.format(vm_name))
   analysis_vm, created = aws_account.GetOrCreateAnalysisVm(
       vm_name,
       boot_volume_size,
@@ -235,6 +250,10 @@ def StartAnalysisVm(
       cpu_cores,
       ssh_key_name=ssh_key_name,
       tags=tags)
+  logger.info('VM started.')
   for volume_id, device_name in (attach_volumes or []):
+    logger.info('Attaching volume {0:s} to device {1:s}'.format(
+        volume_id, device_name))
     analysis_vm.AttachVolume(aws_account.GetVolumeById(volume_id), device_name)
+  logger.info('VM ready.')
   return analysis_vm, created

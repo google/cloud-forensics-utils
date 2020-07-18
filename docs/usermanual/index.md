@@ -120,7 +120,7 @@ Both the CMK and the snapshot copy need to then be shared with the destination a
 To reduce key management hassle, libcloudforensics allows you to transfer encrypted EBS resources between accounts by 
 generating a one-time use CMK. This key is deleted once the process completes. The process is depicted below:
 
-![ebs-encryption](https://github.com/google/cloud-forensics-utils/tree/master/docs/source/images/ebs.png)
+![ebs-encryption](https://github.com/google/cloud-forensics-utils/blob/master/docs/source/images/ebs.png?raw=true)
 
 All of the code snippets and command lines given in the [previous section](#using-the-library-and-the-cli) can be 
 applied as-is, regardless of whether the target volume uses EBS encryption or not.

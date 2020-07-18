@@ -15,13 +15,36 @@
 """End to end test for the aws module."""
 import typing
 import unittest
+import warnings
 
 import botocore
 
-from libcloudforensics.providers.aws.internal.common import LOGGER, EC2_SERVICE
+from libcloudforensics.providers.aws.internal.common import EC2_SERVICE
 from libcloudforensics.providers.aws.internal import account
 from libcloudforensics.providers.aws import forensics
+from libcloudforensics import logging_utils
 from tests.scripts import utils
+
+logging_utils.SetUpLogger(__name__)
+logger = logging_utils.GetLogger(__name__)
+
+
+@typing.no_type_check
+def IgnoreWarnings(test_func):
+  """Disable logging of warning messages.
+
+  If placed above test methods, this annotation will ignore warnings
+  displayed by third parties, such as ResourceWarnings due to 'unclosed ssl
+  sockets' which are printed in high quantity while running the e2e tests.
+  Instead, we can ignore them so that the user can focus on the output from the
+  logger.
+  """
+  def DoTest(self, *args, **kwargs):
+    with warnings.catch_warnings():
+      warnings.simplefilter("ignore", ResourceWarning)
+      warnings.simplefilter("ignore", UserWarning)
+      test_func(self, *args, **kwargs)
+  return DoTest
 
 
 class EndToEndTest(unittest.TestCase):
@@ -46,6 +69,7 @@ class EndToEndTest(unittest.TestCase):
 
   @classmethod
   @typing.no_type_check
+  @IgnoreWarnings
   def setUpClass(cls):
     try:
       project_info = utils.ReadProjectInfo(['instance', 'zone'])
@@ -64,6 +88,7 @@ class EndToEndTest(unittest.TestCase):
     cls.volumes = []  # List of (AWSAccount, AWSVolume) tuples
 
   @typing.no_type_check
+  @IgnoreWarnings
   def testBootVolumeCopy(self):
     """End to end test on AWS.
 
@@ -81,6 +106,7 @@ class EndToEndTest(unittest.TestCase):
     self._StoreVolumeForCleanup(self.aws, aws_volume)
 
   @typing.no_type_check
+  @IgnoreWarnings
   def testVolumeCopy(self):
     """End to end test on AWS.
 
@@ -98,6 +124,7 @@ class EndToEndTest(unittest.TestCase):
     self._StoreVolumeForCleanup(self.aws, aws_volume)
 
   @typing.no_type_check
+  @IgnoreWarnings
   def testVolumeCopyToOtherZone(self):
     """End to end test on AWS.
 
@@ -117,6 +144,7 @@ class EndToEndTest(unittest.TestCase):
     self._StoreVolumeForCleanup(aws_account, aws_volume)
 
   @typing.no_type_check
+  @IgnoreWarnings
   def testListImages(self):
     """End to end test on AWS.
 
@@ -131,6 +159,7 @@ class EndToEndTest(unittest.TestCase):
     self.assertIn('Name', images[0])
 
   @typing.no_type_check
+  @IgnoreWarnings
   def testEncryptedVolumeCopy(self):
     """End to end test on AWS.
 
@@ -148,6 +177,7 @@ class EndToEndTest(unittest.TestCase):
     self._StoreVolumeForCleanup(self.aws, aws_volume)
 
   @typing.no_type_check
+  @IgnoreWarnings
   def testEncryptedVolumeCopyToOtherZone(self):
     """End to end test on AWS.
 
@@ -170,6 +200,7 @@ class EndToEndTest(unittest.TestCase):
     self._StoreVolumeForCleanup(aws_account, aws_volume)
 
   @typing.no_type_check
+  @IgnoreWarnings
   def testStartVm(self):
     """End to end test on AWS.
 
@@ -207,6 +238,7 @@ class EndToEndTest(unittest.TestCase):
 
   @classmethod
   @typing.no_type_check
+  @IgnoreWarnings
   def tearDownClass(cls):
     # Delete the instance
     instance = cls.aws.ResourceApi(EC2_SERVICE).Instance(
@@ -217,7 +249,7 @@ class EndToEndTest(unittest.TestCase):
 
     # Delete the volumes
     for aws_account, volume in cls.volumes:
-      LOGGER.info('Deleting volume: {0:s}.'.format(volume.volume_id))
+      logger.info('Deleting volume: {0:s}.'.format(volume.volume_id))
       client = aws_account.ClientApi(EC2_SERVICE)
       try:
         client.delete_volume(VolumeId=volume.volume_id)
@@ -226,7 +258,7 @@ class EndToEndTest(unittest.TestCase):
               botocore.exceptions.WaiterError) as exception:
         raise RuntimeError('Could not complete cleanup: {0:s}'.format(
             str(exception)))
-      LOGGER.info('Volume {0:s} successfully deleted.'.format(volume.volume_id))
+      logger.info('Volume {0:s} successfully deleted.'.format(volume.volume_id))
 
 
 if __name__ == '__main__':

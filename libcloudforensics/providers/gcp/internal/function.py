@@ -19,7 +19,10 @@ import ssl
 from typing import TYPE_CHECKING, Dict, Any
 from googleapiclient.errors import HttpError
 from libcloudforensics.providers.gcp.internal import common
+from libcloudforensics import logging_utils
 
+logging_utils.SetUpLogger(__name__)
+logger = logging_utils.GetLogger(__name__)
 
 if TYPE_CHECKING:
   import googleapiclient
@@ -94,7 +97,7 @@ class GoogleCloudFunction:
     function_path = 'projects/{0:s}/locations/{1:s}/functions/{2:s}'.format(
         self.project_id, region, function_name)
 
-    common.LOGGER.debug(
+    logger.debug(
         'Calling Cloud Function [{0:s}] with args [{1!s}]'.format(
             function_name, args))
     try:
