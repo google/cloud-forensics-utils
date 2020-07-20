@@ -243,6 +243,7 @@ class AZAccount:
     }
 
     try:
+      logger.info('Creating disk: {0:s}'.format(disk_name))
       request = self.compute_client.disks.create_or_update(
           self.default_resource_group_name,
           disk_name,
@@ -251,6 +252,7 @@ class AZAccount:
       while not request.done():
         sleep(5)  # Wait 5 seconds before checking disk status again
       disk = request.result()
+      logger.info('Disk {0:s} successfully created'.format(disk_name))
     except azure_exceptions.CloudError as exception:
       raise RuntimeError('Could not create disk from snapshot {0:s}: {1:s}'
                          .format(snapshot.resource_id, str(exception)))
@@ -315,7 +317,10 @@ class AZAccount:
     snapshot_vhd_name = snapshot.name + '.vhd'
     container_client = blob_service_client.get_container_client(container_name)
     try:
+      logger.info('Creating blob container {0:s}'.format(container_name))
       container_client.create_container()
+      logger.info('Blob container {0:s} successfully created'.format(
+          container_name))
     except exceptions.ResourceExistsError:
       # The container already exists, so we can re-use it
       logger.warning('Reusing existing container: {0:s}'.format(container_name))
@@ -323,9 +328,15 @@ class AZAccount:
     # Download the snapshot from the URI to the storage
     copied_blob = blob_service_client.get_blob_client(
         container_name, snapshot_vhd_name)
+    logger.info('Importing snapshot to container from URI {0:s}. '
+                'Depending on the size of the snapshot, this process is going '
+                'to take a while.'.format(snapshot_uri))
     copied_blob.start_copy_from_url(snapshot_uri)
     while copied_blob.get_blob_properties().copy.status != 'success':
       sleep(5)  # Wait for the vhd to be imported in the Azure storage container
+      logger.debug('Importing snapshot from URI {0:s}'.format(snapshot_uri))
+    logger.info('Snapshot successfully imported from URI {0:s}'.format(
+        snapshot_uri))
 
     if not disk_name:
       disk_name = common.GenerateDiskName(snapshot,
@@ -342,6 +353,7 @@ class AZAccount:
     }
 
     try:
+      logger.info('Creating disk: {0:s}'.format(disk_name))
       request = self.compute_client.disks.create_or_update(
           self.default_resource_group_name,
           disk_name,
@@ -350,6 +362,7 @@ class AZAccount:
       while not request.done():
         sleep(5)  # Wait 5 seconds before checking disk status again
       disk = request.result()
+      logger.info('Disk {0:s} successfully created'.format(disk_name))
     except azure_exceptions.CloudError as exception:
       raise RuntimeError('Could not create disk from URI {0:s}: {1:s}'
                          .format(snapshot_uri, str(exception)))
@@ -401,11 +414,14 @@ class AZAccount:
     # https://docs.microsoft.com/en-us/samples/azure-samples/storage-python-manage/storage-python-manage/
     # https://docs.microsoft.com/en-us/azure/storage/blobs/storage-quickstart-blobs-python
     # pylint: enable=line-too-long
+    logger.info('Creating storage account: {0:s}'.format(storage_account_name))
     request = self.storage_client.storage_accounts.create(
         self.default_resource_group_name,
         storage_account_name,
         creation_data
     )
+    logger.info('Storage account {0:s} successfully created'.format(
+        storage_account_name))
     storage_account = request.result()
     storage_account_keys = self.storage_client.storage_accounts.list_keys(
         self.default_resource_group_name, storage_account_name)
@@ -422,8 +438,12 @@ class AZAccount:
       RuntimeError: if the storage account could not be deleted.
     """
     try:
+      logger.info('Deleting storage account: {0:s}'.format(
+          storage_account_name))
       self.storage_client.storage_accounts.delete(
           self.default_resource_group_name, storage_account_name)
+      logger.info('Storage account {0:s} successfully deleted'.format(
+          storage_account_name))
     except azure_exceptions.CloudError as exception:
       raise RuntimeError('Could not delete account storage {0:s}: {1:s}'
                          .format(storage_account_name, str(exception)))
@@ -442,9 +462,13 @@ class AZAccount:
       self.resource_client.resource_groups.get(resource_group_name)
     except azure_exceptions.CloudError:
       # Group doesn't exist, creating it
+      logger.info('Resource group {0:s} not found, creating it.'.format(
+          resource_group_name))
       creation_data = {
           'location': self.default_region
       }
       self.resource_client.resource_groups.create_or_update(
           resource_group_name, creation_data)
+      logger.info('Resource group {0:s} successfully created.'.format(
+          resource_group_name))
     return resource_group_name

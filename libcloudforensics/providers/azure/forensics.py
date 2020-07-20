@@ -100,6 +100,7 @@ def CreateDiskCopy(
     # which we import the previously created snapshot (cross-region/account
     # sharing).
     if diff_account or diff_region:
+      logger.info('Copy requested in a different destination account/region.')
       # Create a link to download the snapshot
       snapshot_uri = snapshot.GrantAccessAndGetURI()
       # Make a snapshot copy in the destination account from the link

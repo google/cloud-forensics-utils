@@ -24,12 +24,16 @@ from azure.mgmt.compute.v2020_05_01 import models
 from msrestazure import azure_exceptions
 # pylint: enable=import-error
 
+from libcloudforensics import logging_utils
 from libcloudforensics.providers.azure.internal import common
 
 if TYPE_CHECKING:
   # TYPE_CHECKING is always False at runtime, therefore it is safe to ignore
   # the following cyclic import, as it it only used for type hints
   from libcloudforensics.providers.azure.internal import account  # pylint: disable=cyclic-import
+
+logging_utils.SetUpLogger(__name__)
+logger = logging_utils.GetLogger(__name__)
 
 
 class AZComputeResource:
@@ -217,6 +221,7 @@ class AZDisk(AZComputeResource):
       creation_data['tags'] = tags
 
     try:
+      logger.info('Creating snapshot: {0:s}'.format(snapshot_name))
       request = self.az_account.compute_client.snapshots.create_or_update(
           self.resource_group_name,
           snapshot_name,
@@ -224,6 +229,7 @@ class AZDisk(AZComputeResource):
       while not request.done():
         sleep(5)  # Wait 5 seconds before checking snapshot status again
       snapshot = request.result()
+      logger.info('Snapshot {0:s} successfully created'.format(snapshot_name))
     except azure_exceptions.CloudError as exception:
       raise RuntimeError('Could not create snapshot for disk {0:s}: {1:s}'
                          .format(self.resource_id, str(exception)))
@@ -268,10 +274,12 @@ class AZSnapshot(AZComputeResource):
     """Delete a snapshot."""
 
     try:
+      logger.info('Deleting snapshot: {0:s}'.format(self.name))
       request = self.az_account.compute_client.snapshots.delete(
           self.resource_group_name, self.name)
       while not request.done():
         sleep(5)  # Wait 5 seconds before checking snapshot status again
+      logger.info('Snapshot {0:s} successfully deleted.'.format(self.name))
     except azure_exceptions.CloudError as exception:
       raise RuntimeError('Could not delete snapshot {0:s}: {1:s}'
                          .format(self.resource_id, str(exception)))
@@ -282,13 +290,17 @@ class AZSnapshot(AZComputeResource):
     Returns:
       str: The access URI for the snapshot.
     """
+    logger.info('Generating SAS URI for snapshot: {0:s}'.format(self.name))
     access_request = self.az_account.compute_client.snapshots.grant_access(
         self.resource_group_name, self.name, 'Read', 3600)
     snapshot_uri = access_request.result().access_sas  # type: str
+    logger.info('SAS URI generated: {0:s}'.format(snapshot_uri))
     return snapshot_uri
 
   def RevokeAccessURI(self) -> None:
     """Revoke access to a snapshot."""
+    logger.info('Revoking SAS URI for snapshot {0:s}'.format(self.name))
     request = self.az_account.compute_client.snapshots.revoke_access(
         self.resource_group_name, self.name)
     request.wait()
+    logger.info('SAS URI revoked for snapshot {0:s}'.format(self.name))
