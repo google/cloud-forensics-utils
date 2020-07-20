@@ -20,8 +20,8 @@ from typing import Optional, List, Dict, TYPE_CHECKING
 # Pylint complains about the import but the library imports just fine,
 # so we can ignore the warning.
 # pylint: disable=import-error
-from azure.mgmt.compute.v2016_04_30_preview.models import DiskCreateOption
-from msrestazure.azure_exceptions import CloudError
+from azure.mgmt.compute.v2020_05_01 import models
+from msrestazure import azure_exceptions
 # pylint: enable=import-error
 
 from libcloudforensics.providers.azure.internal import common
@@ -209,7 +209,7 @@ class AZDisk(AZComputeResource):
         'location': self.region,
         'creation_data': {
             'sourceResourceId': self.resource_id,
-            'create_option': DiskCreateOption.copy
+            'create_option': models.DiskCreateOption.copy
         }
     }
 
@@ -224,7 +224,7 @@ class AZDisk(AZComputeResource):
       while not request.done():
         sleep(5)  # Wait 5 seconds before checking snapshot status again
       snapshot = request.result()
-    except CloudError as exception:
+    except azure_exceptions.CloudError as exception:
       raise RuntimeError('Could not create snapshot for disk {0:s}: {1:s}'
                          .format(self.resource_id, str(exception)))
 
@@ -272,7 +272,7 @@ class AZSnapshot(AZComputeResource):
           self.resource_group_name, self.name)
       while not request.done():
         sleep(5)  # Wait 5 seconds before checking snapshot status again
-    except CloudError as exception:
+    except azure_exceptions.CloudError as exception:
       raise RuntimeError('Could not delete snapshot {0:s}: {1:s}'
                          .format(self.resource_id, str(exception)))
 
@@ -282,9 +282,9 @@ class AZSnapshot(AZComputeResource):
     Returns:
       str: The access URI for the snapshot.
     """
-    snapshot = self.az_account.compute_client.snapshots.grant_access(
+    access_request = self.az_account.compute_client.snapshots.grant_access(
         self.resource_group_name, self.name, 'Read', 3600)
-    snapshot_uri = snapshot.result().access_sas  # type: str
+    snapshot_uri = access_request.result().access_sas  # type: str
     return snapshot_uri
 
   def RevokeAccessURI(self) -> None:

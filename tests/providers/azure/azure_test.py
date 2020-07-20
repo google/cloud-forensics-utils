@@ -323,10 +323,12 @@ class TestAccount(unittest.TestCase):
     self.assertEqual('fakestorageid', account_id)
     self.assertEqual('fake-key-value', account_key)
 
-    with self.assertRaises(ValueError):
+    with self.assertRaises(ValueError) as error:
       _, _ = FAKE_ACCOUNT._CreateStorageAccount(
           'fake-non-conform-name')
     # pylint: enable=protected-access
+    self.assertEqual('Storage account name fake-non-conform-name does not '
+                     'comply with ^[a-z0-9]{1,24}$', str(error.exception))
 
 
 class TestCommon(unittest.TestCase):
@@ -366,9 +368,13 @@ class TestCommon(unittest.TestCase):
 
     # If an environment variable is missing, a RuntimeError should be raised
     del os.environ['AZURE_SUBSCRIPTION_ID']
-    with self.assertRaises(RuntimeError):
+    with self.assertRaises(RuntimeError) as error:
       _, _ = common.GetCredentials()
       mock_azure_credentials.assert_not_called()
+    self.assertEqual(
+        'Please make sure you defined the following environment variables: '
+        '[AZURE_SUBSCRIPTION_ID,AZURE_CLIENT_ID, AZURE_CLIENT_SECRET,'
+        'AZURE_TENANT_ID].', str(error.exception))
 
     # If a profile name is passed to the method, then it will look for a
     # credential file (default path being ~/.azure/credentials.json). We can
@@ -378,9 +384,12 @@ class TestCommon(unittest.TestCase):
     os.environ['AZURE_CREDENTIALS_PATH'] = os.path.join(
         os.path.dirname(os.path.dirname(os.path.dirname(
             os.path.realpath(__file__)))), STARTUP_SCRIPT)
-    with self.assertRaises(ValueError):
+    with self.assertRaises(ValueError) as error:
       _, _ = common.GetCredentials(profile_name='foo')
       mock_azure_credentials.assert_not_called()
+    self.assertEqual(
+        'Could not decode JSON file. Please verify the file format: Expecting '
+        'value: line 1 column 1 (char 0)', str(error.exception))
 
     # If the file is correctly formatted, then things should work correctly
     os.environ['AZURE_CREDENTIALS_PATH'] = os.path.join(
@@ -396,15 +405,22 @@ class TestCommon(unittest.TestCase):
         tenant='fake-tenant-id-from-credential-file')
 
     # If the profile name does not exist, should raise a ValueError
-    with self.assertRaises(ValueError):
+    with self.assertRaises(ValueError) as error:
       _, _ = common.GetCredentials(profile_name='foo')
       mock_azure_credentials.assert_not_called()
+    self.assertEqual(
+        'Profile name foo not found in credentials file {0:s}'.format(
+            os.environ['AZURE_CREDENTIALS_PATH']), str(error.exception))
 
     # If the profile name exists but there are missing entries, should raise
     # a ValueError
-    with self.assertRaises(ValueError):
+    with self.assertRaises(ValueError) as error:
       _, _ = common.GetCredentials(profile_name='incomplete_profile_name')
       mock_azure_credentials.assert_not_called()
+    self.assertEqual(
+        'Profile name incomplete_profile_name not found in credentials file '
+        '{0:s}'.format(
+            os.environ['AZURE_CREDENTIALS_PATH']), str(error.exception))
 
 
 class TestAZVirtualMachine(unittest.TestCase):
@@ -433,8 +449,11 @@ class TestAZVirtualMachine(unittest.TestCase):
     disk = FAKE_INSTANCE.GetDisk('fake-disk-name')
     self.assertEqual('fake-disk-name', disk.name)
 
-    with self.assertRaises(RuntimeError):
+    with self.assertRaises(RuntimeError) as error:
       FAKE_INSTANCE.GetDisk('non-existent-disk-name')
+    self.assertEqual(
+        'Disk non-existent-disk-name not found in instance: '
+        '/a/b/c/fake-resource-group/fake-vm-name', str(error.exception))
 
   @mock.patch('libcloudforensics.providers.azure.internal.account.AZAccount.ListDisks')
   @mock.patch('azure.mgmt.compute.v2020_06_01.operations._virtual_machines_operations.VirtualMachinesOperations.get')
@@ -588,17 +607,23 @@ class TestForensics(unittest.TestCase):
     mock_credentials.return_value = ('fake-subscription-id', mock.Mock())
     mock_resource_group.return_value = 'fake-resource-group'
 
-    with self.assertRaises(RuntimeError):
+    with self.assertRaises(RuntimeError) as error:
       forensics.CreateDiskCopy(
           FAKE_ACCOUNT.default_resource_group_name,
           instance_name='non-existent-vm-name',
           region='fake-region')
+    self.assertEqual(
+        'Cannot copy disk "None": Instance non-existent-vm-name was not found '
+        'in subscription fake-subscription-id', str(error.exception))
 
-    with self.assertRaises(RuntimeError):
+    with self.assertRaises(RuntimeError) as error:
       forensics.CreateDiskCopy(
           FAKE_ACCOUNT.default_resource_group_name,
           disk_name='non-existent-disk-name',
           region='fake-region')
+    self.assertEqual(
+        'Cannot copy disk "non-existent-disk-name": Disk non-existent-disk-name'
+        ' was not found in subscription fake-subscription-id', str(error.exception))
 
 
 if __name__ == '__main__':

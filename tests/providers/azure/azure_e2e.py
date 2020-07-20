@@ -17,7 +17,7 @@
 import typing
 import unittest
 
-from msrestazure.azure_exceptions import CloudError  # pylint: disable=import-error
+from msrestazure import azure_exceptions  # pylint: disable=import-error
 from libcloudforensics import logging_utils
 from libcloudforensics.providers.azure.internal import account
 from libcloudforensics.providers.azure import forensics
@@ -147,7 +147,7 @@ class EndToEndTest(unittest.TestCase):
       logger.info('Deleting disk: {0:s}.'.format(disk.name))
       try:
         cls.az.compute_client.disks.delete(disk.resource_group_name, disk.name)
-      except CloudError as exception:
+      except azure_exceptions.CloudError as exception:
         raise RuntimeError('Could not complete cleanup: {0:s}'.format(
             str(exception)))
       logger.info('Disk {0:s} successfully deleted.'.format(disk.name))

@@ -20,14 +20,12 @@ from typing import Optional, Dict, Tuple, List
 # Pylint complains about the import but the library imports just fine,
 # so we can ignore the warning.
 # pylint: disable=import-error
-from azure.core.exceptions import ResourceExistsError
-from azure.mgmt.compute import ComputeManagementClient
-from azure.mgmt.compute.v2016_04_30_preview.models import DiskCreateOption
-from azure.mgmt.resource import SubscriptionClient
-from azure.mgmt.storage import StorageManagementClient
-from azure.storage.blob import BlobServiceClient
-from azure.mgmt.resource import ResourceManagementClient
-from msrestazure.azure_exceptions import CloudError
+from azure.core import exceptions
+from azure.mgmt import compute as azure_compute
+from azure.mgmt import resource, storage
+from azure.mgmt.compute.v2020_05_01 import models
+from azure.storage import blob
+from msrestazure import azure_exceptions
 # pylint: enable=import-error
 
 from libcloudforensics.providers.azure.internal import compute, common
@@ -66,11 +64,11 @@ class AZAccount:
     """
     self.subscription_id, self.credentials = common.GetCredentials(profile_name)
     self.default_region = default_region or 'eastus'
-    self.compute_client = ComputeManagementClient(
+    self.compute_client = azure_compute.ComputeManagementClient(
         self.credentials, self.subscription_id)
-    self.storage_client = StorageManagementClient(
+    self.storage_client = storage.StorageManagementClient(
         self.credentials, self.subscription_id)
-    self.resource_client = ResourceManagementClient(
+    self.resource_client = resource.ResourceManagementClient(
         self.credentials, self.subscription_id)
     self.default_resource_group_name = self._GetOrCreateResourceGroup(
         default_resource_group_name)
@@ -81,7 +79,7 @@ class AZAccount:
     Returns:
       List[str]: A list of all subscription IDs from the Azure account.
     """
-    subscription_client = SubscriptionClient(self.credentials)
+    subscription_client = resource.SubscriptionClient(self.credentials)
     subscription_ids = subscription_client.subscriptions.list()
     return [sub.subscription_id for sub in subscription_ids]
 
@@ -240,7 +238,7 @@ class AZAccount:
         'location': region,
         'creation_data': {
             'sourceResourceId': snapshot.resource_id,
-            'create_option': DiskCreateOption.copy
+            'create_option': models.DiskCreateOption.copy
         }
     }
 
@@ -253,7 +251,7 @@ class AZAccount:
       while not request.done():
         sleep(5)  # Wait 5 seconds before checking disk status again
       disk = request.result()
-    except CloudError as exception:
+    except azure_exceptions.CloudError as exception:
       raise RuntimeError('Could not create disk from snapshot {0:s}: {1:s}'
                          .format(snapshot.resource_id, str(exception)))
 
@@ -309,7 +307,7 @@ class AZAccount:
         storage_account_name)
     storage_account_id, storage_account_access_key = self._CreateStorageAccount(
         storage_account_name, region=region)
-    blob_service_client = BlobServiceClient(
+    blob_service_client = blob.BlobServiceClient(
         account_url=storage_account_url, credential=storage_account_access_key)
 
     # Create a container within the Storage to receive the imported snapshot
@@ -318,7 +316,7 @@ class AZAccount:
     container_client = blob_service_client.get_container_client(container_name)
     try:
       container_client.create_container()
-    except ResourceExistsError:
+    except exceptions.ResourceExistsError:
       # The container already exists, so we can re-use it
       logger.warning('Reusing existing container: {0:s}'.format(container_name))
 
@@ -339,7 +337,7 @@ class AZAccount:
         'creation_data': {
             'source_uri': copied_blob.url,
             'storage_account_id': storage_account_id,
-            'create_option': DiskCreateOption.import_enum
+            'create_option': models.DiskCreateOption.import_enum
         }
     }
 
@@ -352,7 +350,7 @@ class AZAccount:
       while not request.done():
         sleep(5)  # Wait 5 seconds before checking disk status again
       disk = request.result()
-    except CloudError as exception:
+    except azure_exceptions.CloudError as exception:
       raise RuntimeError('Could not create disk from URI {0:s}: {1:s}'
                          .format(snapshot_uri, str(exception)))
 
@@ -399,6 +397,10 @@ class AZAccount:
         'kind': 'Storage'
     }
 
+    # pylint: disable=line-too-long
+    # https://docs.microsoft.com/en-us/samples/azure-samples/storage-python-manage/storage-python-manage/
+    # https://docs.microsoft.com/en-us/azure/storage/blobs/storage-quickstart-blobs-python
+    # pylint: enable=line-too-long
     request = self.storage_client.storage_accounts.create(
         self.default_resource_group_name,
         storage_account_name,
@@ -407,8 +409,8 @@ class AZAccount:
     storage_account = request.result()
     storage_account_keys = self.storage_client.storage_accounts.list_keys(
         self.default_resource_group_name, storage_account_name)
-    storage_account_keys = {v.key_name: v.value
-                            for v in storage_account_keys.keys}
+    storage_account_keys = {key.key_name: key.value
+                            for key in storage_account_keys.keys}
     storage_account_id = storage_account.id  # type: str
     storage_account_key = storage_account_keys['key1']  # type: str
     return storage_account_id, storage_account_key
@@ -422,7 +424,7 @@ class AZAccount:
     try:
       self.storage_client.storage_accounts.delete(
           self.default_resource_group_name, storage_account_name)
-    except CloudError as exception:
+    except azure_exceptions.CloudError as exception:
       raise RuntimeError('Could not delete account storage {0:s}: {1:s}'
                          .format(storage_account_name, str(exception)))
 
@@ -438,7 +440,7 @@ class AZAccount:
     """
     try:
       self.resource_client.resource_groups.get(resource_group_name)
-    except CloudError:
+    except azure_exceptions.CloudError:
       # Group doesn't exist, creating it
       creation_data = {
           'location': self.default_region

@@ -120,7 +120,7 @@ def GetCredentials(profile_name: Optional[str] = None
               profile_name, path))
     required_entries = ['subscriptionId', 'clientId', 'clientSecret',
                         'tenantId']
-    if not all(entry in account_info for entry in required_entries):
+    if not all(account_info.get(entry) for entry in required_entries):
       raise ValueError(
           'Please make sure that your JSON file has the required entries. The '
           'file should contain at least the following: {0:s}'.format(
@@ -160,7 +160,7 @@ def ExecuteRequest(
     request = getattr(client, func)
     response = request(**kwargs)
     responses.append(response)
-    next_link = response.next_link if hasattr(response, 'next_link') else None
+    next_link = response.getattr('next_link', None)
     if not next_link:
       return responses
 
