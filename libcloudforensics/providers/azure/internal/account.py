@@ -31,6 +31,10 @@ from msrestazure.azure_exceptions import CloudError
 # pylint: enable=import-error
 
 from libcloudforensics.providers.azure.internal import compute, common
+from libcloudforensics import logging_utils
+
+logging_utils.SetUpLogger(__name__)
+logger = logging_utils.GetLogger(__name__)
 
 
 class AZAccount:
@@ -316,6 +320,7 @@ class AZAccount:
       container_client.create_container()
     except ResourceExistsError:
       # The container already exists, so we can re-use it
+      logger.warning('Reusing existing container: {0:s}'.format(container_name))
       pass
 
     # Download the snapshot from the URI to the storage

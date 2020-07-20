@@ -42,10 +42,10 @@ def CreateDiskCopy(
     disk_name (str): Optional. Name of the disk to copy. If not set,
         then instance_name needs to be set and the boot disk will be copied.
     disk_type (str): Optional. The sku name for the disk to create. Can be
-          Standard_LRS, Premium_LRS, StandardSSD_LRS, or UltraSSD_LRS. The
-          default value is Standard_LRS.
+        Standard_LRS, Premium_LRS, StandardSSD_LRS, or UltraSSD_LRS. The
+        default value is Standard_LRS.
     region (str): Optional. The region in which to create the disk copy. If not
-          provided, the disk will be created in the default_region (eastus).
+        provided, the disk will be created in the default_region (eastus).
     src_profile (str): Optional. The name of the source profile to use for the
         disk copy, i.e. the account information of the Azure account that holds
         the disk. For more information on profiles, see GetCredentials()
@@ -86,13 +86,12 @@ def CreateDiskCopy(
         disk_to_copy.name))
     snapshot = disk_to_copy.Snapshot()
 
-    # pylint: disable=line-too-long
-    diff_account = dst_account.subscription_id not in src_account.ListSubscriptionIDs()
-    # pylint: enable=line-too-long
+    subscription_ids = src_account.ListSubscriptionIDs()
+    diff_account = dst_account.subscription_id not in subscription_ids
     diff_region = dst_account.default_region != snapshot.region
 
     # If the destination account is different from the source account or if the
-    # destination region is not the same as the region in which the source
+    # destination region is different from the region in which the source
     # disk is, then we need to create the disk from a storage account in
     # which we import the previously created snapshot (cross-region/account
     # sharing).
@@ -107,13 +106,11 @@ def CreateDiskCopy(
           disk_type=disk_type)
       # Revoke download link and delete the initial copy
       snapshot.RevokeAccessURI()
-      snapshot.Delete()
-      return new_disk
-
-    new_disk = dst_account.CreateDiskFromSnapshot(
-        snapshot,
-        disk_name_prefix=common.DEFAULT_DISK_COPY_PREFIX,
-        disk_type=disk_type)
+    else:
+      new_disk = dst_account.CreateDiskFromSnapshot(
+          snapshot,
+          disk_name_prefix=common.DEFAULT_DISK_COPY_PREFIX,
+          disk_type=disk_type)
     snapshot.Delete()
     common.LOGGER.info(
         'Disk {0:s} successfully copied to {1:s}'.format(
