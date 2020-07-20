@@ -160,7 +160,7 @@ def ExecuteRequest(
     request = getattr(client, func)
     response = request(**kwargs)
     responses.append(response)
-    next_link = response.getattr('next_link', None)
+    next_link = response.next_link if hasattr(response, 'next_link') else None
     if not next_link:
       return responses
 
