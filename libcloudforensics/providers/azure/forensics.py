@@ -16,10 +16,14 @@
 
 from typing import TYPE_CHECKING, Optional
 
+from libcloudforensics import logging_utils
 from libcloudforensics.providers.azure.internal import account, common
 
 if TYPE_CHECKING:
   from libcloudforensics.providers.azure.internal import compute
+
+logging_utils.SetUpLogger(__name__)
+logger = logging_utils.GetLogger(__name__)
 
 
 def CreateDiskCopy(
@@ -82,7 +86,7 @@ def CreateDiskCopy(
     elif instance_name:
       instance = src_account.GetInstance(instance_name)
       disk_to_copy = instance.GetBootDisk()
-    common.LOGGER.info('Disk copy of {0:s} started...'.format(
+    logger.info('Disk copy of {0:s} started...'.format(
         disk_to_copy.name))
     snapshot = disk_to_copy.Snapshot()
 
@@ -112,9 +116,8 @@ def CreateDiskCopy(
           disk_name_prefix=common.DEFAULT_DISK_COPY_PREFIX,
           disk_type=disk_type)
     snapshot.Delete()
-    common.LOGGER.info(
-        'Disk {0:s} successfully copied to {1:s}'.format(
-            disk_to_copy.name, new_disk.name))
+    logger.info('Disk {0:s} successfully copied to {1:s}'.format(
+        disk_to_copy.name, new_disk.name))
   except RuntimeError as exception:
     error_msg = 'Cannot copy disk "{0:s}": {1!s}'.format(
         str(disk_name), str(exception))

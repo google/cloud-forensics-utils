@@ -16,7 +16,6 @@
 
 import binascii
 import json
-import logging
 import os
 import re
 
@@ -38,8 +37,6 @@ REGEX_SNAPSHOT_NAME = re.compile('^(?=.{1,80}$)[a-zA-Z0-9]([\\w,-]*[\\w])?$')
 REGEX_ACCOUNT_STORAGE_NAME = re.compile('^[a-z0-9]{1,24}$')
 
 DEFAULT_DISK_COPY_PREFIX = 'evidence'
-
-LOGGER = logging.getLogger()
 
 
 def GetCredentials(profile_name: Optional[str] = None

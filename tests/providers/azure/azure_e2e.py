@@ -18,11 +18,13 @@ import typing
 import unittest
 
 from msrestazure.azure_exceptions import CloudError  # pylint: disable=import-error
-
-from libcloudforensics.providers.azure.internal.common import LOGGER
+from libcloudforensics import logging_utils
 from libcloudforensics.providers.azure.internal import account
 from libcloudforensics.providers.azure import forensics
 from tests.scripts import utils
+
+logging_utils.SetUpLogger(__name__)
+logger = logging_utils.GetLogger(__name__)
 
 
 class EndToEndTest(unittest.TestCase):
@@ -142,13 +144,13 @@ class EndToEndTest(unittest.TestCase):
   def tearDownClass(cls):
     # Delete the disks
     for disk in cls.disks:
-      LOGGER.info('Deleting disk: {0:s}.'.format(disk.name))
+      logger.info('Deleting disk: {0:s}.'.format(disk.name))
       try:
         cls.az.compute_client.disks.delete(disk.resource_group_name, disk.name)
       except CloudError as exception:
         raise RuntimeError('Could not complete cleanup: {0:s}'.format(
             str(exception)))
-      LOGGER.info('Disk {0:s} successfully deleted.'.format(disk.name))
+      logger.info('Disk {0:s} successfully deleted.'.format(disk.name))
 
 
 if __name__ == '__main__':

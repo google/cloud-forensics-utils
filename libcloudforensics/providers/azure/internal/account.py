@@ -321,7 +321,6 @@ class AZAccount:
     except ResourceExistsError:
       # The container already exists, so we can re-use it
       logger.warning('Reusing existing container: {0:s}'.format(container_name))
-      pass
 
     # Download the snapshot from the URI to the storage
     copied_blob = blob_service_client.get_blob_client(
