@@ -21,6 +21,7 @@ from typing import Optional
 import libcloudforensics.providers.gcp.internal.build as build_module
 import libcloudforensics.providers.gcp.internal.compute as compute_module
 import libcloudforensics.providers.gcp.internal.function as function_module
+import libcloudforensics.providers.gcp.internal.gke as gke_module
 import libcloudforensics.providers.gcp.internal.log as log_module
 import libcloudforensics.providers.gcp.internal.monitoring as monitoring_module
 import libcloudforensics.providers.gcp.internal.storage as storage_module
@@ -53,6 +54,7 @@ class GoogleCloudProject:
     self.default_zone = default_zone
     self._compute = None  # type: Optional[compute_module.GoogleCloudCompute]
     self._function = None  # type: Optional[function_module.GoogleCloudFunction]
+    self._gke = None  # type: Optional[gke_module.GoogleKubernetesEngine]
     self._build = None  # type: Optional[build_module.GoogleCloudBuild]
     self._log = None  # type: Optional[log_module.GoogleCloudLog]
     self._storage = None  # type: Optional[storage_module.GoogleCloudStorage]
@@ -87,6 +89,19 @@ class GoogleCloudProject:
     self._function = function_module.GoogleCloudFunction(
         self.project_id)
     return self._function
+
+  @property
+  def gke(self) -> gke_module.GoogleKubernetesEngine:
+    """Get a GoogleKubernetesEngine object for the project.
+
+    Returns:
+      GoogleKubernetesEngine: Object that represents Google Kubernetes Engine.
+    """
+
+    if self._gke:
+      return self._gke
+    self._gke = gke_module.GoogleKubernetesEngine()
+    return self._gke
 
   @property
   def build(self) -> build_module.GoogleCloudBuild:
