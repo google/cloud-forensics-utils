@@ -135,13 +135,21 @@ def StartAnalysisVm(args: 'argparse.Namespace') -> None:
       attach_volumes.append(attach)
       device_letter = device_letter + 1
 
+  key_name = args.ssh_key_name
+  if args.generate_ssh_key_pair:
+    print('Generating SSH key pair for the analysis VM.')
+    aws_account = account.AWSAccount(args.zone)
+    key_name, private_key = aws_account.GenerateSSHKeyPair(args.instance_name)
+    print('Created key pair {0:s} in AWS. Your private key is: \n{1:s}'.format(
+        key_name, private_key))
+
   print('Starting analysis VM...')
   vm = forensics.StartAnalysisVm(vm_name=args.instance_name,
                                  default_availability_zone=args.zone,
                                  boot_volume_size=int(args.boot_volume_size),
                                  cpu_cores=int(args.cpu_cores),
                                  ami=args.ami,
-                                 ssh_key_name=args.ssh_key_name,
+                                 ssh_key_name=key_name,
                                  attach_volumes=attach_volumes,
                                  dst_profile=args.dst_profile)
 
