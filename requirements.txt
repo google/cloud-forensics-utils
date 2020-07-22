@@ -13,3 +13,5 @@ azure-mgmt-storage==11.1.0
 azure-storage-blob
 msrest
 msrestazure
+sshpubkeys
+pycryptodome

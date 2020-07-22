@@ -14,7 +14,7 @@
 # limitations under the License.
 """Forensics on Azure."""
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, List, Dict, Tuple
 
 from libcloudforensics import logging_utils
 from libcloudforensics.providers.azure.internal import account, common
@@ -125,3 +125,66 @@ def CreateDiskCopy(
     raise RuntimeError(error_msg)
 
   return new_disk
+
+
+def StartAnalysisVm(
+    resource_group_name: str,
+    vm_name: str,
+    boot_disk_size: int,
+    ssh_public_key: str,
+    cpu_cores: int = 4,
+    memory_in_mb: int = 8192,
+    region: str = 'eastus',
+    attach_disks: Optional[List[str]] = None,
+    tags: Optional[Dict[str, str]] = None,
+    dst_profile: Optional[str] = None
+    ) -> Tuple['compute.AZVirtualMachine', bool]:
+  """Start a virtual machine for analysis purposes.
+
+  Look for an existing Azure virtual machine with name vm_name. If found,
+  this instance will be started and used as analysis VM. If not found, then a
+  new vm with that name will be created, started and returned. Note that if a
+  new vm is created, you should provide the ssh_public_key parameter.
+
+  Args:
+    resource_group_name (str): The resource group in which to create the
+        analysis vm.
+    vm_name (str): The name for the virtual machine.
+    boot_disk_size (int): The size of the analysis VM boot disk (in GB).
+    ssh_public_key (str): A SSH public key data to associate with the
+        VM. This must be provided as otherwise the VM will not be
+        accessible.
+    cpu_cores (int): Number of CPU cores for the analysis VM.
+    memory_in_mb (int): The memory size (in MB) for the analysis VM.
+    region (str): Optional. The region in which to create the VM.
+        Default is eastus.
+    attach_disks (List[str]): Optional. List of disk names to attach to the VM.
+    tags (Dict[str, str]): Optional. A dictionary of tags to add to the
+        instance, for example {'TicketID': 'xxx'}. An entry for the instance
+        name is added by default.
+    dst_profile (str): The name of the destination profile to use for the vm
+        creation, i.e. the account information of the Azure account in which
+        to create the vm. For more information on profiles,
+        see GetCredentials() in
+        libcloudforensics.providers.azure.internal.common.py
+
+  Returns:
+    Tuple[AZVirtualMachine, bool]: a tuple with a virtual machine object
+        and a boolean indicating if the virtual machine was created or not.
+  """
+
+  az_account = account.AZAccount(resource_group_name,
+                                 default_region=region,
+                                 profile_name=dst_profile)
+
+  analysis_vm, created = az_account.GetOrCreateAnalysisVm(
+      vm_name,
+      boot_disk_size,
+      cpu_cores,
+      memory_in_mb,
+      ssh_public_key,
+      tags=tags)
+
+  for disk_name in (attach_disks or []):
+    analysis_vm.AttachDisk(az_account.GetDisk(disk_name))
+  return analysis_vm, created

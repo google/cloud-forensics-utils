@@ -13,16 +13,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Represents an Azure account."""
+
+import base64
 import hashlib
 from time import sleep
-from typing import Optional, Dict, Tuple, List
+from typing import Optional, Dict, Tuple, List, Any
 
 # Pylint complains about the import but the library imports just fine,
 # so we can ignore the warning.
 # pylint: disable=import-error
+import sshpubkeys
 from azure.core import exceptions
 from azure.mgmt import compute as azure_compute
-from azure.mgmt import resource, storage
+from azure.mgmt import resource, storage, network
 from azure.mgmt.compute.v2020_05_01 import models
 from azure.storage import blob
 from msrestazure import azure_exceptions
@@ -30,6 +33,7 @@ from msrestazure import azure_exceptions
 
 from libcloudforensics.providers.azure.internal import compute, common
 from libcloudforensics import logging_utils
+from libcloudforensics.scripts import utils
 
 logging_utils.SetUpLogger(__name__)
 logger = logging_utils.GetLogger(__name__)
@@ -69,6 +73,8 @@ class AZAccount:
     self.storage_client = storage.StorageManagementClient(
         self.credentials, self.subscription_id)
     self.resource_client = resource.ResourceManagementClient(
+        self.credentials, self.subscription_id)
+    self.network_client = network.NetworkManagementClient(
         self.credentials, self.subscription_id)
     self.default_resource_group_name = self._GetOrCreateResourceGroup(
         default_resource_group_name)
@@ -380,6 +386,314 @@ class AZAccount:
                           disk.name,
                           disk.location,
                           disk.zones)
+
+  def GetOrCreateAnalysisVm(
+      self,
+      vm_name: str,
+      boot_disk_size: int,
+      cpu_cores: int,
+      memory_in_mb: int,
+      ssh_public_key: str,
+      region: Optional[str] = None,
+      packages: Optional[List[str]] = None,
+      tags: Optional[Dict[str, str]] = None
+  ) -> Tuple[compute.AZVirtualMachine, bool]:
+    """Get or create a new virtual machine for analysis purposes.
+
+    Args:
+      vm_name (str): The instance name tag of the virtual machine.
+      boot_disk_size (int): The size of the analysis VM boot volume (in GB).
+      cpu_cores (int): Number of CPU cores for the analysis VM.
+      memory_in_mb (int): The memory size (in MB) for the analysis VM.
+      ssh_public_key (str): A SSH public key data to associate with the
+          VM. This must be provided as otherwise the VM will not be
+          accessible.
+      region (str): Optional. The region in which to create the vm. If not
+          provided, the vm will be created in the default_region
+          associated to the AZAccount object.
+      packages (List[str]): Optional. List of packages to install in the VM.
+      tags (Dict[str, str]): Optional. A dictionary of tags to add to the
+          instance, for example {'TicketID': 'xxx'}. An entry for the
+          instance name is added by default.
+
+    Returns:
+      Tuple[AWSInstance, bool]: A tuple with an AZVirtualMachine object
+          and a boolean indicating if the virtual machine was created
+          (True) or reused (False).
+
+    Raises:
+      RuntimeError: If the virtual machine cannot be found or created.
+    """
+
+    # Re-use instance if it already exists, or create a new one.
+    try:
+      instance = self.GetInstance(vm_name)
+      if instance:
+        created = False
+        return instance, created
+    except RuntimeError:
+      pass
+
+    # Validate SSH public key format
+    try:
+      sshpubkeys.SSHKey(ssh_public_key, strict=True).parse()
+    except sshpubkeys.InvalidKeyError as exception:
+      raise RuntimeError('The provided public SSH key is invalid: '
+                         '{0:s}'.format(str(exception)))
+
+    instance_type = self._GetInstanceType(cpu_cores, memory_in_mb)
+    startup_script = utils.ReadStartupScript()
+    if packages:
+      startup_script = startup_script.replace('${packages[@]}', ' '.join(
+          packages))
+
+    if not region:
+      region = self.default_region
+
+    creation_data = {
+        'location': region,
+        'properties': {
+            'hardwareProfile': {'vmSize': instance_type},
+            'storageProfile': {
+                'imageReference': {
+                    'sku': '18.04-LTS',
+                    'publisher': 'Canonical',
+                    'version': 'latest',
+                    'offer': 'UbuntuServer'}
+            },
+            'osDisk': {
+                'caching': "ReadWrite",
+                'managedDisk': {'storageAccountType': 'Standard_LRS'},
+                'name': 'os-disk-{0:s}'.format(vm_name),
+                'diskSizeGb': boot_disk_size,
+                'createOption': models.DiskCreateOption.from_image
+            },
+            'osProfile': {
+                'adminUsername': 'AzureUser',
+                'computerName': vm_name,
+                # Azure requires the startup script to be sent as a b64 string
+                'customData': base64.b64encode(
+                    str.encode(startup_script)).decode('utf-8'),
+                'linuxConfiguration': {
+                    'ssh': {
+                        'publicKeys': [{
+                            'path': '/home/AzureUser/.ssh/authorized_keys',
+                            'keyData': ssh_public_key}]
+                    }
+                }
+            },
+            'networkProfile': {
+                'networkInterfaces': [{'id': self._CreateNetworkInterfaceForVM(
+                    vm_name, region)}]
+            }
+        }
+    }  # type: Dict[str, Any]
+
+    if tags:
+      creation_data['tags'] = tags
+
+    try:
+      request = self.compute_client.virtual_machines.create_or_update(
+          self.default_resource_group_name,
+          vm_name,
+          creation_data
+      )
+      while not request.done():
+        sleep(5)  # Wait 5 seconds before checking disk status again
+      vm = request.result()
+    except azure_exceptions.CloudError as exception:
+      raise RuntimeError('Could not create instance {0:s}: {1:s}'.format(
+          vm_name, str(exception)))
+
+    instance = compute.AZVirtualMachine(self,
+                                        vm.id,
+                                        vm.name,
+                                        vm.location,
+                                        zones=vm.zones)
+    created = True
+    return instance, created
+
+  def ListInstanceTypes(self,
+                        region: Optional[str] = None) -> List[Dict[str, Any]]:
+    """Returns a list of available VM sizes for a given region.
+
+    Args:
+      region (str): Optional. The region in which to look the instance types.
+          By default, look in the default_region associated to the AZAccount
+          object.
+
+    Returns:
+      List[Dict[str, str]]: A list of available vm size. Each size is a
+          dictionary containing the name of the configuration, the number of
+          CPU cores, and the amount of available memory (in MB).
+          E.g.: {'Name': 'Standard_B1ls', 'CPU': 1, 'Memory': 512}
+    """
+    if not region:
+      region = self.default_region
+    available_vms = self.compute_client.virtual_machine_sizes.list(region)
+    vm_sizes = []
+    for vm in available_vms:
+      vm_sizes.append({
+          'Name': vm.name,
+          'CPU': vm.number_of_cores,
+          'Memory': vm.memory_in_mb
+      })
+    return vm_sizes
+
+  def _GetInstanceType(self, cpu_cores: int, memory_in_mb: int) -> str:
+    """Returns an instance type for the given number of CPU cores / memory.
+
+    Args:
+      cpu_cores (int): The number of CPU cores.
+      memory_in_mb (int): The amount of memory (in MB).
+
+    Returns:
+      str: The instance type for the given configuration.
+
+    Raises:
+      ValueError: If no instance type matches the requested configuration.
+    """
+    vm_sizes = self.ListInstanceTypes()
+    for size in vm_sizes:
+      if size['CPU'] == cpu_cores and size['Memory'] == memory_in_mb:
+        instance_type = size['Name']  # type: str
+        return instance_type
+    raise ValueError(
+        'No instance type found for the requested configuration: {0:d} CPU '
+        'cores, {1:d} MB memory.'.format(cpu_cores, memory_in_mb))
+
+  def _CreateNetworkInterfaceForVM(self,
+                                   vm_name: str,
+                                   region: Optional[str] = None) -> str:
+    """Create a network interface and returns its ID.
+    This is necessary when creating a VM from the SDK.
+    See https://docs.microsoft.com/en-us/azure/virtual-machines/windows/python
+
+    Args:
+      vm_name (str): The name of the VM to create the network interface for.
+      region (str): Optional. The region in which to create the network
+          interface. Default uses default_region of the AZAccount object.
+
+    Returns:
+      str: The id of the created network interface.
+
+    Raises:
+      ValueError: if vm_name is not provided.
+      RuntimeError: If no network interface could be created.
+    """
+    if not vm_name:
+      raise ValueError('vm_name cannot be None.')
+
+    if not region:
+      region = self.default_region
+
+    network_interface_name = '{0:s}-nic'.format(vm_name)
+    ip_config_name = '{0:s}-ipconfig'.format(vm_name)
+
+    # Check if the network interface already exists, and returns its ID if so.
+    try:
+      nic = self.network_client.network_interfaces.get(
+          self.default_resource_group_name, network_interface_name)
+      nic_id = nic.id  # type: str
+      return nic_id
+    except azure_exceptions.CloudError:
+      # NIC doesn't exist, ignore the error and create it
+      pass
+
+    # pylint: disable=unbalanced-tuple-unpacking
+    public_ip, _, subnet = self._CreateNetworkInterfaceElements(
+        vm_name, region=region)
+    # pylint: enable=unbalanced-tuple-unpacking
+
+    creation_data = {
+        'location': region,
+        'ip_configurations': [{
+            'name': ip_config_name,
+            'public_ip_address': public_ip,
+            'subnet': {
+                'id': subnet.id
+            }
+        }]
+    }
+
+    try:
+      request = self.network_client.network_interfaces.create_or_update(
+          self.default_resource_group_name,
+          network_interface_name,
+          creation_data)
+      request.wait()
+    except azure_exceptions.CloudError as exception:
+      raise RuntimeError('Could not create network interface: {0:s}'.format(
+          str(exception)))
+
+    network_interface_id = request.result().id  # type: str
+    return network_interface_id
+
+  def _CreateNetworkInterfaceElements(
+      self,
+      vm_name: str,
+      region: Optional[str] = None) -> Tuple[Any, ...]:
+    """Creates required elements for creating a network interface.
+
+    Args:
+      vm_name (str): The name of the VM to create the network interface
+          elements for.
+      region (str): Optional. The region in which to create the elements.
+          Default uses default_region of the AZAccount object.
+
+    Returns:
+      Tuple[Any, Any, Any]: A tuple containing a public IP address object,
+          a virtual network object and a subnet object.
+
+    Raises:
+      RuntimeError: If the elements could not be created.
+    """
+
+    if not region:
+      region = self.default_region
+
+    public_ip_name = '{0:s}-public-ip'.format(vm_name)
+    vnet_name = '{0:s}-vnet'.format(vm_name)
+    subnet_name = '{0:s}-subnet'.format(vm_name)
+
+    client_to_creation_data = {
+        self.network_client.public_ip_addresses: {
+            'resource_group_name': self.default_resource_group_name,
+            'public_ip_address_name': public_ip_name,
+            'parameters': {
+                'location': region,
+                'public_ip_allocation_method': 'Dynamic'
+            }
+        },
+        self.network_client.virtual_networks: {
+            'resource_group_name': self.default_resource_group_name,
+            'virtual_network_name': vnet_name,
+            'parameters': {
+                'location': region,
+                'address_space': {'address_prefixes': ['10.0.0.0/16']}
+            }
+        },
+        self.network_client.subnets: {
+            'resource_group_name': self.default_resource_group_name,
+            'virtual_network_name': vnet_name,
+            'subnet_name': subnet_name,
+            'subnet_parameters': {
+                'address_prefix': '10.0.0.0/24'
+            }
+        }
+    }  # type: Dict[str, Any]
+
+    result = []
+    try:
+      for client in client_to_creation_data:
+        request = common.ExecuteRequest(
+            client, 'create_or_update', client_to_creation_data[client])[0]
+        request.wait()
+        result.append(request.result())
+    except azure_exceptions.CloudError as exception:
+      raise RuntimeError('Could not create network interface elements: '
+                         '{0:s}'.format(str(exception)))
+    return tuple(result)
 
   def _CreateStorageAccount(self,
                             storage_account_name: str,
