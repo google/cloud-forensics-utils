@@ -34,7 +34,8 @@ PROVIDER_TO_FUNC = {
     'az': {
         'copydisk': az_cli.CreateDiskCopy,
         'listinstances': az_cli.ListInstances,
-        'listdisks': az_cli.ListDisks
+        'listdisks': az_cli.ListDisks,
+        'startvm': az_cli.StartAnalysisVm
     },
     'gcp': {
         'copydisk': gcp_cli.CreateDiskCopy,
@@ -214,6 +215,26 @@ def Main() -> None:
                                   'use the same destination profile as the '
                                   'source profile.', None)
             ])
+  AddParser('az', az_subparsers, 'startvm', 'Start a forensic analysis VM.',
+            args=[
+                ('instance_name', 'Name of the Azure instance to create.',
+                 None),
+                ('--disk_size', 'Size of disk in GB.', 50),
+                ('--cpu_cores', 'Instance CPU core count.', 4),
+                ('--memory_in_mb', 'Instance amount of RAM memory.', 8192),
+                ('--region', 'The region in which to create the VM. If not '
+                             'provided, the VM will be created in the '
+                             '"eastus" region.', 'eastus'),
+                ('--attach_disks', 'Comma separated list of disk names '
+                                   'to attach.', None),
+                ('--ssh_public_key', 'A SSH public key to register with the '
+                                     'VM. e.g. ssh-rsa AAdddbbh... If not '
+                                     'provided, a new SSH key pair will be '
+                                     'generated.', None),
+                ('--dst_profile', 'The Azure profile information to use as '
+                                  'destination account for the vm creation.',
+                 None)
+            ])
 
   # GCP parser options
   gcp_parser.add_argument('project', help='GCP project ID.')
@@ -241,7 +262,7 @@ def Main() -> None:
                 ('--disk_size', 'Size of disk in GB.', '50'),
                 ('--disk_type', 'Type of disk.', 'pd-ssd'),
                 ('--cpu_cores', 'Instance CPU core count.', '4'),
-                ('--attach_disks', 'Comma seperated list of disk names '
+                ('--attach_disks', 'Comma separated list of disk names '
                                    'to attach.', None)
             ])
   AddParser('gcp', gcp_subparsers, 'querylogs', 'Query GCP logs.',

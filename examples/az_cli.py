@@ -13,8 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Demo CLI tool for Azure."""
-
+import os
 from typing import TYPE_CHECKING
+from Crypto.PublicKey import RSA
 
 from libcloudforensics import logging_utils
 from libcloudforensics.providers.azure.internal import account
@@ -74,3 +75,81 @@ def CreateDiskCopy(args: 'argparse.Namespace') -> None:
                                        src_profile=args.src_profile,
                                        dst_profile=args.dst_profile)
   logger.info('Done! Disk {0:s} successfully created.'.format(disk_copy.name))
+
+
+def StartAnalysisVm(args: 'argparse.Namespace') -> None:
+  """Start forensic analysis VM.
+
+  Args:
+    args (argparse.Namespace): Arguments from ArgumentParser.
+  """
+  attach_disks = []
+  if args.attach_disks:
+    attach_disks = args.attach_disks.split(',')
+    # Check if attach_disks parameter exists and if there
+    # are any empty entries.
+    if not (attach_disks and all(elements for elements in attach_disks)):
+      logger.error('error: parameter --attach_disks: {0:s}'.format(
+          args.attach_disks))
+      return
+
+  ssh_public_key = args.ssh_public_key
+  if not ssh_public_key:
+    # According to https://docs.microsoft.com/cs-cz/samples/azure-samples/
+    # resource-manager-python-template-deployment/resource-manager-python-
+    # template-deployment/ there's no API to generate a new SSH key pair in
+    # Azure, so we do this manually...
+    ssh_public_key = _GenerateSSHKeyPair(args.instance_name)
+
+  logger.info('Starting analysis VM...')
+  vm = forensics.StartAnalysisVm(args.default_resource_group_name,
+                                 args.instance_name,
+                                 int(args.disk_size),
+                                 ssh_public_key,
+                                 cpu_cores=int(args.cpu_cores),
+                                 memory_in_mb=int(args.memory_in_mb),
+                                 region=args.region,
+                                 attach_disks=attach_disks,
+                                 dst_profile=args.dst_profile)
+
+  logger.info('Analysis VM started.')
+  logger.info('Name: {0:s}, Started: {1:s}'.format(vm[0].name, str(vm[1])))
+
+
+def _GenerateSSHKeyPair(vm_name: str) -> str:
+  """Generate a SSH key pair and returns its public key.
+
+  Both public and private keys will be saved in the current directory.
+
+  Args:
+    vm_name (str): The VM name for which to generate the key pair.
+
+  Returns:
+    str: The public key for the generated SSH key pair.
+
+  Raises:
+    ValueError: If vm_name is None.
+  """
+  if not vm_name:
+    raise ValueError('Parameter vm_name must not be None.')
+
+  logger.info('Generating a new SSH key pair for VM: {0:s}'.format(vm_name))
+
+  key = RSA.generate(2048)
+  key_name = '{0:s}-ssh'.format(vm_name)
+
+  public_key = key.publickey().exportKey('OpenSSH')
+  path_public_key = os.path.join(os.getcwd(), key_name + '.pub')
+
+  private_key = key.exportKey('PEM')
+  path_private_key = os.path.join(os.getcwd(), key_name + '.pem')
+
+  with open(path_private_key, 'wb') as f:
+    f.write(private_key)
+  with open(path_public_key, 'wb') as f:
+    f.write(public_key)
+
+  logger.info('SSH key pair generated. Public key saved in {0:s}, private key '
+              'saved in {1:s}'.format(path_public_key, path_private_key))
+
+  return public_key.decode('utf-8')
