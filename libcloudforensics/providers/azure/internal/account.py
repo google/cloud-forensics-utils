@@ -332,8 +332,13 @@ class AZAccount:
                 'Depending on the size of the snapshot, this process is going '
                 'to take a while.'.format(snapshot_uri))
     copied_blob.start_copy_from_url(snapshot_uri)
-    while copied_blob.get_blob_properties().copy.status != 'success':
+    copy_status = copied_blob.get_blob_properties().copy.status
+    while copy_status != 'success':
       sleep(5)  # Wait for the vhd to be imported in the Azure storage container
+      copy_status = copied_blob.get_blob_properties().copy.status
+      if copy_status in ('aborted', 'failed'):
+        raise RuntimeError('Could not import the snapshot from URI '
+                           '{0:s}'.format(snapshot_uri))
       logger.debug('Importing snapshot from URI {0:s}'.format(snapshot_uri))
     logger.info('Snapshot successfully imported from URI {0:s}'.format(
         snapshot_uri))
