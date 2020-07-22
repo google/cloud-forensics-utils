@@ -4,3 +4,12 @@ google-api-python-client
 google-auth
 boto3
 botocore
+azure-common
+azure-core
+azure-identity
+azure-mgmt-compute==13.0.0
+azure-mgmt-resource
+azure-mgmt-storage==11.1.0
+azure-storage-blob
+msrest
+msrestazure
