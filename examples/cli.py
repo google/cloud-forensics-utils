@@ -184,10 +184,11 @@ def Main() -> None:
                                 'instance will be copied.', None),
                 ('--disk_type', 'The SKU name for the disk to create. '
                                 'Can be Standard_LRS, Premium_LRS, '
-                                'StandardSSD_LRS, or UltraSSD_LRS.', None),
+                                'StandardSSD_LRS, or UltraSSD_LRS. Default is '
+                                'Standard_LRS', 'Standard_LRS'),
                 ('--region', 'The region in which to create the disk copy. If '
                              'not provided, the disk copy will be created in '
-                             'the "eastus" region.', None),
+                             'the "eastus" region.', 'eastus'),
                 ('--src_profile', 'The Azure profile information to use as '
                                   'source account for the disk copy. Default '
                                   'will look into environment variables to '

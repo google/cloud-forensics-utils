@@ -31,7 +31,7 @@ def CreateDiskCopy(
     instance_name: Optional[str] = None,
     disk_name: Optional[str] = None,
     disk_type: str = 'Standard_LRS',
-    region: Optional[str] = None,
+    region: str = 'eastus',
     src_profile: Optional[str] = None,
     dst_profile: Optional[str] = None) -> 'compute.AZDisk':
   """Creates a copy of an Azure Compute Disk.
@@ -48,8 +48,8 @@ def CreateDiskCopy(
     disk_type (str): Optional. The sku name for the disk to create. Can be
         Standard_LRS, Premium_LRS, StandardSSD_LRS, or UltraSSD_LRS. The
         default value is Standard_LRS.
-    region (str): Optional. The region in which to create the disk copy. If not
-        provided, the disk will be created in the default_region (eastus).
+    region (str): Optional. The region in which to create the disk copy.
+        Default is eastus.
     src_profile (str): Optional. The name of the source profile to use for the
         disk copy, i.e. the account information of the Azure account that holds
         the disk. For more information on profiles, see GetCredentials()

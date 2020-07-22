@@ -16,8 +16,12 @@
 
 from typing import TYPE_CHECKING
 
+from libcloudforensics import logging_utils
 from libcloudforensics.providers.azure.internal import account
 from libcloudforensics.providers.azure import forensics
+
+logging_utils.SetUpLogger(__name__)
+logger = logging_utils.GetLogger(__name__)
 
 if TYPE_CHECKING:
   import argparse
@@ -34,10 +38,10 @@ def ListInstances(args: 'argparse.Namespace') -> None:
   instances = az_account.ListInstances(
       resource_group_name=args.resource_group_name)
 
-  print('Instances found:')
+  logger.info('Instances found:')
   for instance in instances.values():
     boot_disk = instance.GetBootDisk().name
-    print('Name: {0:s}, Boot disk: {1:s}'.format(instance, boot_disk))
+    logger.info('Name: {0:s}, Boot disk: {1:s}'.format(instance, boot_disk))
 
 
 def ListDisks(args: 'argparse.Namespace') -> None:
@@ -50,9 +54,9 @@ def ListDisks(args: 'argparse.Namespace') -> None:
   az_account = account.AZAccount(args.default_resource_group_name)
   disks = az_account.ListDisks(resource_group_name=args.resource_group_name)
 
-  print('Disks found:')
+  logger.info('Disks found:')
   for disk in disks:
-    print('Name: {0:s}, Region: {1:s}'.format(disk, disks[disk].region))
+    logger.info('Name: {0:s}, Region: {1:s}'.format(disk, disks[disk].region))
 
 
 def CreateDiskCopy(args: 'argparse.Namespace') -> None:
@@ -61,7 +65,7 @@ def CreateDiskCopy(args: 'argparse.Namespace') -> None:
   Args:
     args (argparse.Namespace): Arguments from ArgumentParser.
   """
-  print('Starting disk copy...')
+  logger.info('Starting disk copy...')
   disk_copy = forensics.CreateDiskCopy(args.default_resource_group_name,
                                        instance_name=args.instance_name,
                                        disk_name=args.disk_name,
@@ -69,4 +73,4 @@ def CreateDiskCopy(args: 'argparse.Namespace') -> None:
                                        region=args.region,
                                        src_profile=args.src_profile,
                                        dst_profile=args.dst_profile)
-  print('Done! Disk {0:s} successfully created.'.format(disk_copy.name))
+  logger.info('Done! Disk {0:s} successfully created.'.format(disk_copy.name))

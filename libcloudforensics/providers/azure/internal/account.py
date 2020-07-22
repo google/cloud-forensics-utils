@@ -46,7 +46,7 @@ class AZAccount:
 
   def __init__(self,
                default_resource_group_name: str,
-               default_region: Optional[str] = None,
+               default_region: str = 'eastus',
                profile_name: Optional[str] = None) -> None:
     """Initialize the AZAccount class.
 
@@ -55,7 +55,7 @@ class AZAccount:
           create new resources in. If the resource group does not exists,
           it will be automatically created.
       default_region (str): Optional. The default region to create new
-          resources in. If None, it will default to eastus.
+          resources in. Default is eastus.
       profile_name (str): Optional. The name of the profile to use for Azure
           operations. For more information on profiles, see GetCredentials()
           in libcloudforensics.providers.azure.internal.common.py. Default
@@ -63,7 +63,7 @@ class AZAccount:
           environment variables.
     """
     self.subscription_id, self.credentials = common.GetCredentials(profile_name)
-    self.default_region = default_region or 'eastus'
+    self.default_region = default_region
     self.compute_client = azure_compute.ComputeManagementClient(
         self.credentials, self.subscription_id)
     self.storage_client = storage.StorageManagementClient(
@@ -402,6 +402,7 @@ class AZAccount:
     if not region:
       region = self.default_region
 
+    # https://docs.microsoft.com/en-us/rest/api/storagerp/srp_sku_types
     creation_data = {
         'location': region,
         'sku': {
