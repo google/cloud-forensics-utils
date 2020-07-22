@@ -853,6 +853,7 @@ class GCPTest(unittest.TestCase):
   # pylint: disable=line-too-long
 
   @typing.no_type_check
+  @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleComputeDisk.GetDiskType')
   @mock.patch('libcloudforensics.providers.gcp.internal.common.GoogleCloudComputeClient.BlockOperation')
   @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleComputeInstance.GetDisk')
   @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleComputeInstance.GetBootDisk')
@@ -863,7 +864,8 @@ class GCPTest(unittest.TestCase):
                           mock_get_instance,
                           mock_get_boot_disk,
                           mock_get_disk,
-                          mock_block_operation):
+                          mock_block_operation,
+                          mock_disk_type):
     """Test that a disk from a remote project is duplicated and attached to
     an analysis project. """
     instances = mock_gce_api.return_value.instances.return_value.aggregatedList
@@ -871,6 +873,7 @@ class GCPTest(unittest.TestCase):
     mock_get_instance.return_value = FAKE_INSTANCE
     mock_get_boot_disk.return_value = FAKE_BOOT_DISK
     mock_block_operation.return_value = None
+    mock_disk_type.return_value = 'fake-disk-type'
 
     # create_disk_copy(
     #     src_proj,
@@ -890,6 +893,7 @@ class GCPTest(unittest.TestCase):
     self.assertTrue(new_disk.name.endswith('-copy'))
 
   @typing.no_type_check
+  @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleComputeDisk.GetDiskType')
   @mock.patch('libcloudforensics.providers.gcp.internal.common.GoogleCloudComputeClient.BlockOperation')
   @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleComputeInstance.GetBootDisk')
   @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleCloudCompute.GetDisk')
@@ -898,13 +902,15 @@ class GCPTest(unittest.TestCase):
                           mock_gce_api,
                           mock_get_disk,
                           mock_get_boot_disk,
-                          mock_block_operation):
+                          mock_block_operation,
+                          mock_disk_type):
     """Test that a disk from a remote project is duplicated and attached to
     an analysis project. """
     instances = mock_gce_api.return_value.instances.return_value.aggregatedList
     instances.return_value.execute.return_value = MOCK_INSTANCES_AGGREGATED
     mock_get_disk.return_value = FAKE_DISK
     mock_block_operation.return_value = None
+    mock_disk_type.return_value = 'fake-disk-type'
 
     # create_disk_copy(
     #     src_proj,
