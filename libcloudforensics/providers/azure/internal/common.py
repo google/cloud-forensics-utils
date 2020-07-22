@@ -15,11 +15,11 @@
 """Common utilities."""
 
 import binascii
-import logging
+import json
 import os
 import re
 
-from typing import Any, List, Dict, Optional, TYPE_CHECKING
+from typing import Any, List, Dict, Optional, TYPE_CHECKING, Tuple
 # Pylint complains about the import but the library imports just fine,
 # so we can ignore the warning.
 from azure.common.credentials import ServicePrincipalCredentials  # pylint: disable=import-error
@@ -34,21 +34,101 @@ if TYPE_CHECKING:
 # pylint: enable=line-too-long
 REGEX_DISK_NAME = re.compile('^[\\w]{1,80}$')
 REGEX_SNAPSHOT_NAME = re.compile('^(?=.{1,80}$)[a-zA-Z0-9]([\\w,-]*[\\w])?$')
+REGEX_ACCOUNT_STORAGE_NAME = re.compile('^[a-z0-9]{1,24}$')
 
 DEFAULT_DISK_COPY_PREFIX = 'evidence'
 
-LOGGER = logging.getLogger()
 
-
-def GetCredentials() -> ServicePrincipalCredentials:
+def GetCredentials(profile_name: Optional[str] = None
+                   ) -> Tuple[str, ServicePrincipalCredentials]:
+  # pylint: disable=line-too-long
   """Get Azure credentials.
 
+  Args:
+    profile_name (str): A name for the Azure account information to retrieve.
+        If not provided, the default behavior is to look for Azure credential
+        information in environment variables as explained in https://docs.microsoft.com/en-us/azure/developer/python/azure-sdk-authenticate
+        If provided, then the library will look into
+        ~/.azure/credentials.json for the account information linked to
+        profile_name. The .json file should have the following format:
+
+        {
+          'profile_name': {
+              'subscriptionId': xxx,
+              'tenantId': xxx,
+              'clientId': xxx,
+              'clientSecret': xxx
+          },
+          'other_profile_name': {
+              'subscriptionId': yyy,
+              'tenantId': yyy,
+              'clientId': yyy,
+              'clientSecret': yyy
+          },
+          ...
+        }
+
+        Note that you can specify several profiles that use the same tenantId,
+        clientId and clientSecret but a different subscriptionId.
+        If you set the environment variable AZURE_CREDENTIALS_PATH to an
+        absolute path to the credentials file, then the library will look
+        there instead of in ~/.azure/credentials.json.
+
   Returns:
-    ServicePrincipalCredentials: Azure credentials.
+    Tuple[str, ServicePrincipalCredentials]: Subscription ID and
+        corresponding Azure credentials.
+
+  Raises:
+    RuntimeError: If the credential file is not found.
+    ValueError: If the requested profile name is not found in the credential
+        file or if there are missing entries in the profile name.
   """
-  return ServicePrincipalCredentials(tenant=os.environ["AZURE_TENANT_ID"],
-                                     client_id=os.environ["AZURE_CLIENT_ID"],
-                                     secret=os.environ["AZURE_CLIENT_SECRET"])
+  # pylint: enable=line-too-long
+  if not profile_name:
+    subscription_id = os.getenv('AZURE_SUBSCRIPTION_ID')
+    client_id = os.getenv("AZURE_CLIENT_ID")
+    secret = os.getenv("AZURE_CLIENT_SECRET")
+    tenant = os.getenv("AZURE_TENANT_ID")
+    if not (subscription_id and client_id and secret and tenant):
+      raise RuntimeError('Please make sure you defined the following '
+                         'environment variables: [AZURE_SUBSCRIPTION_ID,'
+                         'AZURE_CLIENT_ID, AZURE_CLIENT_SECRET,'
+                         'AZURE_TENANT_ID].')
+    return subscription_id, ServicePrincipalCredentials(client_id,
+                                                        secret,
+                                                        tenant=tenant)
+
+  path = os.getenv('AZURE_CREDENTIALS_PATH')
+  if not path:
+    path = os.path.expanduser('~/.azure/credentials.json')
+
+  if not os.path.exists(path):
+    raise RuntimeError('Credential files not found. Please place it in '
+                       '"~/.azure/credentials.json" or specify an absolute '
+                       'path to it in the AZURE_CREDENTIALS_PATH environment '
+                       'variable.')
+
+  with open(path) as profiles:
+    try:
+      account_info = json.load(profiles).get(profile_name)
+    except ValueError as exception:
+      raise ValueError('Could not decode JSON file. Please verify the file '
+                       'format: {0:s}'.format(str(exception)))
+    if not account_info:
+      raise ValueError(
+          'Profile name {0:s} not found in credentials file {1:s}'.format(
+              profile_name, path))
+    required_entries = ['subscriptionId', 'clientId', 'clientSecret',
+                        'tenantId']
+    if not all(account_info.get(entry) for entry in required_entries):
+      raise ValueError(
+          'Please make sure that your JSON file has the required entries. The '
+          'file should contain at least the following: {0:s}'.format(
+              ', '.join(required_entries)))
+    return account_info['subscriptionId'], ServicePrincipalCredentials(
+        account_info['clientId'],
+        account_info['clientSecret'],
+        tenant=account_info['tenantId'])
 
 
 def ExecuteRequest(
@@ -80,7 +160,7 @@ def ExecuteRequest(
     request = getattr(client, func)
     response = request(**kwargs)
     responses.append(response)
-    next_link = response.next_link
+    next_link = response.next_link if hasattr(response, 'next_link') else None
     if not next_link:
       return responses
 
