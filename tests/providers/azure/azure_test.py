@@ -104,6 +104,25 @@ MOCK_LIST_DISKS = {
     'fake-boot-disk-name': FAKE_BOOT_DISK
 }
 
+MOCK_VM_SIZE = mock.Mock(
+    number_of_cores=4,
+    memory_in_mb=8192
+)
+MOCK_VM_SIZE.name = 'fake-vm-type'
+MOCK_REQUEST_VM_SIZE = [MOCK_VM_SIZE]
+MOCK_LIST_VM_SIZES = [{
+    'Name': 'fake-vm-type',
+    'CPU': 4,
+    'Memory': 8192
+}]
+
+MOCK_ANALYSIS_INSTANCE = mock.Mock(
+    id='/a/b/c/fake-resource-group/fake-analysis-vm-name',
+    location='fake-region',
+    zones=['fake-zone']
+)
+MOCK_ANALYSIS_INSTANCE.name = 'fake-analysis-vm-name'
+
 MOCK_LIST_IDS = [
     mock.Mock(subscription_id='fake-subscription-id-1'),
     mock.Mock(subscription_id='fake-subscription-id-2')
@@ -301,6 +320,72 @@ class TestAccount(unittest.TestCase):
         'fake_snapshot_name_f4c186ac_copy',
         mock.ANY,
         sku='Standard_LRS')
+
+  @mock.patch('sshpubkeys.SSHKey.parse')
+  @mock.patch('libcloudforensics.scripts.utils.ReadStartupScript')
+  @mock.patch('libcloudforensics.providers.azure.internal.account.AZAccount.GetInstance')
+  @mock.patch('libcloudforensics.providers.azure.internal.account.AZAccount._GetInstanceType')
+  @mock.patch('libcloudforensics.providers.azure.internal.account.AZAccount._CreateNetworkInterfaceForVM')
+  @mock.patch('azure.mgmt.compute.v2020_06_01.operations._virtual_machines_operations.VirtualMachinesOperations.create_or_update')
+  @typing.no_type_check
+  def testGetOrCreateAnalysisVm(self,
+                                mock_vm,
+                                mock_nic,
+                                mock_instance_type,
+                                mock_get_instance,
+                                mock_script,
+                                mock_ssh_parse):
+    """Test that a VM is created or retrieved if it already exists."""
+    mock_instance_type.return_value = 'fake-instance-type'
+    mock_nic.return_value = 'fake-network-interface-id'
+    mock_get_instance.return_value = FAKE_INSTANCE
+    mock_script.return_value = ''
+    mock_ssh_parse.return_value = None
+
+    vm, created = FAKE_ACCOUNT.GetOrCreateAnalysisVm(
+        FAKE_INSTANCE.name, 1, 4, 8192, '')
+    mock_get_instance.assert_called_with(FAKE_INSTANCE.name)
+    mock_vm.assert_not_called()
+    self.assertIsInstance(vm, compute.AZVirtualMachine)
+    self.assertEqual('fake-vm-name', vm.name)
+    self.assertFalse(created)
+
+    # We mock the GetInstance() call to throw a RuntimeError to mimic
+    # an instance that wasn't found. This should trigger a vm to be
+    # created.
+    mock_get_instance.side_effect = RuntimeError()
+    mock_vm.return_value.result.return_value = MOCK_ANALYSIS_INSTANCE
+    vm, created = FAKE_ACCOUNT.GetOrCreateAnalysisVm(
+        'fake-analysis-vm-name', 1, 4, 8192, '')
+    mock_get_instance.assert_called_with('fake-analysis-vm-name')
+    mock_vm.assert_called()
+    self.assertIsInstance(vm, compute.AZVirtualMachine)
+    self.assertEqual('fake-analysis-vm-name', vm.name)
+    self.assertTrue(created)
+
+  @mock.patch('azure.mgmt.compute.v2020_06_01.operations._virtual_machine_sizes_operations.VirtualMachineSizesOperations.list')
+  @typing.no_type_check
+  def testListVMSizes(self, mock_list):
+    """Test that instance types are correctly listed."""
+    mock_list.return_value = MOCK_REQUEST_VM_SIZE
+    available_vms = FAKE_ACCOUNT.ListInstanceTypes()
+    self.assertEqual(1, len(available_vms))
+    self.assertEqual('fake-vm-type', available_vms[0]['Name'])
+    self.assertEqual(4, available_vms[0]['CPU'])
+    self.assertEqual(8192, available_vms[0]['Memory'])
+
+  @mock.patch('libcloudforensics.providers.azure.internal.account.AZAccount.ListInstanceTypes')
+  @typing.no_type_check
+  def testGetInstanceType(self, mock_list_instance_types):
+    """Test that the instance type given a configuration is correct."""
+    # pylint: disable=protected-access
+    mock_list_instance_types.return_value = MOCK_LIST_VM_SIZES
+    instance_type = FAKE_ACCOUNT._GetInstanceType(4, 8192)
+    self.assertEqual('fake-vm-type', instance_type)
+
+    with self.assertRaises(ValueError):
+      FAKE_ACCOUNT._GetInstanceType(666, 666)
+    # pylint: enable=protected-access
 
   @mock.patch('azure.mgmt.resource.subscriptions.v2019_11_01.operations._subscriptions_operations.SubscriptionsOperations.list')
   @typing.no_type_check
