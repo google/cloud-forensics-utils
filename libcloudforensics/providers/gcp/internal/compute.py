@@ -917,6 +917,17 @@ class GoogleComputeDisk(compute_base_resource.GoogleComputeBaseResource):
     self.BlockOperation(response, zone=self.zone)
     return GoogleComputeSnapshot(disk=self, name=snapshot_name)
 
+  def GetDiskType(self) -> str:
+    """Return the disk type.
+
+    Returns:
+      str: The disk type.
+    """
+    # 'type': https://www.googleapis.com/compute/v1/projects/<>/zones/us
+    # -central1-a/diskTypes/pd-standard
+    disk_type = self.GetOperation()['type'].split('/')[-1]  # type: str
+    return disk_type
+
 
 class GoogleComputeSnapshot(compute_base_resource.GoogleComputeBaseResource):
   """Class representing a Compute Engine Snapshot.

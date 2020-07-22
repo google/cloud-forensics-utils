@@ -240,6 +240,17 @@ class AZDisk(AZComputeResource):
                       snapshot.location,
                       self)
 
+  def GetDiskType(self) -> str:
+    """Return the SKU disk type.
+
+    Returns:
+      str: The SKU disk type.
+    """
+    disk = self.az_account.compute_client.disks.get(
+        self.resource_group_name, self.name)
+    disk_type = disk.sku.name  # type: str
+    return disk_type
+
 
 class AZSnapshot(AZComputeResource):
   """Class that represents Azure snapshots.
