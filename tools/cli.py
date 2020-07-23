@@ -128,6 +128,10 @@ def Main() -> None:
                                 'copy. If none specified, then --instance_id '
                                 'must be specified and the boot volume of the '
                                 'AWS instance will be copied.', None),
+                ('--volume_type', 'The volume type for the volume copy. '
+                                  'Can be standard, io1, gp2, sc1, st1. The '
+                                  'default behavior is to use the same volume '
+                                  'type as the source volume.', None),
                 ('--src_profile', 'The name of the profile for the source '
                                   'account, as defined in the AWS credentials '
                                   'file.', None),
@@ -149,6 +153,9 @@ def Main() -> None:
                  ''),
                 ('--boot_volume_size', 'Size of instance boot volume in GB.',
                  '50'),
+                ('--boot_volume_type', 'The boot volume type for the VM. '
+                                       'Can be standard, io1, gp2, sc1, st1. '
+                                       'Default is gp2', 'gp2'),
                 ('--cpu_cores', 'Instance CPU core count.', '4'),
                 ('--ami', 'AMI ID to use as base image. Will search '
                           'Ubuntu 18.04 LTS server x86_64 for chosen region '

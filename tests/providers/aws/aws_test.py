@@ -163,7 +163,8 @@ MOCK_DESCRIBE_AMI = {
     'Images': [{
         'BlockDeviceMappings': [{
             'Ebs': {
-                'VolumeSize': None
+                'VolumeSize': None,
+                'VolumeType': None
             }
         }]
     }]
@@ -427,12 +428,16 @@ class AWSAccountTest(unittest.TestCase):
   def testGetBootVolumeConfigByAmi(self, mock_ec2_api):
     """Test that the boot volume configuration is correctly created."""
     mock_ec2_api.return_value.describe_images.return_value = MOCK_DESCRIBE_AMI
+    # pylint: disable=protected-access,line-too-long
     self.assertIsNone(
-        MOCK_DESCRIBE_AMI['Images'][0]['BlockDeviceMappings'][0]['Ebs']['VolumeSize'])  # pylint: disable=line-too-long
-    # pylint: disable=protected-access
-    config = FAKE_AWS_ACCOUNT._GetBootVolumeConfigByAmi('ami-id', 50)
-    # pylint: enable=protected-access
+        MOCK_DESCRIBE_AMI['Images'][0]['BlockDeviceMappings'][0]['Ebs']['VolumeSize'])
+    self.assertIsNone(
+        MOCK_DESCRIBE_AMI['Images'][0]['BlockDeviceMappings'][0]['Ebs']['VolumeType'])
+    config = FAKE_AWS_ACCOUNT._GetBootVolumeConfigByAmi(
+        'ami-id', 50, 'fake-volume-type')
+    # pylint: enable=protected-access,line-too-long
     self.assertEqual(50, config['Ebs']['VolumeSize'])
+    self.assertEqual('fake-volume-type', config['Ebs']['VolumeType'])
 
   @typing.no_type_check
   @mock.patch('libcloudforensics.providers.aws.internal.account.AWSAccount.ClientApi')
@@ -559,6 +564,7 @@ class AWSTest(unittest.TestCase):
 
   @typing.no_type_check
   @mock.patch('boto3.session.Session._setup_loader')
+  @mock.patch('libcloudforensics.providers.aws.internal.ebs.AWSVolume.GetVolumeType')
   @mock.patch('libcloudforensics.providers.aws.internal.ebs.AWSVolume.Snapshot')
   @mock.patch('libcloudforensics.providers.aws.internal.account.AWSAccount.GetVolumeById')
   @mock.patch('libcloudforensics.providers.aws.internal.account.AWSAccount.GetAccountInformation')
@@ -568,6 +574,7 @@ class AWSTest(unittest.TestCase):
                             mock_account,
                             mock_get_volume,
                             mock_snapshot,
+                            mock_volume_type,
                             mock_loader):
     """Test that a volume is correctly cloned."""
     FAKE_SNAPSHOT.name = FAKE_VOLUME.volume_id
@@ -575,6 +582,7 @@ class AWSTest(unittest.TestCase):
     mock_account.return_value = 'fake-account-id'
     mock_get_volume.return_value = FAKE_VOLUME
     mock_snapshot.return_value = FAKE_SNAPSHOT
+    mock_volume_type.return_value = 'fake-volume-type'
     mock_loader.return_value = None
 
     # CreateVolumeCopy(zone, volume_id='fake-volume-id'). This should grab
@@ -589,6 +597,7 @@ class AWSTest(unittest.TestCase):
 
   @typing.no_type_check
   @mock.patch('boto3.session.Session._setup_loader')
+  @mock.patch('libcloudforensics.providers.aws.internal.ebs.AWSVolume.GetVolumeType')
   @mock.patch('libcloudforensics.providers.aws.internal.ebs.AWSVolume.Snapshot')
   @mock.patch('libcloudforensics.providers.aws.internal.ec2.AWSInstance.GetBootVolume')
   @mock.patch('libcloudforensics.providers.aws.internal.account.AWSAccount.GetInstanceById')
@@ -600,6 +609,7 @@ class AWSTest(unittest.TestCase):
                             mock_get_instance,
                             mock_get_volume,
                             mock_snapshot,
+                            mock_volume_type,
                             mock_loader):
     """Test that a volume is correctly cloned."""
     FAKE_SNAPSHOT.name = FAKE_BOOT_VOLUME.volume_id
@@ -608,6 +618,7 @@ class AWSTest(unittest.TestCase):
     mock_get_instance.return_value = FAKE_INSTANCE
     mock_get_volume.return_value = FAKE_BOOT_VOLUME
     mock_snapshot.return_value = FAKE_SNAPSHOT
+    mock_volume_type.return_value = 'fake-volume-type'
     mock_loader.return_value = None
 
     # CreateVolumeCopy(zone, instance='fake-instance-id'). This should grab

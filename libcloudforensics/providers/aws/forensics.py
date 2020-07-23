@@ -30,6 +30,7 @@ def CreateVolumeCopy(zone: str,
                      dst_zone: Optional[str] = None,
                      instance_id: Optional[str] = None,
                      volume_id: Optional[str] = None,
+                     volume_type: Optional[str] = None,
                      src_profile: Optional[str] = None,
                      dst_profile: Optional[str] = None,
                      tags: Optional[Dict[str, str]] = None) -> 'ebs.AWSVolume':
@@ -81,6 +82,9 @@ def CreateVolumeCopy(zone: str,
         that volume_id will be copied.
     volume_id (str): Optional. ID of the volume to copy. If not set,
         then instance_id needs to be set and the boot volume will be copied.
+    volume_type (str): Optional. The volume type for the volume to be
+        created. Can be one of 'standard'|'io1'|'gp2'|'sc1'|'st1'. The default
+        behavior is to use the same volume type as the source volume.
     src_profile (str): Optional. If the AWS account containing the volume
         that needs to be copied is different from the default account
         specified in the AWS credentials file then you can specify a
@@ -114,6 +118,9 @@ def CreateVolumeCopy(zone: str,
     elif instance_id:
       instance = source_account.GetInstanceById(instance_id)
       volume_to_copy = instance.GetBootVolume()
+
+    if not volume_type:
+      volume_type = volume_to_copy.GetVolumeType()
 
     logger.info('Volume copy of {0:s} started...'.format(
         volume_to_copy.volume_id))
@@ -152,10 +159,16 @@ def CreateVolumeCopy(zone: str,
 
     if tags and tags.get('Name'):
       new_volume = destination_account.CreateVolumeFromSnapshot(
-          snapshot, volume_name=tags['Name'], tags=tags)
+          snapshot,
+          volume_type=volume_type,
+          volume_name=tags['Name'],
+          tags=tags)
     else:
       new_volume = destination_account.CreateVolumeFromSnapshot(
-          snapshot, volume_name_prefix='evidence', tags=tags)
+          snapshot,
+          volume_type=volume_type,
+          volume_name_prefix='evidence',
+          tags=tags)
 
     logger.info('Volume {0:s} successfully copied to {1:s}'.format(
         volume_to_copy.volume_id, new_volume.volume_id))
@@ -177,6 +190,7 @@ def StartAnalysisVm(
     vm_name: str,
     default_availability_zone: str,
     boot_volume_size: int,
+    boot_volume_type: str = 'gp2',
     ami: Optional[str] = None,
     cpu_cores: int = 4,
     attach_volumes: Optional[List[Tuple[str, str]]] = None,
@@ -194,6 +208,9 @@ def StartAnalysisVm(
     default_availability_zone (str): Default zone within the region to create
         new resources in.
     boot_volume_size (int): The size of the analysis VM boot volume (in GB).
+    boot_volume_type (str): Optional. The volume type for the boot volume
+          of the VM. Can be one of 'standard'|'io1'|'gp2'|'sc1'|'st1'. The
+          default is 'gp2'.
     ami (str): Optional. The Amazon Machine Image ID to use to create the VM.
         Default is a version of Ubuntu 18.04.
     cpu_cores (int): Optional. The number of CPU cores to create the machine
@@ -248,6 +265,7 @@ def StartAnalysisVm(
       boot_volume_size,
       ami,
       cpu_cores,
+      boot_volume_type=boot_volume_type,
       ssh_key_name=ssh_key_name,
       tags=tags)
   logger.info('VM started.')
