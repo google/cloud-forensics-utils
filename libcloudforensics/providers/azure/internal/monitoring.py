@@ -20,7 +20,9 @@ from typing import List, Optional, Dict, TYPE_CHECKING
 # so we can ignore the warning.
 # pylint: disable=import-error
 from azure.mgmt.monitor import MonitorManagementClient
+from azure.mgmt.monitor.v2018_01_01 import models
 # pylint: enable=import-error
+
 from libcloudforensics.providers.azure.internal import account
 
 if TYPE_CHECKING:
@@ -56,9 +58,18 @@ class AZMonitoring:
 
       Returns:
         List[str]: A list of metrics that can be queried for the resource ID.
+
+      Raises:
+        RuntimeError: If the resource could not be found.
     """
-    return [metric.name.value for metric
-            in self.monitoring_client.metric_definitions.list(resource_id)]
+    try:
+      return [metric.name.value for metric
+              in self.monitoring_client.metric_definitions.list(resource_id)]
+    except models.ErrorResponseException:
+      raise RuntimeError('Could not fetch metrics for resource {0:s}. Please '
+                         'make sure you specified the full resource ID url, '
+                         'i.e. /subscriptions/<>/resourceGroups/<>/providers'
+                         '/<>/<>/yourResourceName'.format(resource_id))
 
   def GetMetricsForResource(
       self,
@@ -92,6 +103,9 @@ class AZMonitoring:
     Returns:
       Dict[str, List[str]]]: A dictionary mapping the metric to a list of the
           metric's values.
+
+    Raises:
+        RuntimeError: If the resource could not be found.
     """
     kwargs = {'metricnames': metrics, 'aggregation': aggregation}
     if from_date and to_date:
@@ -100,8 +114,15 @@ class AZMonitoring:
       kwargs['timespan'] = timespan
     if interval:
       kwargs['interval'] = interval
-    metrics_data = self.monitoring_client.metrics.list(
-        resource_id, filter=qfilter, **kwargs)
+    try:
+      metrics_data = self.monitoring_client.metrics.list(
+          resource_id, filter=qfilter, **kwargs)
+    except models.ErrorResponseException:
+      raise RuntimeError(
+          'Could not fetch metrics {0:s} for resource {1:s}.  Please make '
+          'sure you specified the full resource ID  url, i.e. /subscriptions/'
+          '<>/resourceGroups/<>/providers/<>/<>/yourResourceName'.format(
+              metrics, resource_id))
     results = {}  # type: Dict[str, List[str]]
     for metric in metrics_data.value:
       values = []
