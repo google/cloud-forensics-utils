@@ -56,8 +56,8 @@ class GoogleKubernetesEngine:
     """ Gets the details of a specific cluster.
 
     Args:
-      name (str): The name (project, location, cluster) of the cluster to retrieve.
-          Specified in the format `projects/*/locations/*/clusters/*`.
+      name (str): The name (project, location, cluster) of the cluster to
+          retrieve. Specified in the format `projects/*/locations/*/clusters/*`.
           For regional cluster: `/locations/[GCP_REGION]`.
           For zonal cluster: `/locations/[GCP_ZONE]`.
 

@@ -85,28 +85,9 @@ class AZMonitoring:
           values. Default is 'Total'. Possible values: 'Total', 'Average'.
           Both can be retrieved if passed as a single string, separated by a
           comma.
-      qfilter (str): Optional. A filter for the query. Reduces the set of data
-          collected. If present it must contain a list of metric names to
-         retrieve of the form: *(name.value eq 'metricName' [or name.value eq
-         'metricName' or ...])*. Optionally, the filter can contain conditions
-         for the following attributes *aggregationType*, *startTime*,
-         *endTime*, and *timeGrain* of the form *attributeName operator value*.
-         Where operator is one of *ne*, *eq*, *gt*, *lt*. Several conditions
-         can be combined with parentheses and logical operators, e.g: *and*,
-         *or*.<br>Some example filter expressions are:<br>- $filter=(name.value
-         eq 'RunsSucceeded') and aggregationType eq 'Total' and startTime eq
-         2016-02-20 and endTime eq 2016-02-21 and timeGrain eq
-         duration'PT1M', - $filter=(name.value eq 'RunsSucceeded') and
-         (aggregationType eq 'Total' or aggregationType eq 'Average') and
-         startTime eq 2016-02-20 and endTime eq 2016-02-21 and timeGrain eq
-         duration'PT1H', - $filter=(name.value eq 'ActionsCompleted' or
-         name.value eq 'RunsSucceeded') and (aggregationType eq 'Total' or
-         aggregationType eq 'Average') and startTime eq 2016-02-20 and endTime
-         eq 2016-02-21 and timeGrain eq duration'PT1M'.<br><br>**NOTE**: When a
-         metrics query comes in with multiple metrics, but with no aggregation
-         types defined, the service will pick the Primary aggregation type of
-         the first metrics to be used as the default aggregation type for all
-         the metrics.
+      qfilter (str): Optional. A filter for the query. See
+          https://docs.microsoft.com/en-us/rest/api/monitor/metrics/list for
+          details about filtering.
 
     Returns:
       Dict[str, List[str]]]: A dictionary mapping the metric to a list of the
