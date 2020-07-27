@@ -151,9 +151,9 @@ def StartAnalysisVm(
         analysis vm.
     vm_name (str): The name for the virtual machine.
     boot_disk_size (int): The size of the analysis VM boot disk (in GB).
-    ssh_public_key (str): A SSH public key data to associate with the
-        VM. This must be provided as otherwise the VM will not be
-        accessible.
+    ssh_public_key (str): A SSH public key data (OpenSSH format) to associate
+        with the VM, e.g. ssh-rsa AAAAB3NzaC1y... This must be provided as
+        otherwise the VM will not be accessible.
     cpu_cores (int): Number of CPU cores for the analysis VM.
     memory_in_mb (int): The memory size (in MB) for the analysis VM.
     region (str): Optional. The region in which to create the VM.

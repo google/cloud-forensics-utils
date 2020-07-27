@@ -483,8 +483,9 @@ class AZAccount:
                 }
             },
             'networkProfile': {
-                'networkInterfaces': [{'id': self._CreateNetworkInterfaceForVM(
-                    vm_name, region)}]
+                'networkInterfaces': [
+                    {'id': self._CreateNetworkInterfaceForVM(vm_name, region)}
+                ]
             }
         }
     }  # type: Dict[str, Any]
@@ -582,7 +583,8 @@ class AZAccount:
       RuntimeError: If no network interface could be created.
     """
     if not vm_name:
-      raise ValueError('vm_name cannot be None.')
+      raise ValueError(
+          'vm_name must be specified. Provided: {0!s}'.format(vm_name))
 
     if not region:
       region = self.default_region
