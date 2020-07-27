@@ -15,3 +15,4 @@ azure-mgmt-network==11.0.0
 msrest
 msrestazure
 sshpubkeys
+pycryptodome
