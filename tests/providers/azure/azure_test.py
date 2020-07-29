@@ -20,6 +20,7 @@ import mock
 
 from azure.mgmt.compute.v2020_05_01 import models  # pylint: disable=import-error
 
+from libcloudforensics import errors
 from libcloudforensics.providers.azure.internal import account, compute, common, monitoring  # pylint:disable=line-too-long
 from libcloudforensics.providers.azure import forensics
 
@@ -437,7 +438,7 @@ class TestAccount(unittest.TestCase):
     self.assertEqual('fakestorageid', account_id)
     self.assertEqual('fake-key-value', account_key)
 
-    with self.assertRaises(ValueError) as error:
+    with self.assertRaises(errors.InvalidNameError) as error:
       _, _ = FAKE_ACCOUNT.storage.CreateStorageAccount(
           'fake-non-conform-name')
     # pylint: enable=protected-access
@@ -480,25 +481,27 @@ class TestCommon(unittest.TestCase):
     mock_azure_credentials.assert_called_with(
         'fake-client-id', 'fake-client-secret', tenant='fake-tenant-id')
 
-    # If an environment variable is missing, a RuntimeError should be raised
+    # If an environment variable is missing, a CredentialsConfigurationError
+    # \should be raised
     del os.environ['AZURE_SUBSCRIPTION_ID']
-    with self.assertRaises(RuntimeError) as error:
+    with self.assertRaises(errors.CredentialsConfigurationError) as error:
       _, _ = common.GetCredentials()
       mock_azure_credentials.assert_not_called()
     self.assertEqual(
         'Please make sure you defined the following environment variables: '
-        '[AZURE_SUBSCRIPTION_ID,AZURE_CLIENT_ID, AZURE_CLIENT_SECRET,'
+        '[AZURE_SUBSCRIPTION_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, '
         'AZURE_TENANT_ID].', str(error.exception))
 
     # If a profile name is passed to the method, then it will look for a
     # credential file (default path being ~/.azure/credentials.json). We can
     # set a particular path by setting the AZURE_CREDENTIALS_PATH variable.
 
-    # If the file is not a valid json file, should raise a ValueError
+    # If the file is not a valid json file, should raise an
+    # InvalidFileFormatError
     os.environ['AZURE_CREDENTIALS_PATH'] = os.path.join(
         os.path.dirname(os.path.dirname(os.path.dirname(
             os.path.realpath(__file__)))), STARTUP_SCRIPT)
-    with self.assertRaises(ValueError) as error:
+    with self.assertRaises(errors.InvalidFileFormatError) as error:
       _, _ = common.GetCredentials(profile_name='foo')
       mock_azure_credentials.assert_not_called()
     self.assertEqual(
@@ -518,8 +521,9 @@ class TestCommon(unittest.TestCase):
         'fake-client-secret-from-credential-file',
         tenant='fake-tenant-id-from-credential-file')
 
-    # If the profile name does not exist, should raise a ValueError
-    with self.assertRaises(ValueError) as error:
+    # If the profile name does not exist, should raise a
+    # CredentialsConfigurationError
+    with self.assertRaises(errors.CredentialsConfigurationError) as error:
       _, _ = common.GetCredentials(profile_name='foo')
       mock_azure_credentials.assert_not_called()
     self.assertEqual(
@@ -527,8 +531,8 @@ class TestCommon(unittest.TestCase):
             os.environ['AZURE_CREDENTIALS_PATH']), str(error.exception))
 
     # If the profile name exists but there are missing entries, should raise
-    # a ValueError
-    with self.assertRaises(ValueError) as error:
+    # a CredentialsConfigurationError
+    with self.assertRaises(errors.CredentialsConfigurationError) as error:
       _, _ = common.GetCredentials(profile_name='incomplete_profile_name')
       mock_azure_credentials.assert_not_called()
     self.assertEqual(
@@ -563,12 +567,12 @@ class TestAZVirtualMachine(unittest.TestCase):
     disk = FAKE_INSTANCE.GetDisk('fake-disk-name')
     self.assertEqual('fake-disk-name', disk.name)
 
-    with self.assertRaises(RuntimeError) as error:
+    with self.assertRaises(errors.ResourceNotFoundError) as error:
       FAKE_INSTANCE.GetDisk('non-existent-disk-name')
     self.assertEqual(
-        'Disk non-existent-disk-name not found in instance: '
-        '/subscriptions/sub/resourceGroups/fake-resource-group'
-        '/providers/Microsoft.Compute/type/fake-vm-name', str(error.exception))
+        'Disk non-existent-disk-name was not found in instance '
+        '/subscriptions/sub/resourceGroups/fake-resource-group/providers/'
+        'Microsoft.Compute/type/fake-vm-name', str(error.exception))
 
   @mock.patch('libcloudforensics.providers.azure.internal.compute.AZCompute.ListDisks')
   @mock.patch('azure.mgmt.compute.v2020_06_01.operations._virtual_machines_operations.VirtualMachinesOperations.get')

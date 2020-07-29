@@ -21,6 +21,7 @@ from azure.mgmt import network
 from msrestazure import azure_exceptions
 # pylint: enable=import-error
 
+from libcloudforensics import errors
 from libcloudforensics.providers.azure.internal import common
 
 if TYPE_CHECKING:
@@ -63,7 +64,7 @@ class AZNetwork:
 
     Raises:
       ValueError: if name is not provided.
-      RuntimeError: If no network interface could be created.
+      ResourceCreationError: If no network interface could be created.
     """
     if not name:
       raise ValueError('name must be specified. Provided: {0!s}'.format(name))
@@ -82,8 +83,9 @@ class AZNetwork:
       return nic_id
     except azure_exceptions.CloudError as exception:
       if 'ResourceNotFound' not in exception.error.error:
-        raise RuntimeError('Could not create network interface: {0:s}'.format(
-            str(exception)))
+        raise errors.ResourceCreationError(
+            'Could not create network interface: {0!s}'.format(exception),
+            __name__)
       # NIC doesn't exist, ignore the error and create it
 
     # pylint: disable=unbalanced-tuple-unpacking
@@ -109,8 +111,9 @@ class AZNetwork:
           creation_data)
       request.wait()
     except azure_exceptions.CloudError as exception:
-      raise RuntimeError('Could not create network interface: {0:s}'.format(
-          str(exception)))
+      raise errors.ResourceCreationError(
+          'Could not create network interface: {0!s}'.format(exception),
+          __name__)
 
     network_interface_id = request.result().id  # type: str
     return network_interface_id
@@ -132,7 +135,7 @@ class AZNetwork:
           a virtual network object and a subnet object.
 
     Raises:
-      RuntimeError: If the elements could not be created.
+      ResourceCreationError: If the elements could not be created.
     """
 
     if not region:
@@ -177,6 +180,7 @@ class AZNetwork:
         request.wait()
         result.append(request.result())
     except azure_exceptions.CloudError as exception:
-      raise RuntimeError('Could not create network interface elements: '
-                         '{0:s}'.format(str(exception)))
+      raise errors.ResourceCreationError(
+          'Could not create network interface elements: {0!s}'.format(
+              exception), __name__)
     return tuple(result)

@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING, Tuple, List, Optional, Dict
 
 from libcloudforensics.providers.aws.internal.common import UBUNTU_1804_FILTER
 from libcloudforensics.providers.aws.internal import account
-from libcloudforensics import logging_utils
+from libcloudforensics import logging_utils, errors
 
 if TYPE_CHECKING:
   from libcloudforensics.providers.aws.internal import ebs, ec2
@@ -185,7 +185,7 @@ def CreateVolumeCopy(zone: str,
     # Delete the one-time use KMS key, if one was generated
     source_account.kms.DeleteKMSKey(kms_key_id)
     logger.info('Done')
-  except RuntimeError as exception:
+  except (errors.CFUError, RuntimeError) as exception:
     error_msg = 'Copying volume {0:s}: {1!s}'.format(
         (volume_id or instance_id), exception)
     raise RuntimeError(error_msg)

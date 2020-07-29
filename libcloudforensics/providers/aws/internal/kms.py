@@ -13,9 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """KMS functionality."""
+
 import json
 from typing import Optional, TYPE_CHECKING
 
+from libcloudforensics import errors
 from libcloudforensics.providers.aws.internal import common
 
 if TYPE_CHECKING:
@@ -43,15 +45,15 @@ class KMS:
       str: The KMS key ID for the key that was created.
 
     Raises:
-      RuntimeError: If the key could not be created.
+      ResourceCreationError: If the key could not be created.
     """
 
     client = self.aws_account.ClientApi(common.KMS_SERVICE)
     try:
       kms_key = client.create_key()
     except client.exceptions.ClientError as exception:
-      raise RuntimeError('Could not create KMS key: {0:s}'.format(
-          str(exception)))
+      raise errors.ResourceCreationError(
+          'Could not create KMS key: {0!s}'.format(exception), __name__)
 
     # The response contains the key ID
     key_id = kms_key['KeyMetadata']['KeyId']  # type: str
@@ -110,7 +112,7 @@ class KMS:
       kms_key_id (str): The ID of the KMS key to delete.
 
     Raises:
-      RuntimeError: If the key could not be scheduled for deletion.
+      ResourceDeletionError: If the key could not be scheduled for deletion.
     """
 
     if not kms_key_id:
@@ -120,5 +122,6 @@ class KMS:
     try:
       client.schedule_key_deletion(KeyId=kms_key_id)
     except client.exceptions.ClientError as exception:
-      raise RuntimeError('Could not schedule the KMS key: {0:s} for '
-                         'deletion'.format(str(exception)))
+      raise errors.ResourceDeletionError(
+          'Could not schedule the KMS key {0:s} for deletion {1!s}'.format(
+              exception, kms_key_id), __name__)
