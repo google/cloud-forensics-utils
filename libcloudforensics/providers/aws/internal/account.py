@@ -20,6 +20,7 @@ analysis virtual machine to be used in incident response.
 
 import binascii
 import json
+import os
 from typing import Dict, List, Tuple, Optional, Any
 
 import boto3
@@ -792,3 +793,34 @@ class AWSAccount:
       raise RuntimeError(str(exception))
 
     return images['Images']
+
+  def GenerateSSHKeyPair(self, vm_name: str) -> Tuple[str, str]:
+    """Generate a SSH key pair and returns its name and private key.
+
+    Args:
+      vm_name (str): The VM name for which to generate the key pair.
+
+    Returns:
+      Tuple[str, str]: A tuple containing the key name and the private key for
+          the generated SSH key pair.
+
+    Raises:
+      ValueError: If vm_name is None.
+      RuntimeError: If the key could not be created.
+    """
+
+    if not vm_name:
+      raise ValueError('Parameter vm_name must not be None.')
+
+    # SSH key names need to be unique, therefore we add a random 10 chars hex
+    # string.
+    key_name = '{0:s}-{1:s}-ssh'.format(
+        vm_name, binascii.b2a_hex(os.urandom(10)).decode('utf-8'))
+    client = self.ClientApi(common.EC2_SERVICE)
+    try:
+      key = client.create_key_pair(KeyName=key_name)
+    except client.exceptions.ClientError as exception:
+      raise RuntimeError('Could not create SSH key pair: {0:s}'.format(
+          str(exception)))
+    # If the call was successful, the response contains key information
+    return key['KeyName'], key['KeyMaterial']
