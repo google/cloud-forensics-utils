@@ -19,7 +19,7 @@
 import argparse
 import sys
 
-from typing import Tuple, List, Optional
+from typing import Tuple, List, Optional, Any, Dict
 from examples import aws_cli, az_cli, gcp_cli
 
 PROVIDER_TO_FUNC = {
@@ -59,7 +59,7 @@ def AddParser(
     # pylint: enable=protected-access
     func: str,
     func_helper: str,
-    args: Optional[List[Tuple[str, str, Optional[str]]]] = None) -> None:
+    args: Optional[List[Tuple[str, str, Optional[Any]]]] = None) -> None:
   """Create a new parser object for a provider's functionality.
 
   Args:
@@ -72,7 +72,7 @@ def AddParser(
     func_helper (str): A helper text describing what the function does.
     args (List[Tuple]): Optional. A list of arguments to add
         to the parser. Each argument is a tuple containing the action (str) to
-        add to the parser, a helper text (str), and a default value (str or
+        add to the parser, a helper text (str), and a default value (Any or
         None).
 
   Raises:
@@ -88,7 +88,11 @@ def AddParser(
   func_parser = provider_parser.add_parser(func, help=func_helper)
   if args:
     for argument, helper_text, default_value in args:
-      kwargs = {'help': helper_text, 'default': default_value}
+      kwargs = {'help': helper_text}  # type: Dict[str, Any]
+      if isinstance(default_value, bool):
+        kwargs['action'] = 'store_true'
+      else:
+        kwargs['default'] = default_value
       func_parser.add_argument(argument, **kwargs)  # type: ignore
   func_parser.set_defaults(func=PROVIDER_TO_FUNC[provider][func])
 
@@ -146,8 +150,19 @@ def Main() -> None:
                 ('--ami', 'AMI ID to use as base image. Will search '
                           'Ubuntu 18.04 LTS server x86_64 for chosen region '
                           'by default.', ''),
-                ('--ssh_key_name', 'SSH key pair name.', None),
-                ('--attach_volumes', 'Comma seperated list of volume IDs '
+                ('--ssh_key_name', 'SSH key pair name. This is the name of an '
+                                   'existing SSH key pair in the AWS account '
+                                   'where the VM will live. Alternatively, '
+                                   'use --generate_ssh_key_pair to create a '
+                                   'new key pair in the AWS account.', None),
+                ('--generate_ssh_key_pair', 'Generate a new SSH key pair in '
+                                            'the AWS account where the '
+                                            'analysis VM will be created. '
+                                            'Returns the private key at the '
+                                            'end of the process. '
+                                            'Takes precedence over '
+                                            '--ssh_key_name', False),
+                ('--attach_volumes', 'Comma separated list of volume IDs '
                                      'to attach. Maximum of 11.', None),
                 ('--dst_profile', 'The name of the profile for the destination '
                                   'account, as defined in the AWS credentials '
