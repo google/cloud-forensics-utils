@@ -22,6 +22,6 @@ jobs:
     - name: Install wheel
       run: pip install wheel
     - name: Install dependencies through setup.py
-      run: python setup.py install
+      run: pip install wheel && python setup.py install
     - name: Test through setup.py
       run: python setup.py test
