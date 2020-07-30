@@ -8,9 +8,11 @@ This repository contains some tools to be used by forensics teams to collect
 evidence from cloud platforms. Currently, Google Cloud Platform, Microsoft Azure,
 and Amazon Web Services are supported.
 
-It consists in one module called `libcloudforensics` which implements functions
+It consists of one module called `libcloudforensics` which implements functions
 that can be desirable in the context of incident response in a cloud
 environment, as well as a CLI wrapper tool for these functions.
+
+Documentation can be found on the [ReadTheDocs page](https://libcloudforensics.readthedocs.io/en/latest/).
 
 ## Quick install
 
@@ -42,7 +44,7 @@ The implemented functions for each platform can also be listed. For example:
 
 ```
 $ cloudforensics gcp -h
-usage: libcloudforensics gcp [-h] project {listinstances,listdisks,copydisk,startvm,querylogs,listlogs,listservices,creatediskgcs,bucketacls,objectmetadata,listobjects} ...
+usage: cloudforensics gcp [-h] project {listinstances,listdisks,copydisk,startvm,querylogs,listlogs,listservices,creatediskgcs,bucketacls,objectmetadata,listobjects} ...
 
 positional arguments:
   project               GCP project ID.
