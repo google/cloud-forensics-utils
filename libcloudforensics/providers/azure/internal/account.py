@@ -462,7 +462,7 @@ class AZAccount:
                     'offer': 'UbuntuServer'}
             },
             'osDisk': {
-                'caching': "ReadWrite",
+                'caching': 'ReadWrite',
                 'managedDisk': {'storageAccountType': 'Standard_LRS'},
                 'name': 'os-disk-{0:s}'.format(vm_name),
                 'diskSizeGb': boot_disk_size,
@@ -771,7 +771,7 @@ class AZAccount:
                          .format(storage_account_name, str(exception)))
 
   def _GetOrCreateResourceGroup(self, resource_group_name: str) -> str:
-    """Check if a resource group exists, and create it otherwise."
+    """Check if a resource group exists, and create it otherwise.
 
     Args:
       resource_group_name (str); The name of the resource group to check
