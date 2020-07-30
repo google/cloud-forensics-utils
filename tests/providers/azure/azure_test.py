@@ -523,7 +523,7 @@ class TestMonitoring(unittest.TestCase):
         'fake-resource-id', 'fake-metric')
     self.assertIn('fake-metric', metrics)
     self.assertEqual(1, len(metrics['fake-metric']))
-    self.assertEqual('fake-time-stamp: fake-value', metrics['fake-metric'][0])
+    self.assertEqual('fake-value', metrics['fake-metric']['fake-time-stamp'])
 
 
 class TestForensics(unittest.TestCase):
