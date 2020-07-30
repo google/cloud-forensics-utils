@@ -121,7 +121,7 @@ def StartAnalysisVm(args: 'argparse.Namespace') -> None:
     args (argparse.Namespace): Arguments from ArgumentParser.
   """
   if args.attach_volumes and len(args.attach_volumes.split(',')) > 11:
-    logger.error('error: --attach_volumes must be < 11')
+    logger.error('--attach_volumes must be < 11')
     return
 
   attach_volumes = []
@@ -130,7 +130,7 @@ def StartAnalysisVm(args: 'argparse.Namespace') -> None:
     # Check if volumes parameter exists and if there
     # are any empty entries.
     if not (volumes and all(elements for elements in volumes)):
-      logger.error('error: parameter --attach_volumes: {0:s}'.format(
+      logger.error('parameter --attach_volumes: {0:s}'.format(
           args.attach_volumes))
       return
 

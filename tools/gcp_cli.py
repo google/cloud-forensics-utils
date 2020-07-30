@@ -171,7 +171,7 @@ def StartAnalysisVm(args: 'argparse.Namespace') -> None:
     # Check if attach_disks parameter exists and if there
     # are any empty entries.
     if not (attach_disks and all(elements for elements in attach_disks)):
-      logger.error('error: parameter --attach_disks: {0:s}'.format(
+      logger.error('parameter --attach_disks: {0:s}'.format(
           args.attach_disks))
       return
 
