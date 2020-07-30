@@ -5,7 +5,7 @@
 As easy as:
 
     $ pip install libcloudforensics
-    $ libcloudforensics -h
+    $ cloudforensics -h
 
 and you're done!
 
