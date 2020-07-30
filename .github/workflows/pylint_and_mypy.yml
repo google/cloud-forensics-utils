@@ -22,7 +22,7 @@ jobs:
         pip install -r requirements-dev.txt
     - name: Run pylint on all *.py files
       run: |
-        pylint tests libcloudforensics examples
+        pylint tests libcloudforensics tools
     - name: Run mypy on all *.py files
       run: |
-        mypy --ignore-missing-imports --strict --no-warn-unused-ignores -p tests -p libcloudforensics -p examples
+        mypy --ignore-missing-imports --strict --no-warn-unused-ignores -p tests -p libcloudforensics -p tools
