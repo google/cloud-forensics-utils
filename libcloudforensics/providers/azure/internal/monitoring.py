@@ -79,7 +79,7 @@ class AZMonitoring:
       to_date: Optional['datetime'] = None,
       interval: Optional[str] = None,
       aggregation: str = 'Total',
-      qfilter: Optional[str] = None) -> Dict[str, List[str]]:
+      qfilter: Optional[str] = None) -> Dict[str, Dict[str, str]]:
     """Retrieve metrics for a given resource.
 
     Args:
@@ -87,9 +87,9 @@ class AZMonitoring:
       metrics (str): A comma separated list of metrics to retrieve. E.g.
           'Percentage CPU,Network In'.
       from_date (datetime.datetime): Optional. A start date from which to get
-          the metric. If passed, toDate is also required.
+          the metric. If passed, to_date is also required.
       to_date (datetime.datetime): Optional. An end date until which to get the
-          metric. If passed, fromDate is also required.
+          metric. If passed, from_date is also required.
       interval (str): An interval for the metrics, e.g. 'PT1H' will output
           metric's values with one hour granularity.
       aggregation (str): Optional. The type of aggregation for the metric's
@@ -101,8 +101,8 @@ class AZMonitoring:
           details about filtering.
 
     Returns:
-      Dict[str, List[str]]]: A dictionary mapping the metric to a list of the
-          metric's values.
+      Dict[str, Dict[str, str]]: A dictionary mapping the metric to a dict of
+          the metric's values, per timestamp.
 
     Raises:
         RuntimeError: If the resource could not be found.
@@ -123,13 +123,12 @@ class AZMonitoring:
           'sure you specified the full resource ID  url, i.e. /subscriptions/'
           '<>/resourceGroups/<>/providers/<>/<>/yourResourceName'.format(
               metrics, resource_id))
-    results = {}  # type: Dict[str, List[str]]
+    results = {}  # type: Dict[str, Dict[str, str]]
     for metric in metrics_data.value:
-      values = []
+      values = {}
       for timeserie in metric.timeseries:
         for data in timeserie.data:
           if data.time_stamp and data.total:
-            values.append('{0:s}: {1:s}'.format(str(data.time_stamp),
-                                                str(data.total)))
+            values[str(data.time_stamp)] = str(data.total)
       results[metric.name.value] = values
     return results

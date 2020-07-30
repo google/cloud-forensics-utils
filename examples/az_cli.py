@@ -119,5 +119,5 @@ def QueryMetrics(args: 'argparse.Namespace') -> None:
 
   for metric in metrics:
     logger.info('Metric: {0:s}'.format(metric))
-    for value in metrics[metric]:
-      logger.info('Value: {0:s}'.format(value))
+    for timestamp, value in metrics[metric].items():
+      logger.info('  Timestamp: {0:s}, value: {1:s}'.format(timestamp, value))
