@@ -19,6 +19,8 @@ jobs:
       uses: actions/setup-python@v1
       with:
         python-version: ${{ matrix.python-version }}
+    - name: Install wheel
+      run: pip install wheel
     - name: Install dependencies through setup.py
       run: python setup.py install
     - name: Test through setup.py
