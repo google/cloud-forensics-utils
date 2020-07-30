@@ -18,7 +18,7 @@ A standalone tool called `cloudforensics` is created during installation.
 $ cloudforensics --help
 usage: cloudforensics [-h] {aws,az,gcp} ...
 
-CLI tool for AWS and GCP.
+CLI tool for AWS, Azure and GCP.
 
 positional arguments:
   {aws,az,gcp}
