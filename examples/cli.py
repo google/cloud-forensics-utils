@@ -34,7 +34,9 @@ PROVIDER_TO_FUNC = {
     'az': {
         'copydisk': az_cli.CreateDiskCopy,
         'listinstances': az_cli.ListInstances,
-        'listdisks': az_cli.ListDisks
+        'listdisks': az_cli.ListDisks,
+        'listmetrics': az_cli.ListMetrics,
+        'querymetrics': az_cli.QueryMetrics
     },
     'gcp': {
         'copydisk': gcp_cli.CreateDiskCopy,
@@ -213,6 +215,35 @@ def Main() -> None:
                                   'not provided, the default behavior is to '
                                   'use the same destination profile as the '
                                   'source profile.', None)
+            ])
+  AddParser('az', az_subparsers, 'listmetrics',
+            'List Azure Monitoring metrics for a resource.',
+            args=[
+                ('resource_id', 'The resource ID for the resource.', None)
+            ])
+
+  AddParser('az', az_subparsers, 'querymetrics',
+            'Query Azure Monitoring metrics for a resource.',
+            args=[
+                ('resource_id', 'The resource ID for the resource.', None),
+                ('metrics', 'A comma separated list of metrics to query for '
+                            'the resource.', None),
+                ('--from_date', 'A start date from which to lookup the '
+                                'metrics. Format: %Y-%m-%dT%H:%M:%SZ', None),
+                ('--to_date', 'An end date until which to lookup the metrics.'
+                              'Format: %Y-%m-%dT%H:%M:%SZ', None),
+                ('--interval', 'An interval for the metrics, e.g. PT1H will '
+                               'output metrics values with one hour '
+                               'granularity.', None),
+                ('--aggregation', 'The type of aggregation for the metrics '
+                                  'values. Default is "Total". Possible values:'
+                                  ' "Total", "Average"', None),
+                ('--qfilter', 'A filter for the query. E.g. (name.value eq '
+                              '"RunsSucceeded") and (aggregationType eq '
+                              '"Total") and (startTime eq 2016-02-20) and '
+                              '(endTime eq 2016-02-21) and (timeGrain eq '
+                              'duration "PT1M")',
+                 None)
             ])
 
   # GCP parser options

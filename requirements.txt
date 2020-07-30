@@ -11,5 +11,6 @@ azure-mgmt-compute==13.0.0
 azure-mgmt-resource
 azure-mgmt-storage==11.1.0
 azure-storage-blob
+azure-mgmt-monitor==0.10.0
 msrest
 msrestazure
