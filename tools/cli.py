@@ -100,7 +100,8 @@ def AddParser(
 def Main() -> None:
   """Main function for libcloudforensics CLI."""
 
-  parser = argparse.ArgumentParser(description='CLI tool for AWS and GCP.')
+  parser = argparse.ArgumentParser(
+      description='CLI tool for AWS, Azure and GCP.')
   subparsers = parser.add_subparsers()
 
   aws_parser = subparsers.add_parser('aws', help='Tools for AWS')
