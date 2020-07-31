@@ -16,3 +16,4 @@ azure-mgmt-monitor==0.10.0
 msrest
 msrestazure
 sshpubkeys
+pycryptodome
