@@ -155,6 +155,39 @@ class AZVirtualMachine(AZComputeResource):
     vm_disks_names.append(vm_disks.os_disk.name)
     return {disk_name: disks[disk_name] for disk_name in vm_disks_names}
 
+  def AttachDisk(self, disk: 'AZDisk') -> None:
+    """Attach a disk to the virtual machine.
+
+    Args:
+      disk (AZDisk): Disk to attach.
+
+    Raises:
+      RuntimeError: If the disk could not be attached.
+    """
+    vm = self.az_account.compute_client.virtual_machines.get(
+        self.resource_group_name, self.name)
+    data_disks = vm.storage_profile.data_disks
+    # ID to assign to the data disk to attach
+    lun = 0 if len(data_disks) == 0 else len(data_disks) + 1
+
+    update_data = {
+        'lun': lun,
+        'name': disk.name,
+        'create_option': models.DiskCreateOption.attach,
+        'managed_disk': {'id': disk.resource_id}
+    }
+
+    data_disks.append(update_data)
+
+    try:
+      request = self.az_account.compute_client.virtual_machines.update(
+          self.resource_group_name, self.name, vm)
+      while not request.done():
+        sleep(5)  # Wait 5 seconds before checking vm status again
+    except azure_exceptions.CloudError as exception:
+      raise RuntimeError('Could not attach disk {0:s} to instance {1:s}: '
+                         '{2:s}'.format(disk.name, self.name, str(exception)))
+
 
 class AZDisk(AZComputeResource):
   """Class that represents Azure disks."""
