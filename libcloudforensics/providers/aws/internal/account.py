@@ -441,9 +441,14 @@ class AWSAccount:
       AWSVolume: An AWS EBS Volume.
 
     Raises:
-      ValueError: If the volume name does not comply with the RegEx.
+      ValueError: If the volume name does not comply with the RegEx,
+          or if the volume type is invalid.
       RuntimeError: If the volume could not be created.
     """
+
+    if volume_type not in ['standard', 'io1', 'gp2', 'sc1', 'st1']:
+      raise ValueError('Volume type must be one of [standard, io1, gp2, sc1, '
+                       'st1]. Got: {0:s}'.format(volume_type))
 
     if not volume_name:
       volume_name = self._GenerateVolumeName(

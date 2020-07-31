@@ -370,6 +370,12 @@ class AWSAccountTest(unittest.TestCase):
     self.assertEqual(
         'prefix-fake-snapshot-d69d57c3-copy', volume_from_snapshot.name)
 
+    with self.assertRaises(ValueError) as error:
+      FAKE_AWS_ACCOUNT.CreateVolumeFromSnapshot(
+          FAKE_SNAPSHOT, volume_type='invalid-volume-type')
+    self.assertEqual('Volume type must be one of [standard, io1, gp2, sc1, '
+                     'st1]. Got: invalid-volume-type', str(error.exception))
+
   @typing.no_type_check
   @mock.patch('libcloudforensics.scripts.utils.ReadStartupScript')
   @mock.patch('libcloudforensics.providers.aws.internal.account.AWSAccount.GetInstancesByName')
@@ -582,7 +588,7 @@ class AWSTest(unittest.TestCase):
     mock_account.return_value = 'fake-account-id'
     mock_get_volume.return_value = FAKE_VOLUME
     mock_snapshot.return_value = FAKE_SNAPSHOT
-    mock_volume_type.return_value = 'fake-volume-type'
+    mock_volume_type.return_value = 'standard'
     mock_loader.return_value = None
 
     # CreateVolumeCopy(zone, volume_id='fake-volume-id'). This should grab
@@ -618,7 +624,7 @@ class AWSTest(unittest.TestCase):
     mock_get_instance.return_value = FAKE_INSTANCE
     mock_get_volume.return_value = FAKE_BOOT_VOLUME
     mock_snapshot.return_value = FAKE_SNAPSHOT
-    mock_volume_type.return_value = 'fake-volume-type'
+    mock_volume_type.return_value = 'standard'
     mock_loader.return_value = None
 
     # CreateVolumeCopy(zone, instance='fake-instance-id'). This should grab
