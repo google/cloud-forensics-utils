@@ -127,7 +127,7 @@ def CreateVolumeCopy(zone: str,
     if source_account_id != destination_account_id:
       logger.info('External account detected: source account ID is {0:s} and '
                   'destination account ID is {1:s}'.format(
-                      source_account, destination_account))
+                      source_account_id, destination_account_id))
       if volume_to_copy.encrypted:
         logger.info(
             'Encrypted volume detected, generating one-time use CMK key')

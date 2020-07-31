@@ -18,7 +18,7 @@ import typing
 import unittest
 import mock
 
-from libcloudforensics.providers.azure.internal import account, compute, common
+from libcloudforensics.providers.azure.internal import account, compute, common, monitoring  # pylint:disable=line-too-long
 from libcloudforensics.providers.azure import forensics
 
 # pylint: disable=line-too-long
@@ -63,6 +63,8 @@ FAKE_SNAPSHOT = compute.AZSnapshot(
     'fake-region',
     FAKE_DISK
 )
+
+FAKE_MONITORING = monitoring.AZMonitoring(FAKE_ACCOUNT)
 
 MOCK_INSTANCE = mock.Mock(
     id='/a/b/c/fake-resource-group/fake-vm-name',
@@ -120,6 +122,16 @@ STARTUP_SCRIPT = 'scripts/startup.sh'
 MOCK_BLOB_PROPERTIES = mock.Mock()
 MOCK_BLOB_PROPERTIES.copy = mock.Mock()
 MOCK_BLOB_PROPERTIES.copy.status = 'success'
+
+MOCK_METRICS = mock.Mock()
+MOCK_METRICS.name = mock.Mock()
+MOCK_METRICS.name.value = 'fake-metric'
+MOCK_LIST_METRICS = [MOCK_METRICS]
+
+MOCK_METRIC_OPERATION_VALUE = mock.Mock(timeseries=[mock.Mock(
+    data=[mock.Mock(time_stamp='fake-time-stamp', total='fake-value')])])
+MOCK_METRIC_OPERATION_VALUE.name = mock.Mock(value='fake-metric')
+MOCK_METRIC_OPERATION = mock.Mock(value=[MOCK_METRIC_OPERATION_VALUE])
 
 
 class TestAccount(unittest.TestCase):
@@ -487,6 +499,31 @@ class TestAZVirtualMachine(unittest.TestCase):
         resource_group_name=FAKE_INSTANCE.resource_group_name)
     self.assertEqual(2, len(instance_disks))
     self.assertEqual(MOCK_LIST_DISKS, instance_disks)
+
+
+class TestMonitoring(unittest.TestCase):
+  """Test Azure monitoring class."""
+
+  @typing.no_type_check
+  @mock.patch('azure.mgmt.monitor.v2018_01_01.operations._metric_definitions_operations.MetricDefinitionsOperations.list')
+  def testListAvailableMetricsForResource(self, mock_list_metrics):
+    """Test that metrics are correctly listed."""
+    mock_list_metrics.return_value = MOCK_LIST_METRICS
+    metrics = FAKE_MONITORING.ListAvailableMetricsForResource(
+        'fake-resource-id')
+    self.assertEqual(1, len(metrics))
+    self.assertIn('fake-metric', metrics)
+
+  @typing.no_type_check
+  @mock.patch('azure.mgmt.monitor.v2018_01_01.operations._metrics_operations.MetricsOperations.list')
+  def testGetMetricsForResource(self, mock_list_metrics_operations):
+    """Test that metrics values are correctly retrieved."""
+    mock_list_metrics_operations.return_value = MOCK_METRIC_OPERATION
+    metrics = FAKE_MONITORING.GetMetricsForResource(
+        'fake-resource-id', 'fake-metric')
+    self.assertIn('fake-metric', metrics)
+    self.assertEqual(1, len(metrics['fake-metric']))
+    self.assertEqual('fake-value', metrics['fake-metric']['fake-time-stamp'])
 
 
 class TestForensics(unittest.TestCase):
