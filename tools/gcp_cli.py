@@ -25,7 +25,11 @@ from libcloudforensics.providers.gcp.internal import monitoring as gcp_monitorin
 from libcloudforensics.providers.gcp.internal import project as gcp_project
 from libcloudforensics.providers.gcp.internal import storage as gcp_storage
 from libcloudforensics.providers.gcp import forensics
+from libcloudforensics import logging_utils
 # pylint: enable=line-too-long
+
+logging_utils.SetUpLogger(__name__)
+logger = logging_utils.GetLogger(__name__)
 
 if TYPE_CHECKING:
   import argparse
@@ -41,11 +45,12 @@ def ListInstances(args: 'argparse.Namespace') -> None:
   project = gcp_project.GoogleCloudProject(args.project)
   instances = project.compute.ListInstances()
 
-  print('Instances found:')
+  logger.info('Instances found:')
   for instance in instances:
     bootdisk = instances[instance].GetBootDisk()
     if bootdisk:
-      print('Name: {0:s}, Bootdisk: {1:s}'.format(instance, bootdisk.name))
+      logger.info('Name: {0:s}, Bootdisk: {1:s}'.format(
+          instance, bootdisk.name))
 
 
 def ListDisks(args: 'argparse.Namespace') -> None:
@@ -57,9 +62,9 @@ def ListDisks(args: 'argparse.Namespace') -> None:
 
   project = gcp_project.GoogleCloudProject(args.project)
   disks = project.compute.ListDisks()
-  print('Disks found:')
+  logger.info('Disks found:')
   for disk in disks:
-    print('Name: {0:s}, Zone: {1:s}'.format(disk, disks[disk].zone))
+    logger.info('Name: {0:s}, Zone: {1:s}'.format(disk, disks[disk].zone))
 
 
 def CreateDiskCopy(args: 'argparse.Namespace') -> None:
@@ -75,8 +80,8 @@ def CreateDiskCopy(args: 'argparse.Namespace') -> None:
                                   instance_name=args.instance_name,
                                   disk_name=args.disk_name)
 
-  print('Disk copy completed.')
-  print('Name: {0:s}'.format(disk.name))
+  logger.info('Disk copy completed.')
+  logger.info('Name: {0:s}'.format(disk.name))
 
 
 def ListLogs(args: 'argparse.Namespace') -> None:
@@ -87,9 +92,9 @@ def ListLogs(args: 'argparse.Namespace') -> None:
   """
   logs = gcp_log.GoogleCloudLog(args.project)
   results = logs.ListLogs()
-  print('Found {0:d} available log types:'.format(len(results)))
+  logger.info('Found {0:d} available log types:'.format(len(results)))
   for line in results:
-    print(line)
+    logger.info(line)
 
 
 def QueryLogs(args: 'argparse.Namespace') -> None:
@@ -127,9 +132,9 @@ def QueryLogs(args: 'argparse.Namespace') -> None:
     qfilter += args.filter
 
   results = logs.ExecuteQuery(qfilter)
-  print('Found {0:d} log entries:'.format(len(results)))
+  logger.info('Found {0:d} log entries:'.format(len(results)))
   for line in results:
-    print(json.dumps(line))
+    logger.info(json.dumps(line))
 
 
 def CreateDiskFromGCSImage(args: 'argparse.Namespace') -> None:
@@ -145,12 +150,13 @@ def CreateDiskFromGCSImage(args: 'argparse.Namespace') -> None:
   result = forensics.CreateDiskFromGCSImage(
       args.project, args.gcs_path, args.zone, name=args.disk_name)
 
-  print('Disk creation completed.')
-  print('Project ID: {0:s}'.format(result['project_id']))
-  print('Disk name: {0:s}'.format(result['disk_name']))
-  print('Zone: {0:s}'.format(result['zone']))
-  print('size in bytes: {0:s}'.format(result['bytes_count']))
-  print('MD5 hash of source image in hex: {0:s}'.format(result['md5Hash']))
+  logger.info('Disk creation completed.')
+  logger.info('Project ID: {0:s}'.format(result['project_id']))
+  logger.info('Disk name: {0:s}'.format(result['disk_name']))
+  logger.info('Zone: {0:s}'.format(result['zone']))
+  logger.info('size in bytes: {0:s}'.format(result['bytes_count']))
+  logger.info('MD5 hash of source image in hex: {0:s}'.format(
+      result['md5Hash']))
 
 
 def StartAnalysisVm(args: 'argparse.Namespace') -> None:
@@ -165,10 +171,11 @@ def StartAnalysisVm(args: 'argparse.Namespace') -> None:
     # Check if attach_disks parameter exists and if there
     # are any empty entries.
     if not (attach_disks and all(elements for elements in attach_disks)):
-      print('error: parameter --attach_disks: {0:s}'.format(args.attach_disks))
+      logger.error('parameter --attach_disks: {0:s}'.format(
+          args.attach_disks))
       return
 
-  print('Starting analysis VM...')
+  logger.info('Starting analysis VM...')
   vm = forensics.StartAnalysisVm(args.project,
                                  args.instance_name,
                                  args.zone,
@@ -177,8 +184,8 @@ def StartAnalysisVm(args: 'argparse.Namespace') -> None:
                                  int(args.cpu_cores),
                                  attach_disks=attach_disks)
 
-  print('Analysis VM started.')
-  print('Name: {0:s}, Started: {1:s}'.format(vm[0].name, str(vm[1])))
+  logger.info('Analysis VM started.')
+  logger.info('Name: {0:s}, Started: {1:s}'.format(vm[0].name, str(vm[1])))
 
 
 def ListServices(args: 'argparse.Namespace') -> None:
@@ -189,10 +196,10 @@ def ListServices(args: 'argparse.Namespace') -> None:
   """
   apis = gcp_monitoring.GoogleCloudMonitoring(args.project)
   results = apis.ActiveServices()
-  print('Found {0:d} APIs:'.format(len(results)))
+  logger.info('Found {0:d} APIs:'.format(len(results)))
   sorted_apis = sorted(results.items(), key=lambda x: x[1], reverse=True)
   for apiname, usage in sorted_apis:
-    print('{0:s}: {1:s}'.format(apiname, usage))
+    logger.info('{0:s}: {1:s}'.format(apiname, usage))
 
 
 def GetBucketACLs(args: 'argparse.Namespace') -> None:
@@ -204,7 +211,7 @@ def GetBucketACLs(args: 'argparse.Namespace') -> None:
   gcs = gcp_storage.GoogleCloudStorage(args.project)
   bucket_acls = gcs.GetBucketACLs(args.path)
   for role in bucket_acls:
-    print('{0:s}: {1:s}'.format(role, ', '.join(bucket_acls[role])))
+    logger.info('{0:s}: {1:s}'.format(role, ', '.join(bucket_acls[role])))
 
 
 def GetGCSObjectMetadata(args: 'argparse.Namespace') -> None:
@@ -218,11 +225,11 @@ def GetGCSObjectMetadata(args: 'argparse.Namespace') -> None:
   if results.get('kind') == 'storage#objects':
     for item in results.get('items', []):
       for key, value in item.items():
-        print('{0:s}: {1:s}'.format(key, value))
-      print('---------')
+        logger.info('{0:s}: {1:s}'.format(key, value))
+      logger.info('---------')
   else:
     for key, value in results.items():
-      print('{0:s}: {1:s}'.format(key, value))
+      logger.info('{0:s}: {1:s}'.format(key, value))
 
 
 def ListBucketObjects(args: 'argparse.Namespace') -> None:
@@ -234,6 +241,6 @@ def ListBucketObjects(args: 'argparse.Namespace') -> None:
   gcs = gcp_storage.GoogleCloudStorage(args.project)
   results = gcs.ListBucketObjects(args.path)
   for obj in results:
-    print('{0:s} {1:s}b [{2:s}]'.format(
+    logger.info('{0:s} {1:s}b [{2:s}]'.format(
         obj.get('id', 'ID not found'), obj.get('size', 'Unknown size'),
         obj.get('contentType', 'Unknown Content-Type')))

@@ -26,6 +26,10 @@ from typing import TYPE_CHECKING
 from libcloudforensics.providers.aws.internal import account
 from libcloudforensics.providers.aws.internal import log as aws_log
 from libcloudforensics.providers.aws import forensics
+from libcloudforensics import logging_utils
+
+logging_utils.SetUpLogger(__name__)
+logger = logging_utils.GetLogger(__name__)
 
 if TYPE_CHECKING:
   import argparse
@@ -41,10 +45,10 @@ def ListInstances(args: 'argparse.Namespace') -> None:
   aws_account = account.AWSAccount(args.zone)
   instances = aws_account.ListInstances()
 
-  print('Instances found:')
+  logger.info('Instances found:')
   for instance in instances:
     boot_volume = instances[instance].GetBootVolume().volume_id
-    print('Name: {0:s}, Boot volume: {1:s}'.format(instance, boot_volume))
+    logger.info('Name: {0:s}, Boot volume: {1:s}'.format(instance, boot_volume))
 
 
 def ListVolumes(args: 'argparse.Namespace') -> None:
@@ -57,9 +61,9 @@ def ListVolumes(args: 'argparse.Namespace') -> None:
   aws_account = account.AWSAccount(args.zone)
   volumes = aws_account.ListVolumes()
 
-  print('Volumes found:')
+  logger.info('Volumes found:')
   for volume in volumes:
-    print('Name: {0:s}, Zone: {1:s}'.format(
+    logger.info('Name: {0:s}, Zone: {1:s}'.format(
         volume, volumes[volume].availability_zone))
 
 
@@ -69,7 +73,7 @@ def CreateVolumeCopy(args: 'argparse.Namespace') -> None:
   Args:
     args (argparse.Namespace): Arguments from ArgumentParser.
   """
-  print('Starting volume copy...')
+  logger.info('Starting volume copy...')
   tags = None
   if args.tags:
     tags = json.loads(args.tags)
@@ -80,7 +84,7 @@ def CreateVolumeCopy(args: 'argparse.Namespace') -> None:
                                            src_profile=args.src_profile,
                                            dst_profile=args.dst_profile,
                                            tags=tags)
-  print(
+  logger.info(
       'Done! Volume {0:s} successfully created. You will find it in '
       'your AWS account under the name {1:s}.'.format(
           volume_copy.volume_id, volume_copy.name))
@@ -105,9 +109,9 @@ def QueryLogs(args: 'argparse.Namespace') -> None:
   result = ct.LookupEvents(**params)
 
   if result:
-    print('Log events found: {0:d}'.format(len(result)))
+    logger.info('Log events found: {0:d}'.format(len(result)))
     for event in result:
-      print(event)
+      logger.info(event)
 
 
 def StartAnalysisVm(args: 'argparse.Namespace') -> None:
@@ -117,7 +121,7 @@ def StartAnalysisVm(args: 'argparse.Namespace') -> None:
     args (argparse.Namespace): Arguments from ArgumentParser.
   """
   if args.attach_volumes and len(args.attach_volumes.split(',')) > 11:
-    print('error: --attach_volumes must be < 11')
+    logger.error('--attach_volumes must be < 11')
     return
 
   attach_volumes = []
@@ -126,7 +130,8 @@ def StartAnalysisVm(args: 'argparse.Namespace') -> None:
     # Check if volumes parameter exists and if there
     # are any empty entries.
     if not (volumes and all(elements for elements in volumes)):
-      print('error: parameter --attach_volumes: {0:s}'.format(args.attach_volumes))
+      logger.error('parameter --attach_volumes: {0:s}'.format(
+          args.attach_volumes))
       return
 
     # AWS recommends using device names that are within /dev/sd[f-p].
@@ -138,16 +143,17 @@ def StartAnalysisVm(args: 'argparse.Namespace') -> None:
 
   key_name = args.ssh_key_name
   if args.generate_ssh_key_pair:
-    print('Generating SSH key pair for the analysis VM.')
+    logger.info('Generating SSH key pair for the analysis VM.')
     aws_account = account.AWSAccount(args.zone)
     key_name, private_key = aws_account.GenerateSSHKeyPair(args.instance_name)
     path = os.path.join(os.getcwd(), key_name + '.pem')
     with open(path, 'w') as f:
       f.write(private_key)
-    print('Created key pair {0:s} in AWS. Your private key is saved in: '
-          '{1:s}'.format(key_name, path))
+    logger.info(
+        'Created key pair {0:s} in AWS. Your private key is saved in: '
+        '{1:s}'.format(key_name, path))
 
-  print('Starting analysis VM...')
+  logger.info('Starting analysis VM...')
   vm = forensics.StartAnalysisVm(vm_name=args.instance_name,
                                  default_availability_zone=args.zone,
                                  boot_volume_size=int(args.boot_volume_size),
@@ -157,10 +163,10 @@ def StartAnalysisVm(args: 'argparse.Namespace') -> None:
                                  attach_volumes=attach_volumes,
                                  dst_profile=args.dst_profile)
 
-  print('Analysis VM started.')
-  print('Name: {0:s}, Started: {1:s}, Region: {2:s}'.format(vm[0].name,
-                                                            str(vm[1]),
-                                                            vm[0].region))
+  logger.info('Analysis VM started.')
+  logger.info('Name: {0:s}, Started: {1:s}, Region: {2:s}'.format(vm[0].name,
+                                                                  str(vm[1]),
+                                                                  vm[0].region))
 
 
 def ListImages(args: 'argparse.Namespace') -> None:
@@ -176,5 +182,5 @@ def ListImages(args: 'argparse.Namespace') -> None:
   images = aws_account.ListImages(qfilter)
 
   for image in images:
-    print('Name: {0:s}, ImageId: {1:s}, Location: {2:s}'.format(
+    logger.info('Name: {0:s}, ImageId: {1:s}, Location: {2:s}'.format(
         image['Name'], image['ImageId'], image['ImageLocation']))
