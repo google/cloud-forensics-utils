@@ -37,7 +37,7 @@ def CreateDiskCopy(
     zone: str,
     instance_name: Optional[str] = None,
     disk_name: Optional[str] = None,
-    disk_type: str = 'pd-standard') -> 'compute.GoogleComputeDisk':
+    disk_type: Optional[str] = None) -> 'compute.GoogleComputeDisk':
   """Creates a copy of a Google Compute Disk.
 
   Args:
@@ -48,8 +48,8 @@ def CreateDiskCopy(
     disk_name (str): Optional. Name of the disk to copy. If None,
         instance_name must be specified and the boot disk will be copied.
     disk_type (str): Optional. URL of the disk type resource describing
-        which disk type to use to create the disk. Default is pd-standard. Use
-        pd-ssd to have a SSD disk.
+        which disk type to use to create the disk. The default behavior is to
+        use the same disk type as the source disk.
 
   Returns:
     GoogleComputeDisk: A Google Compute Disk object.
@@ -72,6 +72,9 @@ def CreateDiskCopy(
     elif instance_name:
       instance = src_project.compute.GetInstance(instance_name)
       disk_to_copy = instance.GetBootDisk()
+
+    if not disk_type:
+      disk_type = disk_to_copy.GetDiskType()
 
     logger.info('Disk copy of {0:s} started...'.format(
         disk_to_copy.name))

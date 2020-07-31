@@ -245,7 +245,8 @@ class AZAccount:
         'creation_data': {
             'sourceResourceId': snapshot.resource_id,
             'create_option': models.DiskCreateOption.copy
-        }
+        },
+        'sku': {'name': disk_type}
     }
 
     try:
@@ -253,8 +254,7 @@ class AZAccount:
       request = self.compute_client.disks.create_or_update(
           self.default_resource_group_name,
           disk_name,
-          creation_data,
-          sku=disk_type)
+          creation_data)
       while not request.done():
         sleep(5)  # Wait 5 seconds before checking disk status again
       disk = request.result()
@@ -360,7 +360,8 @@ class AZAccount:
             'source_uri': copied_blob.url,
             'storage_account_id': storage_account_id,
             'create_option': models.DiskCreateOption.import_enum
-        }
+        },
+        'sku': {'name': disk_type}
     }
 
     try:
@@ -368,8 +369,7 @@ class AZAccount:
       request = self.compute_client.disks.create_or_update(
           self.default_resource_group_name,
           disk_name,
-          creation_data,
-          sku=disk_type)
+          creation_data)
       while not request.done():
         sleep(5)  # Wait 5 seconds before checking disk status again
       disk = request.result()

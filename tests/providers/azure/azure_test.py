@@ -18,6 +18,8 @@ import typing
 import unittest
 import mock
 
+from azure.mgmt.compute.v2020_05_01 import models  # pylint: disable=import-error
+
 from libcloudforensics.providers.azure.internal import account, compute, common, monitoring  # pylint:disable=line-too-long
 from libcloudforensics.providers.azure import forensics
 
@@ -253,8 +255,7 @@ class TestAccount(unittest.TestCase):
     mock_create_disk.assert_called_with(
         FAKE_SNAPSHOT.resource_group_name,
         'fake_snapshot_name_f4c186ac_copy',
-        mock.ANY,
-        sku='Standard_LRS')
+        mock.ANY)
 
     # CreateDiskFromSnapshot(
     #     snapshot=FAKE_SNAPSHOT,
@@ -265,8 +266,7 @@ class TestAccount(unittest.TestCase):
     mock_create_disk.assert_called_with(
         FAKE_SNAPSHOT.resource_group_name,
         'new-forensics-disk',
-        mock.ANY,
-        sku='Standard_LRS')
+        mock.ANY)
 
     # CreateDiskFromSnapshot(
     #     snapshot=FAKE_SNAPSHOT, disk_name=None, disk_name_prefix='prefix')
@@ -275,18 +275,26 @@ class TestAccount(unittest.TestCase):
     mock_create_disk.assert_called_with(
         FAKE_SNAPSHOT.resource_group_name,
         'prefix_fake_snapshot_name_f4c186ac_copy',
-        mock.ANY,
-        sku='Standard_LRS')
+        mock.ANY)
 
     # CreateDiskFromSnapshot(
     #     snapshot=FAKE_SNAPSHOT, disk_type='StandardSSD_LRS')
+    expected_args = {
+        'location': 'fake-region',
+        'creation_data': {
+            'sourceResourceId': '/a/b/c/fake-resource-group/fake_snapshot_name',
+            'create_option': models.DiskCreateOption.copy
+        },
+        'sku': {
+            'name': 'StandardSSD_LRS'
+        }
+    }
     FAKE_ACCOUNT.CreateDiskFromSnapshot(
         FAKE_SNAPSHOT, disk_type='StandardSSD_LRS')
     mock_create_disk.assert_called_with(
         FAKE_SNAPSHOT.resource_group_name,
         'fake_snapshot_name_f4c186ac_copy',
-        mock.ANY,
-        sku='StandardSSD_LRS')
+        expected_args)
 
   @mock.patch('azure.storage.blob._container_client.ContainerClient.create_container')
   @mock.patch('azure.storage.blob._generated._azure_blob_storage.AzureBlobStorage.__init__')
@@ -330,8 +338,7 @@ class TestAccount(unittest.TestCase):
     mock_create_disk.assert_called_with(
         FAKE_SNAPSHOT.resource_group_name,
         'fake_snapshot_name_f4c186ac_copy',
-        mock.ANY,
-        sku='Standard_LRS')
+        mock.ANY)
 
   @mock.patch('sshpubkeys.SSHKey.parse')
   @mock.patch('libcloudforensics.scripts.utils.ReadStartupScript')
@@ -613,8 +620,9 @@ class TestMonitoring(unittest.TestCase):
 
 class TestForensics(unittest.TestCase):
   """Test Azure forensics file."""
-  # pylint: disable=line-too-long
+  # pylint: disable=line-too-long, too-many-arguments
 
+  @mock.patch('libcloudforensics.providers.azure.internal.compute.AZDisk.GetDiskType')
   @mock.patch('libcloudforensics.providers.azure.internal.account.AZAccount._GetOrCreateResourceGroup')
   @mock.patch('libcloudforensics.providers.azure.internal.common.GetCredentials')
   @mock.patch('libcloudforensics.providers.azure.internal.account.AZAccount.ListSubscriptionIDs')
@@ -634,7 +642,8 @@ class TestForensics(unittest.TestCase):
                           mock_snapshot_delete,
                           mock_list_subscription_ids,
                           mock_credentials,
-                          mock_resource_group):
+                          mock_resource_group,
+                          mock_disk_type):
     """Test that a disk copy is correctly created.
 
     CreateDiskCopy(zone, instance_name='fake-vm-name', region='fake-region').
@@ -649,6 +658,7 @@ class TestForensics(unittest.TestCase):
     mock_list_subscription_ids.return_value = ['fake-subscription-id']
     mock_credentials.return_value = ('fake-subscription-id', mock.Mock())
     mock_resource_group.return_value = 'fake-resource-group'
+    mock_disk_type.return_value = 'fake-disk-type'
 
     disk_copy = forensics.CreateDiskCopy(
         FAKE_ACCOUNT.default_resource_group_name,
@@ -661,6 +671,7 @@ class TestForensics(unittest.TestCase):
     self.assertIsInstance(disk_copy, compute.AZDisk)
     self.assertEqual('fake_snapshot_name_f4c186ac_copy', disk_copy.name)
 
+  @mock.patch('libcloudforensics.providers.azure.internal.compute.AZDisk.GetDiskType')
   @mock.patch('libcloudforensics.providers.azure.internal.account.AZAccount._GetOrCreateResourceGroup')
   @mock.patch('libcloudforensics.providers.azure.internal.common.GetCredentials')
   @mock.patch('libcloudforensics.providers.azure.internal.account.AZAccount.ListSubscriptionIDs')
@@ -680,7 +691,8 @@ class TestForensics(unittest.TestCase):
                           mock_snapshot_delete,
                           mock_list_subscription_ids,
                           mock_credentials,
-                          mock_resource_group):
+                          mock_resource_group,
+                          mock_disk_type):
     """Test that a disk copy is correctly created.
 
     CreateDiskCopy(zone, disk_name='fake-disk-name', region='fake-region').
@@ -694,6 +706,7 @@ class TestForensics(unittest.TestCase):
     mock_list_subscription_ids.return_value = ['fake-subscription-id']
     mock_credentials.return_value = ('fake-subscription-id', mock.Mock())
     mock_resource_group.return_value = 'fake-resource-group'
+    mock_disk_type.return_value = 'fake-disk-type'
 
     disk_copy = forensics.CreateDiskCopy(
         FAKE_ACCOUNT.default_resource_group_name,
@@ -706,6 +719,7 @@ class TestForensics(unittest.TestCase):
     self.assertIsInstance(disk_copy, compute.AZDisk)
     self.assertEqual('fake_snapshot_name_f4c186ac_copy', disk_copy.name)
 
+  @mock.patch('libcloudforensics.providers.azure.internal.compute.AZDisk.GetDiskType')
   @mock.patch('libcloudforensics.providers.azure.internal.account.AZAccount._GetOrCreateResourceGroup')
   @mock.patch('libcloudforensics.providers.azure.internal.common.GetCredentials')
   @mock.patch('libcloudforensics.providers.azure.internal.account.AZAccount.ListSubscriptionIDs')
@@ -717,7 +731,8 @@ class TestForensics(unittest.TestCase):
                           mock_list_disk,
                           mock_list_subscription_ids,
                           mock_credentials,
-                          mock_resource_group):
+                          mock_resource_group,
+                          mock_disk_type):
     """Test that a disk copy is correctly created.
 
     The first call should raise a RuntimeError in GetInstance as we are
@@ -728,6 +743,7 @@ class TestForensics(unittest.TestCase):
     mock_list_subscription_ids.return_value = ['fake-subscription-id']
     mock_credentials.return_value = ('fake-subscription-id', mock.Mock())
     mock_resource_group.return_value = 'fake-resource-group'
+    mock_disk_type.return_value = 'fake-disk-type'
 
     with self.assertRaises(RuntimeError) as error:
       forensics.CreateDiskCopy(
