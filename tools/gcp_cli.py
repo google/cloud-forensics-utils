@@ -78,7 +78,8 @@ def CreateDiskCopy(args: 'argparse.Namespace') -> None:
                                   args.dst_project,
                                   args.zone,
                                   instance_name=args.instance_name,
-                                  disk_name=args.disk_name)
+                                  disk_name=args.disk_name,
+                                  disk_type=args.disk_type)
 
   logger.info('Disk copy completed.')
   logger.info('Name: {0:s}'.format(disk.name))

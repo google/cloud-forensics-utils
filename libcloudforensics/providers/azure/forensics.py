@@ -30,7 +30,7 @@ def CreateDiskCopy(
     resource_group_name: str,
     instance_name: Optional[str] = None,
     disk_name: Optional[str] = None,
-    disk_type: str = 'Standard_LRS',
+    disk_type: Optional[str] = None,
     region: str = 'eastus',
     src_profile: Optional[str] = None,
     dst_profile: Optional[str] = None) -> 'compute.AZDisk':
@@ -47,7 +47,7 @@ def CreateDiskCopy(
         then instance_name needs to be set and the boot disk will be copied.
     disk_type (str): Optional. The sku name for the disk to create. Can be
         Standard_LRS, Premium_LRS, StandardSSD_LRS, or UltraSSD_LRS. The
-        default value is Standard_LRS.
+        default behavior is to use the same disk type as the source disk.
     region (str): Optional. The region in which to create the disk copy.
         Default is eastus.
     src_profile (str): Optional. The name of the source profile to use for the
@@ -88,6 +88,10 @@ def CreateDiskCopy(
       disk_to_copy = instance.GetBootDisk()
     logger.info('Disk copy of {0:s} started...'.format(
         disk_to_copy.name))
+
+    if not disk_type:
+      disk_type = disk_to_copy.GetDiskType()
+
     snapshot = disk_to_copy.Snapshot()
 
     subscription_ids = src_account.ListSubscriptionIDs()

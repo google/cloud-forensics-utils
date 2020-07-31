@@ -210,8 +210,9 @@ def Main() -> None:
                                 'instance will be copied.', None),
                 ('--disk_type', 'The SKU name for the disk to create. '
                                 'Can be Standard_LRS, Premium_LRS, '
-                                'StandardSSD_LRS, or UltraSSD_LRS. Default is '
-                                'Standard_LRS', 'Standard_LRS'),
+                                'StandardSSD_LRS, or UltraSSD_LRS. The default '
+                                'behavior is to use the same disk type as '
+                                'the source disk.', None),
                 ('--region', 'The region in which to create the disk copy. If '
                              'not provided, the disk copy will be created in '
                              'the "eastus" region.', 'eastus'),
@@ -290,7 +291,10 @@ def Main() -> None:
                 ('--disk_name', 'Name of the disk to copy. If none specified, '
                                 'then --instance_name must be specified and '
                                 'the boot disk of the instance will be copied.',
-                 None)
+                 None),
+                ('--disk_type', 'Type of disk. Can be pd-standard or pd-ssd. '
+                                'The default behavior is to use the same disk '
+                                'type as the source disk.', None)
             ])
   AddParser('gcp', gcp_subparsers, 'startvm', 'Start a forensic analysis VM.',
             args=[
@@ -298,7 +302,8 @@ def Main() -> None:
                  ''),
                 ('zone', 'Zone to create the instance in.', ''),
                 ('--disk_size', 'Size of disk in GB.', '50'),
-                ('--disk_type', 'Type of disk.', 'pd-ssd'),
+                ('--disk_type', 'Type of disk. Can be pd-standard or pd-ssd. '
+                                'The default value is pd-ssd.', 'pd-ssd'),
                 ('--cpu_cores', 'Instance CPU core count.', '4'),
                 ('--attach_disks', 'Comma separated list of disk names '
                                    'to attach.', None)
