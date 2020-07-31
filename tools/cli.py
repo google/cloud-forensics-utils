@@ -20,7 +20,7 @@ import argparse
 import sys
 
 from typing import Tuple, List, Optional, Any, Dict
-from examples import aws_cli, az_cli, gcp_cli
+from tools import aws_cli, az_cli, gcp_cli
 
 PROVIDER_TO_FUNC = {
     'aws': {
@@ -102,7 +102,8 @@ def AddParser(
 def Main() -> None:
   """Main function for libcloudforensics CLI."""
 
-  parser = argparse.ArgumentParser(description='CLI tool for AWS and GCP.')
+  parser = argparse.ArgumentParser(
+      description='CLI tool for AWS, Azure and GCP.')
   subparsers = parser.add_subparsers()
 
   aws_parser = subparsers.add_parser('aws', help='Tools for AWS')
