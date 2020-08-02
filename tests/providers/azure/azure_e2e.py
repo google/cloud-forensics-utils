@@ -136,7 +136,12 @@ class EndToEndTest(unittest.TestCase):
     self.assertIsNotNone(remote_disk)
     self.assertEqual(disk_copy.name, remote_disk.name)
     self.assertEqual(self.dst_region, remote_disk.location)
-    self._StoreDiskForCleanup(disk_copy)
+
+    # Since we make a copy of the same disk but in a different region in next
+    # test, we need to delete the copy we just created as Azure does not
+    # permit same-name disks in different regions.
+    self.az.compute.compute_client.disks.delete(
+        disk_copy.resource_group_name, disk_copy.name)
 
   @typing.no_type_check
   def testStartVm(self):
