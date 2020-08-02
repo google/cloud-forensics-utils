@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 
 
 class AZComputeResource:
-  """Class that represent an Azure compute resource
+  """Class that represent an Azure compute resource.
 
   Attributes:
     az_account (AZAccount): An Azure account object.
@@ -66,7 +66,7 @@ class AZComputeResource:
   @property
   def compute_client(self) -> compute_sdk.ComputeManagementClient:
     """Return the Azure compute client object associated to the Azure
-    account.
+        account.
 
     Returns:
       ComputeManagementClient: An Azure compute client object.
