@@ -85,7 +85,7 @@ class EndToEndTest(unittest.TestCase):
         # disk_name=None by default, boot disk of instance will be copied
     )
     # The disk should be present in Azure
-    remote_disk = self.az.compute_client.disks.get(
+    remote_disk = self.az.compute.compute_client.disks.get(
         disk_copy.resource_group_name, disk_copy.name)
     self.assertIsNotNone(remote_disk)
     self.assertEqual(disk_copy.name, remote_disk.name)
@@ -105,7 +105,7 @@ class EndToEndTest(unittest.TestCase):
         self.resource_group_name,
         disk_name=self.disk_to_copy)
     # The disk should be present in Azure
-    remote_disk = self.az.compute_client.disks.get(
+    remote_disk = self.az.compute.compute_client.disks.get(
         disk_copy.resource_group_name, disk_copy.name)
     self.assertIsNotNone(remote_disk)
     self.assertEqual(disk_copy.name, remote_disk.name)
@@ -113,7 +113,7 @@ class EndToEndTest(unittest.TestCase):
     # Since we make a copy of the same disk but in a different region in next
     # test, we need to delete the copy we just created as Azure does not
     # permit same-name disks in different regions.
-    self.az.compute_client.disks.delete(
+    self.az.compute.compute_client.disks.delete(
         disk_copy.resource_group_name, disk_copy.name)
 
   @typing.no_type_check
@@ -131,7 +131,7 @@ class EndToEndTest(unittest.TestCase):
         disk_name=self.disk_to_copy,
         region=self.dst_region)
     # The disk should be present in Azure and be in self.dst_region
-    remote_disk = self.az.compute_client.disks.get(
+    remote_disk = self.az.compute.compute_client.disks.get(
         disk_copy.resource_group_name, disk_copy.name)
     self.assertIsNotNone(remote_disk)
     self.assertEqual(disk_copy.name, remote_disk.name)
@@ -161,7 +161,7 @@ class EndToEndTest(unittest.TestCase):
 
     # The forensic instance should be live in the analysis Azure account and
     # the disk should be attached
-    instance = self.az.compute_client.virtual_machines.get(
+    instance = self.az.compute.compute_client.virtual_machines.get(
         self.resource_group_name, self.analysis_vm.name)
     self.assertEqual(instance.name, self.analysis_vm.name)
     self.assertIn(disk_copy.name, self.analysis_vm.ListDisks())
@@ -181,7 +181,7 @@ class EndToEndTest(unittest.TestCase):
   def tearDownClass(cls):
     # Delete the instance
     logger.info('Deleting instance: {0:s}.'.format(cls.analysis_vm.name))
-    request = cls.az.compute_client.virtual_machines.delete(
+    request = cls.az.compute.compute_client.virtual_machines.delete(
         cls.analysis_vm.resource_group_name, cls.analysis_vm.name)
     while not request.done():
       sleep(5)  # Wait 5 seconds before checking vm deletion status again
@@ -190,22 +190,23 @@ class EndToEndTest(unittest.TestCase):
     # Delete the network interface and associated artifacts created for the
     # analysis VM
     logger.info('Deleting network artifacts...')
-    cls.az.network_client.network_interfaces.delete(
+    cls.az.network.network_client.network_interfaces.delete(
         cls.resource_group_name, '{0:s}-nic'.format(cls.analysis_vm_name))
-    cls.az.network_client.subnets.delete(
+    cls.az.network.network_client.subnets.delete(
         cls.resource_group_name,
         '{0:s}-vnet'.format(cls.analysis_vm_name),
         '{0:s}-subnet'.format(cls.analysis_vm_name))
-    cls.az.network_client.virtual_networks.delete(
+    cls.az.network.network_client.virtual_networks.delete(
         cls.resource_group_name, '{0:s}-vnet'.format(cls.analysis_vm_name))
-    cls.az.network_client.public_ip_addresses.delete(
+    cls.az.network.network_client.public_ip_addresses.delete(
         cls.resource_group_name, '{0:s}-public-ip'.format(
             cls.analysis_vm_name))
     # Delete the disks
     for disk in cls.disks:
       logger.info('Deleting disk: {0:s}.'.format(disk.name))
       try:
-        cls.az.compute_client.disks.delete(disk.resource_group_name, disk.name)
+        cls.az.compute.compute_client.disks.delete(
+            disk.resource_group_name, disk.name)
       except azure_exceptions.CloudError as exception:
         raise RuntimeError('Could not complete cleanup: {0:s}'.format(
             str(exception)))

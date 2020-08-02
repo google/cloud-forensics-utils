@@ -38,7 +38,7 @@ def ListInstances(args: 'argparse.Namespace') -> None:
   """
 
   az_account = account.AZAccount(args.default_resource_group_name)
-  instances = az_account.ListInstances(
+  instances = az_account.compute.ListInstances(
       resource_group_name=args.resource_group_name)
 
   logger.info('Instances found:')
@@ -55,7 +55,8 @@ def ListDisks(args: 'argparse.Namespace') -> None:
   """
 
   az_account = account.AZAccount(args.default_resource_group_name)
-  disks = az_account.ListDisks(resource_group_name=args.resource_group_name)
+  disks = az_account.compute.ListDisks(
+      resource_group_name=args.resource_group_name)
 
   logger.info('Disks found:')
   for disk in disks:

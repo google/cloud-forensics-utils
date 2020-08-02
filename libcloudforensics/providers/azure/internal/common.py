@@ -165,7 +165,7 @@ def ExecuteRequest(
       return responses
 
 
-def GenerateDiskName(snapshot: 'compute.AZSnapshot',
+def GenerateDiskName(snapshot: 'compute.AZComputeSnapshot',
                      disk_name_prefix: Optional[str] = None) -> str:
   """Generate a new disk name for the disk to be created from the Snapshot.
 
@@ -176,7 +176,7 @@ def GenerateDiskName(snapshot: 'compute.AZSnapshot',
   characters and underscores.
 
   Args:
-    snapshot (AZSnapshot): A disk's Snapshot.
+    snapshot (AZComputeSnapshot): A disk's Snapshot.
     disk_name_prefix (str): Optional. A prefix for the disk name.
 
   Returns:
