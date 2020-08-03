@@ -432,7 +432,7 @@ class AZCompute:
             'hardwareProfile': {'vmSize': instance_type},
             'storageProfile': {
                 'imageReference': {
-                    'sku': '18.04-LTS',
+                    'sku': common.UBUNTU_1804_SKU,
                     'publisher': 'Canonical',
                     'version': 'latest',
                     'offer': 'UbuntuServer'}

@@ -40,6 +40,8 @@ REGEX_COMPUTE_RESOURCE_ID = re.compile(
 
 DEFAULT_DISK_COPY_PREFIX = 'evidence'
 
+UBUNTU_1804_SKU = '18.04-LTS'
+
 
 def GetCredentials(profile_name: Optional[str] = None
                    ) -> Tuple[str, ServicePrincipalCredentials]:

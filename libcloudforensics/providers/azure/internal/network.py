@@ -82,7 +82,8 @@ class AZNetwork:
       return nic_id
     except azure_exceptions.CloudError as exception:
       if 'ResourceNotFound' not in exception.error.error:
-        raise exception
+        raise RuntimeError('Could not create network interface: {0:s}'.format(
+            str(exception)))
       # NIC doesn't exist, ignore the error and create it
 
     # pylint: disable=unbalanced-tuple-unpacking
