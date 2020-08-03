@@ -81,6 +81,7 @@ def CreateVolumeCopy(args: 'argparse.Namespace') -> None:
                                            dst_zone=args.dst_zone,
                                            instance_id=args.instance_id,
                                            volume_id=args.volume_id,
+                                           volume_type=args.volume_type,
                                            src_profile=args.src_profile,
                                            dst_profile=args.dst_profile,
                                            tags=tags)
@@ -157,6 +158,7 @@ def StartAnalysisVm(args: 'argparse.Namespace') -> None:
   vm = forensics.StartAnalysisVm(vm_name=args.instance_name,
                                  default_availability_zone=args.zone,
                                  boot_volume_size=int(args.boot_volume_size),
+                                 boot_volume_type=args.boot_volume_type,
                                  cpu_cores=int(args.cpu_cores),
                                  ami=args.ami,
                                  ssh_key_name=key_name,

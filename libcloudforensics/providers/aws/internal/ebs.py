@@ -162,6 +162,16 @@ class AWSVolume(AWSElasticBlockStore):
       raise RuntimeError('Could not delete volume {0:s}: {1:s}'.format(
           self.volume_id, str(exception)))
 
+  def GetVolumeType(self) -> str:
+    """Return the volume type.
+
+    Returns:
+      str: The volume type.
+    """
+    client = self.aws_account.ResourceApi(common.EC2_SERVICE)
+    volume_type = client.Volume(self.volume_id).volume_type  # type: str
+    return volume_type
+
 
 class AWSSnapshot(AWSElasticBlockStore):
   """Class representing an AWS EBS snapshot.

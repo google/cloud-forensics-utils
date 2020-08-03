@@ -420,6 +420,7 @@ class AWSAccount:
       snapshot: ebs.AWSSnapshot,
       volume_name: Optional[str] = None,
       volume_name_prefix: Optional[str] = None,
+      volume_type: str = 'gp2',
       kms_key_id: Optional[str] = None,
       tags: Optional[Dict[str, str]] = None) -> ebs.AWSVolume:
     """Create a new volume based on a snapshot.
@@ -428,6 +429,9 @@ class AWSAccount:
       snapshot (AWSSnapshot): Snapshot to use.
       volume_name (str): Optional. String to use as new volume name.
       volume_name_prefix (str): Optional. String to prefix the volume name with.
+      volume_type (str): Optional. The volume type for the volume to create.
+          Can be one of 'standard'|'io1'|'gp2'|'sc1'|'st1'. The default is
+          'gp2'.
       kms_key_id (str): Optional. A KMS key id to encrypt the volume with.
       tags (Dict[str, str]): Optional. A dictionary of tags to add to the
           volume, for example {'TicketID': 'xxx'}. An entry for the volume
@@ -437,9 +441,14 @@ class AWSAccount:
       AWSVolume: An AWS EBS Volume.
 
     Raises:
-      ValueError: If the volume name does not comply with the RegEx.
+      ValueError: If the volume name does not comply with the RegEx,
+          or if the volume type is invalid.
       RuntimeError: If the volume could not be created.
     """
+
+    if volume_type not in ['standard', 'io1', 'gp2', 'sc1', 'st1']:
+      raise ValueError('Volume type must be one of [standard, io1, gp2, sc1, '
+                       'st1]. Got: {0:s}'.format(volume_type))
 
     if not volume_name:
       volume_name = self._GenerateVolumeName(
@@ -457,11 +466,19 @@ class AWSAccount:
     create_volume_args = {
         'AvailabilityZone': snapshot.availability_zone,
         'SnapshotId': snapshot.snapshot_id,
-        'TagSpecifications': [common.CreateTags(common.VOLUME, tags)]
+        'TagSpecifications': [common.CreateTags(common.VOLUME, tags)],
+        'VolumeType': volume_type
     }
     if kms_key_id:
       create_volume_args['Encrypted'] = True
       create_volume_args['KmsKeyId'] = kms_key_id
+    if volume_type == 'io1':
+      # If using the io1 volume type, we must specify Iops, see
+      # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/
+      # services/ec2.html#EC2.Client.create_volume. io1 volumes allow for a
+      # ratio of 50 IOPS per 1 GiB.
+      create_volume_args['Iops'] = self.ResourceApi(
+          common.EC2_SERVICE).Snapshot(snapshot.snapshot_id).volume_size * 50
     try:
       volume = client.create_volume(**create_volume_args)
       volume_id = volume['VolumeId']
@@ -489,6 +506,7 @@ class AWSAccount:
       boot_volume_size: int,
       ami: str,
       cpu_cores: int,
+      boot_volume_type: str = 'gp2',
       packages: Optional[List[str]] = None,
       ssh_key_name: Optional[str] = None,
       tags: Optional[Dict[str, str]] = None) -> Tuple[ec2.AWSInstance, bool]:
@@ -499,6 +517,9 @@ class AWSAccount:
       boot_volume_size (int): The size of the analysis VM boot volume (in GB).
       ami (str): The Amazon Machine Image ID to use to create the VM.
       cpu_cores (int): Number of CPU cores for the analysis VM.
+      boot_volume_type (str): Optional. The volume type for the boot volume
+          of the VM. Can be one of 'standard'|'io1'|'gp2'|'sc1'|'st1'. The
+          default is 'gp2'.
       packages (List[str]): Optional. List of packages to install in the VM.
       ssh_key_name (str): Optional. A SSH key pair name linked to the AWS
           account to associate with the VM. If none provided, the VM can only
@@ -547,7 +568,8 @@ class AWSAccount:
     client = self.ClientApi(common.EC2_SERVICE)
     vm_args = {
         'BlockDeviceMappings':
-            [self._GetBootVolumeConfigByAmi(ami, boot_volume_size)],
+            [self._GetBootVolumeConfigByAmi(
+                ami, boot_volume_size, boot_volume_type)],
         'ImageId': ami,
         'MinCount': 1,
         'MaxCount': 1,
@@ -735,12 +757,14 @@ class AWSAccount:
 
   def _GetBootVolumeConfigByAmi(self,
                                 ami: str,
-                                boot_volume_size: int) -> Dict[str, Any]:
+                                boot_volume_size: int,
+                                boot_volume_type: str) -> Dict[str, Any]:
     """Return a boot volume configuration for a given AMI and boot volume size.
 
     Args:
       ami (str): The Amazon Machine Image ID.
       boot_volume_size (int): Size of the boot volume, in GB.
+      boot_volume_type (str): Type of the boot volume.
 
     Returns:
       Dict[str, str|Dict]]: A BlockDeviceMappings configuration for the
@@ -765,6 +789,13 @@ class AWSAccount:
     block_device_mapping = image['Images'][0]['BlockDeviceMappings'][0]  # type: Dict[str, Any]
     # pylint: enable=line-too-long
     block_device_mapping['Ebs']['VolumeSize'] = boot_volume_size
+    block_device_mapping['Ebs']['VolumeType'] = boot_volume_type
+    if boot_volume_type == 'io1':
+      # If using the io1 volume type, we must specify Iops, see
+      # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/
+      # services/ec2.html#EC2.Client.create_volume. io1 volumes allow for a
+      # ratio of 50 IOPS per 1 GiB.
+      block_device_mapping['Ebs']['Iops'] = boot_volume_size * 50
     return block_device_mapping
 
   def ListImages(
