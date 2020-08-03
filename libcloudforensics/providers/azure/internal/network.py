@@ -80,9 +80,10 @@ class AZNetwork:
           self.az_account.default_resource_group_name, network_interface_name)
       nic_id = nic.id  # type: str
       return nic_id
-    except azure_exceptions.CloudError:
+    except azure_exceptions.CloudError as exception:
+      if 'ResourceNotFound' not in exception.error.error:
+        raise exception
       # NIC doesn't exist, ignore the error and create it
-      pass
 
     # pylint: disable=unbalanced-tuple-unpacking
     public_ip, _, subnet = self._CreateNetworkInterfaceElements(
