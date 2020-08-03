@@ -23,6 +23,9 @@ from azure.mgmt.compute.v2020_05_01 import models  # pylint: disable=import-erro
 from libcloudforensics.providers.azure.internal import account, compute, common, monitoring  # pylint:disable=line-too-long
 from libcloudforensics.providers.azure import forensics
 
+RESOURCE_ID_PREFIX = ('/subscriptions/sub/resourceGroups/fake-resource-group'
+                      '/providers/Microsoft.Compute/type/')
+
 # pylint: disable=line-too-long
 with mock.patch('libcloudforensics.providers.azure.internal.common.GetCredentials') as mock_creds:
   mock_creds.return_value = ('fake-subscription-id', mock.Mock())
@@ -36,7 +39,7 @@ with mock.patch('libcloudforensics.providers.azure.internal.common.GetCredential
 
 FAKE_INSTANCE = compute.AZComputeVirtualMachine(
     FAKE_ACCOUNT,
-    '/a/b/c/fake-resource-group/fake-vm-name',
+    RESOURCE_ID_PREFIX + 'fake-vm-name',
     'fake-vm-name',
     'fake-region',
     ['fake-zone']
@@ -44,7 +47,7 @@ FAKE_INSTANCE = compute.AZComputeVirtualMachine(
 
 FAKE_DISK = compute.AZComputeDisk(
     FAKE_ACCOUNT,
-    '/a/b/c/fake-resource-group/fake-disk-name',
+    RESOURCE_ID_PREFIX + 'fake-disk-name',
     'fake-disk-name',
     'fake-region',
     ['fake-zone']
@@ -52,7 +55,7 @@ FAKE_DISK = compute.AZComputeDisk(
 
 FAKE_BOOT_DISK = compute.AZComputeDisk(
     FAKE_ACCOUNT,
-    '/a/b/c/fake-resource-group/fake-boot-disk-name',
+    RESOURCE_ID_PREFIX + 'fake-boot-disk-name',
     'fake-boot-disk-name',
     'fake-region',
     ['fake-zone']
@@ -60,7 +63,7 @@ FAKE_BOOT_DISK = compute.AZComputeDisk(
 
 FAKE_SNAPSHOT = compute.AZComputeSnapshot(
     FAKE_ACCOUNT,
-    '/a/b/c/fake-resource-group/fake_snapshot_name',
+    RESOURCE_ID_PREFIX + 'fake_snapshot_name',
     'fake_snapshot_name',
     'fake-region',
     FAKE_DISK
@@ -69,7 +72,7 @@ FAKE_SNAPSHOT = compute.AZComputeSnapshot(
 FAKE_MONITORING = monitoring.AZMonitoring(FAKE_ACCOUNT)
 
 MOCK_INSTANCE = mock.Mock(
-    id='/a/b/c/fake-resource-group/fake-vm-name',
+    id=RESOURCE_ID_PREFIX + 'fake-vm-name',
     location='fake-region',
     zones=['fake-zone']
 )
@@ -82,21 +85,21 @@ MOCK_LIST_INSTANCES = {
 }
 
 MOCK_DISK = mock.Mock(
-    id='/a/b/c/fake-resource-group/fake-disk-name',
+    id=RESOURCE_ID_PREFIX + 'fake-disk-name',
     location='fake-region',
     zones=['fake-zone']
 )
 MOCK_DISK.name = 'fake-disk-name'
 
 MOCK_BOOT_DISK = mock.Mock(
-    id='/a/b/c/fake-resource-group/fake-boot-disk-name',
+    id=RESOURCE_ID_PREFIX + 'fake-boot-disk-name',
     location='fake-region',
     zones=['fake-zone']
 )
 MOCK_BOOT_DISK.name = 'fake-boot-disk-name'
 
 MOCK_DISK_COPY = mock.Mock(
-    id='/a/b/c/fake-resource-group/fake_snapshot_name_f4c186ac_copy',
+    id=RESOURCE_ID_PREFIX + 'fake_snapshot_name_f4c186ac_copy',
     location='fake-region',
     zones=['fake-zone']
 )
@@ -121,7 +124,7 @@ MOCK_LIST_VM_SIZES = [{
 }]
 
 MOCK_ANALYSIS_INSTANCE = mock.Mock(
-    id='/a/b/c/fake-resource-group/fake-analysis-vm-name',
+    id=RESOURCE_ID_PREFIX + 'fake-analysis-vm-name',
     location='fake-region',
     zones=['fake-zone']
 )
@@ -174,7 +177,8 @@ class TestAccount(unittest.TestCase):
     instance = instances['fake-vm-name']
     self.assertEqual('fake-vm-name', instance.name)
     self.assertEqual(
-        '/a/b/c/fake-resource-group/fake-vm-name', instance.resource_id)
+        '/subscriptions/sub/resourceGroups/fake-resource-group'
+        '/providers/Microsoft.Compute/type/fake-vm-name', instance.resource_id)
     self.assertEqual('fake-resource-group', instance.resource_group_name)
     self.assertEqual('fake-region', instance.region)
     self.assertEqual(['fake-zone'], instance.zones)
@@ -200,7 +204,8 @@ class TestAccount(unittest.TestCase):
     disk = disks['fake-disk-name']
     self.assertEqual('fake-disk-name', disk.name)
     self.assertEqual(
-        '/a/b/c/fake-resource-group/fake-disk-name', disk.resource_id)
+        '/subscriptions/sub/resourceGroups/fake-resource-group'
+        '/providers/Microsoft.Compute/type/fake-disk-name', disk.resource_id)
     self.assertEqual('fake-resource-group', disk.resource_group_name)
     self.assertEqual('fake-region', disk.region)
     self.assertEqual(['fake-zone'], disk.zones)
@@ -221,7 +226,8 @@ class TestAccount(unittest.TestCase):
     instance = FAKE_ACCOUNT.compute.GetInstance('fake-vm-name')
     self.assertEqual('fake-vm-name', instance.name)
     self.assertEqual(
-        '/a/b/c/fake-resource-group/fake-vm-name', instance.resource_id)
+        '/subscriptions/sub/resourceGroups/fake-resource-group'
+        '/providers/Microsoft.Compute/type/fake-vm-name', instance.resource_id)
     self.assertEqual('fake-resource-group', instance.resource_group_name)
     self.assertEqual('fake-region', instance.region)
     self.assertEqual(['fake-zone'], instance.zones)
@@ -234,7 +240,8 @@ class TestAccount(unittest.TestCase):
     disk = FAKE_ACCOUNT.compute.GetDisk('fake-disk-name')
     self.assertEqual('fake-disk-name', disk.name)
     self.assertEqual(
-        '/a/b/c/fake-resource-group/fake-disk-name', disk.resource_id)
+        '/subscriptions/sub/resourceGroups/fake-resource-group'
+        '/providers/Microsoft.Compute/type/fake-disk-name', disk.resource_id)
     self.assertEqual('fake-resource-group', disk.resource_group_name)
     self.assertEqual('fake-region', disk.region)
     self.assertEqual(['fake-zone'], disk.zones)
@@ -254,7 +261,7 @@ class TestAccount(unittest.TestCase):
         'fake_snapshot_name_f4c186ac_copy', disk_from_snapshot.name)
     mock_create_disk.assert_called_with(
         FAKE_SNAPSHOT.resource_group_name,
-        'fake_snapshot_name_f4c186ac_copy',
+        'fake_snapshot_name_c4a46ad7_copy',
         mock.ANY)
 
     # CreateDiskFromSnapshot(
@@ -274,7 +281,7 @@ class TestAccount(unittest.TestCase):
         FAKE_SNAPSHOT, disk_name_prefix='prefix')
     mock_create_disk.assert_called_with(
         FAKE_SNAPSHOT.resource_group_name,
-        'prefix_fake_snapshot_name_f4c186ac_copy',
+        'prefix_fake_snapshot_name_c4a46ad7_copy',
         mock.ANY)
 
     # CreateDiskFromSnapshot(
@@ -282,7 +289,9 @@ class TestAccount(unittest.TestCase):
     expected_args = {
         'location': 'fake-region',
         'creation_data': {
-            'sourceResourceId': '/a/b/c/fake-resource-group/fake_snapshot_name',
+            'sourceResourceId': '/subscriptions/sub/resourceGroups/'
+                                'fake-resource-group/providers/'
+                                'Microsoft.Compute/type/fake_snapshot_name',
             'create_option': models.DiskCreateOption.copy
         },
         'sku': {
@@ -293,7 +302,7 @@ class TestAccount(unittest.TestCase):
         FAKE_SNAPSHOT, disk_type='StandardSSD_LRS')
     mock_create_disk.assert_called_with(
         FAKE_SNAPSHOT.resource_group_name,
-        'fake_snapshot_name_f4c186ac_copy',
+        'fake_snapshot_name_c4a46ad7_copy',
         expected_args)
 
   @mock.patch('azure.storage.blob._container_client.ContainerClient.create_container')
@@ -329,15 +338,15 @@ class TestAccount(unittest.TestCase):
     disk_from_snapshot_uri = FAKE_ACCOUNT.compute.CreateDiskFromSnapshotURI(
         FAKE_SNAPSHOT, 'fake-snapshot-uri')
     #  hashlib.sha1('/a/b/c/fake-resource-group/fake_snapshot_name'.encode(
-    #     'utf-8')).hexdigest()[:23] = bff00b08549ba8b975b2e70
+    #     'utf-8')).hexdigest()[:23] = 97d1e8cfe4cf4d573fea2b5
     mock_create_storage_account.assert_called_with(
-        'bff00b08549ba8b975b2e70', region='fake-region')
+        '97d1e8cfe4cf4d573fea2b5', region='fake-region')
     self.assertIsInstance(disk_from_snapshot_uri, compute.AZComputeDisk)
     self.assertEqual(
         'fake_snapshot_name_f4c186ac_copy', disk_from_snapshot_uri.name)
     mock_create_disk.assert_called_with(
         FAKE_SNAPSHOT.resource_group_name,
-        'fake_snapshot_name_f4c186ac_copy',
+        'fake_snapshot_name_c4a46ad7_copy',
         mock.ANY)
 
   @mock.patch('sshpubkeys.SSHKey.parse')
@@ -447,11 +456,11 @@ class TestCommon(unittest.TestCase):
         i.e., it must be between 1 and 80 chars and be within [a-zA-Z0-9].
     """
     disk_name = common.GenerateDiskName(FAKE_SNAPSHOT)
-    self.assertEqual('fake_snapshot_name_f4c186ac_copy', disk_name)
+    self.assertEqual('fake_snapshot_name_c4a46ad7_copy', disk_name)
 
     disk_name = common.GenerateDiskName(
         FAKE_SNAPSHOT, disk_name_prefix='prefix')
-    self.assertEqual('prefix_fake_snapshot_name_f4c186ac_copy', disk_name)
+    self.assertEqual('prefix_fake_snapshot_name_c4a46ad7_copy', disk_name)
 
   @mock.patch('msrestazure.azure_active_directory.ServicePrincipalCredentials.__init__')
   @typing.no_type_check
@@ -558,7 +567,8 @@ class TestAZVirtualMachine(unittest.TestCase):
       FAKE_INSTANCE.GetDisk('non-existent-disk-name')
     self.assertEqual(
         'Disk non-existent-disk-name not found in instance: '
-        '/a/b/c/fake-resource-group/fake-vm-name', str(error.exception))
+        '/subscriptions/sub/resourceGroups/fake-resource-group'
+        '/providers/Microsoft.Compute/type/fake-vm-name', str(error.exception))
 
   @mock.patch('libcloudforensics.providers.azure.internal.compute.AZCompute.ListDisks')
   @mock.patch('azure.mgmt.compute.v2020_06_01.operations._virtual_machines_operations.VirtualMachinesOperations.get')

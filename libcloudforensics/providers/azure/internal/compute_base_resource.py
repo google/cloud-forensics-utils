@@ -18,6 +18,8 @@ from typing import Optional, List, TYPE_CHECKING
 
 from azure.mgmt import compute as compute_sdk  # pylint: disable=import-error
 
+from libcloudforensics.providers.azure.internal import common  # pylint: disable=ungrouped-imports
+
 if TYPE_CHECKING:
   # TYPE_CHECKING is always False at runtime, therefore it is safe to ignore
   # the following cyclic import, as it it only used for type hints
@@ -52,7 +54,15 @@ class AZComputeResource:
       region (str): The region in which the resource is located.
       zones (List[str]): Optional. Availability zones within the region where
           the resource is located.
+
+    Raises:
+      ValueError: If the resource ID is malformed.
     """
+
+    if not common.REGEX_COMPUTE_RESOURCE_ID.match(resource_id):
+      raise ValueError(
+          'Malformed resource ID: expected {0:s}, got {1:s}'.format(
+              common.REGEX_COMPUTE_RESOURCE_ID.pattern, resource_id))
 
     self.az_account = az_account
     # Format of resource_id: /subscriptions/{id}/resourceGroups/{
