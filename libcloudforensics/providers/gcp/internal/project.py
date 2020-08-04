@@ -25,6 +25,7 @@ import libcloudforensics.providers.gcp.internal.gke as gke_module
 import libcloudforensics.providers.gcp.internal.log as log_module
 import libcloudforensics.providers.gcp.internal.monitoring as monitoring_module
 import libcloudforensics.providers.gcp.internal.storage as storage_module
+import libcloudforensics.providers.gcp.internal.cloudsql as cloudsql_module
 
 
 class GoogleCloudProject:
@@ -61,6 +62,7 @@ class GoogleCloudProject:
     # pylint: disable=line-too-long
     self._monitoring = None  # type: Optional[monitoring_module.GoogleCloudMonitoring]
     # pylint: enable=line-too-long
+    self._cloudsql = None  # type: Optional[cloudsql_module.GoogleCloudSql]
 
   @property
   def compute(self) -> compute_module.GoogleCloudCompute:
@@ -158,3 +160,17 @@ class GoogleCloudProject:
     self._monitoring = monitoring_module.GoogleCloudMonitoring(
         self.project_id)
     return self._monitoring
+  
+  @property
+  def cloudsql(self) -> cloudsql_module.GoogleCloudSql:
+    """Get a GoogleCloudSql object for the project.
+
+    Returns:
+      GoogleCloudSql: Object that represents Google SQL.
+    """
+
+    if self._cloudsql:
+      return self._cloudsql
+    self._cloudsql = cloudsql_module.GoogleCloudSql(
+        self.project_id)
+    return self._cloudsql

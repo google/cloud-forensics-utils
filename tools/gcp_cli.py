@@ -24,6 +24,7 @@ from libcloudforensics.providers.gcp.internal import log as gcp_log
 from libcloudforensics.providers.gcp.internal import monitoring as gcp_monitoring
 from libcloudforensics.providers.gcp.internal import project as gcp_project
 from libcloudforensics.providers.gcp.internal import storage as gcp_storage
+from libcloudforensics.providers.gcp.internal import cloudsql as gcp_cloudsql
 from libcloudforensics.providers.gcp import forensics
 from libcloudforensics import logging_utils
 # pylint: enable=line-too-long
@@ -245,3 +246,17 @@ def ListBucketObjects(args: 'argparse.Namespace') -> None:
     logger.info('{0:s} {1:s}b [{2:s}]'.format(
         obj.get('id', 'ID not found'), obj.get('size', 'Unknown size'),
         obj.get('contentType', 'Unknown Content-Type')))
+
+
+def ListCloudSqlInstances(args: 'argparse.Namespace') -> None:
+  """List the CloudSQL instances of a Project.
+
+  Args:
+    args (argsparse.Namespace): Arguments from ArgumentParser.
+  """
+  gcsql = gcp_cloudsql.GoogleCloudSql(args.project)
+  results = gcsql.ListCloudSqlInstances()
+  for obj in results:
+    logger.info('{0:s} {1:s}b [{2:s}]'.format(
+        obj.get('instanceType', 'type not found'), obj.get('name', 'name not known'),
+        obj.get('state', 'state not known')))

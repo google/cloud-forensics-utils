@@ -50,7 +50,8 @@ PROVIDER_TO_FUNC = {
         'startvm': gcp_cli.StartAnalysisVm,
         'bucketacls': gcp_cli.GetBucketACLs,
         'objectmetadata': gcp_cli.GetGCSObjectMetadata,
-        'listobjects': gcp_cli.ListBucketObjects
+        'listobjects': gcp_cli.ListBucketObjects,
+        'listcloudsqlinstances': gcp_cli.ListCloudSqlInstances
     }
 }
 
@@ -340,6 +341,7 @@ def Main() -> None:
             args=[
                 ('path', 'Path to bucket.', None),
             ])
+  AddParser('gcp', gcp_subparsers, 'listcloudsqlinstances', 'List GCSql instaces for a project.')
 
   if len(sys.argv) == 1:
     parser.print_help()
