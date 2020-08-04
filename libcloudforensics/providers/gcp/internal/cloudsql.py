@@ -62,6 +62,6 @@ class GoogleCloudSql:
     """
     gcsql_instances = self.GcsqlApi().instances()
     print(self.project_id)
-    request = gcsql_instances.list()
+    request = gcsql_instances.list(project=self.project_id)
     instances = request.execute()  # type: Dict[str, Any]
     return instances.get('items', [])
