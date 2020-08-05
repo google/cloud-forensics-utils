@@ -33,7 +33,7 @@ def CreateDiskCopy(
     disk_type: Optional[str] = None,
     region: str = 'eastus',
     src_profile: Optional[str] = None,
-    dst_profile: Optional[str] = None) -> 'compute.AZDisk':
+    dst_profile: Optional[str] = None) -> 'compute.AZComputeDisk':
   """Creates a copy of an Azure Compute Disk.
 
   Args:
@@ -63,7 +63,7 @@ def CreateDiskCopy(
         libcloudforensics.providers.azure.internal.common.py
 
   Returns:
-    AZDisk: An Azure Compute Disk object.
+    AZComputeDisk: An Azure Compute Disk object.
 
   Raises:
     RuntimeError: If there are errors copying the disk.
@@ -82,9 +82,9 @@ def CreateDiskCopy(
 
   try:
     if disk_name:
-      disk_to_copy = src_account.GetDisk(disk_name)
+      disk_to_copy = src_account.compute.GetDisk(disk_name)
     elif instance_name:
-      instance = src_account.GetInstance(instance_name)
+      instance = src_account.compute.GetInstance(instance_name)
       disk_to_copy = instance.GetBootDisk()
     logger.info('Disk copy of {0:s} started...'.format(
         disk_to_copy.name))
@@ -94,7 +94,7 @@ def CreateDiskCopy(
 
     snapshot = disk_to_copy.Snapshot()
 
-    subscription_ids = src_account.ListSubscriptionIDs()
+    subscription_ids = src_account.resource.ListSubscriptionIDs()
     diff_account = dst_account.subscription_id not in subscription_ids
     diff_region = dst_account.default_region != snapshot.region
 
@@ -108,7 +108,7 @@ def CreateDiskCopy(
       # Create a link to download the snapshot
       snapshot_uri = snapshot.GrantAccessAndGetURI()
       # Make a snapshot copy in the destination account from the link
-      new_disk = dst_account.CreateDiskFromSnapshotURI(
+      new_disk = dst_account.compute.CreateDiskFromSnapshotURI(
           snapshot,
           snapshot_uri,
           disk_name_prefix=common.DEFAULT_DISK_COPY_PREFIX,
@@ -116,7 +116,7 @@ def CreateDiskCopy(
       # Revoke download link and delete the initial copy
       snapshot.RevokeAccessURI()
     else:
-      new_disk = dst_account.CreateDiskFromSnapshot(
+      new_disk = dst_account.compute.CreateDiskFromSnapshot(
           snapshot,
           disk_name_prefix=common.DEFAULT_DISK_COPY_PREFIX,
           disk_type=disk_type)
@@ -142,7 +142,7 @@ def StartAnalysisVm(
     attach_disks: Optional[List[str]] = None,
     tags: Optional[Dict[str, str]] = None,
     dst_profile: Optional[str] = None
-    ) -> Tuple['compute.AZVirtualMachine', bool]:
+    ) -> Tuple['compute.AZComputeVirtualMachine', bool]:
   """Start a virtual machine for analysis purposes.
 
   Look for an existing Azure virtual machine with name vm_name. If found,
@@ -173,7 +173,7 @@ def StartAnalysisVm(
         libcloudforensics.providers.azure.internal.common.py
 
   Returns:
-    Tuple[AZVirtualMachine, bool]: a tuple with a virtual machine object
+    Tuple[AZComputeVirtualMachine, bool]: a tuple with a virtual machine object
         and a boolean indicating if the virtual machine was created or not.
   """
 
@@ -181,7 +181,7 @@ def StartAnalysisVm(
                                  default_region=region,
                                  profile_name=dst_profile)
 
-  analysis_vm, created = az_account.GetOrCreateAnalysisVm(
+  analysis_vm, created = az_account.compute.GetOrCreateAnalysisVm(
       vm_name,
       boot_disk_size,
       cpu_cores,
@@ -190,5 +190,5 @@ def StartAnalysisVm(
       tags=tags)
 
   for disk_name in (attach_disks or []):
-    analysis_vm.AttachDisk(az_account.GetDisk(disk_name))
+    analysis_vm.AttachDisk(az_account.compute.GetDisk(disk_name))
   return analysis_vm, created

@@ -35,8 +35,12 @@ if TYPE_CHECKING:
 REGEX_DISK_NAME = re.compile('^[\\w]{1,80}$')
 REGEX_SNAPSHOT_NAME = re.compile('^(?=.{1,80}$)[a-zA-Z0-9]([\\w,-]*[\\w])?$')
 REGEX_ACCOUNT_STORAGE_NAME = re.compile('^[a-z0-9]{1,24}$')
+REGEX_COMPUTE_RESOURCE_ID = re.compile(
+    '/subscriptions/.+/resourceGroups/.+/providers/Microsoft.Compute/.+/.+')
 
 DEFAULT_DISK_COPY_PREFIX = 'evidence'
+
+UBUNTU_1804_SKU = '18.04-LTS'
 
 
 def GetCredentials(profile_name: Optional[str] = None
@@ -165,7 +169,7 @@ def ExecuteRequest(
       return responses
 
 
-def GenerateDiskName(snapshot: 'compute.AZSnapshot',
+def GenerateDiskName(snapshot: 'compute.AZComputeSnapshot',
                      disk_name_prefix: Optional[str] = None) -> str:
   """Generate a new disk name for the disk to be created from the Snapshot.
 
@@ -176,7 +180,7 @@ def GenerateDiskName(snapshot: 'compute.AZSnapshot',
   characters and underscores.
 
   Args:
-    snapshot (AZSnapshot): A disk's Snapshot.
+    snapshot (AZComputeSnapshot): A disk's Snapshot.
     disk_name_prefix (str): Optional. A prefix for the disk name.
 
   Returns:
