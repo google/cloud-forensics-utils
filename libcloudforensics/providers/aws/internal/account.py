@@ -80,9 +80,9 @@ class AWSAccount:
     else:
       self.session = boto3.session.Session(profile_name=self.aws_profile)
 
-    self._ec2 = None  # type: Optional[ec2.AWSEC2]
-    self._ebs = None  # type: Optional[ebs.AWSEBS]
-    self._kms = None  # type: Optional[kms.AWSKMS]
+    self._ec2 = None  # type: Optional[ec2.EC2]
+    self._ebs = None  # type: Optional[ebs.EBS]
+    self._kms = None  # type: Optional[kms.KMS]
 
   @property
   def ec2(self) -> ec2.EC2:
@@ -111,7 +111,7 @@ class AWSAccount:
     return self._ebs
 
   @property
-  def kms(self) -> kms.AWSKMS:
+  def kms(self) -> kms.KMS:
     """Get an AWS kms object for the account.
 
     Returns:
@@ -120,7 +120,7 @@ class AWSAccount:
 
     if self._kms:
       return self._kms
-    self._kms = kms.AWSKMS(self)
+    self._kms = kms.KMS(self)
     return self._kms
 
   def ClientApi(self,

@@ -24,7 +24,7 @@ if TYPE_CHECKING:
   from libcloudforensics.providers.aws.internal import account  # pylint: disable=cyclic-import
 
 
-class AWSKMS:
+class KMS:
   """Class that represents AWS KMS services."""
 
   def __init__(self,
