@@ -157,7 +157,8 @@ MOCK_CREATE_SNAPSHOT = {
 }
 
 MOCK_CALLER_IDENTITY = {
-    'UserId': 'fake-user-id'
+    'UserId': 'fake-user-id',
+    'Account': 'fake-account-id'
 }
 
 MOCK_DESCRIBE_AMI = {
@@ -226,7 +227,7 @@ class AWSAccountTest(unittest.TestCase):
     self.assertEqual('/dev/spf', volumes['fake-boot-volume-id'].device_name)
 
   @typing.no_type_check
-  @mock.patch('libcloudforensics.providers.aws.internal.ec2.AWSEC2.ListInstances')
+  @mock.patch('libcloudforensics.providers.aws.internal.ec2.EC2.ListInstances')
   def testGetInstanceById(self, mock_list_instances):
     """Test that an instance of an account can be found by its ID."""
     mock_list_instances.return_value = MOCK_LIST_INSTANCES
@@ -240,7 +241,7 @@ class AWSAccountTest(unittest.TestCase):
       FAKE_AWS_ACCOUNT.ec2.GetInstanceById('non-existent-instance-id')
 
   @typing.no_type_check
-  @mock.patch('libcloudforensics.providers.aws.internal.ec2.AWSEC2.ListInstances')
+  @mock.patch('libcloudforensics.providers.aws.internal.ec2.EC2.ListInstances')
   def testGetInstancesByName(self, mock_list_instances):
     """Test that an instance of an account can be found by its name."""
     mock_list_instances.return_value = MOCK_LIST_INSTANCES
@@ -258,7 +259,7 @@ class AWSAccountTest(unittest.TestCase):
     self.assertEqual(0, len(found_instances))
 
   @typing.no_type_check
-  @mock.patch('libcloudforensics.providers.aws.internal.ec2.AWSEC2.ListInstances')
+  @mock.patch('libcloudforensics.providers.aws.internal.ec2.EC2.ListInstances')
   def testGetInstancesByNameOrId(self, mock_list_instances):
     """Test that an instance of an account can be found by its name or ID."""
     mock_list_instances.return_value = MOCK_LIST_INSTANCES
@@ -282,7 +283,7 @@ class AWSAccountTest(unittest.TestCase):
           instance_name=FAKE_INSTANCE_WITH_NAME.name)
 
   @typing.no_type_check
-  @mock.patch('libcloudforensics.providers.aws.internal.ebs.AWSEBS.ListVolumes')
+  @mock.patch('libcloudforensics.providers.aws.internal.ebs.EBS.ListVolumes')
   def testGetVolumeById(self, mock_list_volumes):
     """Test that a volume of an account can be found by its ID."""
     mock_list_volumes.return_value = MOCK_LIST_VOLUMES
@@ -294,7 +295,7 @@ class AWSAccountTest(unittest.TestCase):
     self.assertEqual('fake-zone-2b', found_volume.availability_zone)
 
   @typing.no_type_check
-  @mock.patch('libcloudforensics.providers.aws.internal.ebs.AWSEBS.ListVolumes')
+  @mock.patch('libcloudforensics.providers.aws.internal.ebs.EBS.ListVolumes')
   def testGetVolumesByName(self, mock_list_volumes):
     """Test that a volume of an account can be found by its name."""
     mock_list_volumes.return_value = MOCK_LIST_VOLUMES
@@ -310,7 +311,7 @@ class AWSAccountTest(unittest.TestCase):
     self.assertEqual(0, len(found_volumes))
 
   @typing.no_type_check
-  @mock.patch('libcloudforensics.providers.aws.internal.ebs.AWSEBS.ListVolumes')
+  @mock.patch('libcloudforensics.providers.aws.internal.ebs.EBS.ListVolumes')
   def testGetVolumesByNameOrId(self, mock_list_volumes):
     """Test that a volume of an account can be found by its name or ID."""
     mock_list_volumes.return_value = MOCK_LIST_VOLUMES
@@ -379,7 +380,7 @@ class AWSAccountTest(unittest.TestCase):
 
   @typing.no_type_check
   @mock.patch('libcloudforensics.scripts.utils.ReadStartupScript')
-  @mock.patch('libcloudforensics.providers.aws.internal.ec2.AWSEC2.GetInstancesByName')
+  @mock.patch('libcloudforensics.providers.aws.internal.ec2.EC2.GetInstancesByName')
   @mock.patch('libcloudforensics.providers.aws.internal.account.AWSAccount.ClientApi')
   def testGetOrCreateAnalysisVm(self,
                                 mock_ec2_api,
@@ -573,8 +574,8 @@ class AWSTest(unittest.TestCase):
   @mock.patch('boto3.session.Session._setup_loader')
   @mock.patch('libcloudforensics.providers.aws.internal.ebs.AWSVolume.GetVolumeType')
   @mock.patch('libcloudforensics.providers.aws.internal.ebs.AWSVolume.Snapshot')
-  @mock.patch('libcloudforensics.providers.aws.internal.ebs.AWSEBS.GetVolumeById')
-  @mock.patch('libcloudforensics.providers.aws.internal.ebs.AWSEBS.GetAccountInformation')
+  @mock.patch('libcloudforensics.providers.aws.internal.ebs.EBS.GetVolumeById')
+  @mock.patch('libcloudforensics.providers.aws.internal.ebs.EBS.GetAccountInformation')
   @mock.patch('libcloudforensics.providers.aws.internal.account.AWSAccount.ClientApi')
   def testCreateVolumeCopy1(self,
                             mock_ec2_api,
@@ -586,7 +587,7 @@ class AWSTest(unittest.TestCase):
     """Test that a volume is correctly cloned."""
     FAKE_SNAPSHOT.name = FAKE_VOLUME.volume_id
     mock_ec2_api.return_value.create_volume.return_value = MOCK_CREATE_VOLUME
-    mock_account.return_value = 'fake-account-id'
+    mock_account.return_value = MOCK_CALLER_IDENTITY
     mock_get_volume.return_value = FAKE_VOLUME
     mock_snapshot.return_value = FAKE_SNAPSHOT
     mock_volume_type.return_value = 'standard'
@@ -607,8 +608,8 @@ class AWSTest(unittest.TestCase):
   @mock.patch('libcloudforensics.providers.aws.internal.ebs.AWSVolume.GetVolumeType')
   @mock.patch('libcloudforensics.providers.aws.internal.ebs.AWSVolume.Snapshot')
   @mock.patch('libcloudforensics.providers.aws.internal.ec2.AWSInstance.GetBootVolume')
-  @mock.patch('libcloudforensics.providers.aws.internal.ec2.AWSEC2.GetInstanceById')
-  @mock.patch('libcloudforensics.providers.aws.internal.ebs.AWSEBS.GetAccountInformation')
+  @mock.patch('libcloudforensics.providers.aws.internal.ec2.EC2.GetInstanceById')
+  @mock.patch('libcloudforensics.providers.aws.internal.ebs.EBS.GetAccountInformation')
   @mock.patch('libcloudforensics.providers.aws.internal.account.AWSAccount.ClientApi')
   def testCreateVolumeCopy2(self,
                             mock_ec2_api,
@@ -621,7 +622,7 @@ class AWSTest(unittest.TestCase):
     """Test that a volume is correctly cloned."""
     FAKE_SNAPSHOT.name = FAKE_BOOT_VOLUME.volume_id
     mock_ec2_api.return_value.create_volume.return_value = MOCK_CREATE_VOLUME
-    mock_account.return_value = 'fake-account-id'
+    mock_account.return_value = MOCK_CALLER_IDENTITY
     mock_get_instance.return_value = FAKE_INSTANCE
     mock_get_volume.return_value = FAKE_BOOT_VOLUME
     mock_snapshot.return_value = FAKE_SNAPSHOT
@@ -640,8 +641,8 @@ class AWSTest(unittest.TestCase):
 
   @typing.no_type_check
   @mock.patch('boto3.session.Session._setup_loader')
-  @mock.patch('libcloudforensics.providers.aws.internal.ebs.AWSEBS.ListVolumes')
-  @mock.patch('libcloudforensics.providers.aws.internal.ec2.AWSEC2.ListInstances')
+  @mock.patch('libcloudforensics.providers.aws.internal.ebs.EBS.ListVolumes')
+  @mock.patch('libcloudforensics.providers.aws.internal.ec2.EC2.ListInstances')
   def testCreateVolumeCopy3(self,
                             mock_list_instances,
                             mock_list_volumes,

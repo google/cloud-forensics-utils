@@ -29,7 +29,7 @@ class AWSKMS:
 
   def __init__(self,
                aws_account: 'account.AWSAccount') -> None:
-    """Initialize the AWS ec2 client object.
+    """Initialize the AWS KMS client object.
 
     Args:
       aws_account (AWSAccount): An AWS account object.

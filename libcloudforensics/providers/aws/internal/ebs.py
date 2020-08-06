@@ -307,12 +307,12 @@ class AWSSnapshot(AWSElasticBlockStore):
     )
 
 
-class AWSEBS:
+class EBS:
   """Class that represents AWS EBS storage services."""
 
   def __init__(self,
                aws_account: 'account.AWSAccount') -> None:
-    """Initialize the AWS ebs client object.
+    """Initialize the AWS EBS client object.
 
     Args:
       aws_account (AWSAccount): An AWS account object.
@@ -428,13 +428,9 @@ class AWSEBS:
           matching name tag is found, the method returns an empty list.
     """
 
-    matching_volumes = []
     volumes = self.ListVolumes(region=region)
-    for volume_id in volumes:
-      volume = volumes[volume_id]
-      if volume.name == volume_name:
-        matching_volumes.append(volume)
-    return matching_volumes
+    return [volume for _, volume in volumes.items() if
+            volume.name == volume_name]
 
   def GetVolumeById(self,
                     volume_id: str,
@@ -547,7 +543,7 @@ class AWSEBS:
                      encrypted,
                      name=volume_name)
 
-  def GetAccountInformation(self, info: str) -> str:
+  def GetAccountInformation(self) -> Dict[str, str]:
     """Get information about the AWS account in use.
 
     If the call succeeds, then the response from the STS API is expected to
@@ -557,20 +553,12 @@ class AWSEBS:
       - Arn
     See https://boto3.amazonaws.com/v1/documentation/api/1.9.42/reference/services/sts.html#STS.Client.get_caller_identity for more details. # pylint: disable=line-too-long
 
-    Args:
-      info (str): The account information to retrieve. Must be one of [UserID,
-          Account, Arn]
     Returns:
-      str: The information requested.
-
-    Raises:
-      KeyError: If the requested information doesn't exist.
+      Dict[str, str]: The AWS account information.
     """
     account_information = self.aws_account.ClientApi(
         common.ACCOUNT_SERVICE).get_caller_identity()  # type: Dict[str, str]
-    if not account_information.get(info):
-      raise KeyError('Key must be one of ["UserId", "Account", "Arn"]')
-    return account_information[info]
+    return account_information
 
   def _GenerateVolumeName(self,
                           snapshot: AWSSnapshot,
@@ -589,12 +577,15 @@ class AWSEBS:
     """
 
     # Max length of tag values in AWS is 255 characters
-    user_id = self.GetAccountInformation('UserId')
+    user_id = self.GetAccountInformation().get('UserId')
+    if not user_id:
+      raise ValueError('Could not fetch AWS user ID')
     volume_id = user_id + snapshot.volume.volume_id
     volume_id_crc32 = '{0:08x}'.format(
         binascii.crc32(volume_id.encode()) & 0xffffffff)
     truncate_at = 255 - len(volume_id_crc32) - len('-copy') - 1
-    assert snapshot.name  # Mypy: assert that snapshot.name is not None
+    if not snapshot.name:
+      snapshot.name = snapshot.snapshot_id
     if volume_name_prefix:
       volume_name_prefix += '-'
       if len(volume_name_prefix) > truncate_at:

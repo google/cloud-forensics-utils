@@ -85,7 +85,7 @@ class AWSAccount:
     self._kms = None  # type: Optional[kms.AWSKMS]
 
   @property
-  def ec2(self) -> ec2.AWSEC2:
+  def ec2(self) -> ec2.EC2:
     """Get an AWS ec2 object for the account.
 
     Returns:
@@ -94,11 +94,11 @@ class AWSAccount:
 
     if self._ec2:
       return self._ec2
-    self._ec2 = ec2.AWSEC2(self)
+    self._ec2 = ec2.EC2(self)
     return self._ec2
 
   @property
-  def ebs(self) -> ebs.AWSEBS:
+  def ebs(self) -> ebs.EBS:
     """Get an AWS ebs object for the account.
 
     Returns:
@@ -107,7 +107,7 @@ class AWSAccount:
 
     if self._ebs:
       return self._ebs
-    self._ebs = ebs.AWSEBS(self)
+    self._ebs = ebs.EBS(self)
     return self._ebs
 
   @property

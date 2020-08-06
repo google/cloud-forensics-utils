@@ -144,7 +144,7 @@ class AWSInstance:
     volume.device_name = device_name
 
 
-class AWSEC2:
+class EC2:
   """Class that represents AWS EC2 instance services."""
 
   def __init__(self,
@@ -269,13 +269,9 @@ class AWSEC2:
           matching name tag is found, the method returns an empty list.
     """
 
-    matching_instances = []
     instances = self.ListInstances(region=region)
-    for instance_id in instances:
-      aws_instance = instances[instance_id]
-      if aws_instance.name == instance_name:
-        matching_instances.append(aws_instance)
-    return matching_instances
+    return [instance for _, instance in instances.items() if
+            instance.name == instance_name]
 
   def GetInstanceById(self,
                       instance_id: str,

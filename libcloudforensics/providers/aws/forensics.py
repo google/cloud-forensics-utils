@@ -127,9 +127,15 @@ def CreateVolumeCopy(zone: str,
     snapshot = volume_to_copy.Snapshot()
     logger.info('Created snapshot: {0:s}'.format(snapshot.snapshot_id))
 
-    source_account_id = source_account.ebs.GetAccountInformation('Account')
-    destination_account_id = destination_account.ebs.GetAccountInformation(
+    source_account_id = source_account.ebs.GetAccountInformation().get(
         'Account')
+    destination_account_id = destination_account.ebs.GetAccountInformation(
+        ).get('Account')
+
+    if not (source_account_id and destination_account_id):
+      raise ValueError(
+          'Could not retrieve AWS account ID: source {0!s}, dest: {1!s}'.format(
+              source_account_id, destination_account_id))
 
     if source_account_id != destination_account_id:
       logger.info('External account detected: source account ID is {0:s} and '
