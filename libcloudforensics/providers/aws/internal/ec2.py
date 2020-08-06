@@ -270,7 +270,7 @@ class EC2:
     """
 
     instances = self.ListInstances(region=region)
-    return [instance for _, instance in instances.items() if
+    return [instance for instance in instances.values() if
             instance.name == instance_name]
 
   def GetInstanceById(self,

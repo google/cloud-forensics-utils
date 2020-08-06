@@ -429,7 +429,7 @@ class EBS:
     """
 
     volumes = self.ListVolumes(region=region)
-    return [volume for _, volume in volumes.items() if
+    return [volume for volume in volumes.values() if
             volume.name == volume_name]
 
   def GetVolumeById(self,
