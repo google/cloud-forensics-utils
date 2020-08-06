@@ -101,7 +101,8 @@ def CreateVolumeCopy(zone: str,
   Raises:
     RuntimeError: If there are errors copying the volume, or errors during
         KMS key creation/sharing if the target volume is encrypted.
-    ValueError: If both instance_id and volume_id are missing.
+    ValueError: If both instance_id and volume_id are missing, or if AWS
+        account information could not be retrieved.
   """
 
   if not instance_id and not volume_id:

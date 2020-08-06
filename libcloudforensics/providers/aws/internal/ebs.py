@@ -573,7 +573,8 @@ class EBS:
       str: A name for the volume.
 
     Raises:
-      ValueError: If the volume name does not comply with the RegEx.
+      ValueError: If the volume name does not comply with the RegEx,
+          or if AWS account information could not be retrieved.
     """
 
     # Max length of tag values in AWS is 255 characters
