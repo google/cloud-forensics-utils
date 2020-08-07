@@ -113,8 +113,9 @@ class EndToEndTest(unittest.TestCase):
     # Since we make a copy of the same disk but in a different region in next
     # test, we need to delete the copy we just created as Azure does not
     # permit same-name disks in different regions.
-    self.az.compute.compute_client.disks.delete(
+    operation = self.az.compute.compute_client.disks.delete(
         disk_copy.resource_group_name, disk_copy.name)
+    operation.wait()
 
   @typing.no_type_check
   def testDiskCopyToOtherZone(self):
@@ -140,8 +141,9 @@ class EndToEndTest(unittest.TestCase):
     # Since we make a copy of the same disk but in a different region in next
     # test, we need to delete the copy we just created as Azure does not
     # permit same-name disks in different regions.
-    self.az.compute.compute_client.disks.delete(
+    operation = self.az.compute.compute_client.disks.delete(
         disk_copy.resource_group_name, disk_copy.name)
+    operation.wait()
 
   @typing.no_type_check
   def testStartVm(self):
