@@ -409,8 +409,9 @@ class EBS:
                        '{1:s}'.format(str(volume_name), str(volume_id)))
     if volume_name:
       return self.GetVolumesByName(volume_name, region=region)
-    assert volume_id  # Mypy: assert that volume_id is not None
-    return [self.GetVolumeById(volume_id, region=region)]
+    # mypy complains that volume_id may be None here, but at this point in the
+    # code it never is, so it's safe to ignore the warning.
+    return [self.GetVolumeById(volume_id, region=region)]  # type: ignore
 
   def GetVolumesByName(self,
                        volume_name: str,

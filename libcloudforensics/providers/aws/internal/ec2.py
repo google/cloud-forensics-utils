@@ -250,8 +250,9 @@ class EC2:
                        '{1:s}'.format(str(instance_name), str(instance_id)))
     if instance_name:
       return self.GetInstancesByName(instance_name, region=region)
-    assert instance_id  # Mypy: assert that instance_id is not None
-    return [self.GetInstanceById(instance_id, region=region)]
+    # mypy complains that volume_id may be None here, but at this point in the
+    # code it never is, so it's safe to ignore the warning.
+    return [self.GetInstanceById(instance_id, region=region)]  # type: ignore
 
   def GetInstancesByName(self,
                          instance_name: str,
