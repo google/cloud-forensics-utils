@@ -216,13 +216,13 @@ $: export AZURE_TENANT_ID=xxx
 
 #### Scenario 1
 
-You have a disk `disk1` in an Azure account, in region `eastus` which you would like to make a copy 
+You have a disk `disk1` in an Azure account, in `eastus` which you would like to make a copy 
 of in the same account and in the same region.
 
 #### Scenario 2
 
-You have a disk `disk1` in an Azure account, in region `eastus` which you would like to make a copy 
-of in the same account but in a different region (`westus`).
+You have a disk `disk1` in an Azure account, in `eastus` which you would like to make a copy 
+of in the same account but in a different region `westus`.
 
 #### Scenario 3
 
