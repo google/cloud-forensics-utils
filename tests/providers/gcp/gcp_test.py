@@ -482,7 +482,7 @@ class GoogleCloudProjectTest(unittest.TestCase):
       _ = FAKE_ANALYSIS_PROJECT.compute.CreateDiskFromSnapshot(
           FAKE_SNAPSHOT, FAKE_DISK.name)
     self.assertIn('Unknown error occurred when creating disk from Snapshot',
-                     str(context.exception))
+                  str(context.exception))
 
   @typing.no_type_check
   @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleCloudCompute.GetInstance')
