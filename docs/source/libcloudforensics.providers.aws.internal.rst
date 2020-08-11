@@ -34,6 +34,14 @@ libcloudforensics.providers.aws.internal.ec2 module
    :undoc-members:
    :show-inheritance:
 
+libcloudforensics.providers.aws.internal.kms module
+---------------------------------------------------
+
+.. automodule:: libcloudforensics.providers.aws.internal.kms
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 libcloudforensics.providers.aws.internal.log module
 ---------------------------------------------------
 
