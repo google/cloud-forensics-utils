@@ -43,7 +43,7 @@ def ListInstances(args: 'argparse.Namespace') -> None:
   """
 
   aws_account = account.AWSAccount(args.zone)
-  instances = aws_account.ListInstances()
+  instances = aws_account.ec2.ListInstances()
 
   logger.info('Instances found:')
   for instance in instances:
@@ -59,7 +59,7 @@ def ListVolumes(args: 'argparse.Namespace') -> None:
   """
 
   aws_account = account.AWSAccount(args.zone)
-  volumes = aws_account.ListVolumes()
+  volumes = aws_account.ebs.ListVolumes()
 
   logger.info('Volumes found:')
   for volume in volumes:
@@ -146,7 +146,8 @@ def StartAnalysisVm(args: 'argparse.Namespace') -> None:
   if args.generate_ssh_key_pair:
     logger.info('Generating SSH key pair for the analysis VM.')
     aws_account = account.AWSAccount(args.zone)
-    key_name, private_key = aws_account.GenerateSSHKeyPair(args.instance_name)
+    key_name, private_key = aws_account.ec2.GenerateSSHKeyPair(
+        args.instance_name)
     path = os.path.join(os.getcwd(), key_name + '.pem')
     with open(path, 'w') as f:
       f.write(private_key)
@@ -181,7 +182,7 @@ def ListImages(args: 'argparse.Namespace') -> None:
 
   qfilter = [{'Name': 'name', 'Values': [args.filter]}]
 
-  images = aws_account.ListImages(qfilter)
+  images = aws_account.ec2.ListImages(qfilter)
 
   for image in images:
     logger.info('Name: {0:s}, ImageId: {1:s}, Location: {2:s}'.format(
