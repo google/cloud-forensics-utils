@@ -87,6 +87,7 @@ class AZNetwork:
       # NIC doesn't exist, ignore the error and create it
 
     # pylint: disable=unbalanced-tuple-unpacking
+    # IP address, virtual network, subnet, network security group
     public_ip, _, subnet, nsg = self._CreateNetworkInterfaceElements(
         name, region=region)
     # pylint: enable=unbalanced-tuple-unpacking
@@ -140,9 +141,13 @@ class AZNetwork:
     if not region:
       region = self.az_account.default_region
 
+    # IP address
     public_ip_name = '{0:s}-public-ip'.format(name_prefix)
+    # Virtual Network
     vnet_name = '{0:s}-vnet'.format(name_prefix)
+    # Subnet
     subnet_name = '{0:s}-subnet'.format(name_prefix)
+    # Network security group
     nsg_name = '{0:s}-nsg'.format(name_prefix)
 
     client_to_creation_data = {
