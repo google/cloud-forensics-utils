@@ -267,10 +267,10 @@ cloudforensics az 'resource_group_name' copydisk --disk_name='disk1' --src_profi
 
 #### Cross-account / region sharing
 
-Sharing resources between regions / account is not as straightforward in Azure as in GCP, and extra steps must be taken.
-The process involves the creation (in the destination account) of a temporary storage account and container in which 
-the disk's snapshot is downloaded, prior to creating the disk copy from the storage account. To reduce user hassle, 
-libcloudforensics takes care of  all these steps. The process is depicted below:
+The process for sharing resources across accounts/regions involves the creation (in the destination account/region) of a 
+temporary storage account and container in which  the disk's snapshot is downloaded, prior to creating the disk copy 
+from the storage account. To reduce user hassle, libcloudforensics takes care of all these steps. 
+The process is depicted below:
 
 ![azure-cross-share](https://github.com/google/cloud-forensics-utils/blob/master/docs/source/images/sas.png?raw=true)
 
