@@ -17,7 +17,7 @@
 from libcloudforensics import logging_utils
 
 
-class CFUError(Exception):
+class LCFError(Exception):
   """Class to represent a cloud-forensics-utils (CFU) error.
 
   Attributes:
@@ -34,7 +34,7 @@ class CFUError(Exception):
       message (str): The error message.
       name (str): The name of the module that generated the error.
     """
-    super(CFUError, self).__init__(message)
+    super(LCFError, self).__init__(message)
     self.message = message
     self.name = name
     logging_utils.SetUpLogger(self.name)
@@ -42,25 +42,25 @@ class CFUError(Exception):
     logger.error(self.message)
 
 
-class CredentialsConfigurationError(CFUError):
+class CredentialsConfigurationError(LCFError):
   """Error when an issue with the credentials configuration is encountered."""
 
 
-class InvalidFileFormatError(CFUError):
+class InvalidFileFormatError(LCFError):
   """Error when an issue with file format is encountered."""
 
 
-class InvalidNameError(CFUError):
+class InvalidNameError(LCFError):
   """Error when an issue with resource name is encountered."""
 
 
-class ResourceNotFoundError(CFUError):
+class ResourceNotFoundError(LCFError):
   """Error when an issue with non-existent resource is encountered."""
 
 
-class ResourceCreationError(CFUError):
+class ResourceCreationError(LCFError):
   """Error when an issue with creating a new resource is encountered."""
 
 
-class ResourceDeletionError(CFUError):
+class ResourceDeletionError(LCFError):
   """Error when an issue with deleting a resource is encountered."""

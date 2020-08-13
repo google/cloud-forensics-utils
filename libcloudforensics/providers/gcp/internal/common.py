@@ -268,9 +268,9 @@ def ExecuteRequest(client: 'googleapiclient.discovery.Resource',
       response = request(**kwargs).execute()
     except (RefreshError, DefaultCredentialsError) as exception:
       raise errors.CredentialsConfigurationError(
-          'Something is wrong with your Application Default Credentials. Try '
-          'running: $ gcloud auth application-default login: {0!s}'.format(
-              exception), __name__)
+          ': {0!s}. Something is wrong with your Application Default '
+          'Credentials. Try running: $ gcloud auth application-default '
+          'login'.format(exception), __name__)
     responses.append(response)
     next_token = response.get('nextPageToken')
     if not next_token:

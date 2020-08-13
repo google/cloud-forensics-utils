@@ -463,7 +463,7 @@ class EBS:
       AWSVolume: An Amazon EC2 Volume object.
 
     Raises:
-      ResourceNotFoundError: If volume does not exist.
+      ResourceNotFoundError: If the volume does not exist.
     """
 
     volumes = self.ListVolumes(region=region)

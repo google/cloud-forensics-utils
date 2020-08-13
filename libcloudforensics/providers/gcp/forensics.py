@@ -97,16 +97,18 @@ def CreateDiskCopy(
             exception), __name__)
   except HttpError as exception:
     if exception.resp.status == 403:
-      raise RuntimeError(
-          'Make sure you have the appropriate permissions on the project')
+      raise errors.CredentialsConfigurationError(
+          'Make sure you have the appropriate permissions on the project',
+          __name__)
     if exception.resp.status == 404:
       raise errors.ResourceNotFoundError(
           'GCP resource not found. Maybe a typo in the project / instance / '
           'disk name?', __name__)
     raise RuntimeError(exception)
   except RuntimeError as exception:
-    raise RuntimeError(
-        'Cannot copy disk "{0:s}": {1!s}'.format(disk_name, exception))
+    raise errors.ResourceCreationError(
+        'Cannot copy disk "{0:s}": {1!s}'.format(disk_name, exception),
+        __name__)
 
   return new_disk
 

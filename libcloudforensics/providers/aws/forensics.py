@@ -185,7 +185,7 @@ def CreateVolumeCopy(zone: str,
     # Delete the one-time use KMS key, if one was generated
     source_account.kms.DeleteKMSKey(kms_key_id)
     logger.info('Done')
-  except (errors.CFUError, RuntimeError) as exception:
+  except (errors.LCFError, RuntimeError) as exception:
     error_msg = 'Copying volume {0:s}: {1!s}'.format(
         (volume_id or instance_id), exception)
     raise RuntimeError(error_msg)

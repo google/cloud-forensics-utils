@@ -123,9 +123,9 @@ def CreateDiskCopy(
     snapshot.Delete()
     logger.info('Disk {0:s} successfully copied to {1:s}'.format(
         disk_to_copy.name, new_disk.name))
-  except (errors.CFUError, RuntimeError) as exception:
-    raise RuntimeError('Cannot copy disk "{0:s}": {1!s}'.format(
-        str(disk_name), exception))
+  except (errors.LCFError, RuntimeError) as exception:
+    raise errors.ResourceCreationError('Cannot copy disk "{0:s}": {1!s}'.format(
+        str(disk_name), exception), __name__)
 
   return new_disk
 
