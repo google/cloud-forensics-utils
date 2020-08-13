@@ -760,7 +760,7 @@ class TestForensics(unittest.TestCase):
     mock_resource_group.return_value = 'fake-resource-group'
     mock_disk_type.return_value = 'fake-disk-type'
 
-    with self.assertRaises(RuntimeError) as error:
+    with self.assertRaises(errors.ResourceCreationError) as error:
       forensics.CreateDiskCopy(
           FAKE_ACCOUNT.default_resource_group_name,
           instance_name='non-existent-vm-name',
@@ -769,7 +769,7 @@ class TestForensics(unittest.TestCase):
         'Cannot copy disk "None": Instance non-existent-vm-name was not found '
         'in subscription fake-subscription-id', str(error.exception))
 
-    with self.assertRaises(RuntimeError) as error:
+    with self.assertRaises(errors.ResourceCreationError) as error:
       forensics.CreateDiskCopy(
           FAKE_ACCOUNT.default_resource_group_name,
           disk_name='non-existent-disk-name',

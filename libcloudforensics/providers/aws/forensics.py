@@ -99,8 +99,8 @@ def CreateVolumeCopy(zone: str,
     AWSVolume: An AWS EBS Volume object.
 
   Raises:
-    RuntimeError: If there are errors copying the volume, or errors during
-        KMS key creation/sharing if the target volume is encrypted.
+    ResourceCreationError: If there are errors copying the volume, or errors
+        during KMS key creation/sharing if the target volume is encrypted.
     ValueError: If both instance_id and volume_id are missing, or if AWS
         account information could not be retrieved.
   """
@@ -186,9 +186,9 @@ def CreateVolumeCopy(zone: str,
     source_account.kms.DeleteKMSKey(kms_key_id)
     logger.info('Done')
   except (errors.LCFError, RuntimeError) as exception:
-    error_msg = 'Copying volume {0:s}: {1!s}'.format(
-        (volume_id or instance_id), exception)
-    raise RuntimeError(error_msg)
+    raise errors.ResourceCreationError(
+        'Copying volume {0:s}: {1!s}'.format(
+            (volume_id or instance_id), exception), __name__)
 
   return new_volume
 

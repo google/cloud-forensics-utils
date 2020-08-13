@@ -658,7 +658,7 @@ class AWSTest(unittest.TestCase):
     # Should raise a RuntimeError in GetInstanceById as we are querying a
     # non-existent instance.
     mock_list_instances.return_value = {}
-    with self.assertRaises(RuntimeError):
+    with self.assertRaises(errors.ResourceCreationError):
       forensics.CreateVolumeCopy(
           FAKE_INSTANCE.availability_zone,
           instance_id='non-existent-instance-id')
@@ -666,7 +666,7 @@ class AWSTest(unittest.TestCase):
     # Should raise a RuntimeError in GetVolumeById as we are querying a
     # non-existent volume.
     mock_list_volumes.return_value = {}
-    with self.assertRaises(RuntimeError):
+    with self.assertRaises(errors.ResourceCreationError):
       forensics.CreateVolumeCopy(
           FAKE_INSTANCE.availability_zone,
           volume_id='non-existent-volume-id')
