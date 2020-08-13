@@ -66,7 +66,7 @@ def CreateDiskCopy(
     AZComputeDisk: An Azure Compute Disk object.
 
   Raises:
-    RuntimeError: If there are errors copying the disk.
+    ResourceCreationError: If there are errors copying the disk.
     ValueError: If both instance_name and disk_name are missing.
   """
 

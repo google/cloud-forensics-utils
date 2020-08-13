@@ -57,7 +57,8 @@ def CreateDiskCopy(
   Raises:
     ResourceNotFoundError: If the GCP resource is not found.
     CredentialsConfigurationError: If the library could not authenticate to GCP.
-    RuntimeError: If there are errors copying the disk.
+    RuntimeError: If an unknown HttpError is thrown.
+    ResourceCreationError: If there are errors copying the disk.
     ValueError: If both instance_name and disk_name are missing.
   """
 
