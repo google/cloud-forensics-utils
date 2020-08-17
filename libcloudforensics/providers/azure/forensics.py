@@ -16,7 +16,7 @@
 
 from typing import TYPE_CHECKING, Optional, List, Dict, Tuple
 
-from libcloudforensics import logging_utils
+from libcloudforensics import errors, logging_utils
 from libcloudforensics.providers.azure.internal import account, common
 
 if TYPE_CHECKING:
@@ -66,7 +66,7 @@ def CreateDiskCopy(
     AZComputeDisk: An Azure Compute Disk object.
 
   Raises:
-    RuntimeError: If there are errors copying the disk.
+    ResourceCreationError: If there are errors copying the disk.
     ValueError: If both instance_name and disk_name are missing.
   """
 
@@ -123,10 +123,9 @@ def CreateDiskCopy(
     snapshot.Delete()
     logger.info('Disk {0:s} successfully copied to {1:s}'.format(
         disk_to_copy.name, new_disk.name))
-  except RuntimeError as exception:
-    error_msg = 'Cannot copy disk "{0:s}": {1!s}'.format(
-        str(disk_name), str(exception))
-    raise RuntimeError(error_msg)
+  except (errors.LCFError, RuntimeError) as exception:
+    raise errors.ResourceCreationError('Cannot copy disk "{0:s}": {1!s}'.format(
+        str(disk_name), exception), __name__)
 
   return new_disk
 

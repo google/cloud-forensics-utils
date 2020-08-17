@@ -24,7 +24,7 @@ from googleapiclient.errors import HttpError
 from libcloudforensics.providers.gcp.internal import common, build
 from libcloudforensics.providers.gcp.internal import compute_base_resource
 from libcloudforensics.scripts import utils
-from libcloudforensics import logging_utils
+from libcloudforensics import errors, logging_utils
 
 if TYPE_CHECKING:
   import googleapiclient
@@ -153,15 +153,15 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       GoogleComputeInstance: A Google Compute Instance object.
 
     Raises:
-      RuntimeError: If instance does not exist.
+      ResourceNotFoundError: If instance does not exist.
     """
 
     instances = self.Instances()
     instance = instances.get(instance_name)
     if not instance:
-      error_msg = 'Instance {0:s} was not found in project {1:s}'.format(
-          instance_name, self.project_id)
-      raise RuntimeError(error_msg)
+      raise errors.ResourceNotFoundError(
+          'Instance {0:s} was not found in project {1:s}'.format(
+              instance_name, self.project_id), __name__)
     return instance
 
   def GetDisk(self, disk_name: str) -> 'GoogleComputeDisk':
@@ -174,15 +174,15 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       GoogleComputeDisk: Disk object.
 
     Raises:
-      RuntimeError: When the specified disk cannot be found in project.
+      ResourceNotFoundError: When the specified disk cannot be found in project.
     """
 
     disks = self.Disks()
     disk = disks.get(disk_name)
     if not disk:
-      error_msg = 'Disk {0:s} was not found in project {1:s}'.format(
-          disk_name, self.project_id)
-      raise RuntimeError(error_msg)
+      raise errors.ResourceNotFoundError(
+          'Disk {0:s} was not found in project {1:s}'.format(
+              disk_name, self.project_id), __name__)
     return disk
 
   def CreateDiskFromSnapshot(
@@ -206,7 +206,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       GoogleComputeDisk: Google Compute Disk.
 
     Raises:
-      RuntimeError: If the disk exists already.
+      ResourceCreationError: If the disk could not be created.
     """
 
     if not disk_name:
@@ -227,12 +227,12 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       response = request.execute()
     except HttpError as exception:
       if exception.resp.status == 409:
-        error_msg = 'Disk {0:s} already exists'.format(disk_name)
-        raise RuntimeError(error_msg)
-      error_msg = (
-          'Unknown error (status: {0:d}) occurred when creating disk '
-          'from Snapshot:\n{1!s}').format(exception.resp.status, exception)
-      raise RuntimeError(error_msg)
+        raise errors.ResourceCreationError(
+            'Disk {0:s} already exists: {1!s}'.format(disk_name, exception),
+            __name__)
+      raise errors.ResourceCreationError(
+          'Unknown error occurred when creating disk from Snapshot:'
+          ' {0!s}'.format(exception), __name__)
     self.BlockOperation(response, zone=self.default_zone)
     return GoogleComputeDisk(
         project_id=self.project_id,
@@ -276,20 +276,16 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       RuntimeError: If virtual machine cannot be created.
     """
 
-    if not self.default_zone:
-      raise RuntimeError('Cannot create VM, zone information is missing')
-
     # Re-use instance if it already exists, or create a new one.
     try:
       instance = self.GetInstance(vm_name)
       created = False
       return instance, created
-    except RuntimeError:
+    except errors.ResourceNotFoundError:
       pass
 
-    machine_type = \
-        'zones/{0:s}/machineTypes/n1-standard-{1:d}'.format(
-            self.default_zone, cpu_cores)
+    machine_type = 'zones/{0:s}/machineTypes/n1-standard-{1:d}'.format(
+        self.default_zone, cpu_cores)
     ubuntu_image = self.GceApi().images().getFromFamily(
         project=image_project, family=image_family).execute()
     source_disk_image = ubuntu_image['selfLink']
@@ -422,14 +418,13 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
           GoogleComputeDisk object.
 
     Raises:
+      TypeError: If filter_union is not of type bool
       RuntimeError: If the operation doesn't complete on GCP.
     """
 
     if not isinstance(filter_union, bool):
-      error_msg = (
-          'filter_union parameter must be of Type boolean {0:s} is an '
-          'invalid argument.').format(filter_union)
-      raise RuntimeError(error_msg)
+      raise TypeError('Filter_union parameter must be of Type boolean. {0:s} '
+                      'is an invalid argument.'.format(filter_union))
 
     # pylint: disable=line-too-long
     resource_dict = {}  # type: Dict[str, Union[GoogleComputeInstance, GoogleComputeDisk]]
@@ -481,14 +476,14 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       GoogleComputeImage: A Google Compute Image object.
 
     Raises:
-      ValueError: If the GCE Image name is invalid.
+      InvalidNameError: If the GCE Image name is invalid.
     """
 
     if name:
       if not common.REGEX_DISK_NAME.match(name):
-        raise ValueError(
+        raise errors.InvalidNameError(
             'Image name {0:s} does not comply with {1:s}'.format(
-                name, common.REGEX_DISK_NAME.pattern))
+                name, common.REGEX_DISK_NAME.pattern), __name__)
       name = name[:common.COMPUTE_NAME_LIMIT]
     else:
       name = common.GenerateUniqueInstanceName(src_disk.name,
@@ -529,15 +524,15 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       GoogleComputeImage: A Google Compute Image object.
 
     Raises:
-      ValueError: If the GCE Image name is invalid, or if the extension of
-          the archived image is not valid.
+      InvalidNameError: If the GCE Image name is invalid.
+      ValueError: If the extension of the archived image is invalid.
     """
 
     if name:
       if not common.REGEX_DISK_NAME.match(name):
-        raise ValueError(
+        raise errors.InvalidNameError(
             'Image name {0:s} does not comply with {1:s}'.format(
-                name, common.REGEX_DISK_NAME.pattern))
+                name, common.REGEX_DISK_NAME.pattern), __name__)
       name = name[:common.COMPUTE_NAME_LIMIT]
     else:
       name = common.GenerateUniqueInstanceName('imported-image',
@@ -579,14 +574,14 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       GoogleComputeDisk: A Google Compute Disk object.
 
     Raises:
-      ValueError: If GCE disk name is invalid.
+      InvalidNameError: If GCE disk name is invalid.
     """
 
     if name:
       if not common.REGEX_DISK_NAME.match(name):
-        raise ValueError(
+        raise errors.InvalidNameError(
             'Disk name {0:s} does not comply with {1:s}'.format(
-                name, common.REGEX_DISK_NAME.pattern))
+                name, common.REGEX_DISK_NAME.pattern), __name__)
       name = name[:common.COMPUTE_NAME_LIMIT]
     else:
       name = common.GenerateUniqueInstanceName(src_image.name,
@@ -637,8 +632,8 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       GoogleComputeImage: A Google Compute Image object.
 
     Raises:
-      ValueError: If bootable is True and os_name not specified or
-          if imported image name is invalid.
+      ValueError: If bootable is True and os_name not specified.
+      InvalidNameError: If imported image name is invalid.
     """
 
     supported_os = [
@@ -669,9 +664,9 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       img_type = '-os={0:s}'.format(os_name)
     if image_name:
       if not common.REGEX_DISK_NAME.match(image_name):
-        raise ValueError(
+        raise errors.InvalidNameError(
             'Imported image name {0:s} does not comply with {1:s}'.format(
-                image_name, common.REGEX_DISK_NAME.pattern))
+                image_name, common.REGEX_DISK_NAME.pattern), __name__)
       image_name = image_name[:common.COMPUTE_NAME_LIMIT]
     else:
       image_name = common.GenerateUniqueInstanceName('imported-image',
@@ -728,15 +723,16 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
       GoogleComputeDisk: Disk object.
 
     Raises:
-      RuntimeError: If no boot disk could be found.
+      ResourceNotFoundError: If no boot disk could be found.
     """
 
     for disk in self.GetValue('disks'):
       if disk['boot']:
         disk_name = disk['source'].split('/')[-1]
         return GoogleCloudCompute(self.project_id).GetDisk(disk_name=disk_name)
-    raise RuntimeError(
-        'Boot disk not found for instance: {0:s}'.format(self.name))
+    raise errors.ResourceNotFoundError(
+        'Boot disk not found for instance {0:s}'.format(self.name),
+        __name__)
 
   def GetDisk(self, disk_name: str) -> 'GoogleComputeDisk':
     """Gets a disk attached to this virtual machine disk by name.
@@ -748,15 +744,16 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
       GoogleComputeDisk: Disk object.
 
     Raises:
-      RuntimeError: If disk name is not found among those attached to the
-          instance.
+      ResourceNotFoundError: If disk name is not found among those attached to
+          the instance.
     """
 
     for disk in self.GetValue('disks'):
       if disk['source'].split('/')[-1] == disk_name:
         return GoogleCloudCompute(self.project_id).GetDisk(disk_name=disk_name)
-    error_msg = 'Disk name "{0:s}" not attached to instance'.format(disk_name)
-    raise RuntimeError(error_msg)
+    raise errors.ResourceNotFoundError(
+        'Disk {0:s} was not found in instance {1:s}'.format(
+            disk_name, self.name), __name__)
 
   def ListDisks(self) -> Dict[str, 'GoogleComputeDisk']:
     """List all disks for the virtual machine.
@@ -893,7 +890,8 @@ class GoogleComputeDisk(compute_base_resource.GoogleComputeBaseResource):
       GoogleComputeSnapshot: A Snapshot object.
 
     Raises:
-      ValueError: If the name of the snapshot does not comply with the RegEx.
+      InvalidNameError: If the name of the snapshot does not comply with the
+          RegEx.
     """
 
     if not snapshot_name:
@@ -901,9 +899,9 @@ class GoogleComputeDisk(compute_base_resource.GoogleComputeBaseResource):
     snapshot_name = common.GenerateUniqueInstanceName(snapshot_name,
                                                       common.COMPUTE_NAME_LIMIT)
     if not common.REGEX_DISK_NAME.match(snapshot_name):
-      raise ValueError(
-          'Snapshot name {0:s} does not comply with '
-          '{1:s}'.format(snapshot_name, common.REGEX_DISK_NAME.pattern))
+      raise errors.InvalidNameError(
+          'Snapshot name {0:s} does not comply with {1:s}'.format(
+              snapshot_name, common.REGEX_DISK_NAME.pattern), __name__)
     logger.info(
         self.FormatLogMessage('New Snapshot: {0:s}'.format(snapshot_name)))
     operation_config = {'name': snapshot_name}
@@ -1003,14 +1001,14 @@ class GoogleComputeImage(compute_base_resource.GoogleComputeBaseResource):
           appended with .tar.gz. Default is [image_name].tar.gz.
 
     Raises:
-      RuntimeError: If exported image name is invalid.
+      InvalidNameError: If exported image name is invalid.
     """
 
     if output_name:
       if not common.REGEX_DISK_NAME.match(output_name):
-        raise RuntimeError(
+        raise errors.InvalidNameError(
             'Exported image name {0:s} does not comply with {1:s}'.format(
-                output_name, common.REGEX_DISK_NAME.pattern))
+                output_name, common.REGEX_DISK_NAME.pattern), __name__)
       full_path = '{0:s}.tar.gz'.format(
           os.path.join(gcs_output_folder, output_name))
     else:
