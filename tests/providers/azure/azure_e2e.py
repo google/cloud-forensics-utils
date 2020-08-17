@@ -208,6 +208,8 @@ class EndToEndTest(unittest.TestCase):
     cls.az.network.network_client.public_ip_addresses.delete(
         cls.resource_group_name, '{0:s}-public-ip'.format(
             cls.analysis_vm_name))
+    cls.az.network.network_client.network_security_groups.delete(
+        cls.resource_group_name, '{0:s}-nsg'.format(cls.analysis_vm_name))
     # Delete the disks
     for disk in cls.disks:
       logger.info('Deleting disk: {0:s}.'.format(disk.name))
