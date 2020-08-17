@@ -19,6 +19,7 @@ import unittest
 
 import mock
 
+from libcloudforensics import errors
 from libcloudforensics.providers.aws.internal import account, common, ebs, ec2
 from libcloudforensics.providers.aws.internal import log as aws_log
 from libcloudforensics.providers.aws import forensics
@@ -237,7 +238,7 @@ class AWSAccountTest(unittest.TestCase):
     self.assertEqual('fake-instance-id', found_instance.instance_id)
     self.assertEqual('fake-zone-2', found_instance.region)
     self.assertEqual('fake-zone-2b', found_instance.availability_zone)
-    with self.assertRaises(RuntimeError):
+    with self.assertRaises(errors.ResourceNotFoundError):
       FAKE_AWS_ACCOUNT.ec2.GetInstanceById('non-existent-instance-id')
 
   @typing.no_type_check
@@ -400,10 +401,10 @@ class AWSAccountTest(unittest.TestCase):
     self.assertFalse(created)
 
     # GetOrCreateAnalysisVm(non_existing_vm, boot_volume_size, AMI, cpu_cores).
-    # We mock the GetInstanceById() call to throw a RuntimeError to mimic
-    # an instance that wasn't found. This should trigger run_instances to be
-    # called.
-    mock_get_instance.side_effect = RuntimeError()
+    # We mock the GetInstancesByName() call to return an empty list to mimic
+    # an instance that wasn't found. This should trigger run_instances
+    # to be called.
+    mock_get_instance.return_value = []
     vm, created = FAKE_AWS_ACCOUNT.ec2.GetOrCreateAnalysisVm(
         'non-existent-instance-name', 1, 'ami-id', 2)
     mock_get_instance.assert_called_with('non-existent-instance-name')
@@ -657,7 +658,7 @@ class AWSTest(unittest.TestCase):
     # Should raise a RuntimeError in GetInstanceById as we are querying a
     # non-existent instance.
     mock_list_instances.return_value = {}
-    with self.assertRaises(RuntimeError):
+    with self.assertRaises(errors.ResourceCreationError):
       forensics.CreateVolumeCopy(
           FAKE_INSTANCE.availability_zone,
           instance_id='non-existent-instance-id')
@@ -665,7 +666,7 @@ class AWSTest(unittest.TestCase):
     # Should raise a RuntimeError in GetVolumeById as we are querying a
     # non-existent volume.
     mock_list_volumes.return_value = {}
-    with self.assertRaises(RuntimeError):
+    with self.assertRaises(errors.ResourceCreationError):
       forensics.CreateVolumeCopy(
           FAKE_INSTANCE.availability_zone,
           volume_id='non-existent-volume-id')

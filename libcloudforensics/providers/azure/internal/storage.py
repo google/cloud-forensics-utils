@@ -21,7 +21,7 @@ from azure.mgmt import storage
 from msrestazure import azure_exceptions
 # pylint: enable=import-error
 
-from libcloudforensics import logging_utils
+from libcloudforensics import errors, logging_utils
 from libcloudforensics.providers.azure.internal import common
 
 if TYPE_CHECKING:
@@ -68,13 +68,14 @@ class AZStorage:
       Tuple[str, str]: The storage account ID and its access key.
 
     Raises:
-      ValueError: If the storage account name is invalid.
+      InvalidNameError: If the storage account name is invalid.
     """
 
     if not common.REGEX_ACCOUNT_STORAGE_NAME.match(storage_account_name):
-      raise ValueError(
+      raise errors.InvalidNameError(
           'Storage account name {0:s} does not comply with {1:s}'.format(
-              storage_account_name, common.REGEX_ACCOUNT_STORAGE_NAME.pattern))
+              storage_account_name, common.REGEX_ACCOUNT_STORAGE_NAME.pattern),
+          __name__)
 
     if not region:
       region = self.az_account.default_region
@@ -113,7 +114,7 @@ class AZStorage:
     """Delete an account storage.
 
     Raises:
-      RuntimeError: if the storage account could not be deleted.
+      ResourceDeletionError: if the storage account could not be deleted.
     """
     try:
       logger.info('Deleting storage account: {0:s}'.format(
@@ -123,5 +124,6 @@ class AZStorage:
       logger.info('Storage account {0:s} successfully deleted'.format(
           storage_account_name))
     except azure_exceptions.CloudError as exception:
-      raise RuntimeError('Could not delete account storage {0:s}: {1:s}'
-                         .format(storage_account_name, str(exception)))
+      raise errors.ResourceDeletionError(
+          'Could not delete account storage {0:s}: {1:s}'.format(
+              storage_account_name, str(exception)), __name__)

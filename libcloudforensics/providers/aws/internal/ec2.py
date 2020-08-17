@@ -13,11 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Instance functionality."""
+
 import binascii
 import os
 from typing import TYPE_CHECKING, Dict, Optional, List, Any, Tuple
 
 import botocore
+from libcloudforensics import errors
 from libcloudforensics.scripts import utils
 
 from libcloudforensics.providers.aws.internal import common
@@ -70,7 +72,7 @@ class AWSInstance:
       AWSVolume: Volume object if the volume is found.
 
     Raises:
-      RuntimeError: If no boot volume could be found.
+      ResourceNotFoundError: If no boot volume could be found.
     """
 
     boot_device = self.aws_account.ResourceApi(
@@ -81,9 +83,9 @@ class AWSInstance:
       if volumes[volume_id].device_name == boot_device:
         return volumes[volume_id]
 
-    error_msg = 'Boot volume not found for instance: {0:s}'.format(
-        self.instance_id)
-    raise RuntimeError(error_msg)
+    raise errors.ResourceNotFoundError(
+        'Boot volume not found for instance: {0:s}'.format(self.instance_id),
+        __name__)
 
   def GetVolume(self, volume_id: str) -> 'ebs.AWSVolume':
     """Get a volume attached to the instance by ID.
@@ -95,15 +97,15 @@ class AWSInstance:
       AWSVolume: The AWSVolume object.
 
     Raises:
-      RuntimeError: If volume_id is not found amongst the volumes attached
-          to the instance.
+      ResourceNotFoundError: If volume_id is not found amongst the volumes
+          attached to the instance.
     """
 
     volume = self.ListVolumes().get(volume_id)
     if not volume:
-      raise RuntimeError(
+      raise errors.ResourceNotFoundError(
           'Volume {0:s} is not attached to instance {1:s}'.format(
-              volume_id, self.instance_id))
+              volume_id, self.instance_id), __name__)
     return volume
 
   def ListVolumes(self) -> Dict[str, 'ebs.AWSVolume']:
@@ -289,15 +291,15 @@ class EC2:
       AWSInstance: An Amazon EC2 Instance object.
 
     Raises:
-      RuntimeError: If instance does not exist.
+      ResourceNotFoundError: If instance does not exist.
     """
 
     instances = self.ListInstances(region=region)
     instance = instances.get(instance_id)
     if not instance:
-      error_msg = 'Instance {0:s} was not found in AWS account'.format(
-          instance_id)
-      raise RuntimeError(error_msg)
+      raise errors.ResourceNotFoundError(
+          'Instance {0:s} was not found in AWS account'.format(instance_id),
+          __name__)
     return instance
 
   def ListImages(
@@ -365,17 +367,14 @@ class EC2:
           reused (False).
 
     Raises:
-      RuntimeError: If the virtual machine cannot be found or created.
+      ResourceCreationError: If the virtual machine cannot be created.
     """
 
     # Re-use instance if it already exists, or create a new one.
-    try:
-      instances = self.GetInstancesByName(vm_name)
-      if instances:
-        created = False
-        return instances[0], created
-    except RuntimeError:
-      pass
+    instances = self.GetInstancesByName(vm_name)
+    if instances:
+      created = False
+      return instances[0], created
 
     instance_type = common.GetInstanceTypeByCPU(cpu_cores)
     startup_script = utils.ReadStartupScript()
@@ -420,8 +419,9 @@ class EC2:
       client.get_waiter('instance_status_ok').wait(InstanceIds=[instance_id])
     except (client.exceptions.ClientError,
             botocore.exceptions.WaiterError) as exception:
-      raise RuntimeError('Could not create instance {0:s}: {1:s}'.format(
-          vm_name, str(exception)))
+      raise errors.ResourceCreationError(
+          'Could not create instance {0:s}: {1!s}'.format(vm_name, exception),
+          __name__)
 
     instance = AWSInstance(self.aws_account,
                            instance_id,
@@ -447,16 +447,16 @@ class EC2:
           specified AMI.
 
     Raises:
-      RuntimeError: If AMI details cannot be found.
+      ResourceNotFoundError: If AMI details cannot be found.
     """
 
     client = self.aws_account.ClientApi(common.EC2_SERVICE)
     try:
       image = client.describe_images(ImageIds=[ami])
     except client.exceptions.ClientError as exception:
-      raise RuntimeError(
-          'Could not find image information for AMI {0:s}: {1:s}'.format(
-              ami, str(exception)))
+      raise errors.ResourceNotFoundError(
+          'Could not find image information for AMI {0:s}: {1!s}'.format(
+              ami, exception), __name__)
 
     # If the call to describe_images was successful, then the API's response
     # is expected to contain at least one image and its corresponding block
@@ -486,7 +486,7 @@ class EC2:
 
     Raises:
       ValueError: If vm_name is None.
-      RuntimeError: If the key could not be created.
+      ResourceCreationError: If the key could not be created.
     """
 
     if not vm_name:
@@ -500,7 +500,7 @@ class EC2:
     try:
       key = client.create_key_pair(KeyName=key_name)
     except client.exceptions.ClientError as exception:
-      raise RuntimeError('Could not create SSH key pair: {0:s}'.format(
-          str(exception)))
+      raise errors.ResourceCreationError(
+          'Could not create SSH key pair: {0!s}'.format(exception), __name__)
     # If the call was successful, the response contains key information
     return key['KeyName'], key['KeyMaterial']

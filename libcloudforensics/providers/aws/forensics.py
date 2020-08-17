@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING, Tuple, List, Optional, Dict
 
 from libcloudforensics.providers.aws.internal.common import UBUNTU_1804_FILTER
 from libcloudforensics.providers.aws.internal import account
-from libcloudforensics import logging_utils
+from libcloudforensics import logging_utils, errors
 
 if TYPE_CHECKING:
   from libcloudforensics.providers.aws.internal import ebs, ec2
@@ -99,8 +99,8 @@ def CreateVolumeCopy(zone: str,
     AWSVolume: An AWS EBS Volume object.
 
   Raises:
-    RuntimeError: If there are errors copying the volume, or errors during
-        KMS key creation/sharing if the target volume is encrypted.
+    ResourceCreationError: If there are errors copying the volume, or errors
+        during KMS key creation/sharing if the target volume is encrypted.
     ValueError: If both instance_id and volume_id are missing, or if AWS
         account information could not be retrieved.
   """
@@ -185,10 +185,10 @@ def CreateVolumeCopy(zone: str,
     # Delete the one-time use KMS key, if one was generated
     source_account.kms.DeleteKMSKey(kms_key_id)
     logger.info('Done')
-  except RuntimeError as exception:
-    error_msg = 'Copying volume {0:s}: {1!s}'.format(
-        (volume_id or instance_id), exception)
-    raise RuntimeError(error_msg)
+  except (errors.LCFError, RuntimeError) as exception:
+    raise errors.ResourceCreationError(
+        'Copying volume {0:s}: {1!s}'.format(
+            (volume_id or instance_id), exception), __name__)
 
   return new_volume
 
