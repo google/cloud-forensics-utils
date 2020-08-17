@@ -27,6 +27,7 @@ import mock
 import six
 
 # pylint: disable=line-too-long
+from libcloudforensics import errors
 from libcloudforensics.providers.gcp import forensics
 from libcloudforensics.providers.gcp.internal import build as gcp_build
 from libcloudforensics.providers.gcp.internal import common, compute
@@ -406,7 +407,7 @@ class GoogleCloudProjectTest(unittest.TestCase):
     # pylint: disable=protected-access
     self.assertEqual(FAKE_INSTANCE._data, found_instance._data)
     # pylint: enable=protected-access
-    with self.assertRaises(RuntimeError):
+    with self.assertRaises(errors.ResourceNotFoundError):
       FAKE_SOURCE_PROJECT.compute.GetInstance('non-existent-instance')
 
   @typing.no_type_check
@@ -419,7 +420,7 @@ class GoogleCloudProjectTest(unittest.TestCase):
     self.assertEqual(FAKE_SOURCE_PROJECT.project_id, found_disk.project_id)
     self.assertEqual('fake-disk', found_disk.name)
     self.assertEqual('fake-zone', found_disk.zone)
-    with self.assertRaises(RuntimeError):
+    with self.assertRaises(errors.ResourceNotFoundError):
       FAKE_SOURCE_PROJECT.compute.GetDisk('non-existent-disk')
 
   @typing.no_type_check
@@ -468,19 +469,20 @@ class GoogleCloudProjectTest(unittest.TestCase):
     # disk_name='fake-disk') where 'fake-disk' exists already
     disks.return_value.insert.return_value.execute.side_effect = HttpError(
         resp=mock.Mock(status=409), content=b'Disk already exists')
-    with self.assertRaises(RuntimeError) as context:
+    with self.assertRaises(errors.ResourceCreationError) as context:
       _ = FAKE_ANALYSIS_PROJECT.compute.CreateDiskFromSnapshot(
           FAKE_SNAPSHOT, disk_name=FAKE_DISK.name)
-    self.assertEqual(
+    self.assertIn(
         'Disk {0:s} already exists'.format('fake-disk'), str(context.exception))
 
     # other network issue should fail the disk creation
     disks.return_value.insert.return_value.execute.side_effect = HttpError(
         resp=mock.Mock(status=418), content=b'I am a teapot')
-    with self.assertRaises(RuntimeError) as context:
+    with self.assertRaises(errors.ResourceCreationError) as context:
       _ = FAKE_ANALYSIS_PROJECT.compute.CreateDiskFromSnapshot(
           FAKE_SNAPSHOT, FAKE_DISK.name)
-    self.assertIn('status: 418', str(context.exception))
+    self.assertIn('Unknown error occurred when creating disk from Snapshot',
+                  str(context.exception))
 
   @typing.no_type_check
   @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleCloudCompute.GetInstance')
@@ -511,7 +513,7 @@ class GoogleCloudProjectTest(unittest.TestCase):
     # GetOrCreateAnalysisVm(non_existing_vm, boot_disk_size) mocking the
     # GetInstance() call to throw a runtime error to mimic an instance that
     # wasn't found
-    mock_get_instance.side_effect = RuntimeError()
+    mock_get_instance.side_effect = errors.ResourceNotFoundError('', __name__)
     vm, created = FAKE_ANALYSIS_PROJECT.compute.GetOrCreateAnalysisVm(
         'non-existent-analysis-vm', boot_disk_size=1)
     mock_get_instance.assert_called_with('non-existent-analysis-vm')
@@ -681,7 +683,7 @@ class GoogleComputeInstanceTest(unittest.TestCase):
     self.assertEqual('fake-boot-disk', disk.name)
 
     # Disk that's not attached to the instance
-    with self.assertRaises(RuntimeError):
+    with self.assertRaises(errors.ResourceNotFoundError):
       FAKE_INSTANCE.GetDisk('non-existent-disk')
 
   @typing.no_type_check
@@ -721,8 +723,9 @@ class GoogleComputeDiskTest(unittest.TestCase):
     self.assertIsInstance(snapshot, compute.GoogleComputeSnapshot)
     self.assertTrue(snapshot.name.startswith('my-snapshot'))
 
-    # Snapshot(snapshot_name='Non-compliant-name'). Should raise a ValueError
-    with self.assertRaises(ValueError):
+    # Snapshot(snapshot_name='Non-compliant-name'). Should raise an
+    # InvalidNameError
+    with self.assertRaises(errors.InvalidNameError):
       FAKE_DISK.Snapshot('Non-compliant-name')
 
 
@@ -943,8 +946,9 @@ class GCPTest(unittest.TestCase):
     #     dst_proj,
     #     zone='fake-zone',
     #     instance_name=None,
-    #     disk_name='non-existent-disk') Should raise an exception
-    with self.assertRaises(RuntimeError):
+    #     disk_name='non-existent-disk') Should raise a ResourceNotFoundError
+    #     exception
+    with self.assertRaises(errors.ResourceNotFoundError):
       forensics.CreateDiskCopy(FAKE_SOURCE_PROJECT.project_id,
                                FAKE_ANALYSIS_PROJECT.project_id,
                                zone=FAKE_INSTANCE.zone,
@@ -955,8 +959,8 @@ class GCPTest(unittest.TestCase):
     #     dst_proj,
     #     instance_name='non-existent-instance',
     #     zone='fake-zone',
-    #     disk_name=None) Should raise an exception
-    with self.assertRaises(RuntimeError):
+    #     disk_name=None) Should raise a ResourceNotFoundError exception
+    with self.assertRaises(errors.ResourceNotFoundError):
       forensics.CreateDiskCopy(FAKE_SOURCE_PROJECT.project_id,
                                FAKE_ANALYSIS_PROJECT.project_id,
                                instance_name='non-existent-instance',
@@ -1018,7 +1022,7 @@ class GCPTest(unittest.TestCase):
     self.assertTrue(REGEX_DISK_NAME.match(disk_name))
 
     # Disk prefix cannot start with a capital letter
-    with self.assertRaises(ValueError):
+    with self.assertRaises(errors.InvalidNameError):
       common.GenerateDiskName(
           FAKE_SNAPSHOT, 'Some-prefix-that-starts-with-a-capital-letter')
 

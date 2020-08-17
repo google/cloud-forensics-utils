@@ -18,12 +18,13 @@ from typing import Optional, List, TYPE_CHECKING
 
 from azure.mgmt import compute as compute_sdk  # pylint: disable=import-error
 
-from libcloudforensics.providers.azure.internal import common  # pylint: disable=ungrouped-imports
+from libcloudforensics import errors
+from libcloudforensics.providers.azure.internal import common
 
 if TYPE_CHECKING:
   # TYPE_CHECKING is always False at runtime, therefore it is safe to ignore
   # the following cyclic import, as it it only used for type hints
-  from libcloudforensics.providers.azure.internal import account  # pylint: disable=cyclic-import
+  from libcloudforensics.providers.azure.internal import account  # pylint: disable=cyclic-import, ungrouped-imports
 
 
 class AZComputeResource:
@@ -56,13 +57,13 @@ class AZComputeResource:
           the resource is located.
 
     Raises:
-      ValueError: If the resource ID is malformed.
+      InvalidNameError: If the resource ID is malformed.
     """
 
     if not common.REGEX_COMPUTE_RESOURCE_ID.match(resource_id):
-      raise ValueError(
+      raise errors.InvalidNameError(
           'Malformed resource ID: expected {0:s}, got {1:s}'.format(
-              common.REGEX_COMPUTE_RESOURCE_ID.pattern, resource_id))
+              common.REGEX_COMPUTE_RESOURCE_ID.pattern, resource_id), __name__)
 
     self.az_account = az_account
     # Format of resource_id: /subscriptions/{id}/resourceGroups/{
