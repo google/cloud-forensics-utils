@@ -13,10 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """End to end test for the aws module."""
+
 import typing
 import unittest
 import warnings
-
 import botocore
 
 from libcloudforensics.providers.aws.internal.common import EC2_SERVICE
