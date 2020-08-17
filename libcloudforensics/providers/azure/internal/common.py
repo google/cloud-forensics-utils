@@ -24,6 +24,9 @@ from typing import Any, List, Dict, Optional, TYPE_CHECKING, Tuple
 # so we can ignore the warning.
 from azure.common.credentials import ServicePrincipalCredentials  # pylint: disable=import-error
 
+
+from libcloudforensics import errors
+
 if TYPE_CHECKING:
   # TYPE_CHECKING is always False at runtime, therefore it is safe to ignore
   # the following cyclic import, as it it only used for type hints
@@ -83,9 +86,10 @@ def GetCredentials(profile_name: Optional[str] = None
         corresponding Azure credentials.
 
   Raises:
-    RuntimeError: If the credential file is not found.
-    ValueError: If the requested profile name is not found in the credential
-        file or if there are missing entries in the profile name.
+    CredentialsConfigurationError: If there are environment variables that
+        are not set or if the credentials file has missing entries/profiles.
+    FileNotFoundError: If the credentials file is not found.
+    InvalidFileFormatError: If the credentials file couldn't be parsed.
   """
   # pylint: enable=line-too-long
   if not profile_name:
@@ -94,10 +98,10 @@ def GetCredentials(profile_name: Optional[str] = None
     secret = os.getenv("AZURE_CLIENT_SECRET")
     tenant = os.getenv("AZURE_TENANT_ID")
     if not (subscription_id and client_id and secret and tenant):
-      raise RuntimeError('Please make sure you defined the following '
-                         'environment variables: [AZURE_SUBSCRIPTION_ID,'
-                         'AZURE_CLIENT_ID, AZURE_CLIENT_SECRET,'
-                         'AZURE_TENANT_ID].')
+      raise errors.CredentialsConfigurationError(
+          'Please make sure you defined the following environment variables: '
+          '[AZURE_SUBSCRIPTION_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, '
+          'AZURE_TENANT_ID].', __name__)
     return subscription_id, ServicePrincipalCredentials(client_id,
                                                         secret,
                                                         tenant=tenant)
@@ -107,28 +111,29 @@ def GetCredentials(profile_name: Optional[str] = None
     path = os.path.expanduser('~/.azure/credentials.json')
 
   if not os.path.exists(path):
-    raise RuntimeError('Credential files not found. Please place it in '
-                       '"~/.azure/credentials.json" or specify an absolute '
-                       'path to it in the AZURE_CREDENTIALS_PATH environment '
-                       'variable.')
+    raise FileNotFoundError(
+        'Credentials file not found. Please place it in '
+        '"~/.azure/credentials.json" or specify an absolute path to it in '
+        'the AZURE_CREDENTIALS_PATH environment variable.')
 
   with open(path) as profiles:
     try:
       account_info = json.load(profiles).get(profile_name)
     except ValueError as exception:
-      raise ValueError('Could not decode JSON file. Please verify the file '
-                       'format: {0:s}'.format(str(exception)))
+      raise errors.InvalidFileFormatError(
+          'Could not decode JSON file. Please verify the file format:'
+          ' {0!s}'.format(exception), __name__)
     if not account_info:
-      raise ValueError(
+      raise errors.CredentialsConfigurationError(
           'Profile name {0:s} not found in credentials file {1:s}'.format(
-              profile_name, path))
+              profile_name, path), __name__)
     required_entries = ['subscriptionId', 'clientId', 'clientSecret',
                         'tenantId']
     if not all(account_info.get(entry) for entry in required_entries):
-      raise ValueError(
+      raise errors.CredentialsConfigurationError(
           'Please make sure that your JSON file has the required entries. The '
           'file should contain at least the following: {0:s}'.format(
-              ', '.join(required_entries)))
+              ', '.join(required_entries)), __name__)
     return account_info['subscriptionId'], ServicePrincipalCredentials(
         account_info['clientId'],
         account_info['clientSecret'],
@@ -187,7 +192,7 @@ def GenerateDiskName(snapshot: 'compute.AZComputeSnapshot',
     str: A name for the disk.
 
   Raises:
-    ValueError: If the disk name does not comply with the RegEx.
+    InvalidNameError: If the disk name does not comply with the RegEx.
   """
 
   # Max length of disk names in Azure is 80 characters
@@ -211,8 +216,8 @@ def GenerateDiskName(snapshot: 'compute.AZComputeSnapshot',
   # name of the source snapshot contained dashes, we need to replace them.
   disk_name = disk_name.replace('-', '_')
   if not REGEX_DISK_NAME.match(disk_name):
-    raise ValueError(
+    raise errors.InvalidNameError(
         'Disk name {0:s} does not comply with '
-        '{1:s}'.format(disk_name, REGEX_DISK_NAME.pattern))
+        '{1:s}'.format(disk_name, REGEX_DISK_NAME.pattern), __name__)
 
   return disk_name

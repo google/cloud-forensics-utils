@@ -24,7 +24,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Any
 from google.auth import default
 from google.auth.exceptions import DefaultCredentialsError, RefreshError
 from googleapiclient.discovery import build
-from libcloudforensics import logging_utils  # pylint: disable=ungrouped-imports
+from libcloudforensics import errors, logging_utils  # pylint: disable=ungrouped-imports
 
 if TYPE_CHECKING:
   import googleapiclient
@@ -59,7 +59,7 @@ def GenerateDiskName(snapshot: 'compute.GoogleComputeSnapshot',
     str: A name for the disk.
 
   Raises:
-    ValueError: If the disk name does not comply with the RegEx.
+    InvalidNameError: If the disk name does not comply with the RegEx.
   """
 
   # Max length of disk names in GCP is 63 characters
@@ -81,9 +81,9 @@ def GenerateDiskName(snapshot: 'compute.GoogleComputeSnapshot',
         snapshot.name[:truncate_at], disk_id_crc32)
 
   if not REGEX_DISK_NAME.match(disk_name):
-    raise ValueError(
-        'Disk name {0:s} does not comply with '
-        '{1:s}'.format(disk_name, REGEX_DISK_NAME.pattern))
+    raise errors.InvalidNameError(
+        'Disk name {0:s} does not comply with {1:s}'.format(
+            disk_name, REGEX_DISK_NAME.pattern), __name__)
 
   return disk_name
 
@@ -120,18 +120,18 @@ def CreateService(service_name: str,
     googleapiclient.discovery.Resource: API service resource.
 
   Raises:
-    RuntimeError: If Application Default Credentials could not be obtained or if
-        service build times out.
+    CredentialsConfigurationError: If Application Default Credentials could
+        not be obtained
+    RuntimeError: If service build times out.
   """
 
   try:
     credentials, _ = default()
-  except DefaultCredentialsError as error:
-    error_msg = (
-        'Could not get application default credentials: {0!s}\n'
-        'Have you run $ gcloud auth application-default '
-        'login?').format(error)
-    raise RuntimeError(error_msg)
+  except DefaultCredentialsError as exception:
+    raise errors.CredentialsConfigurationError(
+        'Could not get application default credentials. Have you run $ gcloud '
+        'auth application-default login?: {0!s}'.format_map(exception),
+        __name__)
 
   service_built = False
   for retry in range(RETRY_MAX):
@@ -249,7 +249,8 @@ def ExecuteRequest(client: 'googleapiclient.discovery.Resource',
     List[Dict]: A List of dictionaries (responses from the request).
 
   Raises:
-    RuntimeError: If the request to the GCP API could not complete.
+    CredentialsConfigurationError: If the request to the GCP API could not
+        complete.
   """
 
   responses = []
@@ -266,12 +267,10 @@ def ExecuteRequest(client: 'googleapiclient.discovery.Resource',
       request = getattr(client, func)
       response = request(**kwargs).execute()
     except (RefreshError, DefaultCredentialsError) as exception:
-      error_msg = (
-          '{0:s}\n'
-          'Something is wrong with your Application Default '
-          'Credentials. Try running: '
-          '$ gcloud auth application-default login'.format(str(exception)))
-      raise RuntimeError(error_msg)
+      raise errors.CredentialsConfigurationError(
+          ': {0!s}. Something is wrong with your Application Default '
+          'Credentials. Try running: $ gcloud auth application-default '
+          'login'.format(exception), __name__)
     responses.append(response)
     next_token = response.get('nextPageToken')
     if not next_token:
