@@ -17,6 +17,8 @@
 import typing
 import unittest
 import mock
+
+from libcloudforensics import errors
 from libcloudforensics.providers.gcp import forensics
 from libcloudforensics.providers.gcp.internal import compute
 
@@ -119,7 +121,7 @@ class GCPForensicsTest(unittest.TestCase):
     #     zone='fake-zone',
     #     instance_name=None,
     #     disk_name='non-existent-disk') Should raise an exception
-    with self.assertRaises(RuntimeError):
+    with self.assertRaises(errors.ResourceNotFoundError):
       forensics.CreateDiskCopy(gcp_mocks.FAKE_SOURCE_PROJECT.project_id,
                                gcp_mocks.FAKE_ANALYSIS_PROJECT.project_id,
                                zone=gcp_mocks.FAKE_INSTANCE.zone,
@@ -131,7 +133,7 @@ class GCPForensicsTest(unittest.TestCase):
     #     instance_name='non-existent-instance',
     #     zone='fake-zone',
     #     disk_name=None) Should raise an exception
-    with self.assertRaises(RuntimeError):
+    with self.assertRaises(errors.ResourceNotFoundError):
       forensics.CreateDiskCopy(gcp_mocks.FAKE_SOURCE_PROJECT.project_id,
                                gcp_mocks.FAKE_ANALYSIS_PROJECT.project_id,
                                instance_name='non-existent-instance',

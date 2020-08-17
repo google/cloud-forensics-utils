@@ -17,6 +17,8 @@
 import typing
 import unittest
 import mock
+
+from libcloudforensics import errors
 from libcloudforensics.providers.azure.internal import compute
 
 from libcloudforensics.providers.azure import forensics
@@ -151,7 +153,7 @@ class AZForensicsTest(unittest.TestCase):
     mock_resource_group.return_value = 'fake-resource-group'
     mock_disk_type.return_value = 'fake-disk-type'
 
-    with self.assertRaises(RuntimeError) as error:
+    with self.assertRaises(errors.ResourceCreationError) as error:
       forensics.CreateDiskCopy(
           azure_mocks.FAKE_ACCOUNT.default_resource_group_name,
           instance_name='non-existent-vm-name',
@@ -160,7 +162,7 @@ class AZForensicsTest(unittest.TestCase):
         'Cannot copy disk "None": Instance non-existent-vm-name was not found '
         'in subscription fake-subscription-id', str(error.exception))
 
-    with self.assertRaises(RuntimeError) as error:
+    with self.assertRaises(errors.ResourceCreationError) as error:
       forensics.CreateDiskCopy(
           azure_mocks.FAKE_ACCOUNT.default_resource_group_name,
           disk_name='non-existent-disk-name',

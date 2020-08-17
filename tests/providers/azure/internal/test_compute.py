@@ -20,6 +20,8 @@ import mock
 
 from azure.mgmt.compute.v2020_05_01 import models  # pylint: disable=import-error
 
+
+from libcloudforensics import errors
 from libcloudforensics.providers.azure.internal import compute
 from tests.providers.azure import azure_mocks
 
@@ -311,12 +313,12 @@ class AZVirtualMachineTest(unittest.TestCase):
     disk = azure_mocks.FAKE_INSTANCE.GetDisk('fake-disk-name')
     self.assertEqual('fake-disk-name', disk.name)
 
-    with self.assertRaises(RuntimeError) as error:
+    with self.assertRaises(errors.ResourceNotFoundError) as error:
       azure_mocks.FAKE_INSTANCE.GetDisk('non-existent-disk-name')
     self.assertEqual(
-        'Disk non-existent-disk-name not found in instance: '
-        '/subscriptions/sub/resourceGroups/fake-resource-group'
-        '/providers/Microsoft.Compute/type/fake-vm-name', str(error.exception))
+        'Disk non-existent-disk-name was not found in instance '
+        '/subscriptions/sub/resourceGroups/fake-resource-group/providers/'
+        'Microsoft.Compute/type/fake-vm-name', str(error.exception))
 
   @mock.patch('libcloudforensics.providers.azure.internal.compute.AZCompute.ListDisks')
   @mock.patch('azure.mgmt.compute.v2020_06_01.operations._virtual_machines_operations.VirtualMachinesOperations.get')

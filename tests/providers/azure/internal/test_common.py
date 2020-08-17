@@ -19,6 +19,7 @@ import typing
 import unittest
 import mock
 
+from libcloudforensics import errors
 from libcloudforensics.providers.azure.internal import common
 from tests.providers.azure import azure_mocks
 
@@ -61,12 +62,12 @@ class AZCommonTest(unittest.TestCase):
 
     # If an environment variable is missing, a RuntimeError should be raised
     del os.environ['AZURE_SUBSCRIPTION_ID']
-    with self.assertRaises(RuntimeError) as error:
+    with self.assertRaises(errors.CredentialsConfigurationError) as error:
       _, _ = common.GetCredentials()
       mock_azure_credentials.assert_not_called()
     self.assertEqual(
         'Please make sure you defined the following environment variables: '
-        '[AZURE_SUBSCRIPTION_ID,AZURE_CLIENT_ID, AZURE_CLIENT_SECRET,'
+        '[AZURE_SUBSCRIPTION_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, '
         'AZURE_TENANT_ID].', str(error.exception))
 
     # If a profile name is passed to the method, then it will look for a
@@ -77,7 +78,7 @@ class AZCommonTest(unittest.TestCase):
     os.environ['AZURE_CREDENTIALS_PATH'] = os.path.join(
         os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
             os.path.realpath(__file__))))), azure_mocks.STARTUP_SCRIPT)
-    with self.assertRaises(ValueError) as error:
+    with self.assertRaises(errors.InvalidFileFormatError) as error:
       _, _ = common.GetCredentials(profile_name='foo')
       mock_azure_credentials.assert_not_called()
     self.assertEqual(
@@ -98,7 +99,7 @@ class AZCommonTest(unittest.TestCase):
         tenant='fake-tenant-id-from-credential-file')
 
     # If the profile name does not exist, should raise a ValueError
-    with self.assertRaises(ValueError) as error:
+    with self.assertRaises(errors.CredentialsConfigurationError) as error:
       _, _ = common.GetCredentials(profile_name='foo')
       mock_azure_credentials.assert_not_called()
     self.assertEqual(
@@ -107,7 +108,7 @@ class AZCommonTest(unittest.TestCase):
 
     # If the profile name exists but there are missing entries, should raise
     # a ValueError
-    with self.assertRaises(ValueError) as error:
+    with self.assertRaises(errors.CredentialsConfigurationError) as error:
       _, _ = common.GetCredentials(profile_name='incomplete_profile_name')
       mock_azure_credentials.assert_not_called()
     self.assertEqual(

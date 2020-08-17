@@ -21,6 +21,7 @@ import mock
 import six
 from googleapiclient.errors import HttpError
 
+from libcloudforensics import errors
 from libcloudforensics.scripts import utils
 from libcloudforensics.providers.gcp.internal import compute
 from tests.providers.gcp import gcp_mocks
@@ -75,7 +76,7 @@ class GoogleCloudComputeTest(unittest.TestCase):
     # pylint: disable=protected-access
     self.assertEqual(gcp_mocks.FAKE_INSTANCE._data, found_instance._data)
     # pylint: enable=protected-access
-    with self.assertRaises(RuntimeError):
+    with self.assertRaises(errors.ResourceNotFoundError):
       gcp_mocks.FAKE_SOURCE_PROJECT.compute.GetInstance('non-existent-instance')
 
   @typing.no_type_check
@@ -88,7 +89,7 @@ class GoogleCloudComputeTest(unittest.TestCase):
     self.assertEqual(gcp_mocks.FAKE_SOURCE_PROJECT.project_id, found_disk.project_id)
     self.assertEqual('fake-disk', found_disk.name)
     self.assertEqual('fake-zone', found_disk.zone)
-    with self.assertRaises(RuntimeError):
+    with self.assertRaises(errors.ResourceNotFoundError):
       gcp_mocks.FAKE_SOURCE_PROJECT.compute.GetDisk('non-existent-disk')
 
   @typing.no_type_check
@@ -137,19 +138,21 @@ class GoogleCloudComputeTest(unittest.TestCase):
     # disk_name='fake-disk') where 'fake-disk' exists already
     disks.return_value.insert.return_value.execute.side_effect = HttpError(
         resp=mock.Mock(status=409), content=b'Disk already exists')
-    with self.assertRaises(RuntimeError) as context:
+    with self.assertRaises(errors.ResourceCreationError) as context:
       _ = gcp_mocks.FAKE_ANALYSIS_PROJECT.compute.CreateDiskFromSnapshot(
           gcp_mocks.FAKE_SNAPSHOT, disk_name=gcp_mocks.FAKE_DISK.name)
-    self.assertEqual(
+    self.assertIn(
         'Disk {0:s} already exists'.format('fake-disk'), str(context.exception))
 
     # other network issue should fail the disk creation
     disks.return_value.insert.return_value.execute.side_effect = HttpError(
         resp=mock.Mock(status=418), content=b'I am a teapot')
-    with self.assertRaises(RuntimeError) as context:
+    with self.assertRaises(errors.ResourceCreationError) as context:
       _ = gcp_mocks.FAKE_ANALYSIS_PROJECT.compute.CreateDiskFromSnapshot(
           gcp_mocks.FAKE_SNAPSHOT, gcp_mocks.FAKE_DISK.name)
-    self.assertIn('status: 418', str(context.exception))
+    self.assertIn(
+        'Unknown error occurred when creating disk from Snapshot',
+        str(context.exception))
 
   @typing.no_type_check
   @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleCloudCompute.GetInstance')
@@ -178,9 +181,9 @@ class GoogleCloudComputeTest(unittest.TestCase):
     self.assertFalse(created)
 
     # GetOrCreateAnalysisVm(non_existing_vm, boot_disk_size) mocking the
-    # GetInstance() call to throw a runtime error to mimic an instance that
-    # wasn't found
-    mock_get_instance.side_effect = RuntimeError()
+    # GetInstance() call to throw a ResourceNotFoundError error to mimic an
+    # instance that wasn't found
+    mock_get_instance.side_effect = errors.ResourceNotFoundError('', __name__)
     vm, created = gcp_mocks.FAKE_ANALYSIS_PROJECT.compute.GetOrCreateAnalysisVm(
         'non-existent-analysis-vm', boot_disk_size=1)
     mock_get_instance.assert_called_with('non-existent-analysis-vm')
@@ -334,7 +337,7 @@ class GoogleComputeInstanceTest(unittest.TestCase):
     self.assertEqual('fake-boot-disk', disk.name)
 
     # Disk that's not attached to the instance
-    with self.assertRaises(RuntimeError):
+    with self.assertRaises(errors.ResourceNotFoundError):
       gcp_mocks.FAKE_INSTANCE.GetDisk('non-existent-disk')
 
   @typing.no_type_check
@@ -375,5 +378,5 @@ class GoogleComputeDiskTest(unittest.TestCase):
     self.assertTrue(snapshot.name.startswith('my-snapshot'))
 
     # Snapshot(snapshot_name='Non-compliant-name'). Should raise a ValueError
-    with self.assertRaises(ValueError):
+    with self.assertRaises(errors.InvalidNameError):
       gcp_mocks.FAKE_DISK.Snapshot('Non-compliant-name')

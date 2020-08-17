@@ -18,6 +18,7 @@ import typing
 import unittest
 import mock
 
+from libcloudforensics import errors
 from tests.providers.azure import azure_mocks
 
 
@@ -38,7 +39,7 @@ class AZStorageTest(unittest.TestCase):
     self.assertEqual('fakestorageid', account_id)
     self.assertEqual('fake-key-value', account_key)
 
-    with self.assertRaises(ValueError) as error:
+    with self.assertRaises(errors.InvalidNameError) as error:
       _, _ = azure_mocks.FAKE_ACCOUNT.storage.CreateStorageAccount(
           'fake-non-conform-name')
     # pylint: enable=protected-access

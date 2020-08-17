@@ -17,6 +17,8 @@
 import typing
 import unittest
 import mock
+
+from libcloudforensics import errors
 from libcloudforensics.providers.aws.internal import ebs
 
 from libcloudforensics.providers.aws import forensics
@@ -111,18 +113,18 @@ class AWSForensicsTest(unittest.TestCase):
     with self.assertRaises(ValueError):
       forensics.CreateVolumeCopy(aws_mocks.FAKE_INSTANCE.availability_zone)
 
-    # Should raise a RuntimeError in GetInstanceById as we are querying a
-    # non-existent instance.
+    # Should raise a ResourceCreationError as we are querying a non-existent
+    # instance.
     mock_list_instances.return_value = {}
-    with self.assertRaises(RuntimeError):
+    with self.assertRaises(errors.ResourceCreationError):
       forensics.CreateVolumeCopy(
           aws_mocks.FAKE_INSTANCE.availability_zone,
           instance_id='non-existent-instance-id')
 
-    # Should raise a RuntimeError in GetVolumeById as we are querying a
-    # non-existent volume.
+    # Should raise a ResourceCreationError as we are querying a non-existent
+    # volume.
     mock_list_volumes.return_value = {}
-    with self.assertRaises(RuntimeError):
+    with self.assertRaises(errors.ResourceCreationError):
       forensics.CreateVolumeCopy(
           aws_mocks.FAKE_INSTANCE.availability_zone,
           volume_id='non-existent-volume-id')

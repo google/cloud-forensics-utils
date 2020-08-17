@@ -16,6 +16,8 @@
 
 import typing
 import unittest
+
+from libcloudforensics import errors
 from libcloudforensics.providers.gcp.internal import common
 
 from tests.providers.gcp import gcp_mocks
@@ -81,6 +83,6 @@ class GCPCommonTest(unittest.TestCase):
     self.assertTrue(gcp_mocks.REGEX_DISK_NAME.match(disk_name))
 
     # Disk prefix cannot start with a capital letter
-    with self.assertRaises(ValueError):
+    with self.assertRaises(errors.InvalidNameError):
       common.GenerateDiskName(
           gcp_mocks.FAKE_SNAPSHOT, 'Some-prefix-that-starts-with-a-capital-letter')
