@@ -60,7 +60,5 @@ class ResourceNotFoundError(LCFError):
 
 class ResourceCreationError(LCFError):
   """Error when an issue with creating a new resource is encountered."""
-
-
 class ResourceDeletionError(LCFError):
   """Error when an issue with deleting a resource is encountered."""
