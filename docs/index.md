@@ -24,7 +24,11 @@ Documentation for the library's functions and classes can be found below:
 
    source/libcloudforensics.providers.aws
    source/libcloudforensics.providers.aws.internal
-```
+   
+.. toctree::
+   :maxdepth: 2
+   :caption: Microsoft Azure
 
-``` important:: Its a note! in markdown!
+   source/libcloudforensics.providers.azure
+   source/libcloudforensics.providers.azure.internal
 ```
