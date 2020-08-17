@@ -64,7 +64,7 @@ The equivalent CLI command is:
 
 ```bash
 # Create a copy of the volume 'vol1' from one account to another 
-libcloudforensics aws 'us-east-2b' copydisk --volume_id='vol1' --src_profile='src_profile' --dst_profile='dst_profile' 
+cloudforensics aws 'us-east-2b' copydisk --volume_id='vol1' --src_profile='src_profile' --dst_profile='dst_profile' 
 ```
 
 If you want to make the copy in a different zone, just specify `dst_zone` in the above method.
@@ -87,7 +87,7 @@ The equivalent CLI command is:
 
 ```bash
 # Create a copy of the volume 'vol1' from one account to another, in a different zone
-libcloudforensics aws 'us-east-2b' copydisk --dst_zone='us-west-2a' --volume_id='vol1' --src_profile='src_profile' --dst_profile='dst_profile' --tags="{'customTag': 'customValue'}" 
+cloudforensics aws 'us-east-2b' copydisk --dst_zone='us-west-2a' --volume_id='vol1' --src_profile='src_profile' --dst_profile='dst_profile' --tags="{'customTag': 'customValue'}" 
 ```
 
 Finally, you can opt to pass an `instance_id` parameter to the method instead of a `volume_id`.
@@ -106,7 +106,7 @@ The equivalent CLI command is:
 
 ```bash
 # Create a copy of the boot volume of instance 'inst1' in the default account
-libcloudforensics aws 'us-east-2b' copydisk --instance_id='inst1'
+cloudforensics aws 'us-east-2b' copydisk --instance_id='inst1'
 ```    
 
 #### EBS encryption
@@ -161,11 +161,11 @@ The equivalent CLI command is:
 ```bash
 # Create a copy of the volume 'vol1' in the dst_account AWS account.
 # In this scenario we consider that the final volume copy name is 'vol1-copy' for illustration purpose. 
-libcloudforensics aws 'us-east-2b' copydisk --volume_id='vol1' --src_profile='src_profile' --dst_profile='dst_profile' 
+cloudforensics aws 'us-east-2b' copydisk --volume_id='vol1' --src_profile='src_profile' --dst_profile='dst_profile' 
 
 # Start an analysis VM 'vm-forensics' for investigation in the AWS account 
 # dst_profile, and attach a volume to it.
-libcloudforensics aws 'us-east-2b' startvm 'vm-forensics' --boot_volume_size=50 --cpu_cores=4 --attach_volumes='vol1-copy' --dst_profile='dst_profile'
+cloudforensics aws 'us-east-2b' startvm 'vm-forensics' --boot_volume_size=50 --cpu_cores=4 --attach_volumes='vol1-copy' --dst_profile='dst_profile'
 ```
 
 You're now ready to go! Log in your AWS account, find the instance (you can search it based on the name tag 
