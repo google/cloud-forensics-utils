@@ -13,11 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Disk functionality."""
+
 import binascii
 from typing import TYPE_CHECKING, Dict, Optional, Union, List, Any
 
 import botocore
 
+from libcloudforensics import errors
 from libcloudforensics.providers.aws.internal import common
 
 if TYPE_CHECKING:
@@ -115,8 +117,8 @@ class AWSVolume(AWSElasticBlockStore):
       AWSSnapshot: A snapshot object.
 
     Raises:
-      ValueError: If the snapshot name does not comply with the RegEx.
-      RuntimeError: If the snapshot could not be created.
+      InvalidNameError: If the snapshot name does not comply with the RegEx.
+      ResourceCreationError: If the snapshot could not be created.
     """
 
     if not tags:
@@ -126,8 +128,9 @@ class AWSVolume(AWSElasticBlockStore):
     truncate_at = 255 - 1
     snapshot_name = snapshot_name[:truncate_at]
     if len(snapshot_name) > 255:
-      raise ValueError('Snapshot name {0:s} is too long (>255 chars)'.format(
-          snapshot_name))
+      raise errors.InvalidNameError(
+          'Snapshot name {0:s} is too long (>255 chars)'.format(snapshot_name),
+          __name__)
     tags['Name'] = snapshot_name
 
     client = self.aws_account.ClientApi(common.EC2_SERVICE)
@@ -143,8 +146,9 @@ class AWSVolume(AWSElasticBlockStore):
           WaiterConfig={'Delay': 30, 'MaxAttempts': 100})
     except (client.exceptions.ClientError,
             botocore.exceptions.WaiterError) as exception:
-      raise RuntimeError('Could not create snapshot for volume {0:s}: '
-                         '{1:s}'.format(self.volume_id, str(exception)))
+      raise errors.ResourceCreationError(
+          'Could not create snapshot for volume {0:s}: {1:s}'.format(
+              self.volume_id, str(exception)), __name__)
 
     return AWSSnapshot(snapshot_id,
                        self.aws_account,
@@ -154,13 +158,18 @@ class AWSVolume(AWSElasticBlockStore):
                        name=snapshot_name)
 
   def Delete(self) -> None:
-    """Delete a volume."""
+    """Delete a volume.
+
+    Raises:
+      ResourceDeletionError: If the volume could not be deleted.
+    """
     client = self.aws_account.ClientApi(common.EC2_SERVICE)
     try:
       client.delete_volume(VolumeId=self.volume_id)
     except client.exceptions.ClientError as exception:
-      raise RuntimeError('Could not delete volume {0:s}: {1:s}'.format(
-          self.volume_id, str(exception)))
+      raise errors.ResourceDeletionError(
+          'Could not delete volume {0:s}: {1:s}'.format(
+              self.volume_id, str(exception)), __name__)
 
   def GetVolumeType(self) -> str:
     """Return the volume type.
@@ -238,7 +247,7 @@ class AWSSnapshot(AWSElasticBlockStore):
       AWSSnapshot: A copy of the snapshot.
 
     Raises:
-      RuntimeError: If the snapshot could not be copied.
+      ResourceCreationError: If the snapshot could not be copied.
     """
 
     client = self.aws_account.ClientApi(common.EC2_SERVICE)
@@ -252,8 +261,9 @@ class AWSSnapshot(AWSElasticBlockStore):
     try:
       response = client.copy_snapshot(**copy_args)
     except client.exceptions.ClientError as exception:
-      raise RuntimeError('Could not copy snapshot {0:s}: {1:s}'.format(
-          self.snapshot_id, str(exception)))
+      raise errors.ResourceCreationError(
+          'Could not copy snapshot {0:s}: {1:s}'.format(
+              self.snapshot_id, str(exception)), __name__)
 
     snapshot_copy = AWSSnapshot(
         # The response contains the new snapshot ID
@@ -278,14 +288,19 @@ class AWSSnapshot(AWSElasticBlockStore):
     return snapshot_copy
 
   def Delete(self) -> None:
-    """Delete a snapshot."""
+    """Delete a snapshot.
+
+    Raises:
+      ResourceDeletionError: If the snapshot could not be deleted.
+    """
 
     client = self.aws_account.ClientApi(common.EC2_SERVICE)
     try:
       client.delete_snapshot(SnapshotId=self.snapshot_id)
     except client.exceptions.ClientError as exception:
-      raise RuntimeError('Could not delete snapshot {0:s}: {1:s}'.format(
-          self.snapshot_id, str(exception)))
+      raise errors.ResourceDeletionError(
+          'Could not delete snapshot {0:s}: {1:s}'.format(
+              self.snapshot_id, str(exception)), __name__)
 
   def ShareWithAWSAccount(self, aws_account_id: str) -> None:
     """Share the snapshot with another AWS account ID.
@@ -448,15 +463,15 @@ class EBS:
       AWSVolume: An Amazon EC2 Volume object.
 
     Raises:
-      RuntimeError: If volume does not exist.
+      ResourceNotFoundError: If the volume does not exist.
     """
 
     volumes = self.ListVolumes(region=region)
     volume = volumes.get(volume_id)
     if not volume:
-      error_msg = 'Volume {0:s} was not found in AWS account'.format(
-          volume_id)
-      raise RuntimeError(error_msg)
+      raise errors.ResourceNotFoundError(
+          'Volume {0:s} was not found in AWS account'.format(volume_id),
+          __name__)
     return volume
 
   def CreateVolumeFromSnapshot(
@@ -485,9 +500,9 @@ class EBS:
       AWSVolume: An AWS EBS Volume.
 
     Raises:
-      ValueError: If the volume name does not comply with the RegEx,
-          or if the volume type is invalid.
-      RuntimeError: If the volume could not be created.
+      InvalidNameError: If the volume name does not comply with the RegEx
+      ValueError: If the volume type is invalid.
+      ResourceCreationError: If the volume could not be created.
     """
 
     if volume_type not in ['standard', 'io1', 'gp2', 'sc1', 'st1']:
@@ -499,8 +514,9 @@ class EBS:
           snapshot, volume_name_prefix=volume_name_prefix)
 
     if len(volume_name) > 255:
-      raise ValueError(
-          'Volume name {0:s} is too long (>255 chars)'.format(volume_name))
+      raise errors.InvalidNameError(
+          'Volume name {0:s} is too long (>255 chars)'.format(volume_name),
+          __name__)
 
     if not tags:
       tags = {}
@@ -530,9 +546,9 @@ class EBS:
       client.get_waiter('volume_available').wait(VolumeIds=[volume_id])
     except (client.exceptions.ClientError,
             botocore.exceptions.WaiterError) as exception:
-      raise RuntimeError('Could not create volume {0:s} from snapshot '
-                         '{1:s}: {2:s}'.format(volume_name, snapshot.name,
-                                               str(exception)))
+      raise errors.ResourceCreationError(
+          'Could not create volume {0:s} from snapshot {1:s}: {2!s}'.format(
+              volume_name, snapshot.name, exception), __name__)
 
     zone = volume['AvailabilityZone']
     encrypted = volume['Encrypted']

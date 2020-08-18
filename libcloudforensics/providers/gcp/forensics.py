@@ -22,7 +22,7 @@ from googleapiclient.errors import HttpError
 
 from libcloudforensics.providers.gcp.internal import project as gcp_project
 from libcloudforensics.providers.gcp.internal import common
-from libcloudforensics import logging_utils
+from libcloudforensics import errors, logging_utils
 
 if TYPE_CHECKING:
   from libcloudforensics.providers.gcp.internal import compute
@@ -55,7 +55,10 @@ def CreateDiskCopy(
     GoogleComputeDisk: A Google Compute Disk object.
 
   Raises:
-    RuntimeError: If there are errors copying the disk.
+    ResourceNotFoundError: If the GCP resource is not found.
+    CredentialsConfigurationError: If the library could not authenticate to GCP.
+    RuntimeError: If an unknown HttpError is thrown.
+    ResourceCreationError: If there are errors copying the disk.
     ValueError: If both instance_name and disk_name are missing.
   """
 
@@ -88,28 +91,25 @@ def CreateDiskCopy(
     snapshot.Delete()
     logger.debug('Snapshot {0:s} deleted.'.format(snapshot.name))
 
-  except RefreshError as exception:
-    error_msg = ('Something is wrong with your gcloud access token: '
-                 '{0:s}.').format(exception)
-    raise RuntimeError(error_msg)
-  except DefaultCredentialsError as exception:
-    error_msg = (
-        'Something is wrong with your Application Default '
-        'Credentials. '
-        'Try running:\n  $ gcloud auth application-default login')
-    raise RuntimeError(error_msg)
+  except (RefreshError, DefaultCredentialsError) as exception:
+    raise errors.CredentialsConfigurationError(
+        'Something is wrong with your Application Default Credentials. Try '
+        'running: $ gcloud auth application-default login: {0!s}'.format(
+            exception), __name__)
   except HttpError as exception:
     if exception.resp.status == 403:
-      raise RuntimeError(
-          'Make sure you have the appropriate permissions on the project')
+      raise errors.CredentialsConfigurationError(
+          'Make sure you have the appropriate permissions on the project',
+          __name__)
     if exception.resp.status == 404:
-      raise RuntimeError(
+      raise errors.ResourceNotFoundError(
           'GCP resource not found. Maybe a typo in the project / instance / '
-          'disk name?')
+          'disk name?', __name__)
     raise RuntimeError(exception)
   except RuntimeError as exception:
-    error_msg = 'Cannot copy disk "{0:s}": {1!s}'.format(disk_name, exception)
-    raise RuntimeError(error_msg)
+    raise errors.ResourceCreationError(
+        'Cannot copy disk "{0:s}": {1!s}'.format(disk_name, exception),
+        __name__)
 
   return new_disk
 
@@ -200,14 +200,14 @@ def CreateDiskFromGCSImage(
         }
 
   Raises:
-    ValueError: If the GCE disk name is invalid.
+    InvalidNameError: If the GCE disk name is invalid.
   """
 
   if name:
     if not common.REGEX_DISK_NAME.match(name):
-      raise ValueError(
+      raise errors.InvalidNameError(
           'Disk name {0:s} does not comply with {1:s}'.format(
-              name, common.REGEX_DISK_NAME.pattern))
+              name, common.REGEX_DISK_NAME.pattern), __name__)
     name = name[:common.COMPUTE_NAME_LIMIT]
   else:
     name = common.GenerateUniqueInstanceName('imported-disk',

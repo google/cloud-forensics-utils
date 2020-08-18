@@ -21,6 +21,7 @@ from azure.mgmt import network
 from msrestazure import azure_exceptions
 # pylint: enable=import-error
 
+from libcloudforensics import errors
 from libcloudforensics.providers.azure.internal import common
 
 if TYPE_CHECKING:
@@ -63,7 +64,7 @@ class AZNetwork:
 
     Raises:
       ValueError: if name is not provided.
-      RuntimeError: If no network interface could be created.
+      ResourceCreationError: If no network interface could be created.
     """
     if not name:
       raise ValueError('name must be specified. Provided: {0!s}'.format(name))
@@ -82,12 +83,14 @@ class AZNetwork:
       return nic_id
     except azure_exceptions.CloudError as exception:
       if 'ResourceNotFound' not in exception.error.error:
-        raise RuntimeError('Could not create network interface: {0:s}'.format(
-            str(exception)))
+        raise errors.ResourceCreationError(
+            'Could not create network interface: {0!s}'.format(exception),
+            __name__)
       # NIC doesn't exist, ignore the error and create it
 
     # pylint: disable=unbalanced-tuple-unpacking
-    public_ip, _, subnet = self._CreateNetworkInterfaceElements(
+    # IP address, virtual network, subnet, network security group
+    public_ip, _, subnet, nsg = self._CreateNetworkInterfaceElements(
         name, region=region)
     # pylint: enable=unbalanced-tuple-unpacking
 
@@ -99,7 +102,8 @@ class AZNetwork:
             'subnet': {
                 'id': subnet.id
             }
-        }]
+        }],
+        'networkSecurityGroup': nsg
     }
 
     try:
@@ -109,8 +113,9 @@ class AZNetwork:
           creation_data)
       request.wait()
     except azure_exceptions.CloudError as exception:
-      raise RuntimeError('Could not create network interface: {0:s}'.format(
-          str(exception)))
+      raise errors.ResourceCreationError(
+          'Could not create network interface: {0!s}'.format(exception),
+          __name__)
 
     network_interface_id = request.result().id  # type: str
     return network_interface_id
@@ -128,19 +133,25 @@ class AZNetwork:
           Default uses default_region of the AZAccount object.
 
     Returns:
-      Tuple[Any, Any, Any]: A tuple containing a public IP address object,
-          a virtual network object and a subnet object.
+      Tuple[Any, Any, Any, Any]: A tuple containing a public IP address object,
+          a virtual network object, a subnet object and a network security
+          group object.
 
     Raises:
-      RuntimeError: If the elements could not be created.
+      ResourceCreationError: If the elements could not be created.
     """
 
     if not region:
       region = self.az_account.default_region
 
+    # IP address
     public_ip_name = '{0:s}-public-ip'.format(name_prefix)
+    # Virtual Network
     vnet_name = '{0:s}-vnet'.format(name_prefix)
+    # Subnet
     subnet_name = '{0:s}-subnet'.format(name_prefix)
+    # Network security group
+    nsg_name = '{0:s}-nsg'.format(name_prefix)
 
     client_to_creation_data = {
         self.network_client.public_ip_addresses: {
@@ -163,8 +174,25 @@ class AZNetwork:
             'resource_group_name': self.az_account.default_resource_group_name,
             'virtual_network_name': vnet_name,
             'subnet_name': subnet_name,
-            'subnet_parameters': {
-                'address_prefix': '10.0.0.0/24'
+            'subnet_parameters': {'address_prefix': '10.0.0.0/24'}
+        },
+        self.network_client.network_security_groups: {
+            'resource_group_name': self.az_account.default_resource_group_name,
+            'network_security_group_name': nsg_name,
+            'parameters': {
+                'location': region,
+                # Allow SSH traffic
+                'security_rules': [{
+                    'name': 'Allow-SSH',
+                    'direction': 'Inbound',
+                    'protocol': 'TCP',
+                    'source_address_prefix': '*',
+                    'destination_address_prefix': '*',
+                    'source_port_range': '*',
+                    'destination_port_range': 22,
+                    'access': 'Allow',
+                    'priority': 300
+                }]
             }
         }
     }  # type: Dict[str, Any]
@@ -177,6 +205,7 @@ class AZNetwork:
         request.wait()
         result.append(request.result())
     except azure_exceptions.CloudError as exception:
-      raise RuntimeError('Could not create network interface elements: '
-                         '{0:s}'.format(str(exception)))
+      raise errors.ResourceCreationError(
+          'Could not create network interface elements: {0!s}'.format(
+              exception), __name__)
     return tuple(result)

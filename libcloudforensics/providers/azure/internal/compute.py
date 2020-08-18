@@ -30,7 +30,7 @@ from azure.mgmt import compute as compute_sdk
 from azure.mgmt.compute.v2020_05_01 import models
 # pylint: enable=import-error
 
-from libcloudforensics import logging_utils
+from libcloudforensics import errors, logging_utils
 from libcloudforensics.providers.azure.internal import common, compute_base_resource  # pylint: disable=line-too-long, ungrouped-imports
 
 from libcloudforensics.scripts import utils
@@ -144,14 +144,14 @@ class AZCompute:
       AZComputeVirtualMachine: An Azure virtual machine object.
 
     Raises:
-      RuntimeError: If the instance was not found in the subscription / resource
-          group.
+      ResourceNotFoundError: If the instance was not found in the subscription/
+          resource group.
     """
     instances = self.ListInstances(resource_group_name=resource_group_name)
     if instance_name not in instances:
-      error_msg = 'Instance {0:s} was not found in subscription {1:s}'.format(
-          instance_name, self.az_account.subscription_id)
-      raise RuntimeError(error_msg)
+      raise errors.ResourceNotFoundError(
+          'Instance {0:s} was not found in subscription {1:s}'.format(
+              instance_name, self.az_account.subscription_id), __name__)
     return instances[instance_name]
 
   def GetDisk(
@@ -170,14 +170,14 @@ class AZCompute:
       AZComputeDisk: An Azure Compute Disk object.
 
     Raises:
-      RuntimeError: If the disk was not found in the subscription / resource
-          group.
+      ResourceNotFoundError: If the disk was not found in the subscription/
+          resource group.
     """
     disks = self.ListDisks(resource_group_name=resource_group_name)
     if disk_name not in disks:
-      error_msg = 'Disk {0:s} was not found in subscription {1:s}'.format(
-          disk_name, self.az_account.subscription_id)
-      raise RuntimeError(error_msg)
+      raise errors.ResourceNotFoundError(
+          'Disk {0:s} was not found in subscription {1:s}'.format(
+              disk_name, self.az_account.subscription_id), __name__)
     return disks[disk_name]
 
   def CreateDiskFromSnapshot(
@@ -204,7 +204,7 @@ class AZCompute:
       AZComputeDisk: Azure Compute Disk.
 
     Raises:
-      RuntimeError: If the disk could not be created.
+      ResourceCreationError: If the disk could not be created.
     """
 
     if not disk_name:
@@ -234,8 +234,9 @@ class AZCompute:
       disk = request.result()
       logger.info('Disk {0:s} successfully created'.format(disk_name))
     except azure_exceptions.CloudError as exception:
-      raise RuntimeError('Could not create disk from snapshot {0:s}: {1:s}'
-                         .format(snapshot.resource_id, str(exception)))
+      raise errors.ResourceCreationError(
+          'Could not create disk from snapshot {0:s}: {1!s}'.format(
+              snapshot.resource_id, exception), __name__)
 
     return AZComputeDisk(self.az_account,
                          disk.id,
@@ -276,7 +277,7 @@ class AZCompute:
       AZComputeDisk: Azure Compute Disk.
 
     Raises:
-      RuntimeError: If the disk could not be created.
+      ResourceCreationError: If the disk could not be created.
     """
 
     if not region:
@@ -319,8 +320,9 @@ class AZCompute:
       sleep(5)  # Wait for the vhd to be imported in the Azure storage container
       copy_status = copied_blob.get_blob_properties().copy.status
       if copy_status in ('aborted', 'failed'):
-        raise RuntimeError('Could not import the snapshot from URI '
-                           '{0:s}'.format(snapshot_uri))
+        raise errors.ResourceCreationError(
+            'Could not import the snapshot from URI {0:s}'.format(
+                snapshot_uri), __name__)
       logger.debug('Importing snapshot from URI {0:s}'.format(snapshot_uri))
     logger.info('Snapshot successfully imported from URI {0:s}'.format(
         snapshot_uri))
@@ -351,8 +353,9 @@ class AZCompute:
       disk = request.result()
       logger.info('Disk {0:s} successfully created'.format(disk_name))
     except azure_exceptions.CloudError as exception:
-      raise RuntimeError('Could not create disk from URI {0:s}: {1:s}'
-                         .format(snapshot_uri, str(exception)))
+      raise errors.ResourceCreationError(
+          'Could not create disk from URI {0:s}: {1!s}'.format(
+              snapshot_uri, exception), __name__)
 
     # Cleanup the temporary account storage
     self.az_account.storage.DeleteStorageAccount(storage_account_name)
@@ -398,7 +401,8 @@ class AZCompute:
           virtual machine was created (True) or reused (False).
 
     Raises:
-      RuntimeError: If the virtual machine cannot be found or created.
+      RuntimeError: If the provided SSH key is invalid.
+      ResourceCreationError: If the virtual machine cannot be found or created.
     """
 
     # Re-use instance if it already exists, or create a new one.
@@ -407,7 +411,7 @@ class AZCompute:
       if instance:
         created = False
         return instance, created
-    except RuntimeError:
+    except errors.ResourceNotFoundError:
       pass
 
     # Validate SSH public key format
@@ -484,8 +488,9 @@ class AZCompute:
         sleep(5)  # Wait 5 seconds before checking disk status again
       vm = request.result()
     except azure_exceptions.CloudError as exception:
-      raise RuntimeError('Could not create instance {0:s}: {1:s}'.format(
-          vm_name, str(exception)))
+      raise errors.ResourceCreationError(
+          'Could not create instance {0:s}: {1!s}'.format(vm_name, exception),
+          __name__)
 
     instance = AZComputeVirtualMachine(self.az_account,
                                        vm.id,
@@ -577,7 +582,7 @@ class AZComputeVirtualMachine(compute_base_resource.AZComputeResource):
       AZComputeDisk: Disk object if the disk is found.
 
     Raises:
-      RuntimeError: If no boot disk could be found.
+      ResourceNotFoundError: If no boot disk could be found.
     """
     # pylint: disable=line-too-long
     disks = self.az_account.compute.ListDisks(
@@ -586,9 +591,9 @@ class AZComputeVirtualMachine(compute_base_resource.AZComputeResource):
     boot_disk_name = self.compute_client.virtual_machines.get(
         self.resource_group_name, self.name).storage_profile.os_disk.name
     if boot_disk_name not in disks:
-      error_msg = 'Boot disk not found for instance: {0:s}'.format(
-          self.resource_id)
-      raise RuntimeError(error_msg)
+      raise errors.ResourceNotFoundError(
+          'Boot disk not found for instance {0:s}'.format(self.resource_id),
+          __name__)
     return disks[boot_disk_name]
 
   def GetDisk(self, disk_name: str) -> 'AZComputeDisk':
@@ -601,14 +606,14 @@ class AZComputeVirtualMachine(compute_base_resource.AZComputeResource):
       AZComputeDisk: The disk object.
 
     Raises:
-      RuntimeError: If disk_name is not found amongst the disks attached
-          to the instance.
+      ResourceNotFoundError: If disk_name is not found amongst the disks
+          attached to the instance.
     """
     disks = self.ListDisks()
     if disk_name not in disks:
-      error_msg = 'Disk {0:s} not found in instance: {1:s}'.format(
-          disk_name, self.resource_id)
-      raise RuntimeError(error_msg)
+      raise errors.ResourceNotFoundError(
+          'Disk {0:s} was not found in instance {1:s}'.format(
+              disk_name, self.resource_id), __name__)
     return disks[disk_name]
 
   def ListDisks(self) -> Dict[str, 'AZComputeDisk']:
@@ -700,8 +705,8 @@ class AZComputeDisk(compute_base_resource.AZComputeResource):
       AZComputeSnapshot: A snapshot object.
 
     Raises:
-      ValueError: If the snapshot name does not comply with the RegEx.
-      RuntimeError: If the snapshot could not be created.
+      InvalidNameError: If the snapshot name does not comply with the RegEx.
+      ResourceCreationError: If the snapshot could not be created.
     """
 
     if not snapshot_name:
@@ -709,9 +714,9 @@ class AZComputeDisk(compute_base_resource.AZComputeResource):
       truncate_at = 80 - 1
       snapshot_name = snapshot_name[:truncate_at]
       if not common.REGEX_SNAPSHOT_NAME.match(snapshot_name):
-        raise ValueError('Snapshot name {0:s} does not comply with '
-                         '{1:s}'.format(snapshot_name,
-                                        common.REGEX_SNAPSHOT_NAME.pattern))
+        raise errors.InvalidNameError(
+            'Snapshot name {0:s} does not comply with {1:s}'.format(
+                snapshot_name, common.REGEX_SNAPSHOT_NAME.pattern), __name__)
 
     creation_data = {
         'location': self.region,
@@ -735,8 +740,9 @@ class AZComputeDisk(compute_base_resource.AZComputeResource):
       snapshot = request.result()
       logger.info('Snapshot {0:s} successfully created'.format(snapshot_name))
     except azure_exceptions.CloudError as exception:
-      raise RuntimeError('Could not create snapshot for disk {0:s}: {1:s}'
-                         .format(self.resource_id, str(exception)))
+      raise errors.ResourceCreationError(
+          'Could not create snapshot for disk {0:s}: {1!s}'.format(
+              self.resource_id, exception), __name__)
 
     return AZComputeSnapshot(self.az_account,
                              snapshot.id,
@@ -786,7 +792,11 @@ class AZComputeSnapshot(compute_base_resource.AZComputeResource):
     self.disk = source_disk
 
   def Delete(self) -> None:
-    """Delete a snapshot."""
+    """Delete a snapshot.
+
+    Raises:
+      ResourceDeletionError: If the snapshot could not be deleted.
+    """
 
     try:
       logger.info('Deleting snapshot: {0:s}'.format(self.name))
@@ -796,8 +806,9 @@ class AZComputeSnapshot(compute_base_resource.AZComputeResource):
         sleep(5)  # Wait 5 seconds before checking snapshot status again
       logger.info('Snapshot {0:s} successfully deleted.'.format(self.name))
     except azure_exceptions.CloudError as exception:
-      raise RuntimeError('Could not delete snapshot {0:s}: {1:s}'
-                         .format(self.resource_id, str(exception)))
+      raise errors.ResourceDeletionError(
+          'Could not delete snapshot {0:s}: {1!s}'.format(
+              self.resource_id, exception), __name__)
 
   def GrantAccessAndGetURI(self) -> str:
     """Grant access to a snapshot and return its access URI.

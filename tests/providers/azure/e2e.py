@@ -197,17 +197,24 @@ class EndToEndTest(unittest.TestCase):
     # Delete the network interface and associated artifacts created for the
     # analysis VM
     logger.info('Deleting network artifacts...')
-    cls.az.network.network_client.network_interfaces.delete(
+    operation = cls.az.network.network_client.network_interfaces.delete(
         cls.resource_group_name, '{0:s}-nic'.format(cls.analysis_vm_name))
-    cls.az.network.network_client.subnets.delete(
+    operation.wait()
+    operation = cls.az.network.network_client.subnets.delete(
         cls.resource_group_name,
         '{0:s}-vnet'.format(cls.analysis_vm_name),
         '{0:s}-subnet'.format(cls.analysis_vm_name))
-    cls.az.network.network_client.virtual_networks.delete(
+    operation.wait()
+    operation = cls.az.network.network_client.virtual_networks.delete(
         cls.resource_group_name, '{0:s}-vnet'.format(cls.analysis_vm_name))
-    cls.az.network.network_client.public_ip_addresses.delete(
+    operation.wait()
+    operation = cls.az.network.network_client.public_ip_addresses.delete(
         cls.resource_group_name, '{0:s}-public-ip'.format(
             cls.analysis_vm_name))
+    operation.wait()
+    operation = cls.az.network.network_client.network_security_groups.delete(
+        cls.resource_group_name, '{0:s}-nsg'.format(cls.analysis_vm_name))
+    operation.wait()
     # Delete the disks
     for disk in cls.disks:
       logger.info('Deleting disk: {0:s}.'.format(disk.name))
