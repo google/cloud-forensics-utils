@@ -249,10 +249,10 @@ class AZComputeTest(unittest.TestCase):
     self.assertEqual('fake-vm-name', vm.name)
     self.assertFalse(created)
 
-    # We mock the GetInstance() call to throw a RuntimeError to mimic
+    # We mock the GetInstance() call to throw a ResourceNotFoundError to mimic
     # an instance that wasn't found. This should trigger a vm to be
     # created.
-    mock_get_instance.side_effect = RuntimeError()
+    mock_get_instance.side_effect = errors.ResourceNotFoundError('', __name__)
     mock_vm.return_value.result.return_value = azure_mocks.MOCK_ANALYSIS_INSTANCE
     vm, created = azure_mocks.FAKE_ACCOUNT.compute.GetOrCreateAnalysisVm(
         'fake-analysis-vm-name', 1, 4, 8192, '')
