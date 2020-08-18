@@ -41,7 +41,7 @@ class GoogleCloudProject:
 
   def __init__(self,
                project_id: str,
-               default_zone: Optional[str] = 'us-central1-f') -> None:
+               default_zone: str = 'us-central1-f') -> None:
     """Initialize the GoogleCloudProject object.
 
     Args:
