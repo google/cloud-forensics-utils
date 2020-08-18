@@ -411,7 +411,7 @@ class AZCompute:
       if instance:
         created = False
         return instance, created
-    except RuntimeError:
+    except errors.ResourceNotFoundError:
       pass
 
     # Validate SSH public key format
