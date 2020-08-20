@@ -50,6 +50,7 @@ PROVIDER_TO_FUNC = {
         'startvm': gcp_cli.StartAnalysisVm,
         'bucketacls': gcp_cli.GetBucketACLs,
         'objectmetadata': gcp_cli.GetGCSObjectMetadata,
+        'listbuckets': gcp_cli.ListBuckets,
         'listobjects': gcp_cli.ListBucketObjects
     }
 }
@@ -326,6 +327,8 @@ def Main() -> None:
                    'Name of the disk to create. If None, name '
                    'will be printed at the end.',
                    None)])
+  AddParser('gcp', gcp_subparsers, 'listbuckets',
+            'List GCS buckets for a project.')
   AddParser('gcp', gcp_subparsers, 'bucketacls', 'List ACLs of a GCS bucket.',
             args=[
                 ('path', 'Path to bucket.', None),

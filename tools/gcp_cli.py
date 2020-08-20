@@ -233,6 +233,19 @@ def GetGCSObjectMetadata(args: 'argparse.Namespace') -> None:
       logger.info('{0:s}: {1:s}'.format(key, value))
 
 
+def ListBuckets(args: 'argparse.Namespace') -> None:
+  """List the buckets in a GCP project.
+
+  Args:
+    args (argparse.Namespace): Arguments from ArgumentParser.
+  """
+  gcs = gcp_storage.GoogleCloudStorage(args.project)
+  results = gcs.ListBuckets()
+  for obj in results:
+    logger.info('{0:s} : {1:s}'.format(
+        obj.get('id', 'ID not found'), obj.get('selfLink', 'No link')))
+
+
 def ListBucketObjects(args: 'argparse.Namespace') -> None:
   """List the objects in a GCS bucket.
 

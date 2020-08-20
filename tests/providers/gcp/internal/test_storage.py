@@ -47,6 +47,17 @@ class GoogleCloudStorageTest(unittest.TestCase):
 
   @typing.no_type_check
   @mock.patch('libcloudforensics.providers.gcp.internal.storage.GoogleCloudStorage.GcsApi')
+  def testListBuckets(self, mock_gcs_api):
+    """Test GCS bucket List operation."""
+    api_list_bucket = mock_gcs_api.return_value.buckets.return_value.list
+    api_list_bucket.return_value.execute.return_value = gcp_mocks.MOCK_GCS_BUCKETS
+    list_results = gcp_mocks.FAKE_GCS.ListBuckets()
+    self.assertEqual(1, len(list_results))
+    self.assertEqual('fake-bucket', list_results[0]['name'])
+    self.assertEqual('123456789', list_results[0]['projectNumber'])
+
+  @typing.no_type_check
+  @mock.patch('libcloudforensics.providers.gcp.internal.storage.GoogleCloudStorage.GcsApi')
   def testListBucketObjects(self, mock_gcs_api):
     """Test GCS object List operation."""
     api_list_object = mock_gcs_api.return_value.objects.return_value.list
