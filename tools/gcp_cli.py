@@ -257,6 +257,6 @@ def ListCloudSqlInstances(args: 'argparse.Namespace') -> None:
   gcsql = gcp_cloudsql.GoogleCloudSql(args.project)
   results = gcsql.ListCloudSqlInstances()
   for obj in results:
-    logger.info('{0:s} {1:s}b [{2:s}]'.format(
+    logger.info('{0:s} {1:s} [{2:s}]'.format(
         obj.get('instanceType', 'type not found'), obj.get('name', 'name not known'),
         obj.get('state', 'state not known')))
