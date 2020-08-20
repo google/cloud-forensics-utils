@@ -134,11 +134,8 @@ class GoogleCloudStorage:
   def ListBuckets(self) -> List[Dict[str, Any]]:
     """List buckets in a Google Cloud project.
 
-    Args:
-      None
-
     Returns:
-      List of Object Dicts
+      List[Dict[str, Any]]: List of object dicts.
       (https://cloud.google.com/storage/docs/json_api/v1/buckets#resource)
     """
     gcs_buckets = self.GcsApi().buckets()
