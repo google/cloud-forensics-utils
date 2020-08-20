@@ -51,6 +51,7 @@ PROVIDER_TO_FUNC = {
         'bucketacls': gcp_cli.GetBucketACLs,
         'objectmetadata': gcp_cli.GetGCSObjectMetadata,
         'listobjects': gcp_cli.ListBucketObjects,
+        'listbuckets': gcp_cli.ListBuckets,
         'listcloudsqlinstances': gcp_cli.ListCloudSqlInstances
     }
 }
