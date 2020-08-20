@@ -191,6 +191,34 @@ MOCK_GCE_OPERATION_INSTANCES_GET = {
     }]
 }
 
+MOCK_GCS_BUCKETS = {
+    'kind':
+        'storage#buckets',
+    'items': [{
+        'kind': 'storage#bucket',
+        'id': 'fake-bucket',
+        'selfLink': 'https://www.googleapis.com/storage/v1/b/fake-bucket',
+        'projectNumber': '123456789',
+        'name': 'fake-bucket',
+        'timeCreated': '2020-01-01T01:02:03.456Z',
+        'updated': '2020-07-09T05:58:11.393Z',
+        'metageneration': '8',
+        'iamConfiguration': {
+            'bucketPolicyOnly': {
+                'enabled': True, 'lockedTime': '2020-10-04T05:47:28.721Z'
+            },
+            'uniformBucketLevelAccess': {
+                'enabled': True, 'lockedTime': '2020-10-04T05:47:28.721Z'
+            }
+        },
+        'location': 'US-EAST1',
+        'locationType': 'region',
+        'defaultEventBasedHold': False,
+        'storageClass': 'STANDARD',
+        'etag': 'CAg='
+    }]
+}
+
 MOCK_GCS_OBJECT_METADATA = {
     'kind': 'storage#object',
     'id': 'fake-bucket/foo/fake.img/12345',
