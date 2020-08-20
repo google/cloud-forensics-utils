@@ -131,6 +131,21 @@ class GoogleCloudStorage:
         ret[item['role']].append(member)
     return ret
 
+  def ListBuckets(self) -> List[Dict[str, Any]]:
+    """List buckets in a Google Cloud project.
+
+    Args:
+      None
+
+    Returns:
+      List of Object Dicts
+      (https://cloud.google.com/storage/docs/json_api/v1/buckets#resource)
+    """
+    gcs_buckets = self.GcsApi().buckets()
+    request = gcs_buckets.list(project=self.project_id)
+    objects = request.execute()  # type: Dict[str, Any]
+    return objects.get('items', [])
+
   def ListBucketObjects(self, bucket: str) -> List[Dict[str, Any]]:
     """List objects (with metadata) in a Google Cloud Storage bucket.
 
