@@ -23,6 +23,7 @@ from libcloudforensics.providers.gcp.internal import project as gcp_project
 from libcloudforensics.providers.gcp.internal import log as gcp_log
 from libcloudforensics.providers.gcp.internal import monitoring as gcp_monitoring
 from libcloudforensics.providers.gcp.internal import storage as gcp_storage
+from libcloudforensics.providers.gcp.internal import cloudsql as gcp_cloudsql
 # pylint: enable=line-too-long
 
 FAKE_ANALYSIS_PROJECT = gcp_project.GoogleCloudProject(
@@ -78,6 +79,7 @@ FAKE_NEXT_PAGE_TOKEN = 'abcdefg1234567'
 FAKE_GCS = gcp_storage.GoogleCloudStorage('fake-target-project')
 FAKE_GCB = gcp_build.GoogleCloudBuild('fake-target-project')
 FAKE_MONITORING = gcp_monitoring.GoogleCloudMonitoring('fake-target-project')
+FAKE_CLOUDSQLINSTANCE = gcp_cloudsql.GoogleCloudSql('fake-target-project')
 
 # Mock struct to mimic GCP's API responses
 MOCK_INSTANCES_AGGREGATED = {
@@ -348,6 +350,14 @@ MOCK_GCM_METRICS_COUNT = {
         }]
     }],
     'unit': '1'
+}
+
+MOCK_GCSQL_INSTANCES = {
+    'items': {
+        'instanceType': 'fake-instance',
+        'name': 'fake',
+        'state': 'running'
+    }
 }
 
 # See: https://cloud.google.com/compute/docs/reference/rest/v1/disks
