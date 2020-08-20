@@ -14,7 +14,6 @@
 # limitations under the License.
 """Google Cloud SQL functionalities."""
 
-import collections
 from typing import TYPE_CHECKING, List, Dict, Any, Optional, Tuple
 from libcloudforensics.providers.gcp.internal import common
 
@@ -32,7 +31,7 @@ class GoogleCloudSql:
   SQLADMIN_API_VERSION = 'v1beta4'
 
   def __init__(self, project_id: Optional[str] = None) -> None:
-    """Initialize the GoogleCloudSql object.
+    """Initialize the GoogleCloudSQL object.
 
     Args:
       project_id (str): Optional. Google Cloud project ID.
@@ -55,13 +54,12 @@ class GoogleCloudSql:
     return self.gcsql_api_client
 
   def ListCloudSqlInstances(self) -> List[Dict[str, Any]]:
-    """List objects (with metadata) in a Google CloudSql.
+    """List instances of Google CloudSQL within a project.
 
     Returns:
-      List of Object Dicts (see GetObjectMetadata)
+      List of instances
     """
     gcsql_instances = self.GcsqlApi().instances()
-    print(self.project_id)
     request = gcsql_instances.list(project=self.project_id)
     instances = request.execute()  # type: Dict[str, Any]
     return instances.get('items', [])
