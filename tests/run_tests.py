@@ -12,6 +12,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""libcloud forensics module."""
+"""Run all tests."""
 
-__version__ = '20200818'
+import os
+import unittest
+
+if __name__ == '__main__':
+  loader = unittest.TestLoader()
+  tests_dir = os.path.dirname(os.path.abspath(__file__))
+  suite = loader.discover(tests_dir, pattern='test_*.py')
+  runner = unittest.TextTestRunner()
+  runner.run(suite)

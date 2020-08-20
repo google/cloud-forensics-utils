@@ -23,9 +23,10 @@ from azure.mgmt.monitor import MonitorManagementClient
 from azure.mgmt.monitor.v2018_01_01 import models
 # pylint: enable=import-error
 
-from libcloudforensics.providers.azure.internal import account
-
 if TYPE_CHECKING:
+  # TYPE_CHECKING is always False at runtime, therefore it is safe to ignore
+  # the following cyclic import, as it it only used for type hints
+  from libcloudforensics.providers.azure.internal import account  # pylint: disable=cyclic-import
   from datetime import datetime
 
 
@@ -33,21 +34,19 @@ class AZMonitoring:
   """Azure Monitoring.
 
   Attributes:
-    az_account (AZAccount): An Azure account object.
     monitoring_client (MonitorManagementClient): An Azure monitoring client
         object.
   """
 
   def __init__(self,
-               az_account: account.AZAccount) -> None:
+               az_account: 'account.AZAccount') -> None:
     """Initialize the Azure monitoring class.
 
     Args:
       az_account (AZAccount): An Azure account object.
     """
-    self.az_account = az_account
     self.monitoring_client = MonitorManagementClient(
-        self.az_account.credentials, self.az_account.subscription_id)
+        az_account.credentials, az_account.subscription_id)
 
   def ListAvailableMetricsForResource(self, resource_id: str) -> List[str]:
     """List the available metrics for a given resource.

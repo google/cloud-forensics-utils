@@ -36,19 +36,19 @@ class GoogleCloudProject:
     default_zone: Default zone to create new resources in.
 
   Example use:
-    gcp = GoogleCloudProject("your_project_name", "us-east")
+    gcp = GoogleCloudProject("your_project_name", "us-east1-b")
     gcp.compute.ListInstances()
   """
 
   def __init__(self,
                project_id: str,
-               default_zone: Optional[str] = None) -> None:
+               default_zone: str = 'us-central1-f') -> None:
     """Initialize the GoogleCloudProject object.
 
     Args:
       project_id (str): The name of the project.
       default_zone (str): Optional. Default zone to create new resources in.
-          None means GlobalZone.
+          Default is 'us-central1-f'.
     """
 
     self.project_id = project_id

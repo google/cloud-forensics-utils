@@ -42,6 +42,14 @@ libcloudforensics.providers.gcp.internal.function module
    :undoc-members:
    :show-inheritance:
 
+libcloudforensics.providers.gcp.internal.gke module
+--------------------------------------------------------
+
+.. automodule:: libcloudforensics.providers.gcp.internal.gke
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 libcloudforensics.providers.gcp.internal.log module
 ---------------------------------------------------
 
