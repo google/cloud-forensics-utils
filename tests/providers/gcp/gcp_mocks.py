@@ -433,7 +433,7 @@ MOCK_GCSQL_INSTANCES = {
         'serverCaCert': {
             'kind': 'sql#sslCert',
             'certSerialNumber': '0',
-            'cert': '222222222,
+            'cert': '222222222',
             'commonName': '11111111',
             'sha1Fingerprint': '33333333',
             'instance': 'test',
