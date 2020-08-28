@@ -160,7 +160,7 @@ class GoogleCloudProject:
     self._monitoring = monitoring_module.GoogleCloudMonitoring(
         self.project_id)
     return self._monitoring
-  
+
   @property
   def cloudsql(self) -> cloudsql_module.GoogleCloudSql:
     """Get a GoogleCloudSql object for the project.
