@@ -236,7 +236,7 @@ class AZCompute:
     except azure_exceptions.CloudError as exception:
       raise errors.ResourceCreationError(
           'Could not create disk from snapshot {0:s}: {1!s}'.format(
-              snapshot.resource_id, exception), __name__)
+              snapshot.resource_id, exception), __name__) from exception
 
     return AZComputeDisk(self.az_account,
                          disk.id,
@@ -355,7 +355,7 @@ class AZCompute:
     except azure_exceptions.CloudError as exception:
       raise errors.ResourceCreationError(
           'Could not create disk from URI {0:s}: {1!s}'.format(
-              snapshot_uri, exception), __name__)
+              snapshot_uri, exception), __name__) from exception
 
     # Cleanup the temporary account storage
     self.az_account.storage.DeleteStorageAccount(storage_account_name)
@@ -419,7 +419,7 @@ class AZCompute:
       sshpubkeys.SSHKey(ssh_public_key, strict=True).parse()
     except sshpubkeys.InvalidKeyError as exception:
       raise RuntimeError('The provided public SSH key is invalid: '
-                         '{0:s}'.format(str(exception)))
+                         '{0:s}'.format(str(exception))) from exception
 
     instance_type = self._GetInstanceType(cpu_cores, memory_in_mb)
     startup_script = utils.ReadStartupScript()
@@ -490,7 +490,7 @@ class AZCompute:
     except azure_exceptions.CloudError as exception:
       raise errors.ResourceCreationError(
           'Could not create instance {0:s}: {1!s}'.format(vm_name, exception),
-          __name__)
+          __name__) from exception
 
     instance = AZComputeVirtualMachine(self.az_account,
                                        vm.id,
@@ -569,11 +569,11 @@ class AZComputeVirtualMachine(compute_base_resource.AZComputeResource):
       zones (List[str]): Optional. Availability zones within the region where
           the virtual machine is located / replicated.
     """
-    super(AZComputeVirtualMachine, self).__init__(az_account,
-                                                  resource_id,
-                                                  name,
-                                                  region,
-                                                  zones=zones)
+    super().__init__(az_account,
+                     resource_id,
+                     name,
+                     region,
+                     zones=zones)
 
   def GetBootDisk(self) -> 'AZComputeDisk':
     """Get the instance's boot disk.
@@ -661,8 +661,9 @@ class AZComputeVirtualMachine(compute_base_resource.AZComputeResource):
       while not request.done():
         sleep(5)  # Wait 5 seconds before checking vm status again
     except azure_exceptions.CloudError as exception:
-      raise RuntimeError('Could not attach disk {0:s} to instance {1:s}: '
-                         '{2:s}'.format(disk.name, self.name, str(exception)))
+      raise RuntimeError(
+          'Could not attach disk {0:s} to instance {1:s}: {2:s}'.format(
+              disk.name, self.name, str(exception))) from exception
 
 
 class AZComputeDisk(compute_base_resource.AZComputeResource):
@@ -684,11 +685,11 @@ class AZComputeDisk(compute_base_resource.AZComputeResource):
       zones (List[str]): Optional. Availability zone within the region where
           the disk is located.
     """
-    super(AZComputeDisk, self).__init__(az_account,
-                                        resource_id,
-                                        name,
-                                        region,
-                                        zones=zones)
+    super().__init__(az_account,
+                     resource_id,
+                     name,
+                     region,
+                     zones=zones)
 
   def Snapshot(self,
                snapshot_name: Optional[str] = None,
@@ -742,7 +743,7 @@ class AZComputeDisk(compute_base_resource.AZComputeResource):
     except azure_exceptions.CloudError as exception:
       raise errors.ResourceCreationError(
           'Could not create snapshot for disk {0:s}: {1!s}'.format(
-              self.resource_id, exception), __name__)
+              self.resource_id, exception), __name__) from exception
 
     return AZComputeSnapshot(self.az_account,
                              snapshot.id,
@@ -784,10 +785,10 @@ class AZComputeSnapshot(compute_base_resource.AZComputeResource):
       region (str): The region in which the snapshot is located.
       source_disk (AZComputeDisk): The disk from which the snapshot was taken.
     """
-    super(AZComputeSnapshot, self).__init__(az_account,
-                                            resource_id,
-                                            name,
-                                            region)
+    super().__init__(az_account,
+                     resource_id,
+                     name,
+                     region)
 
     self.disk = source_disk
 
@@ -808,7 +809,7 @@ class AZComputeSnapshot(compute_base_resource.AZComputeResource):
     except azure_exceptions.CloudError as exception:
       raise errors.ResourceDeletionError(
           'Could not delete snapshot {0:s}: {1!s}'.format(
-              self.resource_id, exception), __name__)
+              self.resource_id, exception), __name__) from exception
 
   def GrantAccessAndGetURI(self) -> str:
     """Grant access to a snapshot and return its access URI.

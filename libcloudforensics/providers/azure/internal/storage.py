@@ -126,4 +126,4 @@ class AZStorage:
     except azure_exceptions.CloudError as exception:
       raise errors.ResourceDeletionError(
           'Could not delete account storage {0:s}: {1:s}'.format(
-              storage_account_name, str(exception)), __name__)
+              storage_account_name, str(exception)), __name__) from exception

@@ -34,7 +34,7 @@ class LCFError(Exception):
       message (str): The error message.
       name (str): The name of the module that generated the error.
     """
-    super(LCFError, self).__init__(message)
+    super().__init__(message)
     self.message = message
     self.name = name
     logging_utils.SetUpLogger(self.name)

@@ -125,7 +125,7 @@ def CreateDiskCopy(
         disk_to_copy.name, new_disk.name))
   except (errors.LCFError, RuntimeError) as exception:
     raise errors.ResourceCreationError('Cannot copy disk "{0:s}": {1!s}'.format(
-        str(disk_name), exception), __name__)
+        str(disk_name), exception), __name__) from exception
 
   return new_disk
 

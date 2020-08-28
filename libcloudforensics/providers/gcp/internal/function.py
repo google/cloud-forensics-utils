@@ -88,11 +88,11 @@ class GoogleCloudFunction:
 
     try:
       json_args = json.dumps(args)
-    except TypeError as e:
+    except TypeError as exception:
       error_msg = (
           'Cloud function args [{0:s}] could not be serialized:'
-          ' {1!s}').format(str(args), e)
-      raise RuntimeError(error_msg)
+          ' {1!s}').format(str(args), exception)
+      raise RuntimeError(error_msg) from exception
 
     function_path = 'projects/{0:s}/locations/{1:s}/functions/{2:s}'.format(
         self.project_id, region, function_name)
@@ -105,9 +105,9 @@ class GoogleCloudFunction:
           name=function_path, body={
               'data': json_args
           }).execute()  # type: Dict[str, Any]
-    except (HttpError, ssl.SSLError) as e:
+    except (HttpError, ssl.SSLError) as exception:
       error_msg = 'Cloud function [{0:s}] call failed: {1!s}'.format(
-          function_name, e)
-      raise RuntimeError(error_msg)
+          function_name, exception)
+      raise RuntimeError(error_msg) from exception
 
     return function_return

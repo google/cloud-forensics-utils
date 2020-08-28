@@ -122,7 +122,7 @@ def GetCredentials(profile_name: Optional[str] = None
     except ValueError as exception:
       raise errors.InvalidFileFormatError(
           'Could not decode JSON file. Please verify the file format:'
-          ' {0!s}'.format(exception), __name__)
+          ' {0!s}'.format(exception), __name__) from exception
     if not account_info:
       raise errors.CredentialsConfigurationError(
           'Profile name {0:s} not found in credentials file {1:s}'.format(

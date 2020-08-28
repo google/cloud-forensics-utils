@@ -45,12 +45,12 @@ def ReadProjectInfo(keys: List[str]) -> Dict[str, str]:
       project_info = json.load(json_file)  # type: Dict[str, str]
     except ValueError as exception:
       raise RuntimeError(
-          'Cannot parse JSON file. {0:s}'.format(str(exception)))
+          'Cannot parse JSON file. {0:s}'.format(str(exception))) from exception
     json_file.close()
   except OSError as exception:
     raise OSError(
         'Could not open/close file {0:s}: {1:s}'.format(
-            project_info_path, str(exception)))
+            project_info_path, str(exception))) from exception
 
   if not all(key in project_info for key in keys):
     raise ValueError(

@@ -47,4 +47,4 @@ def ReadStartupScript() -> str:
   except OSError as exception:
     raise OSError(
         'Could not open/read/close the startup script {0:s}: {1:s}'.format(
-            script_path, str(exception)))
+            script_path, str(exception))) from exception

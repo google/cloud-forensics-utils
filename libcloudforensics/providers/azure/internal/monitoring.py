@@ -64,11 +64,12 @@ class AZMonitoring:
     try:
       return [metric.name.value for metric
               in self.monitoring_client.metric_definitions.list(resource_id)]
-    except models.ErrorResponseException:
-      raise RuntimeError('Could not fetch metrics for resource {0:s}. Please '
-                         'make sure you specified the full resource ID url, '
-                         'i.e. /subscriptions/<>/resourceGroups/<>/providers'
-                         '/<>/<>/yourResourceName'.format(resource_id))
+    except models.ErrorResponseException as exception:
+      raise RuntimeError(
+          'Could not fetch metrics for resource {0:s}. Please make sure you '
+          'specified the full resource ID url, i.e. /subscriptions/<>/'
+          'resourceGroups/<>/providers/<>/<>/yourResourceName'.format(
+              resource_id)) from exception
 
   def GetMetricsForResource(
       self,
@@ -116,12 +117,12 @@ class AZMonitoring:
     try:
       metrics_data = self.monitoring_client.metrics.list(
           resource_id, filter=qfilter, **kwargs)
-    except models.ErrorResponseException:
+    except models.ErrorResponseException as exception:
       raise RuntimeError(
           'Could not fetch metrics {0:s} for resource {1:s}.  Please make '
           'sure you specified the full resource ID  url, i.e. /subscriptions/'
           '<>/resourceGroups/<>/providers/<>/<>/yourResourceName'.format(
-              metrics, resource_id))
+              metrics, resource_id)) from exception
     results = {}  # type: Dict[str, Dict[str, str]]
     for metric in metrics_data.value:
       values = {}

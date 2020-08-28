@@ -82,7 +82,7 @@ class Formatter(logging.Formatter):
       if random_color:
         color = random.choice(COLOR_SEQS)
       kwargs['fmt'] = LOG_FORMAT.format(BOLD, RESET_SEQ, color=color)
-    super(Formatter, self).__init__(**kwargs)
+    super().__init__(**kwargs)
 
   def format(self, record: logging.LogRecord) -> str:
     """Hooks the native format method and colorizes messages if needed.
@@ -99,7 +99,7 @@ class Formatter(logging.Formatter):
       if loglevel_color:
         message = loglevel_color + message + RESET_SEQ
       record.msg = message
-    return super(Formatter, self).format(record)
+    return super().format(record)
 
 
 def SetUpLogger(name: str) -> None:
