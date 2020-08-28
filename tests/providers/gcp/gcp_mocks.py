@@ -397,7 +397,7 @@ MOCK_GCSQL_INSTANCES = {
             'ipConfiguration': {
                 'privateNetwork': 'projects/test/networks/default',
                 'authorizedNetworks': [],
-                'ipv4Enabled': false
+                'ipv4Enabled': 'false'
             },
             'locationPreference': {
                 'zone': 'as-central1-a',
@@ -406,21 +406,21 @@ MOCK_GCSQL_INSTANCES = {
             'dataDiskType': 'HDD',
             'maintenanceWindow': {
                 'kind': 'sql#maintenanceWindow',
-                'hour': 2,
-                'day': 3
+                'hour': '2',
+                'day': '3'
             },
             'backupConfiguration': {
                 'startTime': '00:00',
                 'kind': 'sql#backupConfiguration',
                 'location': 'as',
-                'enabled': true,
-                'binaryLogEnabled': true,
-                'replicationLogArchivingEnabled': false,
-                'pointInTimeRecoveryEnabled': false
+                'enabled': 'true',
+                'binaryLogEnabled': 'true',
+                'replicationLogArchivingEnabled': 'false',
+                'pointInTimeRecoveryEnabled': 'false'
             },
             'settingsVersion': '0',
             'storageAutoResizeLimit': '0',
-            'storageAutoResize': true,
+            'storageAutoResize': 'true',
             'dataDiskSizeGb': '100000'
         },
         'etag': '99999999999',
