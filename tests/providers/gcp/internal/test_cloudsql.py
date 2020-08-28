@@ -19,7 +19,6 @@ import unittest
 import mock
 
 from tests.providers.gcp import gcp_mocks
-from libcloudforensics.providers.gcp.internal import cloudsql as gcp_cloudsql
 
 class GoogleCloudSqlTest(unittest.TestCase):
   """Test Google CloudSql class."""

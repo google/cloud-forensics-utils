@@ -381,11 +381,75 @@ MOCK_GCM_METRICS_COUNT = {
 }
 
 MOCK_GCSQL_INSTANCES = {
-    'items': {
-        'instanceType': 'fake-instance',
+    'items': [
+        {
+        'kind': 'sql#instance',
+        'state': 'RUNNABLE',
+        'databaseVersion': 'MYSQL_5_7',
+        'settings': {
+            'authorizedGaeApplications': [],
+            'tier': 'db',
+            'kind': 'sql#settings',
+            'availabilityType': '5555',
+            'pricingPlan': '66666',
+            'replicationType': '777777',
+            'activationPolicy': '888888',
+            'ipConfiguration': {
+                'privateNetwork': 'projects/test/networks/default',
+                'authorizedNetworks': [],
+                'ipv4Enabled': false
+            },
+            'locationPreference': {
+                'zone': 'as-central1-a',
+                'kind': 'sql#locationPreference'
+            },
+            'dataDiskType': 'HDD',
+            'maintenanceWindow': {
+                'kind': 'sql#maintenanceWindow',
+                'hour': 2,
+                'day': 3
+            },
+            'backupConfiguration': {
+                'startTime': '00:00',
+                'kind': 'sql#backupConfiguration',
+                'location': 'as',
+                'enabled': true,
+                'binaryLogEnabled': true,
+                'replicationLogArchivingEnabled': false,
+                'pointInTimeRecoveryEnabled': false
+            },
+            'settingsVersion': '0',
+            'storageAutoResizeLimit': '0',
+            'storageAutoResize': true,
+            'dataDiskSizeGb': '100000'
+        },
+        'etag': '99999999999',
+        'ipAddresses': [
+            {
+                'type': 'PRIVATE',
+                'ipAddress': '10.0.0.0'
+            }
+        ],
+        'serverCaCert': {
+            'kind': 'sql#sslCert',
+            'certSerialNumber': '0',
+            'cert': '222222222,
+            'commonName': '11111111',
+            'sha1Fingerprint': '33333333',
+            'instance': 'test',
+            'createTime': '2020',
+            'expirationTime': '2030'
+        },
+        'instanceType': 'FAKE_INSTANCE',
+        'project': 'test',
+        'serviceAccountEmailAddress': 'test.com',
+        'backendType': 'GEN',
+        'selfLink': 'test.com',
+        'connectionName': 'test:as-central1:test-mysql',
         'name': 'fake',
-        'state': 'running'
-    }
+        'region': 'as-central1',
+        'gceZone': 'as-central1-a'
+        }
 }
 
 # See: https://cloud.google.com/compute/docs/reference/rest/v1/disks
