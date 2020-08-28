@@ -344,7 +344,8 @@ def Main() -> None:
             args=[
                 ('path', 'Path to bucket.', None),
             ])
-  AddParser('gcp', gcp_subparsers, 'listcloudsqlinstances', 'List CloudSQL instances for a project.')
+  AddParser('gcp', gcp_subparsers, 'listcloudsqlinstances', 
+            'List CloudSQL instances for a project.')
 
   if len(sys.argv) == 1:
     parser.print_help()

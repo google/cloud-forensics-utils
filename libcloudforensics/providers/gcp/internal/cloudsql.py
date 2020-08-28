@@ -14,7 +14,7 @@
 # limitations under the License.
 """Google Cloud SQL functionalities."""
 
-from typing import TYPE_CHECKING, List, Dict, Any, Optional, Tuple
+from typing import TYPE_CHECKING, List, Dict, Any, Optional
 from libcloudforensics.providers.gcp.internal import common
 
 if TYPE_CHECKING:
