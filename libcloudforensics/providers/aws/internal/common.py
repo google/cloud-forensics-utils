@@ -119,7 +119,7 @@ def ExecuteRequest(client: 'botocore.client.EC2',
       response = request(**kwargs)
     except client.exceptions.ClientError as exception:
       raise RuntimeError('Could not process request: {0:s}'.format(
-          str(exception)))
+          str(exception))) from exception
     responses.append(response)
     next_token = response.get('NextToken')
     if not next_token:

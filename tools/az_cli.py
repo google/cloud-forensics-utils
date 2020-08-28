@@ -188,7 +188,8 @@ def QueryMetrics(args: 'argparse.Namespace') -> None:
       from_date = datetime.strptime(from_date, '%Y-%m-%dT%H:%M:%SZ')
       to_date = datetime.strptime(to_date, '%Y-%m-%dT%H:%M:%SZ')
     except ValueError as exception:
-      raise RuntimeError('Cannot parse date: {0:s}'.format(str(exception)))
+      raise RuntimeError(
+          'Cannot parse date: {0!s}'.format(exception)) from exception
   metrics = az_monitoring.GetMetricsForResource(
       args.resource_id,
       metrics=args.metrics,

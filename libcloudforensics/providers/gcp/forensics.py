@@ -95,21 +95,21 @@ def CreateDiskCopy(
     raise errors.CredentialsConfigurationError(
         'Something is wrong with your Application Default Credentials. Try '
         'running: $ gcloud auth application-default login: {0!s}'.format(
-            exception), __name__)
+            exception), __name__) from exception
   except HttpError as exception:
     if exception.resp.status == 403:
       raise errors.CredentialsConfigurationError(
           'Make sure you have the appropriate permissions on the project',
-          __name__)
+          __name__) from exception
     if exception.resp.status == 404:
       raise errors.ResourceNotFoundError(
           'GCP resource not found. Maybe a typo in the project / instance / '
-          'disk name?', __name__)
-    raise RuntimeError(exception)
+          'disk name?', __name__) from exception
+    raise RuntimeError(exception) from exception
   except RuntimeError as exception:
     raise errors.ResourceCreationError(
         'Cannot copy disk "{0:s}": {1!s}'.format(disk_name, exception),
-        __name__)
+        __name__) from exception
 
   return new_disk
 

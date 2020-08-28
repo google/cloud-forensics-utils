@@ -188,7 +188,7 @@ def CreateVolumeCopy(zone: str,
   except (errors.LCFError, RuntimeError) as exception:
     raise errors.ResourceCreationError(
         'Copying volume {0:s}: {1!s}'.format(
-            (volume_id or instance_id), exception), __name__)
+            (volume_id or instance_id), exception), __name__) from exception
 
   return new_volume
 
