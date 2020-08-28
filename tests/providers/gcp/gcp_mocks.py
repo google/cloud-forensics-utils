@@ -382,7 +382,7 @@ MOCK_GCM_METRICS_COUNT = {
 
 MOCK_GCSQL_INSTANCES = {
     'items': [
-        {
+    {
         'kind': 'sql#instance',
         'state': 'RUNNABLE',
         'databaseVersion': 'MYSQL_5_7',
@@ -449,7 +449,7 @@ MOCK_GCSQL_INSTANCES = {
         'name': 'fake',
         'region': 'as-central1',
         'gceZone': 'as-central1-a'
-        }
+    }
 }
 
 # See: https://cloud.google.com/compute/docs/reference/rest/v1/disks
