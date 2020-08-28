@@ -450,6 +450,7 @@ MOCK_GCSQL_INSTANCES = {
         'region': 'as-central1',
         'gceZone': 'as-central1-a'
     }
+    ]
 }
 
 # See: https://cloud.google.com/compute/docs/reference/rest/v1/disks
