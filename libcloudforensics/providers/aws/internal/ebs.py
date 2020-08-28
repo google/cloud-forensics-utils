@@ -98,11 +98,11 @@ class AWSVolume(AWSElasticBlockStore):
           volume when it is attached to an instance, if applicable.
     """
 
-    super(AWSVolume, self).__init__(aws_account,
-                                    region,
-                                    availability_zone,
-                                    encrypted,
-                                    name)
+    super().__init__(aws_account,
+                     region,
+                     availability_zone,
+                     encrypted,
+                     name)
     self.volume_id = volume_id
     self.device_name = device_name
 
@@ -148,7 +148,7 @@ class AWSVolume(AWSElasticBlockStore):
             botocore.exceptions.WaiterError) as exception:
       raise errors.ResourceCreationError(
           'Could not create snapshot for volume {0:s}: {1:s}'.format(
-              self.volume_id, str(exception)), __name__)
+              self.volume_id, str(exception)), __name__) from exception
 
     return AWSSnapshot(snapshot_id,
                        self.aws_account,
@@ -169,7 +169,7 @@ class AWSVolume(AWSElasticBlockStore):
     except client.exceptions.ClientError as exception:
       raise errors.ResourceDeletionError(
           'Could not delete volume {0:s}: {1:s}'.format(
-              self.volume_id, str(exception)), __name__)
+              self.volume_id, str(exception)), __name__) from exception
 
   def GetVolumeType(self) -> str:
     """Return the volume type.
@@ -214,11 +214,11 @@ class AWSSnapshot(AWSElasticBlockStore):
       name (str): Optional. The name tag of the snapshot, if existing.
     """
 
-    super(AWSSnapshot, self).__init__(aws_account,
-                                      region,
-                                      availability_zone,
-                                      volume.encrypted,
-                                      name)
+    super().__init__(aws_account,
+                     region,
+                     availability_zone,
+                     volume.encrypted,
+                     name)
     self.snapshot_id = snapshot_id
     self.volume = volume
 
@@ -263,7 +263,7 @@ class AWSSnapshot(AWSElasticBlockStore):
     except client.exceptions.ClientError as exception:
       raise errors.ResourceCreationError(
           'Could not copy snapshot {0:s}: {1:s}'.format(
-              self.snapshot_id, str(exception)), __name__)
+              self.snapshot_id, str(exception)), __name__) from exception
 
     snapshot_copy = AWSSnapshot(
         # The response contains the new snapshot ID
@@ -300,7 +300,7 @@ class AWSSnapshot(AWSElasticBlockStore):
     except client.exceptions.ClientError as exception:
       raise errors.ResourceDeletionError(
           'Could not delete snapshot {0:s}: {1:s}'.format(
-              self.snapshot_id, str(exception)), __name__)
+              self.snapshot_id, str(exception)), __name__) from exception
 
   def ShareWithAWSAccount(self, aws_account_id: str) -> None:
     """Share the snapshot with another AWS account ID.
@@ -548,7 +548,7 @@ class EBS:
             botocore.exceptions.WaiterError) as exception:
       raise errors.ResourceCreationError(
           'Could not create volume {0:s} from snapshot {1:s}: {2!s}'.format(
-              volume_name, snapshot.name, exception), __name__)
+              volume_name, snapshot.name, exception), __name__) from exception
 
     zone = volume['AvailabilityZone']
     encrypted = volume['Encrypted']

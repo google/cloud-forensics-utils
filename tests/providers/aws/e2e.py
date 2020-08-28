@@ -257,7 +257,7 @@ class EndToEndTest(unittest.TestCase):
       except (client.exceptions.ClientError,
               botocore.exceptions.WaiterError) as exception:
         raise RuntimeError('Could not complete cleanup: {0:s}'.format(
-            str(exception)))
+            str(exception))) from exception
       logger.info('Volume {0:s} successfully deleted.'.format(volume.volume_id))
 
 

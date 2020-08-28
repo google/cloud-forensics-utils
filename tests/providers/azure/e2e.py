@@ -223,7 +223,7 @@ class EndToEndTest(unittest.TestCase):
             disk.resource_group_name, disk.name)
       except azure_exceptions.CloudError as exception:
         raise RuntimeError('Could not complete cleanup: {0:s}'.format(
-            str(exception)))
+            str(exception))) from exception
       logger.info('Disk {0:s} successfully deleted.'.format(disk.name))
 
 

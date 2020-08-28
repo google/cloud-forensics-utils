@@ -55,7 +55,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     self.default_zone = default_zone or 'us-central1-f'
     self._instances = {}  # type: Dict[str, GoogleComputeInstance]
     self._disks = {}  # type: Dict[str, GoogleComputeDisk]
-    super(GoogleCloudCompute, self).__init__(self.project_id)
+    super().__init__(self.project_id)
 
   def Instances(self,
                 refresh: bool = True
@@ -229,10 +229,10 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       if exception.resp.status == 409:
         raise errors.ResourceCreationError(
             'Disk {0:s} already exists: {1!s}'.format(disk_name, exception),
-            __name__)
+            __name__) from exception
       raise errors.ResourceCreationError(
           'Unknown error occurred when creating disk from Snapshot:'
-          ' {0!s}'.format(exception), __name__)
+          ' {0!s}'.format(exception), __name__) from exception
     self.BlockOperation(response, zone=self.default_zone)
     return GoogleComputeDisk(
         project_id=self.project_id,
@@ -942,8 +942,7 @@ class GoogleComputeSnapshot(compute_base_resource.GoogleComputeBaseResource):
       name (str): Name of the Snapshot.
     """
 
-    super(GoogleComputeSnapshot, self).__init__(
-        project_id=disk.project_id, zone=disk.zone, name=name)
+    super().__init__(project_id=disk.project_id, zone=disk.zone, name=name)
     self.disk = disk
 
   def GetOperation(self) -> Dict[str, Any]:

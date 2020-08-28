@@ -85,7 +85,7 @@ class AZNetwork:
       if 'ResourceNotFound' not in exception.error.error:
         raise errors.ResourceCreationError(
             'Could not create network interface: {0!s}'.format(exception),
-            __name__)
+            __name__) from exception
       # NIC doesn't exist, ignore the error and create it
 
     # pylint: disable=unbalanced-tuple-unpacking
@@ -115,7 +115,7 @@ class AZNetwork:
     except azure_exceptions.CloudError as exception:
       raise errors.ResourceCreationError(
           'Could not create network interface: {0!s}'.format(exception),
-          __name__)
+          __name__) from exception
 
     network_interface_id = request.result().id  # type: str
     return network_interface_id
@@ -207,5 +207,5 @@ class AZNetwork:
     except azure_exceptions.CloudError as exception:
       raise errors.ResourceCreationError(
           'Could not create network interface elements: {0!s}'.format(
-              exception), __name__)
+              exception), __name__) from exception
     return tuple(result)

@@ -51,7 +51,7 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
     self.labels = labels
     self._data = {}  # type: Dict[str, Any]
     self.project_id = project_id  # type: str
-    super(GoogleComputeBaseResource, self).__init__(self.project_id)
+    super().__init__(self.project_id)
 
   def FormatLogMessage(self, message: str) -> str:
     """Format log messages with project specific information.

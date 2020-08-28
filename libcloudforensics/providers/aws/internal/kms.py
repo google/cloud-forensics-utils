@@ -53,7 +53,8 @@ class KMS:
       kms_key = client.create_key()
     except client.exceptions.ClientError as exception:
       raise errors.ResourceCreationError(
-          'Could not create KMS key: {0!s}'.format(exception), __name__)
+          'Could not create KMS key: {0!s}'.format(
+              exception), __name__) from exception
 
     # The response contains the key ID
     key_id = kms_key['KeyMetadata']['KeyId']  # type: str
@@ -100,7 +101,7 @@ class KMS:
           KeyId=kms_key_id, PolicyName='default', Policy=json.dumps(policy))
     except client.exceptions.ClientError as exception:
       raise RuntimeError('Could not share KMS key {0:s}: {1:s}'.format(
-          kms_key_id, str(exception)))
+          kms_key_id, str(exception))) from exception
 
   def DeleteKMSKey(self, kms_key_id: Optional[str] = None) -> None:
     """Delete a KMS key.
@@ -124,4 +125,4 @@ class KMS:
     except client.exceptions.ClientError as exception:
       raise errors.ResourceDeletionError(
           'Could not schedule the KMS key {0:s} for deletion {1!s}'.format(
-              exception, kms_key_id), __name__)
+              exception, kms_key_id), __name__) from exception

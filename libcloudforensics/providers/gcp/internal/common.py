@@ -131,7 +131,7 @@ def CreateService(service_name: str,
     raise errors.CredentialsConfigurationError(
         'Could not get application default credentials. Have you run $ gcloud '
         'auth application-default login?: {0!s}'.format_map(exception),
-        __name__)
+        __name__) from exception
 
   service_built = False
   for retry in range(RETRY_MAX):
@@ -270,7 +270,7 @@ def ExecuteRequest(client: 'googleapiclient.discovery.Resource',
       raise errors.CredentialsConfigurationError(
           ': {0!s}. Something is wrong with your Application Default '
           'Credentials. Try running: $ gcloud auth application-default '
-          'login'.format(exception), __name__)
+          'login'.format(exception), __name__) from exception
     responses.append(response)
     next_token = response.get('nextPageToken')
     if not next_token:

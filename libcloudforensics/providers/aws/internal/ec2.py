@@ -141,7 +141,7 @@ class AWSInstance:
                            VolumeId=volume.volume_id)
     except client.exceptions.ClientError as exception:
       raise RuntimeError('Could not attach volume {0:s}: {1:s}'.format(
-          volume.volume_id, str(exception)))
+          volume.volume_id, str(exception))) from exception
 
     volume.device_name = device_name
 
@@ -325,7 +325,7 @@ class EC2:
       images = client.describe_images(
           Filters=qfilter)  # type: Dict[str, List[Dict[str, Any]]]
     except client.exceptions.ClientError as exception:
-      raise RuntimeError(str(exception))
+      raise RuntimeError(str(exception)) from exception
 
     return images['Images']
 
@@ -421,7 +421,7 @@ class EC2:
             botocore.exceptions.WaiterError) as exception:
       raise errors.ResourceCreationError(
           'Could not create instance {0:s}: {1!s}'.format(vm_name, exception),
-          __name__)
+          __name__) from exception
 
     instance = AWSInstance(self.aws_account,
                            instance_id,
@@ -456,7 +456,7 @@ class EC2:
     except client.exceptions.ClientError as exception:
       raise errors.ResourceNotFoundError(
           'Could not find image information for AMI {0:s}: {1!s}'.format(
-              ami, exception), __name__)
+              ami, exception), __name__) from exception
 
     # If the call to describe_images was successful, then the API's response
     # is expected to contain at least one image and its corresponding block
@@ -501,6 +501,7 @@ class EC2:
       key = client.create_key_pair(KeyName=key_name)
     except client.exceptions.ClientError as exception:
       raise errors.ResourceCreationError(
-          'Could not create SSH key pair: {0!s}'.format(exception), __name__)
+          'Could not create SSH key pair: {0!s}'.format(
+              exception), __name__) from exception
     # If the call was successful, the response contains key information
     return key['KeyName'], key['KeyMaterial']
