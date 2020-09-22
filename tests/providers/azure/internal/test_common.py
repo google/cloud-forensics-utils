@@ -117,9 +117,13 @@ class AZCommonTest(unittest.TestCase):
 
   @mock.patch('azure.identity._credentials.default.DefaultAzureCredential.__init__')
   @typing.no_type_check
-  def testGetCredentialsFromInexistingProfileFile(self, mock_azure_credentials):
+  def testGetCredentialsFromInexistingProfileName(self, mock_azure_credentials):
     # If the profile name does not exist, should raise a ValueError
     mock_azure_credentials.return_value = None
+
+    os.environ['AZURE_CREDENTIALS_PATH'] = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
+            os.path.realpath(__file__))))), azure_mocks.JSON_FILE)
 
     with self.assertRaises(errors.CredentialsConfigurationError) as error:
       _, _ = common.GetCredentials(profile_name='foo')
