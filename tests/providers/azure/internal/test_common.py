@@ -51,7 +51,7 @@ class AZCommonTest(unittest.TestCase):
   @mock.patch('azure.identity._credentials.default.DefaultAzureCredential.__init__')
   @typing.no_type_check
   def testGetCredentials(self, mock_azure_credentials):
-    """Test that credentials are parsed correctly / found."""
+    """Test that everything works when environment variables are provided."""
     mock_azure_credentials.return_value = None
     # If all environment variables are defined, things should work correctly
     os.environ['AZURE_SUBSCRIPTION_ID'] = 'fake-subscription-id'
@@ -66,6 +66,7 @@ class AZCommonTest(unittest.TestCase):
   @mock.patch('azure.identity._credentials.default.DefaultAzureCredential.__init__')
   @typing.no_type_check
   def testGetCredentialsMissingEnvVar(self, mock_azure_credentials):
+    """Test that missing environment variables will raise an error."""
     # If an environment variable is missing, a RuntimeError should be raised
     mock_azure_credentials.return_value = None
     os.environ['AZURE_SUBSCRIPTION_ID'] = 'fake-subscription-id'
@@ -84,6 +85,7 @@ class AZCommonTest(unittest.TestCase):
   @mock.patch('azure.identity._credentials.default.DefaultAzureCredential.__init__')
   @typing.no_type_check
   def testGetCredentialsFromInvalidProfileFile(self, mock_azure_credentials):
+    """Test that an error is raised when a profile file contain invalid JSON."""
     # If a profile name is passed to the method, then it will look for a
     # credential file (default path being ~/.azure/credentials.json). We can
     # set a particular path by setting the AZURE_CREDENTIALS_PATH variable.
@@ -103,6 +105,7 @@ class AZCommonTest(unittest.TestCase):
   @mock.patch('azure.identity._credentials.default.DefaultAzureCredential.__init__')
   @typing.no_type_check
   def testGetCredentialsFromProfileFile(self, mock_azure_credentials):
+    """Test that credentials can be obtained from profile files."""
     # If the file is correctly formatted, then things should work correctly
     mock_azure_credentials.return_value = None
 
@@ -118,6 +121,7 @@ class AZCommonTest(unittest.TestCase):
   @mock.patch('azure.identity._credentials.default.DefaultAzureCredential.__init__')
   @typing.no_type_check
   def testGetCredentialsFromInexistingProfileName(self, mock_azure_credentials):
+    """Test that inexisting profile names will raise an error."""
     # If the profile name does not exist, should raise a ValueError
     mock_azure_credentials.return_value = None
 
@@ -135,6 +139,7 @@ class AZCommonTest(unittest.TestCase):
   @mock.patch('azure.identity._credentials.default.DefaultAzureCredential.__init__')
   @typing.no_type_check
   def testGetCredentialsFromMalformedProfileFile(self, mock_azure_credentials):
+    """Test that an error is raised when the profile file is incomplete."""
     # If the profile name exists but there are missing entries, should raise
     # a ValueError
     mock_azure_credentials.return_value = None
