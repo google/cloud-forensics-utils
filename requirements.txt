@@ -1,6 +1,5 @@
 -i https://pypi.org/simple
 google-api-python-client
-google-api-core
 google-auth
 boto3
 botocore
