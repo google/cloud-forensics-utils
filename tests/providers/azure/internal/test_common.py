@@ -42,13 +42,17 @@ class AZCommonTest(unittest.TestCase):
         azure_mocks.FAKE_SNAPSHOT, disk_name_prefix='prefix')
     self.assertEqual('prefix_fake_snapshot_name_c4a46ad7_copy', disk_name)
 
-  @mock.patch('msrestazure.azure_active_directory.ServicePrincipalCredentials.__init__')
+  def tearDown(self):
+    os.environ['AZURE_SUBSCRIPTION_ID'] = ''
+    os.environ["AZURE_CLIENT_ID"] = ''
+    os.environ["AZURE_CLIENT_SECRET"] = ''
+    os.environ["AZURE_TENANT_ID"] = ''
+
+  @mock.patch('azure.identity._credentials.default.DefaultAzureCredential.__init__')
   @typing.no_type_check
   def testGetCredentials(self, mock_azure_credentials):
     """Test that credentials are parsed correctly / found."""
-
     mock_azure_credentials.return_value = None
-
     # If all environment variables are defined, things should work correctly
     os.environ['AZURE_SUBSCRIPTION_ID'] = 'fake-subscription-id'
     os.environ["AZURE_CLIENT_ID"] = 'fake-client-id'
@@ -57,11 +61,18 @@ class AZCommonTest(unittest.TestCase):
 
     subscription_id, _ = common.GetCredentials()
     self.assertEqual('fake-subscription-id', subscription_id)
-    mock_azure_credentials.assert_called_with(
-        'fake-client-id', 'fake-client-secret', tenant='fake-tenant-id')
+    mock_azure_credentials.assert_called()
 
+  @mock.patch('azure.identity._credentials.default.DefaultAzureCredential.__init__')
+  @typing.no_type_check
+  def testGetCredentialsMissingEnvVar(self, mock_azure_credentials):
     # If an environment variable is missing, a RuntimeError should be raised
-    del os.environ['AZURE_SUBSCRIPTION_ID']
+    mock_azure_credentials.return_value = None
+    os.environ['AZURE_SUBSCRIPTION_ID'] = 'fake-subscription-id'
+    os.environ["AZURE_CLIENT_ID"] = 'fake-client-id'
+    os.environ["AZURE_CLIENT_SECRET"] = 'fake-client-secret'
+    # Omitting AZURE_TENANT_ID
+
     with self.assertRaises(errors.CredentialsConfigurationError) as error:
       _, _ = common.GetCredentials()
       mock_azure_credentials.assert_not_called()
@@ -70,9 +81,13 @@ class AZCommonTest(unittest.TestCase):
         '[AZURE_SUBSCRIPTION_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, '
         'AZURE_TENANT_ID].', str(error.exception))
 
+  @mock.patch('azure.identity._credentials.default.DefaultAzureCredential.__init__')
+  @typing.no_type_check
+  def testGetCredentialsFromInvalidProfileFile(self, mock_azure_credentials):
     # If a profile name is passed to the method, then it will look for a
     # credential file (default path being ~/.azure/credentials.json). We can
     # set a particular path by setting the AZURE_CREDENTIALS_PATH variable.
+    mock_azure_credentials.return_value = None
 
     # If the file is not a valid json file, should raise a ValueError
     os.environ['AZURE_CREDENTIALS_PATH'] = os.path.join(
@@ -85,7 +100,12 @@ class AZCommonTest(unittest.TestCase):
         'Could not decode JSON file. Please verify the file format: Expecting '
         'value: line 1 column 1 (char 0)', str(error.exception))
 
+  @mock.patch('azure.identity._credentials.default.DefaultAzureCredential.__init__')
+  @typing.no_type_check
+  def testGetCredentialsFromProfileFile(self, mock_azure_credentials):
     # If the file is correctly formatted, then things should work correctly
+    mock_azure_credentials.return_value = None
+
     os.environ['AZURE_CREDENTIALS_PATH'] = os.path.join(
         os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
             os.path.realpath(__file__))))), azure_mocks.JSON_FILE)
@@ -93,12 +113,14 @@ class AZCommonTest(unittest.TestCase):
         profile_name='test_profile_name')
     self.assertEqual(
         'fake-subscription-id-from-credential-file', subscription_id)
-    mock_azure_credentials.assert_called_with(
-        'fake-client-id-from-credential-file',
-        'fake-client-secret-from-credential-file',
-        tenant='fake-tenant-id-from-credential-file')
+    mock_azure_credentials.assert_called()
 
+  @mock.patch('azure.identity._credentials.default.DefaultAzureCredential.__init__')
+  @typing.no_type_check
+  def testGetCredentialsFromInexistingProfileFile(self, mock_azure_credentials):
     # If the profile name does not exist, should raise a ValueError
+    mock_azure_credentials.return_value = None
+
     with self.assertRaises(errors.CredentialsConfigurationError) as error:
       _, _ = common.GetCredentials(profile_name='foo')
       mock_azure_credentials.assert_not_called()
@@ -106,8 +128,17 @@ class AZCommonTest(unittest.TestCase):
         'Profile name foo not found in credentials file {0:s}'.format(
             os.environ['AZURE_CREDENTIALS_PATH']), str(error.exception))
 
+  @mock.patch('azure.identity._credentials.default.DefaultAzureCredential.__init__')
+  @typing.no_type_check
+  def testGetCredentialsFromMalformedProfileFile(self, mock_azure_credentials):
     # If the profile name exists but there are missing entries, should raise
     # a ValueError
+    mock_azure_credentials.return_value = None
+
+    os.environ['AZURE_CREDENTIALS_PATH'] = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
+            os.path.realpath(__file__))))), azure_mocks.JSON_FILE)
+
     with self.assertRaises(errors.CredentialsConfigurationError) as error:
       _, _ = common.GetCredentials(profile_name='incomplete_profile_name')
       mock_azure_credentials.assert_not_called()

@@ -20,9 +20,8 @@ import os
 import re
 
 from typing import Any, List, Dict, Optional, TYPE_CHECKING, Tuple
-# Pylint complains about the import but the library imports just fine,
-# so we can ignore the warning.
-from azure.common.credentials import ServicePrincipalCredentials  # pylint: disable=import-error
+
+from azure.identity import DefaultAzureCredential
 
 
 from libcloudforensics import errors
@@ -47,7 +46,7 @@ UBUNTU_1804_SKU = '18.04-LTS'
 
 
 def GetCredentials(profile_name: Optional[str] = None
-                   ) -> Tuple[str, ServicePrincipalCredentials]:
+                   ) -> Tuple[str, DefaultAzureCredential]:
   # pylint: disable=line-too-long
   """Get Azure credentials.
 
@@ -82,7 +81,7 @@ def GetCredentials(profile_name: Optional[str] = None
         there instead of in ~/.azure/credentials.json.
 
   Returns:
-    Tuple[str, ServicePrincipalCredentials]: Subscription ID and
+    Tuple[str, DefaultAzureCredential]: Subscription ID and
         corresponding Azure credentials.
 
   Raises:
@@ -102,9 +101,8 @@ def GetCredentials(profile_name: Optional[str] = None
           'Please make sure you defined the following environment variables: '
           '[AZURE_SUBSCRIPTION_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, '
           'AZURE_TENANT_ID].', __name__)
-    return subscription_id, ServicePrincipalCredentials(client_id,
-                                                        secret,
-                                                        tenant=tenant)
+    # DefaultAzureCredential will pick up variables automatically.
+    return subscription_id, DefaultAzureCredential()
 
   path = os.getenv('AZURE_CREDENTIALS_PATH')
   if not path:
@@ -134,10 +132,13 @@ def GetCredentials(profile_name: Optional[str] = None
           'Please make sure that your JSON file has the required entries. The '
           'file should contain at least the following: {0:s}'.format(
               ', '.join(required_entries)), __name__)
-    return account_info['subscriptionId'], ServicePrincipalCredentials(
-        account_info['clientId'],
-        account_info['clientSecret'],
-        tenant=account_info['tenantId'])
+
+    # Set environment variables so that DefaultAzureCredentail can pick them up.
+    os.environ['AZURE_SUBSCRIPTION_ID'] = account_info['subscriptionId']
+    os.environ['AZURE_CLIENT_ID'] = account_info['clientId']
+    os.environ['AZURE_CLIENT_SECRET'] = account_info['clientSecret']
+    os.environ['AZURE_TENANT_ID'] = account_info['tenantId']
+    return account_info['subscriptionId'], DefaultAzureCredential()
 
 
 def ExecuteRequest(
