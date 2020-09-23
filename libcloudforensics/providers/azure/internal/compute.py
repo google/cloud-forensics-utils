@@ -225,7 +225,7 @@ class AZCompute:
 
     try:
       logger.info('Creating disk: {0:s}'.format(disk_name))
-      request = self.compute_client.disks.create_or_update(
+      request = self.compute_client.disks.begin_create_or_update(
           self.az_account.default_resource_group_name,
           disk_name,
           creation_data)
@@ -344,7 +344,7 @@ class AZCompute:
 
     try:
       logger.info('Creating disk: {0:s}'.format(disk_name))
-      request = self.compute_client.disks.create_or_update(
+      request = self.compute_client.disks.begin_create_or_update(
           self.az_account.default_resource_group_name,
           disk_name,
           creation_data)
@@ -479,7 +479,7 @@ class AZCompute:
       creation_data['tags'] = tags
 
     try:
-      request = self.compute_client.virtual_machines.create_or_update(
+      request = self.compute_client.virtual_machines.begin_create_or_update(
           self.az_account.default_resource_group_name,
           vm_name,
           creation_data
@@ -732,7 +732,7 @@ class AZComputeDisk(compute_base_resource.AZComputeResource):
 
     try:
       logger.info('Creating snapshot: {0:s}'.format(snapshot_name))
-      request = self.compute_client.snapshots.create_or_update(
+      request = self.compute_client.snapshots.begin_create_or_update(
           self.resource_group_name,
           snapshot_name,
           creation_data)

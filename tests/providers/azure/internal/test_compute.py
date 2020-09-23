@@ -115,7 +115,7 @@ class AZComputeTest(unittest.TestCase):
     self.assertEqual('fake-region', disk.region)
     self.assertEqual(['fake-zone'], disk.zones)
 
-  @mock.patch('azure.mgmt.compute.v2020_05_01.operations._disks_operations.DisksOperations.create_or_update')
+  @mock.patch('azure.mgmt.compute.v2020_06_30.operations._disks_operations.DisksOperations.begin_create_or_update')
   @typing.no_type_check
   def testCreateDiskFromSnapshot(self, mock_create_disk):
     """Test that a disk can be created from a snapshot."""
@@ -182,7 +182,7 @@ class AZComputeTest(unittest.TestCase):
   @mock.patch('azure.storage.blob._blob_service_client.BlobServiceClient.__init__')
   @mock.patch('libcloudforensics.providers.azure.internal.storage.AZStorage.DeleteStorageAccount')
   @mock.patch('libcloudforensics.providers.azure.internal.storage.AZStorage.CreateStorageAccount')
-  @mock.patch('azure.mgmt.compute.v2020_05_01.operations._disks_operations.DisksOperations.create_or_update')
+  @mock.patch('azure.mgmt.compute.v2020_06_30.operations._disks_operations.DisksOperations.begin_create_or_update')
   @typing.no_type_check
   def testCreateDiskFromSnapshotUri(self,
                                     mock_create_disk,
@@ -225,7 +225,7 @@ class AZComputeTest(unittest.TestCase):
   @mock.patch('libcloudforensics.providers.azure.internal.compute.AZCompute.GetInstance')
   @mock.patch('libcloudforensics.providers.azure.internal.compute.AZCompute._GetInstanceType')
   @mock.patch('libcloudforensics.providers.azure.internal.network.AZNetwork.CreateNetworkInterface')
-  @mock.patch('azure.mgmt.compute.v2020_06_01.operations._virtual_machines_operations.VirtualMachinesOperations.create_or_update')
+  @mock.patch('azure.mgmt.compute.v2020_06_01.operations._virtual_machines_operations.VirtualMachinesOperations.begin_create_or_update')
   @typing.no_type_check
   def testGetOrCreateAnalysisVm(self,
                                 mock_vm,
