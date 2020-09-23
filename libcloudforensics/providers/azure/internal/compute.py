@@ -656,7 +656,7 @@ class AZComputeVirtualMachine(compute_base_resource.AZComputeResource):
     data_disks.append(update_data)
 
     try:
-      request = self.compute_client.virtual_machines.update(
+      request = self.compute_client.virtual_machines.begin_update(
           self.resource_group_name, self.name, vm)
       while not request.done():
         sleep(5)  # Wait 5 seconds before checking vm status again
