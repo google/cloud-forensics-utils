@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Optional, Tuple, Any, Dict
 
 # pylint: disable=import-error
 from azure.mgmt import network
-from msrestazure import azure_exceptions
+from azure.core import exceptions as azure_exceptions
 # pylint: enable=import-error
 
 from libcloudforensics import errors
@@ -81,12 +81,13 @@ class AZNetwork:
           self.az_account.default_resource_group_name, network_interface_name)
       nic_id = nic.id  # type: str
       return nic_id
-    except azure_exceptions.CloudError as exception:
-      if 'ResourceNotFound' not in exception.error.error:
-        raise errors.ResourceCreationError(
-            'Could not create network interface: {0!s}'.format(exception),
-            __name__) from exception
-      # NIC doesn't exist, ignore the error and create it
+    except azure_exceptions.ResourceNotFoundError as exception:
+      # NIC doesn't exist, ignore the error as we create it later on.
+      pass
+    except azure_exceptions.AzureError as exception:
+      raise errors.ResourceCreationError(
+          'Could not create network interface: {0!s}'.format(exception),
+          __name__) from exception
 
     # pylint: disable=unbalanced-tuple-unpacking
     # IP address, virtual network, subnet, network security group
@@ -112,7 +113,7 @@ class AZNetwork:
           network_interface_name,
           creation_data)
       request.wait()
-    except azure_exceptions.CloudError as exception:
+    except azure_exceptions.AzureError as exception:
       raise errors.ResourceCreationError(
           'Could not create network interface: {0!s}'.format(exception),
           __name__) from exception
@@ -204,7 +205,7 @@ class AZNetwork:
             client, 'create_or_update', client_to_creation_data[client])[0]
         request.wait()
         result.append(request.result())
-    except azure_exceptions.CloudError as exception:
+    except azure_exceptions.AzureError as exception:
       raise errors.ResourceCreationError(
           'Could not create network interface elements: {0!s}'.format(
               exception), __name__) from exception
