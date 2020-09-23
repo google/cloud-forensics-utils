@@ -818,8 +818,9 @@ class AZComputeSnapshot(compute_base_resource.AZComputeResource):
       str: The access URI for the snapshot.
     """
     logger.info('Generating SAS URI for snapshot: {0:s}'.format(self.name))
+    access_grant = models.GrantAccessData('Read', 3600)
     access_request = self.compute_client.snapshots.begin_grant_access(
-        self.resource_group_name, self.name, 'Read', 3600)
+        self.resource_group_name, self.name, access_grant)
     snapshot_uri = access_request.result().access_sas  # type: str
     logger.info('SAS URI generated: {0:s}'.format(snapshot_uri))
     return snapshot_uri
