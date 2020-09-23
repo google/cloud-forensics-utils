@@ -119,7 +119,7 @@ class AZStorage:
     try:
       logger.info('Deleting storage account: {0:s}'.format(
           storage_account_name))
-      self.storage_client.storage_accounts.delete(
+      self.storage_client.storage_accounts.begin_delete(
           self.az_account.default_resource_group_name, storage_account_name)
       logger.info('Storage account {0:s} successfully deleted'.format(
           storage_account_name))

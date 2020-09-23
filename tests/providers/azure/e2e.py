@@ -113,7 +113,7 @@ class EndToEndTest(unittest.TestCase):
     # Since we make a copy of the same disk but in a different region in next
     # test, we need to delete the copy we just created as Azure does not
     # permit same-name disks in different regions.
-    operation = self.az.compute.compute_client.disks.delete(
+    operation = self.az.compute.compute_client.disks.begin_delete(
         disk_copy.resource_group_name, disk_copy.name)
     operation.wait()
 
@@ -141,7 +141,7 @@ class EndToEndTest(unittest.TestCase):
     # Since we make a copy of the same disk but in a different region in next
     # test, we need to delete the copy we just created as Azure does not
     # permit same-name disks in different regions.
-    operation = self.az.compute.compute_client.disks.delete(
+    operation = self.az.compute.compute_client.disks.begin_delete(
         disk_copy.resource_group_name, disk_copy.name)
     operation.wait()
 
@@ -188,7 +188,7 @@ class EndToEndTest(unittest.TestCase):
   def tearDownClass(cls):
     # Delete the instance
     logger.info('Deleting instance: {0:s}.'.format(cls.analysis_vm.name))
-    request = cls.az.compute.compute_client.virtual_machines.delete(
+    request = cls.az.compute.compute_client.virtual_machines.begin_delete(
         cls.analysis_vm.resource_group_name, cls.analysis_vm.name)
     while not request.done():
       sleep(5)  # Wait 5 seconds before checking vm deletion status again
@@ -197,29 +197,29 @@ class EndToEndTest(unittest.TestCase):
     # Delete the network interface and associated artifacts created for the
     # analysis VM
     logger.info('Deleting network artifacts...')
-    operation = cls.az.network.network_client.network_interfaces.delete(
+    operation = cls.az.network.network_client.network_interfaces.begin_delete(
         cls.resource_group_name, '{0:s}-nic'.format(cls.analysis_vm_name))
     operation.wait()
-    operation = cls.az.network.network_client.subnets.delete(
+    operation = cls.az.network.network_client.subnets.begin_delete(
         cls.resource_group_name,
         '{0:s}-vnet'.format(cls.analysis_vm_name),
         '{0:s}-subnet'.format(cls.analysis_vm_name))
     operation.wait()
-    operation = cls.az.network.network_client.virtual_networks.delete(
+    operation = cls.az.network.network_client.virtual_networks.begin_delete(
         cls.resource_group_name, '{0:s}-vnet'.format(cls.analysis_vm_name))
     operation.wait()
-    operation = cls.az.network.network_client.public_ip_addresses.delete(
+    operation = cls.az.network.network_client.public_ip_addresses.begin_delete(
         cls.resource_group_name, '{0:s}-public-ip'.format(
             cls.analysis_vm_name))
     operation.wait()
-    operation = cls.az.network.network_client.network_security_groups.delete(
+    operation = cls.az.network.network_client.network_security_groups.begin_delete(
         cls.resource_group_name, '{0:s}-nsg'.format(cls.analysis_vm_name))
     operation.wait()
     # Delete the disks
     for disk in cls.disks:
       logger.info('Deleting disk: {0:s}.'.format(disk.name))
       try:
-        cls.az.compute.compute_client.disks.delete(
+        cls.az.compute.compute_client.disks.begin_delete(
             disk.resource_group_name, disk.name)
       except azure_exceptions.CloudError as exception:
         raise RuntimeError('Could not complete cleanup: {0:s}'.format(
