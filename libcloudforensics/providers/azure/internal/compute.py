@@ -801,7 +801,7 @@ class AZComputeSnapshot(compute_base_resource.AZComputeResource):
 
     try:
       logger.info('Deleting snapshot: {0:s}'.format(self.name))
-      request = self.compute_client.snapshots.delete(
+      request = self.compute_client.snapshots.begin_delete(
           self.resource_group_name, self.name)
       while not request.done():
         sleep(5)  # Wait 5 seconds before checking snapshot status again
@@ -818,7 +818,7 @@ class AZComputeSnapshot(compute_base_resource.AZComputeResource):
       str: The access URI for the snapshot.
     """
     logger.info('Generating SAS URI for snapshot: {0:s}'.format(self.name))
-    access_request = self.compute_client.snapshots.grant_access(
+    access_request = self.compute_client.snapshots.begin_grant_access(
         self.resource_group_name, self.name, 'Read', 3600)
     snapshot_uri = access_request.result().access_sas  # type: str
     logger.info('SAS URI generated: {0:s}'.format(snapshot_uri))
@@ -827,7 +827,7 @@ class AZComputeSnapshot(compute_base_resource.AZComputeResource):
   def RevokeAccessURI(self) -> None:
     """Revoke access to a snapshot."""
     logger.info('Revoking SAS URI for snapshot {0:s}'.format(self.name))
-    request = self.compute_client.snapshots.revoke_access(
+    request = self.compute_client.snapshots.begin_revoke_access(
         self.resource_group_name, self.name)
     request.wait()
     logger.info('SAS URI revoked for snapshot {0:s}'.format(self.name))
