@@ -108,7 +108,7 @@ class AZNetwork:
     }
 
     try:
-      request = self.network_client.network_interfaces.create_or_update(
+      request = self.network_client.network_interfaces.begin_create_or_update(
           self.az_account.default_resource_group_name,
           network_interface_name,
           creation_data)
