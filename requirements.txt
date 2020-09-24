@@ -1,5 +1,4 @@
 -i https://pypi.org/simple
-google-api-core
 google-api-python-client
 google-auth
 boto3
