@@ -16,12 +16,8 @@
 
 from typing import List, Optional, Dict, TYPE_CHECKING
 
-# Pylint complains about the import but the library imports just fine,
-# so we can ignore the warning.
-# pylint: disable=import-error
-from azure.mgmt.monitor import MonitorManagementClient
-from azure.mgmt.monitor.v2018_01_01 import models
-# pylint: enable=import-error
+from azure.mgmt.monitor import MonitorClient
+from azure.core.exceptions import HttpResponseError
 
 if TYPE_CHECKING:
   # TYPE_CHECKING is always False at runtime, therefore it is safe to ignore
@@ -34,7 +30,7 @@ class AZMonitoring:
   """Azure Monitoring.
 
   Attributes:
-    monitoring_client (MonitorManagementClient): An Azure monitoring client
+    monitoring_client (MonitorClient): An Azure monitoring client
         object.
   """
 
@@ -45,7 +41,7 @@ class AZMonitoring:
     Args:
       az_account (AZAccount): An Azure account object.
     """
-    self.monitoring_client = MonitorManagementClient(
+    self.monitoring_client = MonitorClient(
         az_account.credentials, az_account.subscription_id)
 
   def ListAvailableMetricsForResource(self, resource_id: str) -> List[str]:
@@ -64,7 +60,7 @@ class AZMonitoring:
     try:
       return [metric.name.value for metric
               in self.monitoring_client.metric_definitions.list(resource_id)]
-    except models.ErrorResponseException as exception:
+    except HttpResponseError as exception:
       raise RuntimeError(
           'Could not fetch metrics for resource {0:s}. Please make sure you '
           'specified the full resource ID url, i.e. /subscriptions/<>/'
@@ -117,7 +113,7 @@ class AZMonitoring:
     try:
       metrics_data = self.monitoring_client.metrics.list(
           resource_id, filter=qfilter, **kwargs)
-    except models.ErrorResponseException as exception:
+    except HttpResponseError as exception:
       raise RuntimeError(
           'Could not fetch metrics {0:s} for resource {1:s}.  Please make '
           'sure you specified the full resource ID  url, i.e. /subscriptions/'
