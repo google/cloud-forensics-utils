@@ -16,12 +16,8 @@
 
 from typing import List, Optional, Dict, TYPE_CHECKING
 
-# Pylint complains about the import but the library imports just fine,
-# so we can ignore the warning.
-# pylint: disable=import-error
 from azure.mgmt.monitor import MonitorClient
-import azure.core.exceptions.HttpResponseError
-# pylint: enable=import-error
+from azure.core.exceptions import HttpResponseError
 
 if TYPE_CHECKING:
   # TYPE_CHECKING is always False at runtime, therefore it is safe to ignore
@@ -64,7 +60,7 @@ class AZMonitoring:
     try:
       return [metric.name.value for metric
               in self.monitoring_client.metric_definitions.list(resource_id)]
-    except azure.core.exceptions.HttpResponseError as exception:
+    except HttpResponseError as exception:
       raise RuntimeError(
           'Could not fetch metrics for resource {0:s}. Please make sure you '
           'specified the full resource ID url, i.e. /subscriptions/<>/'
@@ -117,7 +113,7 @@ class AZMonitoring:
     try:
       metrics_data = self.monitoring_client.metrics.list(
           resource_id, filter=qfilter, **kwargs)
-    except azure.core.exceptions.HttpResponseError as exception:
+    except HttpResponseError as exception:
       raise RuntimeError(
           'Could not fetch metrics {0:s} for resource {1:s}.  Please make '
           'sure you specified the full resource ID  url, i.e. /subscriptions/'
