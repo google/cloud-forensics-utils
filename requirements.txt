@@ -1,4 +1,5 @@
 -i https://pypi.org/simple
+httplib2>=0.15.0
 google-api-python-client
 google-auth
 boto3
