@@ -20,7 +20,7 @@ from typing import List, Optional, Dict, TYPE_CHECKING
 # so we can ignore the warning.
 # pylint: disable=import-error
 from azure.mgmt.monitor import MonitorClient
-from azure.mgmt.monitor.v2018_01_01 import models
+import azure.core.exceptions.HttpResponseError
 # pylint: enable=import-error
 
 if TYPE_CHECKING:
@@ -64,7 +64,7 @@ class AZMonitoring:
     try:
       return [metric.name.value for metric
               in self.monitoring_client.metric_definitions.list(resource_id)]
-    except models.ErrorResponseException as exception:
+    except azure.core.exceptions.HttpResponseError as exception:
       raise RuntimeError(
           'Could not fetch metrics for resource {0:s}. Please make sure you '
           'specified the full resource ID url, i.e. /subscriptions/<>/'
@@ -117,7 +117,7 @@ class AZMonitoring:
     try:
       metrics_data = self.monitoring_client.metrics.list(
           resource_id, filter=qfilter, **kwargs)
-    except models.ErrorResponseException as exception:
+    except azure.core.exceptions.HttpResponseError as exception:
       raise RuntimeError(
           'Could not fetch metrics {0:s} for resource {1:s}.  Please make '
           'sure you specified the full resource ID  url, i.e. /subscriptions/'
