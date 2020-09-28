@@ -212,6 +212,7 @@ class EndToEndTest(unittest.TestCase):
         cls.resource_group_name, '{0:s}-public-ip'.format(
             cls.analysis_vm_name))
     operation.wait()
+    # pylint: disable=line-too-long
     operation = cls.az.network.network_client.network_security_groups.begin_delete(
         cls.resource_group_name, '{0:s}-nsg'.format(cls.analysis_vm_name))
     operation.wait()
