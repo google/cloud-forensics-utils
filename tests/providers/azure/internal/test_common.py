@@ -42,6 +42,7 @@ class AZCommonTest(unittest.TestCase):
         azure_mocks.FAKE_SNAPSHOT, disk_name_prefix='prefix')
     self.assertEqual('prefix_fake_snapshot_name_c4a46ad7_copy', disk_name)
 
+  @typing.no_type_check
   def tearDown(self):
     os.environ['AZURE_SUBSCRIPTION_ID'] = ''
     os.environ["AZURE_CLIENT_ID"] = ''
