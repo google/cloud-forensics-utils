@@ -94,7 +94,7 @@ class AZStorage:
     # https://docs.microsoft.com/en-us/azure/storage/blobs/storage-quickstart-blobs-python
     # pylint: enable=line-too-long
     logger.info('Creating storage account: {0:s}'.format(storage_account_name))
-    request = self.storage_client.storage_accounts.create(
+    request = self.storage_client.storage_accounts.begin_create(
         self.az_account.default_resource_group_name,
         storage_account_name,
         creation_data

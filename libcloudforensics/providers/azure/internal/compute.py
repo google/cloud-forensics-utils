@@ -225,7 +225,7 @@ class AZCompute:
 
     try:
       logger.info('Creating disk: {0:s}'.format(disk_name))
-      request = self.compute_client.disks.create_or_update(
+      request = self.compute_client.disks.begin_create_or_update(
           self.az_account.default_resource_group_name,
           disk_name,
           creation_data)
@@ -344,7 +344,7 @@ class AZCompute:
 
     try:
       logger.info('Creating disk: {0:s}'.format(disk_name))
-      request = self.compute_client.disks.create_or_update(
+      request = self.compute_client.disks.begin_create_or_update(
           self.az_account.default_resource_group_name,
           disk_name,
           creation_data)
@@ -479,7 +479,7 @@ class AZCompute:
       creation_data['tags'] = tags
 
     try:
-      request = self.compute_client.virtual_machines.create_or_update(
+      request = self.compute_client.virtual_machines.begin_create_or_update(
           self.az_account.default_resource_group_name,
           vm_name,
           creation_data
@@ -656,7 +656,7 @@ class AZComputeVirtualMachine(compute_base_resource.AZComputeResource):
     data_disks.append(update_data)
 
     try:
-      request = self.compute_client.virtual_machines.update(
+      request = self.compute_client.virtual_machines.begin_update(
           self.resource_group_name, self.name, vm)
       while not request.done():
         sleep(5)  # Wait 5 seconds before checking vm status again
@@ -732,7 +732,7 @@ class AZComputeDisk(compute_base_resource.AZComputeResource):
 
     try:
       logger.info('Creating snapshot: {0:s}'.format(snapshot_name))
-      request = self.compute_client.snapshots.create_or_update(
+      request = self.compute_client.snapshots.begin_create_or_update(
           self.resource_group_name,
           snapshot_name,
           creation_data)
@@ -801,7 +801,7 @@ class AZComputeSnapshot(compute_base_resource.AZComputeResource):
 
     try:
       logger.info('Deleting snapshot: {0:s}'.format(self.name))
-      request = self.compute_client.snapshots.delete(
+      request = self.compute_client.snapshots.begin_delete(
           self.resource_group_name, self.name)
       while not request.done():
         sleep(5)  # Wait 5 seconds before checking snapshot status again
@@ -818,8 +818,10 @@ class AZComputeSnapshot(compute_base_resource.AZComputeResource):
       str: The access URI for the snapshot.
     """
     logger.info('Generating SAS URI for snapshot: {0:s}'.format(self.name))
-    access_request = self.compute_client.snapshots.grant_access(
-        self.resource_group_name, self.name, 'Read', 3600)
+    access_grant = models.GrantAccessData(
+        access='Read', duration_in_seconds=3600)
+    access_request = self.compute_client.snapshots.begin_grant_access(
+        self.resource_group_name, self.name, access_grant)
     snapshot_uri = access_request.result().access_sas  # type: str
     logger.info('SAS URI generated: {0:s}'.format(snapshot_uri))
     return snapshot_uri
@@ -827,7 +829,7 @@ class AZComputeSnapshot(compute_base_resource.AZComputeResource):
   def RevokeAccessURI(self) -> None:
     """Revoke access to a snapshot."""
     logger.info('Revoking SAS URI for snapshot {0:s}'.format(self.name))
-    request = self.compute_client.snapshots.revoke_access(
+    request = self.compute_client.snapshots.begin_revoke_access(
         self.resource_group_name, self.name)
     request.wait()
     logger.info('SAS URI revoked for snapshot {0:s}'.format(self.name))
