@@ -75,7 +75,7 @@ class AZResource:
       creation_data = {
           'location': self.az_account.default_region
       }
-      self.resource_client.resource_groups.begin_create_or_update(
+      self.resource_client.resource_groups.create_or_update(
           resource_group_name, creation_data)
       logger.info('Resource group {0:s} successfully created.'.format(
           resource_group_name))
