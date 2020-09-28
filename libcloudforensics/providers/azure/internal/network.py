@@ -202,7 +202,9 @@ class AZNetwork:
     try:
       for client in client_to_creation_data:
         request = common.ExecuteRequest(
-            client, 'begin_create_or_update', client_to_creation_data[client])[0]
+            client,
+            'begin_create_or_update',
+            client_to_creation_data[client])[0]
         request.wait()
         result.append(request.result())
     except azure_exceptions.AzureError as exception:
