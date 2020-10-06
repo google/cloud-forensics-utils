@@ -284,7 +284,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     except errors.ResourceNotFoundError:
       pass
 
-    machine_type = 'zones/{0:s}/machineTypes/n1-standard-{1:d}'.format(
+    machine_type = 'zones/{0:s}/machineTypes/e2-standard-{1:d}'.format(
         self.default_zone, cpu_cores)
     ubuntu_image = self.GceApi().images().getFromFamily(
         project=image_project, family=image_family).execute()
