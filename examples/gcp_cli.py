@@ -92,7 +92,6 @@ def DeleteInstance(args: 'argparse.Namespace') -> None:
   instance.Delete(delete_disks=args.delete_disks)
 
   print('Instance deleted.')
-  print('Name: {0:s}'.format(instance.name))
 
 
 def ListLogs(args: 'argparse.Namespace') -> None:
