@@ -57,10 +57,10 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     package_data={
-      'libcloudforensics': ['libcloudforensics/scripts/*']
+        'libcloudforensics': ['libcloudforensics/scripts/*']
     },
     entry_points={'console_scripts': [
-        'libcloudforensics = examples.cli:Main']},
+        'cloudforensics = tools.cli:Main']},
     zip_safe=False,
     install_requires=[req for req in parse_requirements('requirements.txt')],
     tests_require=[req for req in parse_requirements('requirements-dev.txt')],

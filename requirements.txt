@@ -1,5 +1,5 @@
 -i https://pypi.org/simple
-google-api-core
+httplib2>=0.15.0
 google-api-python-client
 google-auth
 boto3
@@ -7,9 +7,13 @@ botocore
 azure-common
 azure-core
 azure-identity
-azure-mgmt-compute==13.0.0
+azure-mgmt-compute
 azure-mgmt-resource
-azure-mgmt-storage==11.1.0
+azure-mgmt-storage
 azure-storage-blob
+azure-mgmt-network
+azure-mgmt-monitor
 msrest
 msrestazure
+sshpubkeys
+pycryptodome

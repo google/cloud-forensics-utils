@@ -13,10 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """End to end test for the aws module."""
+
 import typing
 import unittest
 import warnings
-
 import botocore
 
 from libcloudforensics.providers.aws.internal.common import EC2_SERVICE
@@ -153,7 +153,7 @@ class EndToEndTest(unittest.TestCase):
 
     aws_account = account.AWSAccount(self.zone)
     qfilter = [{'Name': 'name', 'Values': ['Ubuntu 18.04*']}]
-    images = aws_account.ListImages(qfilter)
+    images = aws_account.ec2.ListImages(qfilter)
 
     self.assertGreater(len(images), 0)
     self.assertIn('Name', images[0])
@@ -257,7 +257,7 @@ class EndToEndTest(unittest.TestCase):
       except (client.exceptions.ClientError,
               botocore.exceptions.WaiterError) as exception:
         raise RuntimeError('Could not complete cleanup: {0:s}'.format(
-            str(exception)))
+            str(exception))) from exception
       logger.info('Volume {0:s} successfully deleted.'.format(volume.volume_id))
 
 

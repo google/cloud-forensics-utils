@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING, Tuple, List, Optional, Dict
 
 from libcloudforensics.providers.aws.internal.common import UBUNTU_1804_FILTER
 from libcloudforensics.providers.aws.internal import account
-from libcloudforensics import logging_utils
+from libcloudforensics import logging_utils, errors
 
 if TYPE_CHECKING:
   from libcloudforensics.providers.aws.internal import ebs, ec2
@@ -30,6 +30,7 @@ def CreateVolumeCopy(zone: str,
                      dst_zone: Optional[str] = None,
                      instance_id: Optional[str] = None,
                      volume_id: Optional[str] = None,
+                     volume_type: Optional[str] = None,
                      src_profile: Optional[str] = None,
                      dst_profile: Optional[str] = None,
                      tags: Optional[Dict[str, str]] = None) -> 'ebs.AWSVolume':
@@ -81,6 +82,9 @@ def CreateVolumeCopy(zone: str,
         that volume_id will be copied.
     volume_id (str): Optional. ID of the volume to copy. If not set,
         then instance_id needs to be set and the boot volume will be copied.
+    volume_type (str): Optional. The volume type for the volume to be
+        created. Can be one of 'standard'|'io1'|'gp2'|'sc1'|'st1'. The default
+        behavior is to use the same volume type as the source volume.
     src_profile (str): Optional. If the AWS account containing the volume
         that needs to be copied is different from the default account
         specified in the AWS credentials file then you can specify a
@@ -95,9 +99,10 @@ def CreateVolumeCopy(zone: str,
     AWSVolume: An AWS EBS Volume object.
 
   Raises:
-    RuntimeError: If there are errors copying the volume, or errors during
-        KMS key creation/sharing if the target volume is encrypted.
-    ValueError: If both instance_id and volume_id are missing.
+    ResourceCreationError: If there are errors copying the volume, or errors
+        during KMS key creation/sharing if the target volume is encrypted.
+    ValueError: If both instance_id and volume_id are missing, or if AWS
+        account information could not be retrieved.
   """
 
   if not instance_id and not volume_id:
@@ -110,31 +115,40 @@ def CreateVolumeCopy(zone: str,
 
   try:
     if volume_id:
-      volume_to_copy = source_account.GetVolumeById(volume_id)
+      volume_to_copy = source_account.ebs.GetVolumeById(volume_id)
     elif instance_id:
-      instance = source_account.GetInstanceById(instance_id)
+      instance = source_account.ec2.GetInstanceById(instance_id)
       volume_to_copy = instance.GetBootVolume()
+
+    if not volume_type:
+      volume_type = volume_to_copy.GetVolumeType()
 
     logger.info('Volume copy of {0:s} started...'.format(
         volume_to_copy.volume_id))
     snapshot = volume_to_copy.Snapshot()
     logger.info('Created snapshot: {0:s}'.format(snapshot.snapshot_id))
 
-    source_account_id = source_account.GetAccountInformation('Account')
-    destination_account_id = destination_account.GetAccountInformation(
+    source_account_id = source_account.ebs.GetAccountInformation().get(
         'Account')
+    destination_account_id = destination_account.ebs.GetAccountInformation(
+        ).get('Account')
+
+    if not (source_account_id and destination_account_id):
+      raise ValueError(
+          'Could not retrieve AWS account ID: source {0!s}, dest: {1!s}'.format(
+              source_account_id, destination_account_id))
 
     if source_account_id != destination_account_id:
       logger.info('External account detected: source account ID is {0:s} and '
                   'destination account ID is {1:s}'.format(
-                      source_account, destination_account))
+                      source_account_id, destination_account_id))
       if volume_to_copy.encrypted:
         logger.info(
             'Encrypted volume detected, generating one-time use CMK key')
         # Generate one-time use KMS key that will be shared with the
         # destination account.
-        kms_key_id = source_account.CreateKMSKey()
-        source_account.ShareKMSKeyWithAWSAccount(
+        kms_key_id = source_account.kms.CreateKMSKey()
+        source_account.kms.ShareKMSKeyWithAWSAccount(
             kms_key_id, destination_account_id)
         # Create a copy of the initial snapshot and encrypts it with the
         # shared key
@@ -151,11 +165,17 @@ def CreateVolumeCopy(zone: str,
       snapshot = snapshot.Copy(delete=True, deletion_account=source_account)
 
     if tags and tags.get('Name'):
-      new_volume = destination_account.CreateVolumeFromSnapshot(
-          snapshot, volume_name=tags['Name'], tags=tags)
+      new_volume = destination_account.ebs.CreateVolumeFromSnapshot(
+          snapshot,
+          volume_type=volume_type,
+          volume_name=tags['Name'],
+          tags=tags)
     else:
-      new_volume = destination_account.CreateVolumeFromSnapshot(
-          snapshot, volume_name_prefix='evidence', tags=tags)
+      new_volume = destination_account.ebs.CreateVolumeFromSnapshot(
+          snapshot,
+          volume_type=volume_type,
+          volume_name_prefix='evidence',
+          tags=tags)
 
     logger.info('Volume {0:s} successfully copied to {1:s}'.format(
         volume_to_copy.volume_id, new_volume.volume_id))
@@ -163,12 +183,12 @@ def CreateVolumeCopy(zone: str,
 
     snapshot.Delete()
     # Delete the one-time use KMS key, if one was generated
-    source_account.DeleteKMSKey(kms_key_id)
+    source_account.kms.DeleteKMSKey(kms_key_id)
     logger.info('Done')
-  except RuntimeError as exception:
-    error_msg = 'Copying volume {0:s}: {1!s}'.format(
-        (volume_id or instance_id), exception)
-    raise RuntimeError(error_msg)
+  except (errors.LCFError, RuntimeError) as exception:
+    raise errors.ResourceCreationError(
+        'Copying volume {0:s}: {1!s}'.format(
+            (volume_id or instance_id), exception), __name__) from exception
 
   return new_volume
 
@@ -177,6 +197,7 @@ def StartAnalysisVm(
     vm_name: str,
     default_availability_zone: str,
     boot_volume_size: int,
+    boot_volume_type: str = 'gp2',
     ami: Optional[str] = None,
     cpu_cores: int = 4,
     attach_volumes: Optional[List[Tuple[str, str]]] = None,
@@ -194,6 +215,9 @@ def StartAnalysisVm(
     default_availability_zone (str): Default zone within the region to create
         new resources in.
     boot_volume_size (int): The size of the analysis VM boot volume (in GB).
+    boot_volume_type (str): Optional. The volume type for the boot volume
+          of the VM. Can be one of 'standard'|'io1'|'gp2'|'sc1'|'st1'. The
+          default is 'gp2'.
     ami (str): Optional. The Amazon Machine Image ID to use to create the VM.
         Default is a version of Ubuntu 18.04.
     cpu_cores (int): Optional. The number of CPU cores to create the machine
@@ -232,7 +256,7 @@ def StartAnalysisVm(
   if not ami:
     logger.info('No AMI provided, fetching one for Ubuntu 18.04')
     qfilter = [{'Name': 'name', 'Values': [UBUNTU_1804_FILTER]}]
-    ami_list = aws_account.ListImages(qfilter)
+    ami_list = aws_account.ec2.ListImages(qfilter)
     # We should only get 1 AMI image back, if we get multiple we
     # have no way of knowing which one to use.
     if len(ami_list) > 1:
@@ -243,17 +267,19 @@ def StartAnalysisVm(
   assert ami  # Mypy: assert that ami is not None
 
   logger.info('Starting analysis VM {0:s}'.format(vm_name))
-  analysis_vm, created = aws_account.GetOrCreateAnalysisVm(
+  analysis_vm, created = aws_account.ec2.GetOrCreateAnalysisVm(
       vm_name,
       boot_volume_size,
       ami,
       cpu_cores,
+      boot_volume_type=boot_volume_type,
       ssh_key_name=ssh_key_name,
       tags=tags)
   logger.info('VM started.')
   for volume_id, device_name in (attach_volumes or []):
     logger.info('Attaching volume {0:s} to device {1:s}'.format(
         volume_id, device_name))
-    analysis_vm.AttachVolume(aws_account.GetVolumeById(volume_id), device_name)
+    analysis_vm.AttachVolume(
+        aws_account.ebs.GetVolumeById(volume_id), device_name)
   logger.info('VM ready.')
   return analysis_vm, created
