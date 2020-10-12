@@ -552,7 +552,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       gcs_uri = os.path.join(common.STORAGE_LINK_URL, gcs_uri)
     image_body = {
         'name': name,
-        "rawDisk": {
+        'rawDisk': {
             'source': gcs_uri
         }
     }
@@ -692,7 +692,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
             'env': ['BUILD_ID=$BUILD_ID']
         }],
         'timeout': '86400s',
-        'tags': ["gce-daisy", "gce-daisy-image-import"]
+        'tags': ['gce-daisy', 'gce-daisy-image-import']
     }
     cloud_build = build.GoogleCloudBuild(self.project_id)
     response = cloud_build.CreateBuild(build_body)
@@ -857,6 +857,35 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
     response = request.execute()
     self.BlockOperation(response, zone=self.zone)
 
+  def Delete(self, delete_disks: bool = False) -> None:
+    """Delete an Instance.
+
+    Args:
+      delete_disks (bool): whether to also force delete all attached disks
+        (ignores the 'readonly' bit).
+    """
+    disks_to_delete = []
+    if delete_disks:
+      disks_to_delete = [
+          disk['source'].split('/')[-1] for disk in self.GetValue('disks')]
+
+    gce_instance_client = self.GceApi().instances()
+    logger.info(
+        self.FormatLogMessage('Deleted Instance: {0:s}'.format(self.name)))
+    request = gce_instance_client.delete(
+        project=self.project_id, instance=self.name, zone=self.zone)
+    response = request.execute()
+    self.BlockOperation(response, zone=self.zone)
+
+    for disk_name in disks_to_delete:
+      try:
+        disk = GoogleCloudCompute(self.project_id).GetDisk(disk_name=disk_name)
+        disk.Delete()
+      except RuntimeError:
+        logger.info(
+            self.FormatLogMessage(
+                'Could not find disk: {0:s}, skipping'.format(disk_name)))
+
 
 class GoogleComputeDisk(compute_base_resource.GoogleComputeBaseResource):
   """Class representing a Compute Engine disk."""
@@ -916,6 +945,17 @@ class GoogleComputeDisk(compute_base_resource.GoogleComputeBaseResource):
     response = request.execute()
     self.BlockOperation(response, zone=self.zone)
     return GoogleComputeSnapshot(disk=self, name=snapshot_name)
+
+  def Delete(self) -> None:
+    """Delete a Disk."""
+
+    gce_disk_client = self.GceApi().disks()
+    request = gce_disk_client.delete(
+        project=self.project_id, disk=self.name, zone=self.zone)
+    response = request.execute()
+    logger.info(
+        self.FormatLogMessage('Deleted Disk: {0:s}'.format(self.name)))
+    return response
 
 
 class GoogleComputeSnapshot(compute_base_resource.GoogleComputeBaseResource):

@@ -39,6 +39,7 @@ PROVIDER_TO_FUNC = {
     'gcp': {
         'copydisk': gcp_cli.CreateDiskCopy,
         'creatediskgcs': gcp_cli.CreateDiskFromGCSImage,
+        'deleteinstance': gcp_cli.DeleteInstance,
         'listdisks': gcp_cli.ListDisks,
         'listinstances': gcp_cli.ListInstances,
         'listlogs': gcp_cli.ListLogs,
@@ -243,6 +244,11 @@ def Main() -> None:
                 ('--cpu_cores', 'Instance CPU core count.', '4'),
                 ('--attach_disks', 'Comma seperated list of disk names '
                                    'to attach.', None)
+            ])
+  AddParser('gcp', gcp_subparsers, 'deleteinstance', 'Delete a GCE instance.',
+            args=[
+                ('instance_name', 'Name of the GCE instance to delete.', ''),
+                ('--delete_disks', 'Whethere to delete all disks attached to the instance.', False),
             ])
   AddParser('gcp', gcp_subparsers, 'querylogs', 'Query GCP logs.',
             args=[
