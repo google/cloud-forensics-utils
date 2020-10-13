@@ -355,20 +355,27 @@ class GoogleComputeInstanceTest(unittest.TestCase):
   @typing.no_type_check
   @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleCloudCompute.ListDisks')
   @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleComputeInstance.GetOperation')
-  @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleComputeDisk.Delete')
   @mock.patch('libcloudforensics.providers.gcp.internal.common.GoogleCloudComputeClient.GceApi')
   @mock.patch('libcloudforensics.providers.gcp.internal.common.GoogleCloudComputeClient.BlockOperation')
   def testDelete(
-      self, mock_block_operation, _, mock_disk_delete, mock_get_operation,
+      self, mock_block_operation, mock_gce_api, mock_get_operation,
       mock_list_disks):
     """Test that all disks of an instance are correctly deleted."""
     mock_block_operation.return_value = None
-    mock_disk_delete.return_value = None
     mock_get_operation.return_value = gcp_mocks.MOCK_GCE_OPERATION_INSTANCES_GET
     mock_list_disks.return_value = gcp_mocks.MOCK_LIST_DISKS
 
+    mock_disk_delete = mock_gce_api.return_value.disks.return_value.delete
+    mock_disk_delete.return_value.execute.return_value = None
+
     gcp_mocks.FAKE_INSTANCE.Delete(delete_disks=True)
-    mock_disk_delete.assert_called_with()
+    calls = [
+        mock.call(project='fake-source-project', disk='fake-boot-disk', zone='fake-zone'),
+        mock.call().execute(),
+        mock.call(project='fake-source-project', disk='fake-disk', zone='fake-zone'),
+        mock.call().execute(),
+    ]
+    mock_disk_delete.assert_has_calls(calls)
 
 
 class GoogleComputeDiskTest(unittest.TestCase):
