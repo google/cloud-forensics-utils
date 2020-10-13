@@ -344,7 +344,7 @@ class GoogleComputeInstanceTest(unittest.TestCase):
   @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleCloudCompute.ListDisks')
   @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleComputeInstance.GetOperation')
   def testListDisks(self, mock_get_operation, mock_list_disks):
-    """Test that a all disks of an instance are correctly retrieved."""
+    """Test that all disks of an instance are correctly retrieved."""
     mock_get_operation.return_value = gcp_mocks.MOCK_GCE_OPERATION_INSTANCES_GET
     mock_list_disks.return_value = gcp_mocks.MOCK_LIST_DISKS
 

@@ -1073,8 +1073,7 @@ class GoogleComputeImage(compute_base_resource.GoogleComputeBaseResource):
         'Image {0:s} exported to {1:s}.'.format(self.name, full_path))
 
   def Delete(self) -> None:
-    """Delete Compute Disk Image from a project.
-    """
+    """Delete Compute Disk Image from a project."""
 
     gce_image_client = self.GceApi().images()
     request = gce_image_client.delete(project=self.project_id, image=self.name)
