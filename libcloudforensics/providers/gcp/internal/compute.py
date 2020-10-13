@@ -961,12 +961,23 @@ class GoogleComputeDisk(compute_base_resource.GoogleComputeBaseResource):
     """Delete a Disk."""
 
     gce_disk_client = self.GceApi().disks()
-    request = gce_disk_client.delete(
-        project=self.project_id, disk=self.name, zone=self.zone)
-    response = request.execute()
+    try:
+      request = gce_disk_client.delete(
+          project=self.project_id, disk=self.name, zone=self.zone)
+      response = request.execute()
+    except HttpError as exception:
+      if exception.resp.status == 404:
+        logger.warning(
+            ('Can not find resource {0:s}, it might be already '
+             'deleted. API call resulted in the following error: '
+             '{1:s}').format(self.name, str(exception)))
+      else:
+        logger.error((
+            'While deleting GCE disk {0:s} the following error occurred: '
+            '{1:s}').format(self.name, str(exception)))
+        raise errors.ResourceDeletionError
     logger.info(
         self.FormatLogMessage('Deleted Disk: {0:s}'.format(self.name)))
-    return response
 
   def GetDiskType(self) -> str:
     """Return the disk type.
