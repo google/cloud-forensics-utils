@@ -858,8 +858,8 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
     """Delete an Instance.
 
     Args:
-      delete_disks (bool): whether to also force delete all attached disks
-        (ignores the 'readonly' bit).
+      delete_disks (bool): force delete all attached disks (ignores the 'Keep
+        when instance is deleted' bit).
     """
     disks_to_delete = []
     if delete_disks:
@@ -868,10 +868,23 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
 
     gce_instance_client = self.GceApi().instances()
     logger.info(
-        self.FormatLogMessage('Deleted Instance: {0:s}'.format(self.name)))
-    request = gce_instance_client.delete(
-        project=self.project_id, instance=self.name, zone=self.zone)
-    response = request.execute()
+        self.FormatLogMessage('Deleting Instance: {0:s}'.format(self.name)))
+    try:
+      request = gce_instance_client.delete(
+          project=self.project_id, instance=self.name, zone=self.zone)
+      response = request.execute()
+    except HttpError as exception:
+      if exception.resp.status == 404:
+        logger.warning(
+            ('Can not find resource {0:s}, it might be already '
+             'deleted. API call resulted in the following error: '
+             '{1:s}').format(self.name, str(exception)))
+      else:
+        logger.error((
+            'While deleting GCE instance {0:s} the following error occurred: '
+            '{1:s}').format(self.name, str(exception)))
+        raise errors.ResourceDeletionError
+
     self.BlockOperation(response, zone=self.zone)
 
     for disk_name in disks_to_delete:

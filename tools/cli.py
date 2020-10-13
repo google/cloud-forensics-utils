@@ -313,8 +313,8 @@ def Main() -> None:
   AddParser('gcp', gcp_subparsers, 'deleteinstance', 'Delete a GCE instance.',
             args=[
                 ('instance_name', 'Name of the GCE instance to delete.', ''),
-                ('--delete_disks',
-                 'Whethere to delete all disks attached to the instance.',
+                ('--delete_all_disks',
+                 'Force delete disks marked as "Keep when deleting".',
                  False),
             ])
   AddParser('gcp', gcp_subparsers, 'querylogs', 'Query GCP logs.',
