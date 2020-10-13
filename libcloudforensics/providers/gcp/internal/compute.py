@@ -964,7 +964,7 @@ class GoogleComputeDisk(compute_base_resource.GoogleComputeBaseResource):
     try:
       request = gce_disk_client.delete(
           project=self.project_id, disk=self.name, zone=self.zone)
-      response = request.execute()
+      request.execute()
     except HttpError as exception:
       if exception.resp.status == 404:
         logger.warning(
