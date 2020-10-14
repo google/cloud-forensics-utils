@@ -20,6 +20,7 @@ import sys
 from typing import TYPE_CHECKING
 
 # pylint: disable=line-too-long
+from libcloudforensics.providers.gcp.internal import compute as gcp_compute
 from libcloudforensics.providers.gcp.internal import log as gcp_log
 from libcloudforensics.providers.gcp.internal import monitoring as gcp_monitoring
 from libcloudforensics.providers.gcp.internal import project as gcp_project
@@ -83,6 +84,20 @@ def CreateDiskCopy(args: 'argparse.Namespace') -> None:
 
   logger.info('Disk copy completed.')
   logger.info('Name: {0:s}'.format(disk.name))
+
+
+def DeleteInstance(args: 'argparse.Namespace') -> None:
+  """Deletes a GCE instance.
+
+  Args:
+    args (argparse.Namespace): Arguments from ArgumentParser.
+  """
+
+  compute_client = gcp_compute.GoogleCloudCompute(args.project)
+  instance = compute_client.GetInstance(instance_name=args.instance_name)
+  instance.Delete(delete_disks=args.delete_disks)
+
+  print('Instance deleted.')
 
 
 def ListLogs(args: 'argparse.Namespace') -> None:
