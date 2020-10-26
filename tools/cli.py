@@ -52,7 +52,8 @@ PROVIDER_TO_FUNC = {
         'bucketacls': gcp_cli.GetBucketACLs,
         'objectmetadata': gcp_cli.GetGCSObjectMetadata,
         'listbuckets': gcp_cli.ListBuckets,
-        'listobjects': gcp_cli.ListBucketObjects
+        'listobjects': gcp_cli.ListBucketObjects,
+        'deleteobject': gcp_cli.DeleteObject
     }
 }
 
@@ -350,6 +351,10 @@ def Main() -> None:
                                                   'GCS bucket.',
             args=[
                 ('path', 'Path to bucket.', None),
+            ])
+  AddParser('gcp', gcp_subparsers, 'deleteobject', 'Deletes a GCS object',
+            args=[
+                ('path', 'Path to GCS object.', None),
             ])
 
   if len(sys.argv) == 1:

@@ -159,3 +159,18 @@ class GoogleCloudStorage:
     request = gcs_objects.list(bucket=bucket)
     objects = request.execute()  # type: Dict[str, Any]
     return objects.get('items', [])
+
+  def DeleteObject(self, gcs_path: str):
+    """Deletes an object in a Google Cloud Storage bucket.
+
+    Args:
+      gcs_path (str): Full path to the object (ie: gs://bucket/dir1/dir1/obj)
+    """
+
+    if not gcs_path.startswith('gs://'):
+      gcs_path = 'gs://' + gcs_path
+    bucket, object_path = SplitGcsPath(gcs_path)
+    gcs_objects = self.GcsApi().objects()
+    request = gcs_objects.delete(bucket=bucket, object=object_path)
+    response = request.execute()  # type: Dict[str, Any]
+    return response

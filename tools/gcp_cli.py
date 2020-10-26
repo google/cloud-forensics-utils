@@ -273,3 +273,15 @@ def ListBucketObjects(args: 'argparse.Namespace') -> None:
     logger.info('{0:s} {1:s}b [{2:s}]'.format(
         obj.get('id', 'ID not found'), obj.get('size', 'Unknown size'),
         obj.get('contentType', 'Unknown Content-Type')))
+
+
+def DeleteObject(args: 'argparse.Namespace') -> None:
+  """Deletes an object in GCS.
+
+  Args:
+    args (argparse.Namespace): Arguments from ArgumentParser.
+  """
+  gcs = gcp_storage.GoogleCloudStorage(args.project)
+  gcs.DeleteObject(args.path)
+
+  print('Object deleted.')
