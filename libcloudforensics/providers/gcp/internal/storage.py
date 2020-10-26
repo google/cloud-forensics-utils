@@ -172,5 +172,4 @@ class GoogleCloudStorage:
     bucket, object_path = SplitGcsPath(gcs_path)
     gcs_objects = self.GcsApi().objects()
     request = gcs_objects.delete(bucket=bucket, object=object_path)
-    response = request.execute()  # type: Dict[str, Any]
-    return response
+    request.execute()  # type: Dict[str, Any]
