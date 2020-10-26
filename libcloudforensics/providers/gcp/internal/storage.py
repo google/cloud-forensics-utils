@@ -160,7 +160,7 @@ class GoogleCloudStorage:
     objects = request.execute()  # type: Dict[str, Any]
     return objects.get('items', [])
 
-  def DeleteObject(self, gcs_path: str):
+  def DeleteObject(self, gcs_path: str) -> None:
     """Deletes an object in a Google Cloud Storage bucket.
 
     Args:
