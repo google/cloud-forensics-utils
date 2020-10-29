@@ -24,4 +24,6 @@ jobs:
     - name: Install dependencies through setup.py
       run: python setup.py install
     - name: Test through setup.py
-      run: python setup.py test
+      run: |
+        pip install nose mock
+        nosetests -vv
