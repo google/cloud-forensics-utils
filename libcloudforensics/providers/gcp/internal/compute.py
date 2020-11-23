@@ -826,7 +826,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
     operation_config = {
         'mode': mode,
         'source': disk.GetSourceString(),
-        'deviceName': self.name,
+        'deviceName': disk.name,
         'boot': False,
         'autoDelete': False,
     }
