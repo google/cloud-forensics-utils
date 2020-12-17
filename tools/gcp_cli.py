@@ -95,7 +95,7 @@ def DeleteInstance(args: 'argparse.Namespace') -> None:
 
   compute_client = gcp_compute.GoogleCloudCompute(args.project)
   instance = compute_client.GetInstance(instance_name=args.instance_name)
-  instance.Delete(delete_disks=args.delete_disks)
+  instance.Delete(delete_disks=args.delete_all_disks)
 
   print('Instance deleted.')
 
