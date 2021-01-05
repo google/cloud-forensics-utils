@@ -20,6 +20,7 @@ import re
 import socket
 import time
 from typing import TYPE_CHECKING, Dict, List, Optional, Any
+import netaddr
 
 from google.auth import default
 from google.auth.exceptions import DefaultCredentialsError, RefreshError
@@ -86,6 +87,33 @@ def GenerateDiskName(snapshot: 'compute.GoogleComputeSnapshot',
             disk_name, REGEX_DISK_NAME.pattern), __name__)
 
   return disk_name
+
+
+def GenerateSourceRange(
+    exempted_src_ips: Optional[List[str]] = None) -> List[str]:
+  """Generate a list of denied source IP ranges.
+
+  The final list is a list of all IPs except the exempted ones.
+
+  Args:
+    exempted_src_ips (List[str]): List of IPs exempted from the deny-all
+        ingress firewall rules, ex: analyst IPs.
+
+  Returns:
+      List[str]: Denied source IP ranges specified in CIDR notation.
+  """
+  source_range = []
+  if exempted_src_ips:
+    ip_set = netaddr.IPSet(netaddr.IPRange('0.0.0.0', '255.255.255.255'))
+    for ip in exempted_src_ips:
+      ip_set.remove(ip)
+    ip_cidrs = ip_set.iter_cidrs()
+    for ip_cidr in ip_cidrs:
+      source_range.append('{0:s}/{1:d}'.format(
+          ip_cidr.ip.format(), ip_cidr.prefixlen))
+  else:
+    source_range.append('0.0.0.0/0')
+  return source_range
 
 
 def GenerateUniqueInstanceName(prefix: str,

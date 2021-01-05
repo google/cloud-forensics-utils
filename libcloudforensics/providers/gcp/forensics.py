@@ -227,3 +227,47 @@ def CreateDiskFromGCSImage(
       'md5Hash': md5_hash_hex
   }
   return result
+
+
+def InstanceNetworkQuarantine(project_id: str,
+                        instance_name: str,
+                        exempted_src_ips: Optional[List[str]] = None,
+                        enable_logging: bool = False) -> None:
+  """Put a Google Cloud instance in network quarantine.
+
+    Args:
+      project_id (str): Google Cloud Project ID.
+      instance_name (str): : The name of the virtual machine.
+      exempted_src_ips (List[str]): List of IPs exempted from the deny-all
+          ingress firewall rules, ex: analyst IPs.
+      enable_logging (bool): Optional. Enable firewall logging.
+          Default is False.
+  """
+  logger.info('Putting instance "{0:s}", in project {1:s}, in network '
+              'quarantine.'.format(instance_name, project_id))
+  project = gcp_project.GoogleCloudProject(project_id)
+  instance = project.compute.GetInstance(instance_name)
+  get_operation = instance.GetOperation()
+  network_interfaces = get_operation['networkInterfaces']
+  target_tags = []
+  for interface in network_interfaces:
+    network_name = interface["network"]
+    deny_ingress_tag = common.GenerateUniqueInstanceName(
+        'deny-ingress-tag-', common.COMPUTE_NAME_LIMIT)
+    deny_egress_tag = common.GenerateUniqueInstanceName(
+        'deny-egress-tag-', common.COMPUTE_NAME_LIMIT)
+    project.compute.AddDenyAllFirewallRules(
+        network_name,
+        deny_ingress_tag,
+        deny_egress_tag,
+        exempted_src_ips,
+        enable_logging)
+    target_tags.append(deny_ingress_tag)
+    target_tags.append(deny_egress_tag)
+  instance.SetTags(target_tags)
+  if exempted_src_ips:
+    logger.info('From a host with an exempted IP, '
+        'connect to the quarantined instance using:\n'
+        'gcloud compute ssh --zone "{0:s}" "{1:s}" --project "{2:s}"\n'
+        'Connecting from the browser via GCP console will not work.'.format(
+              instance.zone, instance_name, project_id))

@@ -697,6 +697,97 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
             storage_image_path, image_name))
     return GoogleComputeImage(self.project_id, '', image_name)
 
+  def InsertFirewallRule(self, body: Dict[str, Any]) -> None:
+    """Insert a firewall rule to the project.
+
+    Args:
+      body (Dict): The request body.
+          https://googleapis.github.io/google-api-python-client/docs/dyn/compute_v1.firewalls.html#insert  # pylint: disable=line-too-long
+    """
+
+    logger.info( 'Inserting firewall rule {0:s}, '
+            'targeting tags: {1!s}.'.format(body['name'], body['targetTags'] ))
+    firewall_client = self.GceApi().firewalls()
+    request = firewall_client.insert(project=self.project_id, body=body)
+    response = request.execute()
+    self.BlockOperation(response)
+
+  def AddDenyAllFirewallRules(self,
+                              network: str,
+                              deny_ingress_tag: str,
+                              deny_egress_tag: str,
+                              exempted_src_ips: Optional[List[str]] = None,
+                              enable_logging: bool = False) -> None:
+    """Add deny-all firewall rules, of highest priority.
+
+      Args:
+        network (str): URL of the network resource for thesee firewall rules.
+        deny_ingress_tag (str): Target tag name to apply deny ingress rule.
+        deny_egress_tag (str): Target tag name to apply deny egress rule.
+        exempted_src_ips (List[str]): List of IPs exempted from the deny-all
+          ingress firewall rules, ex: analyst IPs.
+        enable_logging (bool): Optional. Enable firewall logging.
+            Default is False.
+
+      Raises:
+        InvalidNameError: If Tag names are invalid.
+    """
+
+    logger.info('Creating deny-all (ingress/egress) '
+            'firewall rules in {0:s} network.'.format(network))
+
+    if not common.REGEX_DISK_NAME.match(deny_ingress_tag):
+      raise errors.InvalidNameError(
+          'Deny ingress tag name {0:s} does not comply with {1:s}'.format(
+              deny_ingress_tag, common.REGEX_DISK_NAME.pattern), __name__)
+    if not common.REGEX_DISK_NAME.match(deny_egress_tag):
+      raise errors.InvalidNameError(
+          'Deny egress tag name {0:s} does not comply with {1:s}'.format(
+              deny_egress_tag, common.REGEX_DISK_NAME.pattern), __name__)
+
+    source_range = common.GenerateSourceRange(exempted_src_ips)
+
+    deny_ingress = {
+      'name': deny_ingress_tag,
+      'network': network,
+      'direction': 'INGRESS',
+      'priority': 0,
+      'targetTags': [
+        deny_ingress_tag
+      ],
+      'denied': [
+        {
+          'IPProtocol': 'all'
+        }
+      ],
+      'logConfig': {
+        'enable': enable_logging
+      },
+      'sourceRanges': source_range
+    }
+    deny_egress = {
+      'name': deny_egress_tag,
+      'network': network,
+      'direction': 'EGRESS',
+      'priority': 0,
+      'targetTags': [
+        deny_egress_tag
+      ],
+      'denied': [
+        {
+          'IPProtocol': 'all'
+        }
+      ],
+      'logConfig': {
+        'enable': enable_logging
+      },
+      'destinationRanges': [
+        '0.0.0.0/0'
+      ]
+    }
+    self.InsertFirewallRule(body=deny_ingress)
+    self.InsertFirewallRule(body=deny_egress)
+
 
 class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
   """Class representing a Google Compute Engine virtual machine."""
@@ -897,6 +988,47 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
             self.FormatLogMessage(
                 'Could not find disk: {0:s}, skipping'.format(disk_name)))
 
+  def SetTags(self, new_tags: List[str]) -> None:
+    """Sets network tags for the compute instance.
+
+    Args:
+        new_tags (List[str]): A list of tags. Each tag must be 1-63
+            characters long, and comply with RFC1035.
+
+    Raises:
+      InvalidNameError: If the name of the snapshot does not
+          comply with RFC1035.
+    """
+
+    logger.info(
+        self.FormatLogMessage(', adding tags {0!s} to instance '
+            '{1:s}.'.format(new_tags, self.name)))
+    for tag in new_tags:
+      if not common.REGEX_DISK_NAME.match(tag):
+        raise errors.InvalidNameError(
+            'Network Tag {0:s} does not comply with {1:s}.'.format(
+                tag, common.REGEX_DISK_NAME.pattern), __name__)
+
+    get_operation = self.GetOperation()
+    tags_object = get_operation['tags']
+    existing_tags = tags_object.get('items', [])
+    tags_fingerprint = tags_object['fingerprint']
+    tags = existing_tags + new_tags
+    request_body = {
+      'fingerprint': tags_fingerprint,
+      'items': tags,
+      }
+
+    gce_instance_client = self.GceApi().instances()
+    request = gce_instance_client.setTags(
+      project=self.project_id,
+      zone=self.zone,
+      instance=self.name,
+      body=request_body
+    )
+    response = request.execute()
+    self.BlockOperation(response, zone=self.zone)
+
 
 class GoogleComputeDisk(compute_base_resource.GoogleComputeBaseResource):
   """Class representing a Compute Engine disk."""
@@ -1028,7 +1160,7 @@ class GoogleComputeSnapshot(compute_base_resource.GoogleComputeBaseResource):
     """Delete a Snapshot."""
 
     logger.info(
-        self.FormatLogMessage('Deleted Snapshot: {0:s}'.format(self.name)))
+        self.FormatLogMessage('Deleting Snapshot: {0:s}'.format(self.name)))
     gce_snapshot_client = self.GceApi().snapshots()
     request = gce_snapshot_client.delete(
         project=self.project_id, snapshot=self.name)
