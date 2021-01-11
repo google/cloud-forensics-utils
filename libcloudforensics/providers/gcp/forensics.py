@@ -15,6 +15,7 @@
 """Forensics on GCP."""
 
 import base64
+import random
 from typing import TYPE_CHECKING, List, Tuple, Optional, Dict, Any
 
 from google.auth.exceptions import RefreshError, DefaultCredentialsError
@@ -229,19 +230,102 @@ def CreateDiskFromGCSImage(
   return result
 
 
+def AddDenyAllFirewallRules(project_id: str,
+                            network: str,
+                            deny_ingress_tag: str,
+                            deny_egress_tag: str,
+                            exempted_src_ips: Optional[List[str]] = None,
+                            enable_logging: bool = False) -> None:
+  """Add deny-all firewall rules, of highest priority.
+
+  Args:
+    project_id (str): Google Cloud Project ID.
+    network (str): URL of the network resource for thesee firewall rules.
+    deny_ingress_tag (str): Target tag name to apply deny ingress rule,
+        also used as a deny ingress firewall rule name.
+    deny_egress_tag (str): Target tag name to apply deny egress rule,
+        also used as a deny egress firewall rule name.
+    exempted_src_ips (List[str]): List of IPs exempted from the deny-all
+      ingress firewall rules, ex: analyst IPs.
+    enable_logging (bool): Optional. Enable firewall logging.
+        Default is False.
+
+  Raises:
+    InvalidNameError: If Tag names are invalid.
+  """
+
+  logger.info('Creating deny-all (ingress/egress) '
+          'firewall rules in {0:s} network.'.format(network))
+  project = gcp_project.GoogleCloudProject(project_id)
+  if not common.COMPUTE_RFC1035_REGEX.match(deny_ingress_tag):
+    raise errors.InvalidNameError(
+        'Deny ingress tag name {0:s} does not comply with {1:s}'.format(
+            deny_ingress_tag, common.COMPUTE_RFC1035_REGEX.pattern), __name__)
+  if not common.COMPUTE_RFC1035_REGEX.match(deny_egress_tag):
+    raise errors.InvalidNameError(
+        'Deny egress tag name {0:s} does not comply with {1:s}'.format(
+            deny_egress_tag, common.COMPUTE_RFC1035_REGEX.pattern), __name__)
+
+  source_range = common.GenerateSourceRange(exempted_src_ips)
+
+  deny_ingress = {
+    'name': deny_ingress_tag,
+    'network': network,
+    'direction': 'INGRESS',
+    'priority': 0,
+    'targetTags': [
+      deny_ingress_tag
+    ],
+    'denied': [
+      {
+        'IPProtocol': 'all'
+      }
+    ],
+    'logConfig': {
+      'enable': enable_logging
+    },
+    'sourceRanges': source_range
+  }
+  deny_egress = {
+    'name': deny_egress_tag,
+    'network': network,
+    'direction': 'EGRESS',
+    'priority': 0,
+    'targetTags': [
+      deny_egress_tag
+    ],
+    'denied': [
+      {
+        'IPProtocol': 'all'
+      }
+    ],
+    'logConfig': {
+      'enable': enable_logging
+    },
+    'destinationRanges': [
+      '0.0.0.0/0'
+    ]
+  }
+  project.compute.InsertFirewallRule(body=deny_ingress)
+  project.compute.InsertFirewallRule(body=deny_egress)
+
+
 def InstanceNetworkQuarantine(project_id: str,
-                        instance_name: str,
-                        exempted_src_ips: Optional[List[str]] = None,
-                        enable_logging: bool = False) -> None:
+                              instance_name: str,
+                              exempted_src_ips: Optional[List[str]] = None,
+                              enable_logging: bool = False) -> None:
   """Put a Google Cloud instance in network quarantine.
 
-    Args:
-      project_id (str): Google Cloud Project ID.
-      instance_name (str): : The name of the virtual machine.
-      exempted_src_ips (List[str]): List of IPs exempted from the deny-all
-          ingress firewall rules, ex: analyst IPs.
-      enable_logging (bool): Optional. Enable firewall logging.
-          Default is False.
+  Network quarantine is imposed via applying deny-all
+  ingress/egress firewall rules on each network interface.
+
+  Args:
+    project_id (str): Google Cloud Project ID.
+    instance_name (str): : The name of the virtual machine.
+    exempted_src_ips (List[str]): List of IPs exempted from the deny-all
+        ingress firewall rules, ex: analyst IPs.
+    enable_logging (bool): Optional. Enable firewall logging.
+        Default is False.
   """
   logger.info('Putting instance "{0:s}", in project {1:s}, in network '
               'quarantine.'.format(instance_name, project_id))
@@ -251,13 +335,15 @@ def InstanceNetworkQuarantine(project_id: str,
   network_interfaces = get_operation['networkInterfaces']
   target_tags = []
   for interface in network_interfaces:
-    network_name = interface["network"]
-    deny_ingress_tag = common.GenerateUniqueInstanceName(
-        'deny-ingress-tag-', common.COMPUTE_NAME_LIMIT)
-    deny_egress_tag = common.GenerateUniqueInstanceName(
-        'deny-egress-tag-', common.COMPUTE_NAME_LIMIT)
-    project.compute.AddDenyAllFirewallRules(
-        network_name,
+    network_url = interface["network"]
+    # Adding a random suffix to the tag to avoid name collisions,
+    # tags are used as firewall rule names, which need to be unique.
+    tag_suffix = random.randint(10**(19),(10**20)-1)
+    deny_ingress_tag = 'deny-ingress-tag-' + str(tag_suffix)
+    deny_egress_tag = 'deny-egress-tag-' + str(tag_suffix)
+    AddDenyAllFirewallRules(
+        project_id,
+        network_url,
         deny_ingress_tag,
         deny_egress_tag,
         exempted_src_ips,

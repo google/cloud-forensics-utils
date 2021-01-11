@@ -712,82 +712,6 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     response = request.execute()
     self.BlockOperation(response)
 
-  def AddDenyAllFirewallRules(self,
-                              network: str,
-                              deny_ingress_tag: str,
-                              deny_egress_tag: str,
-                              exempted_src_ips: Optional[List[str]] = None,
-                              enable_logging: bool = False) -> None:
-    """Add deny-all firewall rules, of highest priority.
-
-      Args:
-        network (str): URL of the network resource for thesee firewall rules.
-        deny_ingress_tag (str): Target tag name to apply deny ingress rule.
-        deny_egress_tag (str): Target tag name to apply deny egress rule.
-        exempted_src_ips (List[str]): List of IPs exempted from the deny-all
-          ingress firewall rules, ex: analyst IPs.
-        enable_logging (bool): Optional. Enable firewall logging.
-            Default is False.
-
-      Raises:
-        InvalidNameError: If Tag names are invalid.
-    """
-
-    logger.info('Creating deny-all (ingress/egress) '
-            'firewall rules in {0:s} network.'.format(network))
-
-    if not common.REGEX_DISK_NAME.match(deny_ingress_tag):
-      raise errors.InvalidNameError(
-          'Deny ingress tag name {0:s} does not comply with {1:s}'.format(
-              deny_ingress_tag, common.REGEX_DISK_NAME.pattern), __name__)
-    if not common.REGEX_DISK_NAME.match(deny_egress_tag):
-      raise errors.InvalidNameError(
-          'Deny egress tag name {0:s} does not comply with {1:s}'.format(
-              deny_egress_tag, common.REGEX_DISK_NAME.pattern), __name__)
-
-    source_range = common.GenerateSourceRange(exempted_src_ips)
-
-    deny_ingress = {
-      'name': deny_ingress_tag,
-      'network': network,
-      'direction': 'INGRESS',
-      'priority': 0,
-      'targetTags': [
-        deny_ingress_tag
-      ],
-      'denied': [
-        {
-          'IPProtocol': 'all'
-        }
-      ],
-      'logConfig': {
-        'enable': enable_logging
-      },
-      'sourceRanges': source_range
-    }
-    deny_egress = {
-      'name': deny_egress_tag,
-      'network': network,
-      'direction': 'EGRESS',
-      'priority': 0,
-      'targetTags': [
-        deny_egress_tag
-      ],
-      'denied': [
-        {
-          'IPProtocol': 'all'
-        }
-      ],
-      'logConfig': {
-        'enable': enable_logging
-      },
-      'destinationRanges': [
-        '0.0.0.0/0'
-      ]
-    }
-    self.InsertFirewallRule(body=deny_ingress)
-    self.InsertFirewallRule(body=deny_egress)
-
 
 class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
   """Class representing a Google Compute Engine virtual machine."""
@@ -989,14 +913,16 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
                 'Could not find disk: {0:s}, skipping'.format(disk_name)))
 
   def SetTags(self, new_tags: List[str]) -> None:
-    """Sets network tags for the compute instance.
+    """Sets tags for the compute instance.
+
+    Tags are used to configure firewall rules and network routes.
 
     Args:
-        new_tags (List[str]): A list of tags. Each tag must be 1-63
-            characters long, and comply with RFC1035.
+      new_tags (List[str]): A list of tags. Each tag must be 1-63
+          characters long, and comply with RFC1035.
 
     Raises:
-      InvalidNameError: If the name of the snapshot does not
+      InvalidNameError: If the name of the tags does not
           comply with RFC1035.
     """
 
@@ -1004,15 +930,15 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
         self.FormatLogMessage(', adding tags {0!s} to instance '
             '{1:s}.'.format(new_tags, self.name)))
     for tag in new_tags:
-      if not common.REGEX_DISK_NAME.match(tag):
+      if not common.COMPUTE_RFC1035_REGEX.match(tag):
         raise errors.InvalidNameError(
             'Network Tag {0:s} does not comply with {1:s}.'.format(
-                tag, common.REGEX_DISK_NAME.pattern), __name__)
+                tag, common.COMPUTE_RFC1035_REGEX.pattern), __name__)
 
     get_operation = self.GetOperation()
-    tags_object = get_operation['tags']
-    existing_tags = tags_object.get('items', [])
-    tags_fingerprint = tags_object['fingerprint']
+    tags_dict = get_operation['tags']
+    existing_tags = tags_dict.get('items', [])
+    tags_fingerprint = tags_dict['fingerprint']
     tags = existing_tags + new_tags
     request_body = {
       'fingerprint': tags_fingerprint,

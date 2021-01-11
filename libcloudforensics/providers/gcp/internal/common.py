@@ -34,7 +34,8 @@ if TYPE_CHECKING:
   from libcloudforensics.providers.gcp.internal import compute  # pylint: disable=cyclic-import
 
 RETRY_MAX = 10
-REGEX_DISK_NAME = re.compile('^(?=.{1,63}$)[a-z]([-a-z0-9]*[a-z0-9])?$')
+COMPUTE_RFC1035_REGEX = re.compile('^(?=.{1,63}$)[a-z]([-a-z0-9]*[a-z0-9])?$')
+REGEX_DISK_NAME = COMPUTE_RFC1035_REGEX
 COMPUTE_NAME_LIMIT = 63
 STORAGE_LINK_URL = 'https://storage.cloud.google.com'
 logging_utils.SetUpLogger(__name__)
