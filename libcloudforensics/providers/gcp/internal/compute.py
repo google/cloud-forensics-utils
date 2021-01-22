@@ -907,7 +907,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
       try:
         disk = GoogleCloudCompute(self.project_id).GetDisk(disk_name=disk_name)
         disk.Delete()
-      except RuntimeError:
+      except (errors.ResourceDeletionError, errors.ResourceNotFoundError):
         logger.info(
             self.FormatLogMessage(
                 'Could not find disk: {0:s}, skipping'.format(disk_name)))
