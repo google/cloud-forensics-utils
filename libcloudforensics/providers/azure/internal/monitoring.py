@@ -16,7 +16,7 @@
 
 from typing import List, Optional, Dict, TYPE_CHECKING
 
-from azure.mgmt.monitor import MonitorClient
+from azure.mgmt.monitor import MonitorManagementClient
 from azure.core.exceptions import HttpResponseError
 
 if TYPE_CHECKING:
@@ -30,7 +30,7 @@ class AZMonitoring:
   """Azure Monitoring.
 
   Attributes:
-    monitoring_client (MonitorClient): An Azure monitoring client
+    monitoring_client (MonitorManagementClient): An Azure monitoring client
         object.
   """
 
@@ -41,7 +41,7 @@ class AZMonitoring:
     Args:
       az_account (AZAccount): An Azure account object.
     """
-    self.monitoring_client = MonitorClient(
+    self.monitoring_client = MonitorManagementClient(
         az_account.credentials, az_account.subscription_id)
 
   def ListAvailableMetricsForResource(self, resource_id: str) -> List[str]:
