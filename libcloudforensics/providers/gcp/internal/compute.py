@@ -697,6 +697,21 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
             storage_image_path, image_name))
     return GoogleComputeImage(self.project_id, '', image_name)
 
+  def InsertFirewallRule(self, body: Dict[str, Any]) -> None:
+    """Insert a firewall rule to the project.
+
+    Args:
+      body (Dict): The request body.
+          https://googleapis.github.io/google-api-python-client/docs/dyn/compute_v1.firewalls.html#insert  # pylint: disable=line-too-long
+    """
+
+    logger.info( 'Inserting firewall rule {0:s}, '
+            'targeting tags: {1!s}.'.format(body['name'], body['targetTags'] ))
+    firewall_client = self.GceApi().firewalls()
+    request = firewall_client.insert(project=self.project_id, body=body)
+    response = request.execute()
+    self.BlockOperation(response)
+
 
 class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
   """Class representing a Google Compute Engine virtual machine."""
@@ -897,6 +912,49 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
             self.FormatLogMessage(
                 'Could not find disk: {0:s}, skipping'.format(disk_name)))
 
+  def SetTags(self, new_tags: List[str]) -> None:
+    """Sets tags for the compute instance.
+
+    Tags are used to configure firewall rules and network routes.
+
+    Args:
+      new_tags (List[str]): A list of tags. Each tag must be 1-63
+          characters long, and comply with RFC1035.
+
+    Raises:
+      InvalidNameError: If the name of the tags does not
+          comply with RFC1035.
+    """
+
+    logger.info(
+        self.FormatLogMessage(', adding tags {0!s} to instance '
+            '{1:s}.'.format(new_tags, self.name)))
+    for tag in new_tags:
+      if not common.COMPUTE_RFC1035_REGEX.match(tag):
+        raise errors.InvalidNameError(
+            'Network Tag {0:s} does not comply with {1:s}.'.format(
+                tag, common.COMPUTE_RFC1035_REGEX.pattern), __name__)
+
+    get_operation = self.GetOperation()
+    tags_dict = get_operation['tags']
+    existing_tags = tags_dict.get('items', [])
+    tags_fingerprint = tags_dict['fingerprint']
+    tags = existing_tags + new_tags
+    request_body = {
+      'fingerprint': tags_fingerprint,
+      'items': tags,
+      }
+
+    gce_instance_client = self.GceApi().instances()
+    request = gce_instance_client.setTags(
+      project=self.project_id,
+      zone=self.zone,
+      instance=self.name,
+      body=request_body
+    )
+    response = request.execute()
+    self.BlockOperation(response, zone=self.zone)
+
 
 class GoogleComputeDisk(compute_base_resource.GoogleComputeBaseResource):
   """Class representing a Compute Engine disk."""
@@ -1028,7 +1086,7 @@ class GoogleComputeSnapshot(compute_base_resource.GoogleComputeBaseResource):
     """Delete a Snapshot."""
 
     logger.info(
-        self.FormatLogMessage('Deleted Snapshot: {0:s}'.format(self.name)))
+        self.FormatLogMessage('Deleting Snapshot: {0:s}'.format(self.name)))
     gce_snapshot_client = self.GceApi().snapshots()
     request = gce_snapshot_client.delete(
         project=self.project_id, snapshot=self.name)

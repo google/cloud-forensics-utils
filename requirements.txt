@@ -16,5 +16,6 @@ azure-mgmt-network
 azure-mgmt-monitor
 msrest
 msrestazure
+netaddr
 sshpubkeys
 pycryptodome
