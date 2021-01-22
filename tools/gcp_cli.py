@@ -285,3 +285,22 @@ def DeleteObject(args: 'argparse.Namespace') -> None:
   gcs.DeleteObject(args.path)
 
   print('Object deleted.')
+
+
+def InstanceNetworkQuarantine(args: 'argparse.Namespace') -> None:
+  """Put a Google Cloud instance in network quarantine.
+
+  Args:
+    args (argparse.Namespace): Arguments from ArgumentParser.
+  """
+  exempted_ips = []
+  if args.exempted_src_ips:
+    exempted_ips = args.exempted_src_ips.split(',')
+    # Check if exempted_src_ips argument exists and if there
+    # are any empty entries.
+    if not (exempted_ips and all(exempted_ips)):
+      logger.error('parameter --exempted_src_ips: {0:s}'.format(
+          args.exempted_src_ips))
+      return
+  forensics.InstanceNetworkQuarantine(args.project,
+      args.instance_name, exempted_ips, args.enable_logging )

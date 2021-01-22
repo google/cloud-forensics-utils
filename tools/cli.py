@@ -53,7 +53,8 @@ PROVIDER_TO_FUNC = {
         'objectmetadata': gcp_cli.GetGCSObjectMetadata,
         'listbuckets': gcp_cli.ListBuckets,
         'listobjects': gcp_cli.ListBucketObjects,
-        'deleteobject': gcp_cli.DeleteObject
+        'deleteobject': gcp_cli.DeleteObject,
+        'quarantinevm': gcp_cli.InstanceNetworkQuarantine
     }
 }
 
@@ -355,6 +356,15 @@ def Main() -> None:
   AddParser('gcp', gcp_subparsers, 'deleteobject', 'Deletes a GCS object',
             args=[
                 ('path', 'Path to GCS object.', None),
+            ])
+  AddParser('gcp', gcp_subparsers, 'quarantinevm', 'Put a VM in '
+                                                   'network quarantine.',
+            args=[
+                ('instance_name', 'Name of the GCE instance to quranitne.',
+                    ''),
+                ('--exempted_src_ips', 'Comma separated list of source IPs '
+                    'to exempt from ingress firewall rules.', None),
+                ('--enable_logging', 'Enable firewall logging.', False),
             ])
 
   if len(sys.argv) == 1:
