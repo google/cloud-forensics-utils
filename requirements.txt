@@ -1,12 +1,13 @@
 -i https://pypi.org/simple
+PyJWT<=2  # Bad overlap in azure dependencies
 httplib2
 google-api-python-client
 google-auth
 boto3
 botocore
-azure-identity  # Has stricter requirements for PyJWT
 azure-common
 azure-core
+azure-identity
 azure-mgmt-compute
 azure-mgmt-resource
 azure-mgmt-storage
