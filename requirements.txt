@@ -1,5 +1,6 @@
 -i https://pypi.org/simple
-httplib2>=0.15.0
+PyJWT<2  # Bad overlap in azure dependencies
+httplib2
 google-api-python-client
 google-auth
 boto3
