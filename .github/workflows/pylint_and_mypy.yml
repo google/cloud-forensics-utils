@@ -19,6 +19,10 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
+        pip install -r requirements-base.txt
+        pip install -r requirements-aws.txt
+        pip install -r requirements-azure.txt
+        pip install -r requirements-gcp.txt
         pip install -r requirements-dev.txt
     - name: Run pylint on all *.py files
       run: |
