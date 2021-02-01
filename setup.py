@@ -33,10 +33,13 @@ description = (
 )
 
 
-def parse_requirements(filename):
-  with open(filename) as requirements:
-    # Skipping -i https://pypi.org/simple
-    return requirements.readlines()[1:]
+def parse_requirements(filenames):
+    packages = []
+    for filename in filenames:
+        with open(filename) as requirements:
+            # Skipping -i https://pypi.org/simple
+            packages.append(requirements.readlines()[1:])
+    return packages
 
 
 setup(
@@ -62,11 +65,12 @@ setup(
     entry_points={'console_scripts': [
         'cloudforensics = tools.cli:Main']},
     zip_safe=False,
-    install_requires=[req for req in parse_requirements('requirements-base.txt')],
-    tests_require=[req for req in parse_requirements('requirements-dev.txt')],
+    install_requires=[req for req in parse_requirements(['requirements-base.txt'])],
+    tests_require=[req for req in parse_requirements(['requirements-dev.txt'])],
     extras_require={
-        "gcp": [req for req in parse_requirements('requirements-gcp.txt')],
-        "aws": [req for req in parse_requirements('requirements-gcp.txt')],
-        "azure": [req for req in parse_requirements('requirements-gcp.txt')],
+        "all": [req for req in parse_requirements(['requirements-gcp.txt','requirements-aws.txt','requirements-azure.txt'])],
+        "gcp": [req for req in parse_requirements(['requirements-gcp.txt'])],
+        "aws": [req for req in parse_requirements(['requirements-aws.txt'])],
+        "azure": [req for req in parse_requirements(['requirements-azure.txt'])],
     },
 )
