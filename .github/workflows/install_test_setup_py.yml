@@ -22,9 +22,7 @@ jobs:
     - name: Install wheel
       run: pip install wheel
     - name: Install dependencies through setup.py
-      run: | 
-        python -m pip install --upgrade pip
-        PYTHONPATH=build/bdist.linux-x86_64/egg python setup.py install easy_install libcloudforensics[all]
+      run: python setup.py install
     - name: Test through setup.py
       run: |
         pip install nose mock
