@@ -69,7 +69,7 @@ setup(
     install_requires=[req for req in parse_requirements(['requirements-base.txt'])],
     tests_require=[req for req in parse_requirements(['requirements-dev.txt'])],
     extras_require={
-        "all": [req for req in parse_requirements(['requirements-base.txt','requirements-gcp.txt','requirements-aws.txt','requirements-azure.txt'])],
+        "all": [req for req in parse_requirements(['requirements-gcp.txt','requirements-aws.txt','requirements-azure.txt'])],
         "gcp": [req for req in parse_requirements(['requirements-base.txt','requirements-gcp.txt'])],
         "aws": [req for req in parse_requirements(['requirements-base.txt','requirements-aws.txt'])],
         "azure": [req for req in parse_requirements(['requirements-base.txt','requirements-azure.txt'])],
