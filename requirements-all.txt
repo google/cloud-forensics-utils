@@ -1,0 +1,4 @@
+-r requirements-base.txt
+-r requirements-gcp.txt
+-r requirements-aws.txt
+-r requirements-azure.txt
