@@ -22,7 +22,7 @@ jobs:
     - name: Install wheel
       run: pip install wheel
     - name: Install dependencies through setup.py
-      run: python setup.py install
+      run: python setup.py install easy_install libcloudforensics[all]
     - name: Test through setup.py
       run: |
         pip install nose mock
