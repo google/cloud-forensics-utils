@@ -62,6 +62,11 @@ setup(
     entry_points={'console_scripts': [
         'cloudforensics = tools.cli:Main']},
     zip_safe=False,
-    install_requires=[req for req in parse_requirements('requirements.txt')],
+    install_requires=[req for req in parse_requirements('requirements-base.txt')],
     tests_require=[req for req in parse_requirements('requirements-dev.txt')],
+    extras_require={
+        "gcp": [req for req in parse_requirements('requirements-gcp.txt')],
+        "aws": [req for req in parse_requirements('requirements-gcp.txt')],
+        "azure": [req for req in parse_requirements('requirements-gcp.txt')],
+    },
 )
