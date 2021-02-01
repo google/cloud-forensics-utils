@@ -38,7 +38,8 @@ def parse_requirements(filenames):
     for filename in filenames:
         with open(filename) as requirements:
             # Skipping -i https://pypi.org/simple
-            packages.append(requirements.readlines()[1:])
+            # Skipping -r requirements-base.txt
+            packages.append(requirements.readlines()[2:])
     return packages
 
 
@@ -68,9 +69,9 @@ setup(
     install_requires=[req for req in parse_requirements(['requirements-base.txt'])],
     tests_require=[req for req in parse_requirements(['requirements-dev.txt'])],
     extras_require={
-        "all": [req for req in parse_requirements(['requirements-all.txt'])],
-        "gcp": [req for req in parse_requirements(['requirements-gcp.txt'])],
-        "aws": [req for req in parse_requirements(['requirements-aws.txt'])],
-        "azure": [req for req in parse_requirements(['requirements-azure.txt'])],
+        "all": [req for req in parse_requirements(['requirements-base.txt','requirements-gcp.txt','requirements-aws.txt','requirements-azure.txt'])],
+        "gcp": [req for req in parse_requirements(['requirements-base.txt','requirements-gcp.txt'])],
+        "aws": [req for req in parse_requirements(['requirements-base.txt','requirements-aws.txt'])],
+        "azure": [req for req in parse_requirements(['requirements-base.txt','requirements-azure.txt'])],
     },
 )

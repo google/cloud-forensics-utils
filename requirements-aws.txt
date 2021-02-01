@@ -1,3 +1,4 @@
 -i https://pypi.org/simple
+-r requirements-base.txt
 boto3
 botocore

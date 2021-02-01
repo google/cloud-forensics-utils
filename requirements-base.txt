@@ -1,4 +1,5 @@
 -i https://pypi.org/simple
+-r requirements-base.txt
 PyJWT<2  # Bad overlap in azure dependencies
 httplib2
 netaddr
