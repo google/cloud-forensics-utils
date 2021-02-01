@@ -72,6 +72,7 @@ setup(
         "all": [req for req in parse_requirements(['requirements-aws.txt','requirements-azure.txt','requirements-base.txt'])],
         "gcp": [req for req in parse_requirements(['requirements-gcp.txt','requirements-base.txt'])],
         "aws": [req for req in parse_requirements(['requirements-aws.txt','requirements-base.txt'])],
+        "alibaba": [req for req in parse_requirements(['requirements-aws.txt','requirements-base.txt'])],
         "azure": [req for req in parse_requirements(['requirements-azure.txt','requirements-base.txt'])],
     },
 )
