@@ -40,21 +40,22 @@ PROVIDER_TO_FUNC = {
         'querymetrics': az_cli.QueryMetrics
     },
     'gcp': {
+        'bucketacls': gcp_cli.GetBucketACLs,
         'copydisk': gcp_cli.CreateDiskCopy,
         'creatediskgcs': gcp_cli.CreateDiskFromGCSImage,
         'deleteinstance': gcp_cli.DeleteInstance,
+        'deleteobject': gcp_cli.DeleteObject,
+        'listbuckets': gcp_cli.ListBuckets,
         'listdisks': gcp_cli.ListDisks,
         'listinstances': gcp_cli.ListInstances,
         'listlogs': gcp_cli.ListLogs,
+        'listobjects': gcp_cli.ListBucketObjects,
         'listservices': gcp_cli.ListServices,
+        'objectmetadata': gcp_cli.GetGCSObjectMetadata,
+        'quarantinevm': gcp_cli.InstanceNetworkQuarantine,
         'querylogs': gcp_cli.QueryLogs,
         'startvm': gcp_cli.StartAnalysisVm,
-        'bucketacls': gcp_cli.GetBucketACLs,
-        'objectmetadata': gcp_cli.GetGCSObjectMetadata,
-        'listbuckets': gcp_cli.ListBuckets,
-        'listobjects': gcp_cli.ListBucketObjects,
-        'deleteobject': gcp_cli.DeleteObject,
-        'quarantinevm': gcp_cli.InstanceNetworkQuarantine
+        'vmremoveserviceaccount': gcp_cli.VMRemoveServiceAccount
     }
 }
 
@@ -365,6 +366,13 @@ def Main() -> None:
                 ('--exempted_src_ips', 'Comma separated list of source IPs '
                     'to exempt from ingress firewall rules.', None),
                 ('--enable_logging', 'Enable firewall logging.', False),
+            ])
+  AddParser('gcp', gcp_subparsers, 'vmremoveserviceaccount',
+            'Removes a service account attachment from a VM.',
+            args=[
+                ('instance_name', 'Name of the instance to affect', ''),
+                ('--leave_stopped', 'Leave the machine TERMINATED after removing '
+                    'the service account (default: False)', False)
             ])
 
   if len(sys.argv) == 1:

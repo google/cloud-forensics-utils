@@ -16,6 +16,7 @@
 
 import base64
 import random
+import time
 from typing import TYPE_CHECKING, List, Tuple, Optional, Dict, Any
 
 from google.auth.exceptions import RefreshError, DefaultCredentialsError
@@ -24,6 +25,7 @@ from googleapiclient.errors import HttpError
 from libcloudforensics.providers.gcp.internal import project as gcp_project
 from libcloudforensics.providers.gcp.internal import common
 from libcloudforensics import errors, logging_utils
+from libcloudforensics.errors import ResourceNotFoundError
 
 if TYPE_CHECKING:
   from libcloudforensics.providers.gcp.internal import compute
@@ -357,3 +359,69 @@ def InstanceNetworkQuarantine(project_id: str,
         'gcloud compute ssh --zone "{0:s}" "{1:s}" --project "{2:s}"\n'
         'Connecting from the browser via GCP console will not work.'.format(
               instance.zone, instance_name, project_id))
+
+def VMRemoveServiceAccount(project_id: str,
+                           instance_name: str,
+                           leave_stopped: bool = False) -> bool:
+  """
+  Remove a service account attachment from a GCP VM
+
+  Service account attachments to VMs allow the VM to obtain credentials
+  via the instance metadata service to perform API actions. Removing
+  the service account attachment will prevent credentials being issued.
+  
+  Note that the instance must be powered down for this action.
+
+  Args:
+    project_id (str): Google Cloud Project ID.
+    instance_name (str): The name of the virtual machine.
+    leave_stopped (bool): Optional. True to leave the machine powered off.
+  Returns:
+    success (bool)
+  """
+  logger.info('Removing service account attachment from "{0:s}",'
+              ' in project {1:s}'.format(instance_name, project_id))
+
+  validStartingStates = ['RUNNING', 'STOPPING', 'TERMINATED']
+
+  project = gcp_project.GoogleCloudProject(project_id)
+  instance = project.compute.GetInstance(instance_name)
+
+  # Get the initial powered state of the instance
+  initialState = instance.GetPowerState()
+  currentState = initialState
+
+  if (not initialState in validStartingStates):
+    logger.error('Instance "{0:s}" is currently {1:s} which is an invalid '
+                 'state for this operation'.format(instance_name, initialState))
+    return False
+
+  # Stop the instance if it is not already (or on the way)....
+  if (initialState != 'TERMINATED' and initialState != 'STOPPING'):
+    instance.Stop()
+
+  # ... and wait for the stop to complete.
+  wait = 1 # seconds
+  waitCount = 0
+  while currentState != 'TERMINATED':
+    wait *= 2 # exponential backoff
+    waitCount += 1
+
+    if waitCount >= 10:
+      logger.error('Timeout on stopping instance. Exiting.')
+      return False
+
+    logger.info('Waiting {0:d} seconds for instance to stop'.format(wait))
+    time.sleep(wait)
+
+    currentState = instance.GetPowerState()
+
+  # Remove the service account
+  instance.DetachServiceAccount()
+
+  # If the instance was running initially, and the option has been set,
+  # start up the instance again
+  if initialState == 'RUNNING' and not leave_stopped:
+    instance.Start()
+
+  return True
