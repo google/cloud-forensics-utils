@@ -69,4 +69,4 @@ class InstanceStateChangeError(LCFError):
   """Error when an issue with changing an instance state is encountered."""
 
 class ServiceAccountRemovalError(LCFError):
-  """Error when an issue with changing an instance state is encountered."""
+  """Error when an issue with removing a service account is encountered."""

@@ -25,7 +25,6 @@ from googleapiclient.errors import HttpError
 from libcloudforensics.providers.gcp.internal import project as gcp_project
 from libcloudforensics.providers.gcp.internal import common
 from libcloudforensics import errors, logging_utils
-from libcloudforensics.errors import ResourceNotFoundError
 
 if TYPE_CHECKING:
   from libcloudforensics.providers.gcp.internal import compute

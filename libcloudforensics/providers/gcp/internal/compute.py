@@ -1017,9 +1017,6 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
       raise errors.ServiceAccountRemovalError
 
 
-
-      
-
 class GoogleComputeDisk(compute_base_resource.GoogleComputeBaseResource):
   """Class representing a Compute Engine disk."""
 
