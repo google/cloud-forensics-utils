@@ -371,8 +371,8 @@ def Main() -> None:
             'Removes a service account attachment from a VM.',
             args=[
                 ('instance_name', 'Name of the instance to affect', ''),
-                ('--leave_stopped', 'Leave the machine TERMINATED after removing '
-                    'the service account (default: False)', False)
+                ('--leave_stopped', 'Leave the machine TERMINATED after '
+                    'removing the service account (default: False)', False)
             ])
 
   if len(sys.argv) == 1:

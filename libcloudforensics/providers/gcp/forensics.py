@@ -368,7 +368,7 @@ def VMRemoveServiceAccount(project_id: str,
   Service account attachments to VMs allow the VM to obtain credentials
   via the instance metadata service to perform API actions. Removing
   the service account attachment will prevent credentials being issued.
-  
+
   Note that the instance must be powered down for this action.
 
   Args:
@@ -381,46 +381,46 @@ def VMRemoveServiceAccount(project_id: str,
   logger.info('Removing service account attachment from "{0:s}",'
               ' in project {1:s}'.format(instance_name, project_id))
 
-  validStartingStates = ['RUNNING', 'STOPPING', 'TERMINATED']
+  valid_starting_states = ['RUNNING', 'STOPPING', 'TERMINATED']
 
   project = gcp_project.GoogleCloudProject(project_id)
   instance = project.compute.GetInstance(instance_name)
 
   # Get the initial powered state of the instance
-  initialState = instance.GetPowerState()
-  currentState = initialState
+  initial_state = instance.GetPowerState()
+  current_state = initial_state
 
-  if (not initialState in validStartingStates):
+  if not initial_state in valid_starting_states:
     logger.error('Instance "{0:s}" is currently {1:s} which is an invalid '
-                 'state for this operation'.format(instance_name, initialState))
+               'state for this operation'.format(instance_name, initial_state))
     return False
 
   # Stop the instance if it is not already (or on the way)....
-  if (initialState != 'TERMINATED' and initialState != 'STOPPING'):
+  if not initial_state in ('TERMINATED', 'STOPPING'):
     instance.Stop()
 
   # ... and wait for the stop to complete.
   wait = 1 # seconds
-  waitCount = 0
-  while currentState != 'TERMINATED':
+  wait_count = 0
+  while current_state != 'TERMINATED':
     wait *= 2 # exponential backoff
-    waitCount += 1
+    wait_count += 1
 
-    if waitCount >= 10:
+    if wait_count >= 10:
       logger.error('Timeout on stopping instance. Exiting.')
       return False
 
     logger.info('Waiting {0:d} seconds for instance to stop'.format(wait))
     time.sleep(wait)
 
-    currentState = instance.GetPowerState()
+    current_state = instance.GetPowerState()
 
   # Remove the service account
   instance.DetachServiceAccount()
 
   # If the instance was running initially, and the option has been set,
   # start up the instance again
-  if initialState == 'RUNNING' and not leave_stopped:
+  if initial_state == 'RUNNING' and not leave_stopped:
     instance.Start()
 
   return True

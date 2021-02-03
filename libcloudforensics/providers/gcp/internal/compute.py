@@ -964,7 +964,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
     RUNNING, STOPPING, SUSPENDING, SUSPENDED, REPAIRING, and TERMINATED
     """
     return self.GetOperation()['status']
-  
+
   def Stop(self) -> None:
     """
     Stop the instance.
@@ -976,6 +976,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
       request = gce_instance_client.stop(
           project=self.project_id, instance=self.name, zone=self.zone)
       response = request.execute()
+      self.BlockOperation(response, zone=self.zone)
     except HttpError as exception:
       logger.error((
           'While stopping GCE instance {0:s} the following error occurred: '
@@ -993,6 +994,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
       request = gce_instance_client.start(
           project=self.project_id, instance=self.name, zone=self.zone)
       response = request.execute()
+      self.BlockOperation(response, zone=self.zone)
     except HttpError as exception:
       logger.error((
           'While starting GCE instance {0:s} the following error occurred: '
@@ -1010,6 +1012,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
       request = gce_instance_client.setServiceAccount(
           project=self.project_id, instance=self.name, zone=self.zone, body={})
       response = request.execute()
+      self.BlockOperation(response, zone=self.zone)
     except HttpError as exception:
       logger.error((
           'While detaching service accountd from instance {0:s} the following '
