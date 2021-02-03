@@ -399,22 +399,6 @@ def VMRemoveServiceAccount(project_id: str,
   if not initial_state in ('TERMINATED', 'STOPPING'):
     instance.Stop()
 
-  # ... and wait for the stop to complete.
-  wait = 1 # seconds
-  wait_count = 0
-  while current_state != 'TERMINATED':
-    wait *= 2 # exponential backoff
-    wait_count += 1
-
-    if wait_count >= 10:
-      logger.error('Timeout on stopping instance. Exiting.')
-      return False
-
-    logger.info('Waiting {0:d} seconds for instance to stop'.format(wait))
-    time.sleep(wait)
-
-    current_state = instance.GetPowerState()
-
   # Remove the service account
   instance.DetachServiceAccount()
 

@@ -963,7 +963,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
     this can return one of the following possible values: PROVISIONING, STAGING,
     RUNNING, STOPPING, SUSPENDING, SUSPENDED, REPAIRING, and TERMINATED
     """
-    return self.GetOperation()['status']
+    return str(self.GetOperation()['status'])
 
   def Stop(self) -> None:
     """
