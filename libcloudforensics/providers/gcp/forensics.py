@@ -16,7 +16,6 @@
 
 import base64
 import random
-import time
 from typing import TYPE_CHECKING, List, Tuple, Optional, Dict, Any
 
 from google.auth.exceptions import RefreshError, DefaultCredentialsError
@@ -388,7 +387,6 @@ def VMRemoveServiceAccount(project_id: str,
 
   # Get the initial powered state of the instance
   initial_state = instance.GetPowerState()
-  current_state = initial_state
 
   if not initial_state in valid_starting_states:
     logger.error('Instance "{0:s}" is currently {1:s} which is an invalid '
