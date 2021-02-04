@@ -362,7 +362,7 @@ def VMRemoveServiceAccount(project_id: str,
                            instance_name: str,
                            leave_stopped: bool = False) -> bool:
   """
-  Remove a service account attachment from a GCP VM
+  Remove a service account attachment from a GCP VM.
 
   Service account attachments to VMs allow the VM to obtain credentials
   via the instance metadata service to perform API actions. Removing
@@ -375,7 +375,7 @@ def VMRemoveServiceAccount(project_id: str,
     instance_name (str): The name of the virtual machine.
     leave_stopped (bool): Optional. True to leave the machine powered off.
   Returns:
-    success (bool)
+    bool: True if the service account was successfully removed, False otherwise.
   """
   logger.info('Removing service account attachment from "{0:s}",'
               ' in project {1:s}'.format(instance_name, project_id))

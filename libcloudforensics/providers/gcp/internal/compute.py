@@ -967,7 +967,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
 
   def Stop(self) -> None:
     """
-    Stop the instance.
+    Stops the instance.
     """
 
     try:
@@ -985,7 +985,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
 
   def Start(self) -> None:
     """
-    Start the instance.
+    Starts the instance.
     """
 
     try:
@@ -1003,7 +1003,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
 
   def DetachServiceAccount(self) -> None:
     """
-    Remove a service account from the instance
+    Detach a service account from the instance
     """
     try:
       logger.info('Detaching service account from instance "{0:s}"'
