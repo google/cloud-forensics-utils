@@ -368,12 +368,14 @@ def VMRemoveServiceAccount(project_id: str,
   via the instance metadata service to perform API actions. Removing
   the service account attachment will prevent credentials being issued.
 
-  Note that the instance must be powered down for this action.
+  Note that the instance will be powered down, if it isn't already for
+  this action.
 
   Args:
     project_id (str): Google Cloud Project ID.
     instance_name (str): The name of the virtual machine.
     leave_stopped (bool): Optional. True to leave the machine powered off.
+
   Returns:
     bool: True if the service account was successfully removed, False otherwise.
   """
@@ -393,16 +395,19 @@ def VMRemoveServiceAccount(project_id: str,
                'state for this operation'.format(instance_name, initial_state))
     return False
 
-  # Stop the instance if it is not already (or on the way)....
-  if not initial_state in ('TERMINATED', 'STOPPING'):
-    instance.Stop()
+  try:
+    # Stop the instance if it is not already (or on the way)....
+    if not initial_state in ('TERMINATED', 'STOPPING'):
+      instance.Stop()
 
-  # Remove the service account
-  instance.DetachServiceAccount()
+    # Remove the service account
+    instance.DetachServiceAccount()
 
-  # If the instance was running initially, and the option has been set,
-  # start up the instance again
-  if initial_state == 'RUNNING' and not leave_stopped:
-    instance.Start()
+    # If the instance was running initially, and the option has been set,
+    # start up the instance again
+    if initial_state == 'RUNNING' and not leave_stopped:
+      instance.Start()
+  except errors.LCFError as exception:
+    logger.error('Fatal exception encountered: {0:s}'.format(str(exception)))
 
   return True

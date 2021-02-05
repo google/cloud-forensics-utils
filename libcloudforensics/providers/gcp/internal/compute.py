@@ -968,57 +968,61 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
   def Stop(self) -> None:
     """
     Stops the instance.
+
+    Raises:
+      errors.InstanceStateChangeError: If the Stop operation is unsuccessful
     """
 
+    logger.info('Stopping instance "{0:s}"'.format(self.name))
     try:
-      logger.info('Stopping instance "{0:s}"'.format(self.name))
       gce_instance_client = self.GceApi().instances()
       request = gce_instance_client.stop(
           project=self.project_id, instance=self.name, zone=self.zone)
       response = request.execute()
       self.BlockOperation(response, zone=self.zone)
     except HttpError as exception:
-      logger.error((
-          'While stopping GCE instance {0:s} the following error occurred: '
-          '{1:s}').format(self.name, str(exception)))
-      raise errors.InstanceStateChangeError
+      raise errors.InstanceStateChangeError('Could not stop instance: {0:s}'
+          .format(str(exception)), __name__)
 
   def Start(self) -> None:
     """
     Starts the instance.
+
+    Raises:
+      errors.InstanceStateChangeError: If the Start operation is unsuccessful
     """
 
+    logger.info('Starting instance "{0:s}"'.format(self.name))
     try:
-      logger.info('Starting instance "{0:s}"'.format(self.name))
       gce_instance_client = self.GceApi().instances()
       request = gce_instance_client.start(
           project=self.project_id, instance=self.name, zone=self.zone)
       response = request.execute()
       self.BlockOperation(response, zone=self.zone)
     except HttpError as exception:
-      logger.error((
-          'While starting GCE instance {0:s} the following error occurred: '
-          '{1:s}').format(self.name, str(exception)))
-      raise errors.InstanceStateChangeError
+      raise errors.InstanceStateChangeError('Could not start instance: {0:s}'
+          .format(str(exception)), __name__)
 
   def DetachServiceAccount(self) -> None:
     """
     Detach a service account from the instance
+
+    Raises:
+      errors.ServiceAccountRemovalError: if en error occurs while
+          detaching the service account
     """
+
+    logger.info('Detaching service account from instance "{0:s}"'
+        .format(self.name))
     try:
-      logger.info('Detaching service account from instance "{0:s}"'
-          .format(self.name))
       gce_instance_client = self.GceApi().instances()
       request = gce_instance_client.setServiceAccount(
           project=self.project_id, instance=self.name, zone=self.zone, body={})
       response = request.execute()
       self.BlockOperation(response, zone=self.zone)
     except HttpError as exception:
-      logger.error((
-          'While detaching service accountd from instance {0:s} the following '
-          'error occurred: {1:s}').format(self.name, str(exception)))
-      raise errors.ServiceAccountRemovalError
-
+      raise errors.ServiceAccountRemovalError('Service account detatchment '
+          'failure: {0:s}'.format(str(exception)), __name__)
 
 class GoogleComputeDisk(compute_base_resource.GoogleComputeBaseResource):
   """Class representing a Compute Engine disk."""
