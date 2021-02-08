@@ -357,3 +357,57 @@ def InstanceNetworkQuarantine(project_id: str,
         'gcloud compute ssh --zone "{0:s}" "{1:s}" --project "{2:s}"\n'
         'Connecting from the browser via GCP console will not work.'.format(
               instance.zone, instance_name, project_id))
+
+def VMRemoveServiceAccount(project_id: str,
+                           instance_name: str,
+                           leave_stopped: bool = False) -> bool:
+  """
+  Remove a service account attachment from a GCP VM.
+
+  Service account attachments to VMs allow the VM to obtain credentials
+  via the instance metadata service to perform API actions. Removing
+  the service account attachment will prevent credentials being issued.
+
+  Note that the instance will be powered down, if it isn't already for
+  this action.
+
+  Args:
+    project_id (str): Google Cloud Project ID.
+    instance_name (str): The name of the virtual machine.
+    leave_stopped (bool): Optional. True to leave the machine powered off.
+
+  Returns:
+    bool: True if the service account was successfully removed, False otherwise.
+  """
+  logger.info('Removing service account attachment from "{0:s}",'
+              ' in project {1:s}'.format(instance_name, project_id))
+
+  valid_starting_states = ['RUNNING', 'STOPPING', 'TERMINATED']
+
+  project = gcp_project.GoogleCloudProject(project_id)
+  instance = project.compute.GetInstance(instance_name)
+
+  # Get the initial powered state of the instance
+  initial_state = instance.GetPowerState()
+
+  if not initial_state in valid_starting_states:
+    logger.error('Instance "{0:s}" is currently {1:s} which is an invalid '
+               'state for this operation'.format(instance_name, initial_state))
+    return False
+
+  try:
+    # Stop the instance if it is not already (or on the way)....
+    if not initial_state in ('TERMINATED', 'STOPPING'):
+      instance.Stop()
+
+    # Remove the service account
+    instance.DetachServiceAccount()
+
+    # If the instance was running initially, and the option has been set,
+    # start up the instance again
+    if initial_state == 'RUNNING' and not leave_stopped:
+      instance.Start()
+  except errors.LCFError as exception:
+    logger.error('Fatal exception encountered: {0:s}'.format(str(exception)))
+
+  return True

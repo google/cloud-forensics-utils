@@ -304,3 +304,12 @@ def InstanceNetworkQuarantine(args: 'argparse.Namespace') -> None:
       return
   forensics.InstanceNetworkQuarantine(args.project,
       args.instance_name, exempted_ips, args.enable_logging )
+
+def VMRemoveServiceAccount(args: 'argparse.Namespace') -> None:
+  """Removes an attached service account from a VM instance.
+  Requires the instance to be stopped, if it isn't already.
+  Args:
+    args (argparse.Namespace): Arguments from ArgumentParser.
+  """
+  forensics.VMRemoveServiceAccount(args.project, args.instance_name,
+      args.leave_stopped)
