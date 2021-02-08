@@ -60,5 +60,13 @@ class ResourceNotFoundError(LCFError):
 
 class ResourceCreationError(LCFError):
   """Error when an issue with creating a new resource is encountered."""
+
+
 class ResourceDeletionError(LCFError):
   """Error when an issue with deleting a resource is encountered."""
+
+class InstanceStateChangeError(LCFError):
+  """Error when an issue with changing an instance state is encountered."""
+
+class ServiceAccountRemovalError(LCFError):
+  """Error when an issue with removing a service account is encountered."""

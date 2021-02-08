@@ -40,19 +40,27 @@ PROVIDER_TO_FUNC = {
         'querymetrics': az_cli.QueryMetrics
     },
     'gcp': {
+        'bucketacls': gcp_cli.GetBucketACLs,
+        'bucketacls': gcp_cli.GetBucketACLs,
         'copydisk': gcp_cli.CreateDiskCopy,
         'creatediskgcs': gcp_cli.CreateDiskFromGCSImage,
+        'deleteinstance': gcp_cli.DeleteInstance,
+        'deleteobject': gcp_cli.DeleteObject,
+        'listbuckets': gcp_cli.ListBuckets,
+        'listbuckets': gcp_cli.ListBuckets,
+        'listcloudsqlinstances': gcp_cli.ListCloudSqlInstances
         'listdisks': gcp_cli.ListDisks,
         'listinstances': gcp_cli.ListInstances,
         'listlogs': gcp_cli.ListLogs,
+        'listobjects': gcp_cli.ListBucketObjects,
+        'listobjects': gcp_cli.ListBucketObjects,
         'listservices': gcp_cli.ListServices,
+        'objectmetadata': gcp_cli.GetGCSObjectMetadata,
+        'objectmetadata': gcp_cli.GetGCSObjectMetadata,
+        'quarantinevm': gcp_cli.InstanceNetworkQuarantine,
         'querylogs': gcp_cli.QueryLogs,
         'startvm': gcp_cli.StartAnalysisVm,
-        'bucketacls': gcp_cli.GetBucketACLs,
-        'objectmetadata': gcp_cli.GetGCSObjectMetadata,
-        'listobjects': gcp_cli.ListBucketObjects,
-        'listbuckets': gcp_cli.ListBuckets,
-        'listcloudsqlinstances': gcp_cli.ListCloudSqlInstances
+        'vmremoveserviceaccount': gcp_cli.VMRemoveServiceAccount
     }
 }
 
@@ -310,6 +318,13 @@ def Main() -> None:
                 ('--attach_disks', 'Comma separated list of disk names '
                                    'to attach.', None)
             ])
+  AddParser('gcp', gcp_subparsers, 'deleteinstance', 'Delete a GCE instance.',
+            args=[
+                ('instance_name', 'Name of the GCE instance to delete.', ''),
+                ('--delete_all_disks',
+                 'Force delete disks marked as "Keep when deleting".',
+                 False),
+            ])
   AddParser('gcp', gcp_subparsers, 'querylogs', 'Query GCP logs.',
             args=[
                 ('--filter', 'Query filter', None),
@@ -346,6 +361,26 @@ def Main() -> None:
             ])
   AddParser('gcp', gcp_subparsers, 'listcloudsqlinstances',
             'List CloudSQL instances for a project.')
+  AddParser('gcp', gcp_subparsers, 'deleteobject', 'Deletes a GCS object',
+            args=[
+                ('path', 'Path to GCS object.', None),
+            ])
+  AddParser('gcp', gcp_subparsers, 'quarantinevm', 'Put a VM in '
+                                                   'network quarantine.',
+            args=[
+                ('instance_name', 'Name of the GCE instance to quranitne.',
+                    ''),
+                ('--exempted_src_ips', 'Comma separated list of source IPs '
+                    'to exempt from ingress firewall rules.', None),
+                ('--enable_logging', 'Enable firewall logging.', False),
+            ])
+  AddParser('gcp', gcp_subparsers, 'vmremoveserviceaccount',
+            'Removes a service account attachment from a VM.',
+            args=[
+                ('instance_name', 'Name of the instance to affect', ''),
+                ('--leave_stopped', 'Leave the machine TERMINATED after '
+                    'removing the service account (default: False)', False)
+            ])
 
   if len(sys.argv) == 1:
     parser.print_help()

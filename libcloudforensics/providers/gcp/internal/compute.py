@@ -284,7 +284,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     except errors.ResourceNotFoundError:
       pass
 
-    machine_type = 'zones/{0:s}/machineTypes/n1-standard-{1:d}'.format(
+    machine_type = 'zones/{0:s}/machineTypes/e2-standard-{1:d}'.format(
         self.default_zone, cpu_cores)
     ubuntu_image = self.GceApi().images().getFromFamily(
         project=image_project, family=image_family).execute()
@@ -547,7 +547,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       gcs_uri = os.path.join(common.STORAGE_LINK_URL, gcs_uri)
     image_body = {
         'name': name,
-        "rawDisk": {
+        'rawDisk': {
             'source': gcs_uri
         }
     }
@@ -687,7 +687,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
             'env': ['BUILD_ID=$BUILD_ID']
         }],
         'timeout': '86400s',
-        'tags': ["gce-daisy", "gce-daisy-image-import"]
+        'tags': ['gce-daisy', 'gce-daisy-image-import']
     }
     cloud_build = build.GoogleCloudBuild(self.project_id)
     response = cloud_build.CreateBuild(build_body)
@@ -696,6 +696,21 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
         'Image {0:s} imported as GCE image {1:s}.'.format(
             storage_image_path, image_name))
     return GoogleComputeImage(self.project_id, '', image_name)
+
+  def InsertFirewallRule(self, body: Dict[str, Any]) -> None:
+    """Insert a firewall rule to the project.
+
+    Args:
+      body (Dict): The request body.
+          https://googleapis.github.io/google-api-python-client/docs/dyn/compute_v1.firewalls.html#insert  # pylint: disable=line-too-long
+    """
+
+    logger.info( 'Inserting firewall rule {0:s}, '
+            'targeting tags: {1!s}.'.format(body['name'], body['targetTags'] ))
+    firewall_client = self.GceApi().firewalls()
+    request = firewall_client.insert(project=self.project_id, body=body)
+    response = request.execute()
+    self.BlockOperation(response)
 
 
 class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
@@ -826,6 +841,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
     operation_config = {
         'mode': mode,
         'source': disk.GetSourceString(),
+        'deviceName': disk.name,
         'boot': False,
         'autoDelete': False,
     }
@@ -854,6 +870,159 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
     response = request.execute()
     self.BlockOperation(response, zone=self.zone)
 
+  def Delete(self, delete_disks: bool = False) -> None:
+    """Delete an Instance.
+
+    Args:
+      delete_disks (bool): force delete all attached disks (ignores the 'Keep
+        when instance is deleted' bit).
+    """
+    disks_to_delete = []
+    if delete_disks:
+      disks_to_delete = [
+          disk['source'].split('/')[-1] for disk in self.GetValue('disks')]
+
+    gce_instance_client = self.GceApi().instances()
+    logger.info(
+        self.FormatLogMessage('Deleting Instance: {0:s}'.format(self.name)))
+    try:
+      request = gce_instance_client.delete(
+          project=self.project_id, instance=self.name, zone=self.zone)
+      response = request.execute()
+    except HttpError as exception:
+      if exception.resp.status == 404:
+        logger.warning(
+            ('Can not find resource {0:s}, it might be already '
+             'deleted. API call resulted in the following error: '
+             '{1:s}').format(self.name, str(exception)))
+      else:
+        logger.error((
+            'While deleting GCE instance {0:s} the following error occurred: '
+            '{1:s}').format(self.name, str(exception)))
+        raise errors.ResourceDeletionError
+
+    self.BlockOperation(response, zone=self.zone)
+
+    for disk_name in disks_to_delete:
+      try:
+        disk = GoogleCloudCompute(self.project_id).GetDisk(disk_name=disk_name)
+        disk.Delete()
+      except (errors.ResourceDeletionError, errors.ResourceNotFoundError):
+        logger.info(
+            self.FormatLogMessage(
+                'Could not find disk: {0:s}, skipping'.format(disk_name)))
+
+  def SetTags(self, new_tags: List[str]) -> None:
+    """Sets tags for the compute instance.
+
+    Tags are used to configure firewall rules and network routes.
+
+    Args:
+      new_tags (List[str]): A list of tags. Each tag must be 1-63
+          characters long, and comply with RFC1035.
+
+    Raises:
+      InvalidNameError: If the name of the tags does not
+          comply with RFC1035.
+    """
+
+    logger.info(
+        self.FormatLogMessage(', adding tags {0!s} to instance '
+            '{1:s}.'.format(new_tags, self.name)))
+    for tag in new_tags:
+      if not common.COMPUTE_RFC1035_REGEX.match(tag):
+        raise errors.InvalidNameError(
+            'Network Tag {0:s} does not comply with {1:s}.'.format(
+                tag, common.COMPUTE_RFC1035_REGEX.pattern), __name__)
+
+    get_operation = self.GetOperation()
+    tags_dict = get_operation['tags']
+    existing_tags = tags_dict.get('items', [])
+    tags_fingerprint = tags_dict['fingerprint']
+    tags = existing_tags + new_tags
+    request_body = {
+      'fingerprint': tags_fingerprint,
+      'items': tags,
+      }
+
+    gce_instance_client = self.GceApi().instances()
+    request = gce_instance_client.setTags(
+      project=self.project_id,
+      zone=self.zone,
+      instance=self.name,
+      body=request_body
+    )
+    response = request.execute()
+    self.BlockOperation(response, zone=self.zone)
+
+  def GetPowerState(self) -> str:
+    """
+    Gets the current power state of the instance.
+
+    As per https://cloud.google.com/compute/docs/reference/rest/v1/instances/get
+    this can return one of the following possible values: PROVISIONING, STAGING,
+    RUNNING, STOPPING, SUSPENDING, SUSPENDED, REPAIRING, and TERMINATED
+    """
+    return str(self.GetOperation()['status'])
+
+  def Stop(self) -> None:
+    """
+    Stops the instance.
+
+    Raises:
+      errors.InstanceStateChangeError: If the Stop operation is unsuccessful
+    """
+
+    logger.info('Stopping instance "{0:s}"'.format(self.name))
+    try:
+      gce_instance_client = self.GceApi().instances()
+      request = gce_instance_client.stop(
+          project=self.project_id, instance=self.name, zone=self.zone)
+      response = request.execute()
+      self.BlockOperation(response, zone=self.zone)
+    except HttpError as exception:
+      raise errors.InstanceStateChangeError('Could not stop instance: {0:s}'
+          .format(str(exception)), __name__)
+
+  def Start(self) -> None:
+    """
+    Starts the instance.
+
+    Raises:
+      errors.InstanceStateChangeError: If the Start operation is unsuccessful
+    """
+
+    logger.info('Starting instance "{0:s}"'.format(self.name))
+    try:
+      gce_instance_client = self.GceApi().instances()
+      request = gce_instance_client.start(
+          project=self.project_id, instance=self.name, zone=self.zone)
+      response = request.execute()
+      self.BlockOperation(response, zone=self.zone)
+    except HttpError as exception:
+      raise errors.InstanceStateChangeError('Could not start instance: {0:s}'
+          .format(str(exception)), __name__)
+
+  def DetachServiceAccount(self) -> None:
+    """
+    Detach a service account from the instance
+
+    Raises:
+      errors.ServiceAccountRemovalError: if en error occurs while
+          detaching the service account
+    """
+
+    logger.info('Detaching service account from instance "{0:s}"'
+        .format(self.name))
+    try:
+      gce_instance_client = self.GceApi().instances()
+      request = gce_instance_client.setServiceAccount(
+          project=self.project_id, instance=self.name, zone=self.zone, body={})
+      response = request.execute()
+      self.BlockOperation(response, zone=self.zone)
+    except HttpError as exception:
+      raise errors.ServiceAccountRemovalError('Service account detatchment '
+          'failure: {0:s}'.format(str(exception)), __name__)
 
 class GoogleComputeDisk(compute_base_resource.GoogleComputeBaseResource):
   """Class representing a Compute Engine disk."""
@@ -915,6 +1084,28 @@ class GoogleComputeDisk(compute_base_resource.GoogleComputeBaseResource):
     self.BlockOperation(response, zone=self.zone)
     return GoogleComputeSnapshot(disk=self, name=snapshot_name)
 
+  def Delete(self) -> None:
+    """Delete a Disk."""
+
+    gce_disk_client = self.GceApi().disks()
+    try:
+      request = gce_disk_client.delete(
+          project=self.project_id, disk=self.name, zone=self.zone)
+      request.execute()
+    except HttpError as exception:
+      if exception.resp.status == 404:
+        logger.warning(
+            ('Can not find resource {0:s}, it might be already '
+             'deleted. API call resulted in the following error: '
+             '{1:s}').format(self.name, str(exception)))
+      else:
+        logger.error((
+            'While deleting GCE disk {0:s} the following error occurred: '
+            '{1:s}').format(self.name, str(exception)))
+        raise errors.ResourceDeletionError
+    logger.info(
+        self.FormatLogMessage('Deleted Disk: {0:s}'.format(self.name)))
+
   def GetDiskType(self) -> str:
     """Return the disk type.
 
@@ -963,7 +1154,7 @@ class GoogleComputeSnapshot(compute_base_resource.GoogleComputeBaseResource):
     """Delete a Snapshot."""
 
     logger.info(
-        self.FormatLogMessage('Deleted Snapshot: {0:s}'.format(self.name)))
+        self.FormatLogMessage('Deleting Snapshot: {0:s}'.format(self.name)))
     gce_snapshot_client = self.GceApi().snapshots()
     request = gce_snapshot_client.delete(
         project=self.project_id, snapshot=self.name)
@@ -1033,8 +1224,7 @@ class GoogleComputeImage(compute_base_resource.GoogleComputeBaseResource):
         'Image {0:s} exported to {1:s}.'.format(self.name, full_path))
 
   def Delete(self) -> None:
-    """Delete Compute Disk Image from a project.
-    """
+    """Delete Compute Disk Image from a project."""
 
     gce_image_client = self.GceApi().images()
     request = gce_image_client.delete(project=self.project_id, image=self.name)

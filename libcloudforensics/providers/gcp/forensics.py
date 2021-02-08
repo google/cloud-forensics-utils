@@ -15,6 +15,7 @@
 """Forensics on GCP."""
 
 import base64
+import random
 from typing import TYPE_CHECKING, List, Tuple, Optional, Dict, Any
 
 from google.auth.exceptions import RefreshError, DefaultCredentialsError
@@ -227,3 +228,186 @@ def CreateDiskFromGCSImage(
       'md5Hash': md5_hash_hex
   }
   return result
+
+
+def AddDenyAllFirewallRules(project_id: str,
+                            network: str,
+                            deny_ingress_tag: str,
+                            deny_egress_tag: str,
+                            exempted_src_ips: Optional[List[str]] = None,
+                            enable_logging: bool = False) -> None:
+  """Add deny-all firewall rules, of highest priority.
+
+  Args:
+    project_id (str): Google Cloud Project ID.
+    network (str): URL of the network resource for thesee firewall rules.
+    deny_ingress_tag (str): Target tag name to apply deny ingress rule,
+        also used as a deny ingress firewall rule name.
+    deny_egress_tag (str): Target tag name to apply deny egress rule,
+        also used as a deny egress firewall rule name.
+    exempted_src_ips (List[str]): List of IPs exempted from the deny-all
+      ingress firewall rules, ex: analyst IPs.
+    enable_logging (bool): Optional. Enable firewall logging.
+        Default is False.
+
+  Raises:
+    InvalidNameError: If Tag names are invalid.
+  """
+
+  logger.info('Creating deny-all (ingress/egress) '
+          'firewall rules in {0:s} network.'.format(network))
+  project = gcp_project.GoogleCloudProject(project_id)
+  if not common.COMPUTE_RFC1035_REGEX.match(deny_ingress_tag):
+    raise errors.InvalidNameError(
+        'Deny ingress tag name {0:s} does not comply with {1:s}'.format(
+            deny_ingress_tag, common.COMPUTE_RFC1035_REGEX.pattern), __name__)
+  if not common.COMPUTE_RFC1035_REGEX.match(deny_egress_tag):
+    raise errors.InvalidNameError(
+        'Deny egress tag name {0:s} does not comply with {1:s}'.format(
+            deny_egress_tag, common.COMPUTE_RFC1035_REGEX.pattern), __name__)
+
+  source_range = common.GenerateSourceRange(exempted_src_ips)
+
+  deny_ingress = {
+    'name': deny_ingress_tag,
+    'network': network,
+    'direction': 'INGRESS',
+    'priority': 0,
+    'targetTags': [
+      deny_ingress_tag
+    ],
+    'denied': [
+      {
+        'IPProtocol': 'all'
+      }
+    ],
+    'logConfig': {
+      'enable': enable_logging
+    },
+    'sourceRanges': source_range
+  }
+  deny_egress = {
+    'name': deny_egress_tag,
+    'network': network,
+    'direction': 'EGRESS',
+    'priority': 0,
+    'targetTags': [
+      deny_egress_tag
+    ],
+    'denied': [
+      {
+        'IPProtocol': 'all'
+      }
+    ],
+    'logConfig': {
+      'enable': enable_logging
+    },
+    'destinationRanges': [
+      '0.0.0.0/0'
+    ]
+  }
+  project.compute.InsertFirewallRule(body=deny_ingress)
+  project.compute.InsertFirewallRule(body=deny_egress)
+
+
+def InstanceNetworkQuarantine(project_id: str,
+                              instance_name: str,
+                              exempted_src_ips: Optional[List[str]] = None,
+                              enable_logging: bool = False) -> None:
+  """Put a Google Cloud instance in network quarantine.
+
+  Network quarantine is imposed via applying deny-all
+  ingress/egress firewall rules on each network interface.
+
+  Args:
+    project_id (str): Google Cloud Project ID.
+    instance_name (str): : The name of the virtual machine.
+    exempted_src_ips (List[str]): List of IPs exempted from the deny-all
+        ingress firewall rules, ex: analyst IPs.
+    enable_logging (bool): Optional. Enable firewall logging.
+        Default is False.
+  """
+  logger.info('Putting instance "{0:s}", in project {1:s}, in network '
+              'quarantine.'.format(instance_name, project_id))
+  project = gcp_project.GoogleCloudProject(project_id)
+  instance = project.compute.GetInstance(instance_name)
+  get_operation = instance.GetOperation()
+  network_interfaces = get_operation['networkInterfaces']
+  target_tags = []
+  for interface in network_interfaces:
+    network_url = interface["network"]
+    # Adding a random suffix to the tag to avoid name collisions,
+    # tags are used as firewall rule names, which need to be unique.
+    tag_suffix = random.randint(10**(19),(10**20)-1)
+    deny_ingress_tag = 'deny-ingress-tag-' + str(tag_suffix)
+    deny_egress_tag = 'deny-egress-tag-' + str(tag_suffix)
+    AddDenyAllFirewallRules(
+        project_id,
+        network_url,
+        deny_ingress_tag,
+        deny_egress_tag,
+        exempted_src_ips,
+        enable_logging)
+    target_tags.append(deny_ingress_tag)
+    target_tags.append(deny_egress_tag)
+  instance.SetTags(target_tags)
+  if exempted_src_ips:
+    logger.info('From a host with an exempted IP, '
+        'connect to the quarantined instance using:\n'
+        'gcloud compute ssh --zone "{0:s}" "{1:s}" --project "{2:s}"\n'
+        'Connecting from the browser via GCP console will not work.'.format(
+              instance.zone, instance_name, project_id))
+
+def VMRemoveServiceAccount(project_id: str,
+                           instance_name: str,
+                           leave_stopped: bool = False) -> bool:
+  """
+  Remove a service account attachment from a GCP VM.
+
+  Service account attachments to VMs allow the VM to obtain credentials
+  via the instance metadata service to perform API actions. Removing
+  the service account attachment will prevent credentials being issued.
+
+  Note that the instance will be powered down, if it isn't already for
+  this action.
+
+  Args:
+    project_id (str): Google Cloud Project ID.
+    instance_name (str): The name of the virtual machine.
+    leave_stopped (bool): Optional. True to leave the machine powered off.
+
+  Returns:
+    bool: True if the service account was successfully removed, False otherwise.
+  """
+  logger.info('Removing service account attachment from "{0:s}",'
+              ' in project {1:s}'.format(instance_name, project_id))
+
+  valid_starting_states = ['RUNNING', 'STOPPING', 'TERMINATED']
+
+  project = gcp_project.GoogleCloudProject(project_id)
+  instance = project.compute.GetInstance(instance_name)
+
+  # Get the initial powered state of the instance
+  initial_state = instance.GetPowerState()
+
+  if not initial_state in valid_starting_states:
+    logger.error('Instance "{0:s}" is currently {1:s} which is an invalid '
+               'state for this operation'.format(instance_name, initial_state))
+    return False
+
+  try:
+    # Stop the instance if it is not already (or on the way)....
+    if not initial_state in ('TERMINATED', 'STOPPING'):
+      instance.Stop()
+
+    # Remove the service account
+    instance.DetachServiceAccount()
+
+    # If the instance was running initially, and the option has been set,
+    # start up the instance again
+    if initial_state == 'RUNNING' and not leave_stopped:
+      instance.Start()
+  except errors.LCFError as exception:
+    logger.error('Fatal exception encountered: {0:s}'.format(str(exception)))
+
+  return True

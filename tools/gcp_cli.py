@@ -20,6 +20,7 @@ import sys
 from typing import TYPE_CHECKING
 
 # pylint: disable=line-too-long
+from libcloudforensics.providers.gcp.internal import compute as gcp_compute
 from libcloudforensics.providers.gcp.internal import log as gcp_log
 from libcloudforensics.providers.gcp.internal import monitoring as gcp_monitoring
 from libcloudforensics.providers.gcp.internal import project as gcp_project
@@ -84,6 +85,20 @@ def CreateDiskCopy(args: 'argparse.Namespace') -> None:
 
   logger.info('Disk copy completed.')
   logger.info('Name: {0:s}'.format(disk.name))
+
+
+def DeleteInstance(args: 'argparse.Namespace') -> None:
+  """Deletes a GCE instance.
+
+  Args:
+    args (argparse.Namespace): Arguments from ArgumentParser.
+  """
+
+  compute_client = gcp_compute.GoogleCloudCompute(args.project)
+  instance = compute_client.GetInstance(instance_name=args.instance_name)
+  instance.Delete(delete_disks=args.delete_all_disks)
+
+  print('Instance deleted.')
 
 
 def ListLogs(args: 'argparse.Namespace') -> None:
@@ -274,3 +289,44 @@ def ListCloudSqlInstances(args: 'argparse.Namespace') -> None:
         obj.get('instanceType', 'type not found'),
         obj.get('name', 'name not known'),
         obj.get('state', 'state not known')))
+
+
+def DeleteObject(args: 'argparse.Namespace') -> None:
+  """Deletes an object in GCS.
+
+  Args:
+    args (argparse.Namespace): Arguments from ArgumentParser.
+  """
+  gcs = gcp_storage.GoogleCloudStorage(args.project)
+  gcs.DeleteObject(args.path)
+
+  print('Object deleted.')
+
+
+def InstanceNetworkQuarantine(args: 'argparse.Namespace') -> None:
+  """Put a Google Cloud instance in network quarantine.
+
+  Args:
+    args (argparse.Namespace): Arguments from ArgumentParser.
+  """
+  exempted_ips = []
+  if args.exempted_src_ips:
+    exempted_ips = args.exempted_src_ips.split(',')
+    # Check if exempted_src_ips argument exists and if there
+    # are any empty entries.
+    if not (exempted_ips and all(exempted_ips)):
+      logger.error('parameter --exempted_src_ips: {0:s}'.format(
+          args.exempted_src_ips))
+      return
+  forensics.InstanceNetworkQuarantine(args.project,
+      args.instance_name, exempted_ips, args.enable_logging )
+
+
+def VMRemoveServiceAccount(args: 'argparse.Namespace') -> None:
+  """Removes an attached service account from a VM instance.
+  Requires the instance to be stopped, if it isn't already.
+  Args:
+    args (argparse.Namespace): Arguments from ArgumentParser.
+  """
+  forensics.VMRemoveServiceAccount(args.project, args.instance_name,
+      args.leave_stopped)
