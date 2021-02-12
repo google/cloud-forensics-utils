@@ -2,8 +2,8 @@
 PyJWT<2  # Bad overlap in azure dependencies
 httplib2>=0.15.0
 google-api-python-client
-google-auth<2.0.0.dev0
-google-api-core<1.26.0.dev0
+google-auth
+google-api-core
 boto3
 botocore
 azure-common
