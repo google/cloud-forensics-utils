@@ -1,22 +1,24 @@
 -i https://pypi.org/simple
-PyJWT<2  # Bad overlap in azure dependencies
-httplib2>=0.15.0
-google-api-python-client
-google-auth<2.0.0.dev0
-google-api-core<1.26.0.dev0
-boto3
-botocore
 azure-common
 azure-core
 azure-identity
 azure-mgmt-compute
+azure-mgmt-monitor
+azure-mgmt-network
 azure-mgmt-resource
 azure-mgmt-storage
 azure-storage-blob
-azure-mgmt-network
-azure-mgmt-monitor
+boto3
+botocore
+google-api-core
+google-api-python-client
+# google-auth: We don't directly care about this but 2.0.0dev0 somehow gets
+# installed despite the pinning in google-api-core
+google-auth<2.0.0.dev0
+httplib2
 msrest
 msrestazure
 netaddr
-sshpubkeys
 pycryptodome
+PyJWT<2  # Bad overlap in azure dependencies
+sshpubkeys

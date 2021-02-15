@@ -1,10 +1,10 @@
 -i https://pypi.org/simple
-nose
-mock
-pylint
 coverage
-yapf
+mock
 mypy
+nose
+pylint
 sphinx
-sphinx-rtd-theme
 sphinx-autodoc-typehints
+sphinx-rtd-theme
+yapf
