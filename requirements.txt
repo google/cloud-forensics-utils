@@ -12,7 +12,9 @@ boto3
 botocore
 google-api-core
 google-api-python-client
-google-auth<2.0.0.dev0 # This somehow gets installed despite google-api-core's pinning
+# google-auth: We don't directly care about this but 2.0.0dev0 somehow gets
+# installed despite the pinning in google-api-core
+google-auth<2.0.0.dev0
 httplib2
 msrest
 msrestazure
