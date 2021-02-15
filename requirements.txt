@@ -10,9 +10,9 @@ azure-mgmt-storage
 azure-storage-blob
 boto3
 botocore
-google-auth
 google-api-core
 google-api-python-client
+google-auth<2.0.0.dev0 # This somehow gets installed despite google-api-core's pinning
 httplib2
 msrest
 msrestazure
