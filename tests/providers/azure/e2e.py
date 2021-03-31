@@ -143,7 +143,11 @@ class EndToEndTest(unittest.TestCase):
     # permit same-name disks in different regions.
     operation = self.az.compute.compute_client.disks.begin_delete(
         disk_copy.resource_group_name, disk_copy.name)
-    operation.wait()
+    # Delete operation takes some time to propagate within Azure, which in
+    # some cases causes the next test to fail. Therefore we have to wait for
+    # completion.
+    while not operation.done():
+      sleep(5)
 
   @typing.no_type_check
   def testStartVm(self):
