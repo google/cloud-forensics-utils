@@ -283,7 +283,7 @@ def GetBucketSize(args: 'argparse.Namespace') -> None:
   """
   gcs = gcp_storage.GoogleCloudStorage(args.project)
   results = gcs.GetBucketSize(args.path)
-  for obj in results.keys():
+  for obj in results:
     logger.info('{0:s}: {1:d}b'.format(
         obj, results[obj]))
 

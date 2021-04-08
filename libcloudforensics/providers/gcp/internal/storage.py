@@ -186,7 +186,7 @@ class GoogleCloudStorage:
     Ref: https://cloud.google.com/monitoring/api/metrics_gcp#gcp-storage
 
     Args:
-      bucket (str):  Name of a bucket in GCS.
+      bucket_name (str):  Name of a bucket in GCS.
       timeframe (int): Optional. The number (in days) for
           which to measure activity.
 
