@@ -41,6 +41,7 @@ PROVIDER_TO_FUNC = {
     },
     'gcp': {
         'bucketacls': gcp_cli.GetBucketACLs,
+        'bucketsize': gcp_cli.GetBucketSize,
         'copydisk': gcp_cli.CreateDiskCopy,
         'creatediskgcs': gcp_cli.CreateDiskFromGCSImage,
         'deleteinstance': gcp_cli.DeleteInstance,
@@ -341,6 +342,10 @@ def Main() -> None:
   AddParser('gcp', gcp_subparsers, 'listbuckets',
             'List GCS buckets for a project.')
   AddParser('gcp', gcp_subparsers, 'bucketacls', 'List ACLs of a GCS bucket.',
+            args=[
+                ('path', 'Path to bucket.', None),
+            ])
+  AddParser('gcp', gcp_subparsers, 'bucketsize', 'Get the size of a GCS bucket.',
             args=[
                 ('path', 'Path to bucket.', None),
             ])

@@ -15,8 +15,10 @@
 """Google Cloud Storage functionalities."""
 
 import collections
+import datetime
 from typing import TYPE_CHECKING, List, Dict, Any, Optional, Tuple
 from libcloudforensics.providers.gcp.internal import common
+from libcloudforensics.providers.gcp.internal import monitoring as gcp_monitoring
 
 if TYPE_CHECKING:
   import googleapiclient
@@ -173,3 +175,57 @@ class GoogleCloudStorage:
     gcs_objects = self.GcsApi().objects()
     request = gcs_objects.delete(bucket=bucket, object=object_path)
     request.execute()  # type: Dict[str, Any]
+
+  def GetBucketSize(self, bucket_name: str = None, timeframe: int = 1) -> Dict[str, int]:
+    """List the size of a Google Storage Bucket in a project (default: last 1 day).
+    Note: This will list the maximum size the bucket had in the timeframe.
+
+    Ref: https://cloud.google.com/monitoring/api/metrics_gcp#gcp-storage
+
+    Args:
+      bucket (str):  Name of a bucket in GCS.
+      timeframe (int): Optional. The number (in days) for
+          which to measure activity.
+
+    Returns:
+      Dict[str, int]: Dictionary mapping bucket name to its size.
+    """
+
+    start_time = common.FormatRFC3339(
+        datetime.datetime.utcnow() - datetime.timedelta(days=timeframe))
+    end_time = common.FormatRFC3339(datetime.datetime.utcnow())
+    period = timeframe * 24 * 60 * 60
+
+    gcm = gcp_monitoring.GoogleCloudMonitoring(self.project_id)
+    gcm_api = gcm.GcmApi()
+    gcm_timeseries_client = gcm_api.projects().timeSeries()
+    qfilter = 'metric.type="storage.googleapis.com/storage/total_bytes" resource.type="gcs_bucket"'
+
+    if bucket_name:
+      qfilter += ' resource.label.bucket_name="{0:s}"'.format(bucket_name)
+
+    responses = common.ExecuteRequest(gcm_timeseries_client, 'list', {
+        'name': 'projects/{0:s}'.format(self.project_id),
+        'filter': qfilter,
+        'interval_startTime': start_time,
+        'interval_endTime': end_time,
+        'aggregation_groupByFields': 'resource.label.bucket_name',
+        'aggregation_perSeriesAligner': 'ALIGN_MAX',
+        'aggregation_alignmentPeriod': '{0:d}s'.format(period),
+        'aggregation_crossSeriesReducer': 'REDUCE_NONE'
+    })
+
+    ret = {}
+    for response in responses:
+      for ts in response.get('timeSeries', []):
+        bucket = ts.get('resource', {}).get('labels', {}).get('bucket_name', '')
+        if bucket:
+          points = ts.get('points', [])
+          if points:
+            for point in points:
+              val = point.get('value', {}).get('doubleValue', 0)
+              if bucket not in ret:
+                ret[bucket] = val
+              elif val > ret[bucket]:
+                ret[bucket] = val
+    return ret
