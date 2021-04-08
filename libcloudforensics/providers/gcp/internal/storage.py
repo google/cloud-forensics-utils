@@ -176,8 +176,11 @@ class GoogleCloudStorage:
     request = gcs_objects.delete(bucket=bucket, object=object_path)
     request.execute()  # type: Dict[str, Any]
 
-  def GetBucketSize(self, bucket_name: str = None, timeframe: int = 1) -> Dict[str, int]:
+  def GetBucketSize(self,
+                    bucket_name: str = None,
+                    timeframe: int = 1) -> Dict[str, int]:
     """List the size of a Google Storage Bucket in a project (default: last 1 day).
+
     Note: This will list the maximum size the bucket had in the timeframe.
 
     Ref: https://cloud.google.com/monitoring/api/metrics_gcp#gcp-storage
@@ -204,16 +207,19 @@ class GoogleCloudStorage:
     if bucket_name:
       qfilter += ' resource.label.bucket_name="{0:s}"'.format(bucket_name)
 
-    responses = common.ExecuteRequest(gcm_timeseries_client, 'list', {
-        'name': 'projects/{0:s}'.format(self.project_id),
-        'filter': qfilter,
-        'interval_startTime': start_time,
-        'interval_endTime': end_time,
-        'aggregation_groupByFields': 'resource.label.bucket_name',
-        'aggregation_perSeriesAligner': 'ALIGN_MAX',
-        'aggregation_alignmentPeriod': '{0:d}s'.format(period),
-        'aggregation_crossSeriesReducer': 'REDUCE_NONE'
-    })
+    responses = common.ExecuteRequest(
+        gcm_timeseries_client,
+        'list',
+        {
+            'name': 'projects/{0:s}'.format(self.project_id),
+            'filter': qfilter,
+            'interval_startTime': start_time,
+            'interval_endTime': end_time,
+            'aggregation_groupByFields': 'resource.label.bucket_name',
+            'aggregation_perSeriesAligner': 'ALIGN_MAX',
+            'aggregation_alignmentPeriod': '{0:d}s'.format(period),
+            'aggregation_crossSeriesReducer': 'REDUCE_NONE'
+        })
 
     ret = {}
     for response in responses:
