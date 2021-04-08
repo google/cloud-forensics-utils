@@ -345,9 +345,10 @@ def Main() -> None:
             args=[
                 ('path', 'Path to bucket.', None),
             ])
-  AddParser('gcp', gcp_subparsers, 'bucketsize', 'Get the size of a GCS bucket.',
+  AddParser('gcp', gcp_subparsers, 'bucketsize',
+            'Get the size of a GCS bucket.',
             args=[
-                ('path', 'Path to bucket.', None),
+                ('path', 'Path to bucket.', None)
             ])
   AddParser('gcp', gcp_subparsers, 'objectmetadata', 'List the details of an '
                                                      'object in a GCS bucket.',
