@@ -177,21 +177,23 @@ class GoogleCloudStorage:
     request.execute()  # type: Dict[str, Any]
 
   def GetBucketSize(self,
-                    bucket_name: str = None,
+                    bucket: str,
                     timeframe: int = 1) -> Dict[str, int]:
     """List the size of a Google Storage Bucket in a project (default: last 1 day).
 
-    Note: This will list the maximum size the bucket had in the timeframe.
+    Note: This will list the _maximum size_
+          (in bytes) the bucket had in the timeframe.
 
     Ref: https://cloud.google.com/monitoring/api/metrics_gcp#gcp-storage
 
     Args:
-      bucket_name (str):  Name of a bucket in GCS.
+      bucket (str):  Name of a bucket in GCS.
       timeframe (int): Optional. The number (in days) for
           which to measure activity.
+          Default: 1 day.
 
     Returns:
-      Dict[str, int]: Dictionary mapping bucket name to its size.
+      Dict[str, int]: Dictionary mapping bucket name to its size (in bytes).
     """
 
     start_time = common.FormatRFC3339(
@@ -203,9 +205,7 @@ class GoogleCloudStorage:
     gcm_api = gcm.GcmApi()
     gcm_timeseries_client = gcm_api.projects().timeSeries()
     qfilter = 'metric.type="storage.googleapis.com/storage/total_bytes" resource.type="gcs_bucket"'
-
-    if bucket_name:
-      qfilter += ' resource.label.bucket_name="{0:s}"'.format(bucket_name)
+    qfilter += ' resource.label.bucket_name="{0:s}"'.format(bucket)
 
     responses = common.ExecuteRequest(
         gcm_timeseries_client,
@@ -227,11 +227,10 @@ class GoogleCloudStorage:
         bucket = ts.get('resource', {}).get('labels', {}).get('bucket_name', '')
         if bucket:
           points = ts.get('points', [])
-          if points:
-            for point in points:
-              val = point.get('value', {}).get('doubleValue', 0)
-              if bucket not in ret:
-                ret[bucket] = val
-              elif val > ret[bucket]:
-                ret[bucket] = val
+          for point in points:
+            val = point.get('value', {}).get('doubleValue', 0)
+            if bucket not in ret:
+              ret[bucket] = val
+            elif val > ret[bucket]:
+              ret[bucket] = val
     return ret
