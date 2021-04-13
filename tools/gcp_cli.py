@@ -275,6 +275,19 @@ def ListBucketObjects(args: 'argparse.Namespace') -> None:
         obj.get('contentType', 'Unknown Content-Type')))
 
 
+def GetBucketSize(args: 'argparse.Namespace') -> None:
+  """Get the size of a GCS bucket.
+
+  Args:
+    args (argparse.Namespace): Arguments from ArgumentParser.
+  """
+  gcs = gcp_storage.GoogleCloudStorage(args.project)
+  results = gcs.GetBucketSize(args.path)
+  for obj in results:
+    logger.info('{0:s}: {1:d}b'.format(
+        obj, results[obj]))
+
+
 def DeleteObject(args: 'argparse.Namespace') -> None:
   """Deletes an object in GCS.
 
