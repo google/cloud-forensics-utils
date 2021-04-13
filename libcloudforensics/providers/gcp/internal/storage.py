@@ -18,7 +18,9 @@ import collections
 import datetime
 from typing import TYPE_CHECKING, List, Dict, Any, Optional, Tuple
 from libcloudforensics.providers.gcp.internal import common
+# pylint: disable=line-too-long
 from libcloudforensics.providers.gcp.internal import monitoring as gcp_monitoring
+# pylint: enable=line-too-long
 
 if TYPE_CHECKING:
   import googleapiclient
@@ -179,7 +181,8 @@ class GoogleCloudStorage:
   def GetBucketSize(self,
                     bucket: str,
                     timeframe: int = 1) -> Dict[str, int]:
-    """List the size of a Google Storage Bucket in a project (default: last 1 day).
+    """List the size of a Google Storage Bucket in a project (default: last 1
+    day).
 
     Note: This will list the _maximum size_
           (in bytes) the bucket had in the timeframe.
@@ -204,7 +207,8 @@ class GoogleCloudStorage:
     gcm = gcp_monitoring.GoogleCloudMonitoring(self.project_id)
     gcm_api = gcm.GcmApi()
     gcm_timeseries_client = gcm_api.projects().timeSeries()
-    qfilter = 'metric.type="storage.googleapis.com/storage/total_bytes" resource.type="gcs_bucket"'
+    qfilter = ('metric.type="storage.googleapis.com/storage/total_bytes" '
+               'resource.type="gcs_bucket"')
     qfilter += ' resource.label.bucket_name="{0:s}"'.format(bucket)
 
     responses = common.ExecuteRequest(
