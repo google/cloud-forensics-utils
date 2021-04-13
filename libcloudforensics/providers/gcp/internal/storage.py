@@ -204,6 +204,7 @@ class GoogleCloudStorage:
     end_time = common.FormatRFC3339(datetime.datetime.utcnow())
     period = timeframe * 24 * 60 * 60
 
+    assert self.project_id  # Necessary for mypy check
     gcm = gcp_monitoring.GoogleCloudMonitoring(self.project_id)
     gcm_api = gcm.GcmApi()
     gcm_timeseries_client = gcm_api.projects().timeSeries()
