@@ -190,14 +190,14 @@ class GoogleCloudStorage:
         to apply to the bucket.
       predefineddefaultobjectacl (str): A predefined set of Access Controls
         to apply to the objects in the bucket.
-      Values listed in https://cloud.google.com/storage/docs/json_api/v1/buckets/insert#parameters
+      Values listed in https://cloud.google.com/storage/docs/json_api/v1/buckets/insert#parameters  # pylint: disable=line-too-long
 
     Returns:
       Dict: An API operation object for a Google Cloud Storage bucket.
            https://cloud.google.com/storage/docs/json_api/v1/buckets#resource
     """
     gcs_buckets = self.GcsApi().buckets()
-    body = {'name': bucket , 'labels': labels}
+    body = {'name': bucket, 'labels': labels}
     request = gcs_buckets.insert(
         project=self.project_id,
         predefinedAcl=predefinedacl,

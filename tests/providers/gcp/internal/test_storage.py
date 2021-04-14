@@ -79,3 +79,13 @@ class GoogleCloudStorageTest(unittest.TestCase):
     self.assertEqual(2, len(acl_results))
     self.assertEqual(2, len(acl_results['OWNER']))
     self.assertEqual(2, len(acl_results['roles/storage.legacyBucketOwner']))
+
+  @typing.no_type_check
+  @mock.patch('libcloudforensics.providers.gcp.internal.storage.GoogleCloudStorage.GcsApi')
+  def testCreateBucket(self, mock_gcs_api):
+    """Test GCS bucket Create operation."""
+    api_create_bucket = mock_gcs_api.return_value.buckets.return_value.insert
+    api_create_bucket.return_value.execute.return_value = gcp_mocks.MOCK_GCS_BUCKETS['items'][0]
+    create_result = gcp_mocks.FAKE_GCS.CreateBucket('fake-bucket')
+    self.assertEqual('fake-bucket', create_result['name'])
+    self.assertEqual('123456789', create_result['projectNumber'])
