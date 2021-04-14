@@ -70,9 +70,9 @@ class GoogleCloudStorage:
         'storage', self.CLOUD_STORAGE_API_VERSION)
     return self.gcs_api_client
 
-  def GetObjectMetadata(self,
-                        gcs_path: str,
-                        user_project: Optional[str] = None) -> Dict[str, Any]:
+  def GetObjectMetadata(
+      self, gcs_path: str,
+      user_project: Optional[str] = None) -> Dict[str, Any]:
     """Get API operation object metadata for Google Cloud Storage object.
 
     Args:
@@ -94,8 +94,7 @@ class GoogleCloudStorage:
     response = request.execute()  # type: Dict[str, Any]
     return response
 
-  def GetBucketACLs(self,
-                    bucket: str,
+  def GetBucketACLs(self, bucket: str,
                     user_project: Optional[str] = None) -> Dict[str, List[str]]:
     """Get ACLs for a Google Cloud Storage bucket.
 
@@ -115,8 +114,7 @@ class GoogleCloudStorage:
       # Can change to removeprefix() in 3.9
       bucket = bucket[5:]
     gcs_bac = self.GcsApi().bucketAccessControls()
-    request = gcs_bac.list(
-        bucket=bucket, userProject=user_project)
+    request = gcs_bac.list(bucket=bucket, userProject=user_project)
     # https://cloud.google.com/storage/docs/json_api/v1/bucketAccessControls#resource
     ac_response = request.execute()
     for item in ac_response.get('items', []):
@@ -173,3 +171,37 @@ class GoogleCloudStorage:
     gcs_objects = self.GcsApi().objects()
     request = gcs_objects.delete(bucket=bucket, object=object_path)
     request.execute()  # type: Dict[str, Any]
+
+  def CreateBucket(
+      self,
+      bucket: str,
+      labels: Optional[Dict[str, str]] = None,
+      predefinedacl: Optional[str] = 'private',
+      predefineddefaultobjectacl: Optional[str] = 'private') -> Dict[str, Any]:
+    """Creates a Google Cloud Storage bucket in the current project.
+
+    Args:
+      bucket (str): Name of the desired bucket.
+      labels (Dict): Mapping of key/value strings to be applied as a label
+        to the bucket.
+        Rules for acceptable label values are located at
+        https://cloud.google.com/storage/docs/key-terms#bucket-labels
+      predefinedacl (str): A predefined set of Access Controls
+        to apply to the bucket.
+      predefineddefaultobjectacl (str): A predefined set of Access Controls
+        to apply to the objects in the bucket.
+      Values listed in https://cloud.google.com/storage/docs/json_api/v1/buckets/insert#parameters
+
+    Returns:
+      Dict: An API operation object for a Google Cloud Storage bucket.
+           https://cloud.google.com/storage/docs/json_api/v1/buckets#resource
+    """
+    gcs_buckets = self.GcsApi().buckets()
+    body = {'name': bucket , 'labels': labels}
+    request = gcs_buckets.insert(
+        project=self.project_id,
+        predefinedAcl=predefinedacl,
+        predefinedDefaultObjectAcl=predefineddefaultobjectacl,
+        body=body)
+    response = request.execute()  # type: Dict[str, Any]
+    return response

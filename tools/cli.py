@@ -45,6 +45,7 @@ PROVIDER_TO_FUNC = {
         'creatediskgcs': gcp_cli.CreateDiskFromGCSImage,
         'deleteinstance': gcp_cli.DeleteInstance,
         'deleteobject': gcp_cli.DeleteObject,
+        'createbucket': gcp_cli.CreateBucket,
         'listbuckets': gcp_cli.ListBuckets,
         'listdisks': gcp_cli.ListDisks,
         'listinstances': gcp_cli.ListInstances,
@@ -338,6 +339,11 @@ def Main() -> None:
                    'Name of the disk to create. If None, name '
                    'will be printed at the end.',
                    None)])
+  AddParser('gcp', gcp_subparsers, 'createbucket',
+            'Create a GCS bucket in a project.',
+            args=[
+                ('name', 'Name of bucket.', None),
+            ])
   AddParser('gcp', gcp_subparsers, 'listbuckets',
             'List GCS buckets for a project.')
   AddParser('gcp', gcp_subparsers, 'bucketacls', 'List ACLs of a GCS bucket.',

@@ -261,6 +261,19 @@ def ListBuckets(args: 'argparse.Namespace') -> None:
         obj.get('id', 'ID not found'), obj.get('selfLink', 'No link')))
 
 
+def CreateBucket(args: 'argparse.Namespace') -> None:
+  """Create a bucket in a GCP project.
+
+  Args:
+    args (argparse.Namespace): Arguments from ArgumentParser.
+  """
+  gcs = gcp_storage.GoogleCloudStorage(args.project)
+  result = gcs.CreateBucket(args.name, labels={'created_by': 'cfu'})
+  logger.info(
+      '{0:s} : {1:s}'.format(
+          result.get('id', 'ID not found'), result.get('selfLink', 'No link')))
+
+
 def ListBucketObjects(args: 'argparse.Namespace') -> None:
   """List the objects in a GCS bucket.
 
