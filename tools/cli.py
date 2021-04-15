@@ -29,7 +29,8 @@ PROVIDER_TO_FUNC = {
         'listinstances': aws_cli.ListInstances,
         'listdisks': aws_cli.ListVolumes,
         'querylogs': aws_cli.QueryLogs,
-        'startvm': aws_cli.StartAnalysisVm
+        'startvm': aws_cli.StartAnalysisVm,
+        'createbucket': aws_cli.CreateBucket
     },
     'az': {
         'copydisk': az_cli.CreateDiskCopy,
@@ -188,6 +189,10 @@ def Main() -> None:
   AddParser('aws', aws_subparsers, 'listimages', 'List AMI images.',
             args=[
                 ('--filter', 'Filter to apply to Name of AMI image.', None),
+            ])
+  AddParser('aws', aws_subparsers, 'createbucket', 'Create an S3 bucket.',
+            args=[
+                ('name', 'The name of the bucket.', None),
             ])
 
   # Azure parser options
