@@ -187,3 +187,16 @@ def ListImages(args: 'argparse.Namespace') -> None:
   for image in images:
     logger.info('Name: {0:s}, ImageId: {1:s}, Location: {2:s}'.format(
         image['Name'], image['ImageId'], image['ImageLocation']))
+
+
+def CreateBucket(args: 'argparse.Namespace') -> None:
+  """Create an S3 bucket.
+
+  Args:
+    args (argparse.Namespace): Arguments from ArgumentParser.
+  """
+
+  aws_account = account.AWSAccount(args.zone)
+  bucket = aws_account.s3.CreateBucket(args.name)
+
+  logger.info('Bucket created: {0:s}'.format(bucket['Location']))

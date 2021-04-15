@@ -22,6 +22,7 @@ EC2_SERVICE = 'ec2'
 ACCOUNT_SERVICE = 'sts'
 KMS_SERVICE = 'kms'
 CLOUDTRAIL_SERVICE = 'cloudtrail'
+S3_SERVICE = 's3'
 
 # Resource types constant
 INSTANCE = 'instance'
