@@ -50,7 +50,7 @@ class S3:
       name: str,
       region: Optional[str] = None,
       acl: Optional[str] = 'private') -> Dict[str, Any]:
-    """Create the bucket represented by this object.
+    """Create an S3 storage bucket.
 
     Args:
       name (str): The name of the bucket.
