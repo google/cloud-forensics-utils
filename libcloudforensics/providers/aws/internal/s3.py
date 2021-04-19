@@ -67,7 +67,7 @@ class S3:
           Bucket=name,
           ACL=acl,
           CreateBucketConfiguration={'LocationConstraint':
-              region or self.aws_account.default_region})  # type: Dict[str, str]
+              region or self.aws_account.default_region})  # type: Dict[str, Any]
     except client.exceptions.ClientError as exception:
       raise errors.ResourceCreationError(
           'Could not create bucket {0:s}: {1:s}'.format(
