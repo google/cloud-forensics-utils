@@ -59,6 +59,13 @@ class S3:
 
     Appropriate values for the Canned ACLs are here:
     https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl  # pylint: disable=line-too-long
+
+    Returns:
+      Dict: An API operation object an S3 bucket.
+        https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html#S3.Bucket.create  # pylint: disable=line-too-long
+
+    Raises:
+      ResourceCreationError: If the bucket couldn't be created.
     """
 
     client = self.aws_account.ClientApi(common.S3_SERVICE)
@@ -66,8 +73,9 @@ class S3:
       return client.create_bucket(
           Bucket=name,
           ACL=acl,
-          CreateBucketConfiguration={'LocationConstraint':
-              region or self.aws_account.default_region})  # type: Dict[str, Any]
+          CreateBucketConfiguration={
+              'LocationConstraint': region or self.aws_account.default_region
+          })  # type: Dict[str, Any]
     except client.exceptions.ClientError as exception:
       raise errors.ResourceCreationError(
           'Could not create bucket {0:s}: {1:s}'.format(
