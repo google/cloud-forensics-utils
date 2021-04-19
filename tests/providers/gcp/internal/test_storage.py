@@ -81,6 +81,16 @@ class GoogleCloudStorageTest(unittest.TestCase):
     self.assertEqual(2, len(acl_results['roles/storage.legacyBucketOwner']))
 
   @typing.no_type_check
+  @mock.patch('libcloudforensics.providers.gcp.internal.monitoring.GoogleCloudMonitoring.GcmApi')
+  def testGetBucketSize(self, mock_gcm_api):
+    """Test GCS Bucket Size operation."""
+    services = mock_gcm_api.return_value.projects.return_value.timeSeries.return_value.list
+    services.return_value.execute.return_value = gcp_mocks.MOCK_GCM_METRICS_BUCKETSIZE
+    size_results = gcp_mocks.FAKE_GCS.GetBucketSize('gs://test_bucket_1')
+    self.assertEqual(1, len(size_results))
+    self.assertEqual(60, size_results['test_bucket_1'])
+
+  @typing.no_type_check
   @mock.patch('libcloudforensics.providers.gcp.internal.storage.GoogleCloudStorage.GcsApi')
   def testCreateBucket(self, mock_gcs_api):
     """Test GCS bucket Create operation."""
