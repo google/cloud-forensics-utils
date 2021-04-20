@@ -74,9 +74,9 @@ class GoogleCloudStorage:
         'storage', self.CLOUD_STORAGE_API_VERSION)
     return self.gcs_api_client
 
-  def GetObjectMetadata(
-      self, gcs_path: str,
-      user_project: Optional[str] = None) -> Dict[str, Any]:
+  def GetObjectMetadata(self,
+                        gcs_path: str,
+                        user_project: Optional[str] = None) -> Dict[str, Any]:
     """Get API operation object metadata for Google Cloud Storage object.
 
     Args:
@@ -98,7 +98,8 @@ class GoogleCloudStorage:
     response = request.execute()  # type: Dict[str, Any]
     return response
 
-  def GetBucketACLs(self, bucket: str,
+  def GetBucketACLs(self,
+                    bucket: str,
                     user_project: Optional[str] = None) -> Dict[str, List[str]]:
     """Get ACLs for a Google Cloud Storage bucket.
 
@@ -242,8 +243,8 @@ class GoogleCloudStorage:
       self,
       bucket: str,
       labels: Optional[Dict[str, str]] = None,
-      predefinedacl: Optional[str] = 'private',
-      predefineddefaultobjectacl: Optional[str] = 'private') -> Dict[str, Any]:
+      predefinedacl: str = 'private',
+      predefineddefaultobjectacl: str = 'private') -> Dict[str, Any]:
     """Creates a Google Cloud Storage bucket in the current project.
 
     Args:
@@ -271,4 +272,3 @@ class GoogleCloudStorage:
         body=body)
     response = request.execute()  # type: Dict[str, Any]
     return response
-  
