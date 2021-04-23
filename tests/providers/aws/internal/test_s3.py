@@ -33,5 +33,11 @@ class AWSS3Test(unittest.TestCase):
     storage.return_value = aws_mocks.MOCK_CREATE_BUCKET
     create_bucket = aws_mocks.FAKE_STORAGE.CreateBucket('test-bucket')
 
+    storage.assert_called_with(
+        Bucket='test-bucket',
+        ACL='private',
+        CreateBucketConfiguration={
+            'LocationConstraint': aws_mocks.FAKE_AWS_ACCOUNT.default_region
+        })
     self.assertEqual(200, create_bucket['ResponseMetadata']['HTTPStatusCode'])
     self.assertEqual('http://test-bucket.s3.amazonaws.com/', create_bucket['Location'])

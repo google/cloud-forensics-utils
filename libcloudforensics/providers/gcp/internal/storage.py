@@ -243,32 +243,32 @@ class GoogleCloudStorage:
       self,
       bucket: str,
       labels: Optional[Dict[str, str]] = None,
-      predefinedacl: str = 'private',
-      predefineddefaultobjectacl: str = 'private') -> Dict[str, Any]:
+      predefined_acl: str = 'private',
+      predefined_default_object_acl: str = 'private') -> Dict[str, Any]:
     """Creates a Google Cloud Storage bucket in the current project.
 
     Args:
       bucket (str): Name of the desired bucket.
-      labels (Dict): Mapping of key/value strings to be applied as a label
+      labels (Dict[str, str]): Mapping of key/value strings to be applied as a label
         to the bucket.
         Rules for acceptable label values are located at
         https://cloud.google.com/storage/docs/key-terms#bucket-labels
-      predefinedacl (str): A predefined set of Access Controls
+      predefined_acl (str): A predefined set of Access Controls
         to apply to the bucket.
-      predefineddefaultobjectacl (str): A predefined set of Access Controls
+      predefined_default_object_acl (str): A predefined set of Access Controls
         to apply to the objects in the bucket.
       Values listed in https://cloud.google.com/storage/docs/json_api/v1/buckets/insert#parameters  # pylint: disable=line-too-long
 
     Returns:
-      Dict: An API operation object for a Google Cloud Storage bucket.
+      Dict[str, Any]: An API operation object for a Google Cloud Storage bucket.
            https://cloud.google.com/storage/docs/json_api/v1/buckets#resource
     """
     gcs_buckets = self.GcsApi().buckets()
     body = {'name': bucket, 'labels': labels}
     request = gcs_buckets.insert(
         project=self.project_id,
-        predefinedAcl=predefinedacl,
-        predefinedDefaultObjectAcl=predefineddefaultobjectacl,
+        predefinedAcl=predefined_acl,
+        predefinedDefaultObjectAcl=predefined_default_object_acl,
         body=body)
     response = request.execute()  # type: Dict[str, Any]
     return response

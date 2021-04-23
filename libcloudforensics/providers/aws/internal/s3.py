@@ -40,7 +40,6 @@ class S3:
 
     Args:
       aws_account (AWSAccount): The account for the resource.
-
     """
 
     self.aws_account = aws_account
@@ -55,8 +54,8 @@ class S3:
     Args:
       name (str): The name of the bucket.
       region (str): Optional. The region in which the bucket resides.
-      acl (str): The canned ACL with which to create the bucket.
-
+      acl (str): Optional. The canned ACL with which to create the bucket.
+        Default is 'private'.
     Appropriate values for the Canned ACLs are here:
     https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl  # pylint: disable=line-too-long
 
@@ -70,12 +69,13 @@ class S3:
 
     client = self.aws_account.ClientApi(common.S3_SERVICE)
     try:
-      return client.create_bucket(
+      bucket = client.create_bucket(
           Bucket=name,
           ACL=acl,
-          CreateBucketConfiguration={  # type: Dict[str, Any]
+          CreateBucketConfiguration={
               'LocationConstraint': region or self.aws_account.default_region
-          })
+          })  # type: Dict[str, Any]
+      return bucket
     except client.exceptions.ClientError as exception:
       raise errors.ResourceCreationError(
           'Could not create bucket {0:s}: {1:s}'.format(
