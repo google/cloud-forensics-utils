@@ -21,7 +21,7 @@ analysis virtual machine to be used in incident response.
 from typing import Optional, TYPE_CHECKING
 import boto3
 
-from libcloudforensics.providers.aws.internal import ec2, ebs, kms
+from libcloudforensics.providers.aws.internal import ec2, ebs, kms, s3
 
 if TYPE_CHECKING:
   import botocore
@@ -40,6 +40,7 @@ class AWSAccount:
     _ec2 (AWSEC2): An AWS EC2 client object.
     _ebs (AWSEBS): An AWS EBS client object.
     _kms (AWSKMS): An AWS KMS client object.
+    _s3 (AWSS3): An AWS S3 client object.
   """
 
   def __init__(self,
@@ -83,6 +84,7 @@ class AWSAccount:
     self._ec2 = None  # type: Optional[ec2.EC2]
     self._ebs = None  # type: Optional[ebs.EBS]
     self._kms = None  # type: Optional[kms.KMS]
+    self._s3 = None  # type: Optional[s3.S3]
 
   @property
   def ec2(self) -> ec2.EC2:
@@ -122,6 +124,19 @@ class AWSAccount:
       return self._kms
     self._kms = kms.KMS(self)
     return self._kms
+
+  @property
+  def s3(self) -> s3.S3:
+    """Get an AWS S3 object for the account.
+
+    Returns:
+      AWSS3: Object that represents AWS S3 services.
+    """
+
+    if self._s3:
+      return self._s3
+    self._s3 = s3.S3(self)
+    return self._s3
 
   def ClientApi(self,
                 service: str,

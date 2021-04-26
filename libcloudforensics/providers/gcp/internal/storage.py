@@ -119,8 +119,7 @@ class GoogleCloudStorage:
       # Can change to removeprefix() in 3.9
       bucket = bucket[5:]
     gcs_bac = self.GcsApi().bucketAccessControls()
-    request = gcs_bac.list(
-        bucket=bucket, userProject=user_project)
+    request = gcs_bac.list(bucket=bucket, userProject=user_project)
     # https://cloud.google.com/storage/docs/json_api/v1/bucketAccessControls#resource
     ac_response = request.execute()
     for item in ac_response.get('items', []):
@@ -239,3 +238,37 @@ class GoogleCloudStorage:
             elif val > ret[bucket]:
               ret[bucket] = val
     return ret
+
+  def CreateBucket(
+      self,
+      bucket: str,
+      labels: Optional[Dict[str, str]] = None,
+      predefined_acl: str = 'private',
+      predefined_default_object_acl: str = 'private') -> Dict[str, Any]:
+    """Creates a Google Cloud Storage bucket in the current project.
+
+    Args:
+      bucket (str): Name of the desired bucket.
+      labels (Dict[str, str]): Mapping of key/value strings to be applied as a label
+        to the bucket.
+        Rules for acceptable label values are located at
+        https://cloud.google.com/storage/docs/key-terms#bucket-labels
+      predefined_acl (str): A predefined set of Access Controls
+        to apply to the bucket.
+      predefined_default_object_acl (str): A predefined set of Access Controls
+        to apply to the objects in the bucket.
+      Values listed in https://cloud.google.com/storage/docs/json_api/v1/buckets/insert#parameters  # pylint: disable=line-too-long
+
+    Returns:
+      Dict[str, Any]: An API operation object for a Google Cloud Storage bucket.
+           https://cloud.google.com/storage/docs/json_api/v1/buckets#resource
+    """
+    gcs_buckets = self.GcsApi().buckets()
+    body = {'name': bucket, 'labels': labels}
+    request = gcs_buckets.insert(
+        project=self.project_id,
+        predefinedAcl=predefined_acl,
+        predefinedDefaultObjectAcl=predefined_default_object_acl,
+        body=body)
+    response = request.execute()  # type: Dict[str, Any]
+    return response
