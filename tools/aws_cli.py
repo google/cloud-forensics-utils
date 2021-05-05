@@ -200,3 +200,15 @@ def CreateBucket(args: 'argparse.Namespace') -> None:
   bucket = aws_account.s3.CreateBucket(args.name)
 
   logger.info('Bucket created: {0:s}'.format(bucket['Location']))
+
+
+def UploadToBucket(args: 'argparse.Namespace') -> None:
+  """Upload a file to an S3 bucket.
+
+  Args:
+    args (argparse.Namespace): Arguments from ArgumentParser.
+  """
+  aws_account = account.AWSAccount(args.zone)
+  aws_account.s3.Put(args.bucket, args.filename)
+
+  logger.info('File successfully uploaded.')

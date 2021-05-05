@@ -30,7 +30,8 @@ PROVIDER_TO_FUNC = {
         'listdisks': aws_cli.ListVolumes,
         'querylogs': aws_cli.QueryLogs,
         'startvm': aws_cli.StartAnalysisVm,
-        'createbucket': aws_cli.CreateBucket
+        'createbucket': aws_cli.CreateBucket,
+        'uploadtobucket': aws_cli.UploadToBucket
     },
     'az': {
         'copydisk': az_cli.CreateDiskCopy,
@@ -194,6 +195,12 @@ def Main() -> None:
   AddParser('aws', aws_subparsers, 'createbucket', 'Create an S3 bucket.',
             args=[
                 ('name', 'The name of the bucket.', None),
+            ])
+  AddParser('aws', aws_subparsers, 'uploadtobucket',
+            'Upload a file to an S3 bucket.',
+            args=[
+                ('bucket', 'The name of the bucket.', None),
+                ('filename', 'Local file name.', None),
             ])
 
   # Azure parser options
