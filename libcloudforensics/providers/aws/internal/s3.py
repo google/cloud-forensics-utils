@@ -80,6 +80,7 @@ class S3:
           CreateBucketConfiguration={
               'LocationConstraint': region or self.aws_account.default_region
           })
+      return bucket
     except client.exceptions.BucketAlreadyOwnedByYou as exception:
       raise errors.ResourceCreationError(
           'Bucket {0:s} already exists: {1:s}'.format(
