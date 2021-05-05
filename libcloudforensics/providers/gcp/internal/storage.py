@@ -15,8 +15,12 @@
 """Google Cloud Storage functionalities."""
 
 import collections
+import datetime
 from typing import TYPE_CHECKING, List, Dict, Any, Optional, Tuple
 from libcloudforensics.providers.gcp.internal import common
+# pylint: disable=line-too-long
+from libcloudforensics.providers.gcp.internal import monitoring as gcp_monitoring
+# pylint: enable=line-too-long
 
 if TYPE_CHECKING:
   import googleapiclient
@@ -115,8 +119,7 @@ class GoogleCloudStorage:
       # Can change to removeprefix() in 3.9
       bucket = bucket[5:]
     gcs_bac = self.GcsApi().bucketAccessControls()
-    request = gcs_bac.list(
-        bucket=bucket, userProject=user_project)
+    request = gcs_bac.list(bucket=bucket, userProject=user_project)
     # https://cloud.google.com/storage/docs/json_api/v1/bucketAccessControls#resource
     ac_response = request.execute()
     for item in ac_response.get('items', []):
@@ -173,3 +176,99 @@ class GoogleCloudStorage:
     gcs_objects = self.GcsApi().objects()
     request = gcs_objects.delete(bucket=bucket, object=object_path)
     request.execute()  # type: Dict[str, Any]
+
+  def GetBucketSize(self,
+                    bucket: str,
+                    timeframe: int = 1) -> Dict[str, int]:
+    """List the size of a Google Storage Bucket in a project (default: last 1
+    day).
+
+    Note: This will list the _maximum size_
+          (in bytes) the bucket had in the timeframe.
+
+    Ref: https://cloud.google.com/monitoring/api/metrics_gcp#gcp-storage
+
+    Args:
+      bucket (str):  Name of a bucket in GCS.
+      timeframe (int): Optional. The number (in days) for
+          which to measure activity.
+          Default: 1 day.
+
+    Returns:
+      Dict[str, int]: Dictionary mapping bucket name to its size (in bytes).
+    """
+
+    start_time = common.FormatRFC3339(
+        datetime.datetime.utcnow() - datetime.timedelta(days=timeframe))
+    end_time = common.FormatRFC3339(datetime.datetime.utcnow())
+    period = timeframe * 24 * 60 * 60
+
+    assert self.project_id  # Necessary for mypy check
+    gcm = gcp_monitoring.GoogleCloudMonitoring(self.project_id)
+    gcm_api = gcm.GcmApi()
+    gcm_timeseries_client = gcm_api.projects().timeSeries()
+    qfilter = ('metric.type="storage.googleapis.com/storage/total_bytes" '
+               'resource.type="gcs_bucket"')
+    qfilter += ' resource.label.bucket_name="{0:s}"'.format(bucket)
+
+    responses = common.ExecuteRequest(
+        gcm_timeseries_client,
+        'list',
+        {
+            'name': 'projects/{0:s}'.format(self.project_id),
+            'filter': qfilter,
+            'interval_startTime': start_time,
+            'interval_endTime': end_time,
+            'aggregation_groupByFields': 'resource.label.bucket_name',
+            'aggregation_perSeriesAligner': 'ALIGN_MAX',
+            'aggregation_alignmentPeriod': '{0:d}s'.format(period),
+            'aggregation_crossSeriesReducer': 'REDUCE_NONE'
+        })
+
+    ret = {}
+    for response in responses:
+      for ts in response.get('timeSeries', []):
+        bucket = ts.get('resource', {}).get('labels', {}).get('bucket_name', '')
+        if bucket:
+          points = ts.get('points', [])
+          for point in points:
+            val = point.get('value', {}).get('doubleValue', 0)
+            if bucket not in ret:
+              ret[bucket] = val
+            elif val > ret[bucket]:
+              ret[bucket] = val
+    return ret
+
+  def CreateBucket(
+      self,
+      bucket: str,
+      labels: Optional[Dict[str, str]] = None,
+      predefined_acl: str = 'private',
+      predefined_default_object_acl: str = 'private') -> Dict[str, Any]:
+    """Creates a Google Cloud Storage bucket in the current project.
+
+    Args:
+      bucket (str): Name of the desired bucket.
+      labels (Dict[str, str]): Mapping of key/value strings to be applied as a label
+        to the bucket.
+        Rules for acceptable label values are located at
+        https://cloud.google.com/storage/docs/key-terms#bucket-labels
+      predefined_acl (str): A predefined set of Access Controls
+        to apply to the bucket.
+      predefined_default_object_acl (str): A predefined set of Access Controls
+        to apply to the objects in the bucket.
+      Values listed in https://cloud.google.com/storage/docs/json_api/v1/buckets/insert#parameters  # pylint: disable=line-too-long
+
+    Returns:
+      Dict[str, Any]: An API operation object for a Google Cloud Storage bucket.
+           https://cloud.google.com/storage/docs/json_api/v1/buckets#resource
+    """
+    gcs_buckets = self.GcsApi().buckets()
+    body = {'name': bucket, 'labels': labels}
+    request = gcs_buckets.insert(
+        project=self.project_id,
+        predefinedAcl=predefined_acl,
+        predefinedDefaultObjectAcl=predefined_default_object_acl,
+        body=body)
+    response = request.execute()  # type: Dict[str, Any]
+    return response

@@ -29,7 +29,8 @@ PROVIDER_TO_FUNC = {
         'listinstances': aws_cli.ListInstances,
         'listdisks': aws_cli.ListVolumes,
         'querylogs': aws_cli.QueryLogs,
-        'startvm': aws_cli.StartAnalysisVm
+        'startvm': aws_cli.StartAnalysisVm,
+        'createbucket': aws_cli.CreateBucket
     },
     'az': {
         'copydisk': az_cli.CreateDiskCopy,
@@ -41,10 +42,12 @@ PROVIDER_TO_FUNC = {
     },
     'gcp': {
         'bucketacls': gcp_cli.GetBucketACLs,
+        'bucketsize': gcp_cli.GetBucketSize,
         'copydisk': gcp_cli.CreateDiskCopy,
         'creatediskgcs': gcp_cli.CreateDiskFromGCSImage,
         'deleteinstance': gcp_cli.DeleteInstance,
         'deleteobject': gcp_cli.DeleteObject,
+        'createbucket': gcp_cli.CreateBucket,
         'listbuckets': gcp_cli.ListBuckets,
         'listdisks': gcp_cli.ListDisks,
         'listinstances': gcp_cli.ListInstances,
@@ -187,6 +190,10 @@ def Main() -> None:
   AddParser('aws', aws_subparsers, 'listimages', 'List AMI images.',
             args=[
                 ('--filter', 'Filter to apply to Name of AMI image.', None),
+            ])
+  AddParser('aws', aws_subparsers, 'createbucket', 'Create an S3 bucket.',
+            args=[
+                ('name', 'The name of the bucket.', None),
             ])
 
   # Azure parser options
@@ -338,11 +345,21 @@ def Main() -> None:
                    'Name of the disk to create. If None, name '
                    'will be printed at the end.',
                    None)])
+  AddParser('gcp', gcp_subparsers, 'createbucket',
+            'Create a GCS bucket in a project.',
+            args=[
+                ('name', 'Name of bucket.', None),
+            ])
   AddParser('gcp', gcp_subparsers, 'listbuckets',
             'List GCS buckets for a project.')
   AddParser('gcp', gcp_subparsers, 'bucketacls', 'List ACLs of a GCS bucket.',
             args=[
                 ('path', 'Path to bucket.', None),
+            ])
+  AddParser('gcp', gcp_subparsers, 'bucketsize',
+            'Get the size of a GCS bucket.',
+            args=[
+                ('path', 'Path to bucket.', None)
             ])
   AddParser('gcp', gcp_subparsers, 'objectmetadata', 'List the details of an '
                                                      'object in a GCS bucket.',

@@ -16,7 +16,7 @@
 
 import mock
 
-from libcloudforensics.providers.aws.internal import account, ebs, ec2
+from libcloudforensics.providers.aws.internal import account, ebs, ec2, s3
 from libcloudforensics.providers.aws.internal import log as aws_log
 
 with mock.patch('boto3.session.Session._setup_loader') as mock_session:
@@ -62,6 +62,8 @@ FAKE_SNAPSHOT = ebs.AWSSnapshot(
     name='fake-snapshot')
 
 FAKE_CLOUDTRAIL = aws_log.AWSCloudTrail(FAKE_AWS_ACCOUNT)
+
+FAKE_STORAGE = s3.S3(FAKE_AWS_ACCOUNT)
 
 FAKE_EVENT_LIST = [
     {'EventId': '474e8265-9180-4407-a5c9-f3a86d8bb1f0',
@@ -183,4 +185,26 @@ MOCK_RUN_INSTANCES = {
 
 MOCK_EVENT_LIST = {
     'Events': FAKE_EVENT_LIST
+}
+
+MOCK_CREATE_BUCKET = {
+    'ResponseMetadata': {
+        'RequestId':
+            '123456789',
+        'HTTPStatusCode':
+            200,
+        'HTTPHeaders': {
+            'date':
+                'Thu, 15 Apr 2021 05:56:13 GMT',
+            'location':
+                'http://test-bucket.s3.amazonaws.com/',
+            'content-length':
+                '0',
+            'server':
+                'AmazonS3'
+        },
+        'RetryAttempts':
+            0
+    },
+    'Location': 'http://test-bucket.s3.amazonaws.com/'
 }

@@ -378,6 +378,50 @@ MOCK_GCM_METRICS_COUNT = {
     'unit': '1'
 }
 
+MOCK_GCM_METRICS_BUCKETSIZE = {
+  "timeSeries": [
+    {
+      "metric": {
+        "labels": {
+          "storage_class": "REGIONAL"
+        },
+        "type": "storage.googleapis.com/storage/total_bytes"
+      },
+      "resource": {
+        "type": "gcs_bucket",
+        "labels": {
+          "bucket_name": "test_bucket_1",
+          "project_id": "fake-project",
+          "location": "us-east1"
+        }
+      },
+      "metricKind": "GAUGE",
+      "valueType": "DOUBLE",
+      "points": [
+        {
+          "interval": {
+            "startTime": "2021-04-07T00:00:00Z",
+            "endTime": "2021-04-07T00:00:00Z"
+          },
+          "value": {
+            "doubleValue": 30
+          }
+        },
+        {
+          "interval": {
+            "startTime": "2021-04-06T00:05:00Z",
+            "endTime": "2021-04-06T00:05:00Z"
+          },
+          "value": {
+            "doubleValue": 60
+          }
+        }
+      ]
+    }
+  ],
+  "unit": "By"
+}
+
 # See: https://cloud.google.com/compute/docs/reference/rest/v1/disks
 REGEX_DISK_NAME = re.compile('^(?=.{1,63}$)[a-z]([-a-z0-9]*[a-z0-9])?$')
 STARTUP_SCRIPT = 'scripts/startup.sh'
