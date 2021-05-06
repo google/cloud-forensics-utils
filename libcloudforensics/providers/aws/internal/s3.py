@@ -14,10 +14,15 @@
 # limitations under the License.
 """Bucket functionality."""
 
+import os
 from typing import TYPE_CHECKING, Dict, Optional, Any
 
 from libcloudforensics import errors
+from libcloudforensics import logging_utils
 from libcloudforensics.providers.aws.internal import common
+
+logging_utils.SetUpLogger(__name__)
+logger = logging_utils.GetLogger(__name__)
 
 if TYPE_CHECKING:
   # TYPE_CHECKING is always False at runtime, therefore it is safe to ignore
@@ -74,10 +79,42 @@ class S3:
           ACL=acl,
           CreateBucketConfiguration={
               'LocationConstraint': region or self.aws_account.default_region
-          })  # type: Dict[str, Any]
+          })   # type: Dict[str, Any]
       return bucket
+    except client.exceptions.BucketAlreadyOwnedByYou as exception:
+      raise errors.ResourceCreationError(
+          'Bucket {0:s} already exists: {1:s}'.format(
+              name, str(exception)),
+          __name__) from exception
     except client.exceptions.ClientError as exception:
       raise errors.ResourceCreationError(
           'Could not create bucket {0:s}: {1:s}'.format(
               name, str(exception)),
+          __name__) from exception
+
+  def Put(self, s3_path: str, filepath: str) -> None:
+    """Upload a local file to an S3 bucket.
+
+    Args:
+      s3_path (str): Path to the target S3 bucket.
+          Ex: s3://test/bucket
+      filepath (str): Path to the file to be uploaded.
+          Ex: /tmp/myfile
+    Raises:
+      ResourceCreationError: If the object couldn't be uploaded.
+    """
+    client = self.aws_account.ClientApi(common.S3_SERVICE)
+    if s3_path.startswith('s3://'):
+      s3_path = s3_path[5:]
+    try:
+      client.upload_file(filepath, s3_path, os.path.basename(filepath))
+    except FileNotFoundError as exception:
+      raise errors.ResourceNotFoundError(
+          'Could not upload file {0:s}: {1:s}'.format(
+              filepath, str(exception)),
+          __name__) from exception
+    except client.exceptions.ClientError as exception:
+      raise errors.ResourceCreationError(
+          'Could not upload file {0:s}: {1:s}'.format(
+              filepath, str(exception)),
           __name__) from exception
