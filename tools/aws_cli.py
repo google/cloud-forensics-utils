@@ -209,6 +209,6 @@ def UploadToBucket(args: 'argparse.Namespace') -> None:
     args (argparse.Namespace): Arguments from ArgumentParser.
   """
   aws_account = account.AWSAccount(args.zone)
-  aws_account.s3.Put(args.bucket, args.filename)
+  aws_account.s3.Put(args.bucket, args.filepath)
 
   logger.info('File successfully uploaded.')
