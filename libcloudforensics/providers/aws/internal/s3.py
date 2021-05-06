@@ -79,7 +79,7 @@ class S3:
           ACL=acl,
           CreateBucketConfiguration={
               'LocationConstraint': region or self.aws_account.default_region
-          })
+          })   # type: Dict[str, Any]
       return bucket
     except client.exceptions.BucketAlreadyOwnedByYou as exception:
       raise errors.ResourceCreationError(
@@ -92,13 +92,13 @@ class S3:
               name, str(exception)),
           __name__) from exception
 
-  def Put(self, s3_path, local_file) -> None:
+  def Put(self, s3_path: str, filepath: str) -> None:
     """Upload a local file to an S3 bucket.
 
     Args:
       s3_path (str): Path to the target S3 bucket.
           Ex: s3://test/bucket
-      local_file (str): Path to the file to be uploaded.
+      filepath (str): Path to the file to be uploaded.
           Ex: /tmp/myfile
     Raises:
       ResourceCreationError: If the object couldn't be uploaded.
@@ -107,14 +107,14 @@ class S3:
     if s3_path.startswith('s3://'):
       s3_path = s3_path[5:]
     try:
-      client.upload_file(local_file, s3_path, os.path.basename(local_file))
+      client.upload_file(filepath, s3_path, os.path.basename(filepath))
     except FileNotFoundError as exception:
       raise errors.ResourceNotFoundError(
           'Could not upload file {0:s}: {1:s}'.format(
-              local_file, str(exception)),
+              filepath, str(exception)),
           __name__) from exception
     except client.exceptions.ClientError as exception:
       raise errors.ResourceCreationError(
           'Could not upload file {0:s}: {1:s}'.format(
-              local_file, str(exception)),
+              filepath, str(exception)),
           __name__) from exception

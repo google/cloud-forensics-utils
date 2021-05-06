@@ -200,7 +200,7 @@ def Main() -> None:
             'Upload a file to an S3 bucket.',
             args=[
                 ('bucket', 'The name of the bucket.', None),
-                ('filename', 'Local file name.', None),
+                ('filepath', 'Local file name.', None),
             ])
 
   # Azure parser options
