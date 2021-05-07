@@ -31,7 +31,8 @@ PROVIDER_TO_FUNC = {
         'querylogs': aws_cli.QueryLogs,
         'startvm': aws_cli.StartAnalysisVm,
         'createbucket': aws_cli.CreateBucket,
-        'uploadtobucket': aws_cli.UploadToBucket
+        'uploadtobucket': aws_cli.UploadToBucket,
+        'gcstos3': aws_cli.GCSToS3
     },
     'az': {
         'copydisk': az_cli.CreateDiskCopy,
@@ -201,6 +202,13 @@ def Main() -> None:
             args=[
                 ('bucket', 'The name of the bucket.', None),
                 ('filepath', 'Local file name.', None),
+            ])
+  AddParser('aws', aws_subparsers, 'gcstos3',
+            'Transfer a file from GCS to an S3 bucket.',
+            args=[
+                ('project', 'GCP Project name.', None),
+                ('gcs_path', 'Source object path.', None),
+                ('s3_path', 'Destination bucket.', None),
             ])
 
   # Azure parser options
