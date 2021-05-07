@@ -97,6 +97,8 @@ class S3:
   def Put(self, s3_path: str, filepath: str) -> None:
     """Upload a local file to an S3 bucket.
 
+    Keeps the local filename intact.
+
     Args:
       s3_path (str): Path to the target S3 bucket.
           Ex: s3://test/bucket
@@ -106,10 +108,16 @@ class S3:
       ResourceCreationError: If the object couldn't be uploaded.
     """
     client = self.aws_account.ClientApi(common.S3_SERVICE)
-    if s3_path.startswith('s3://'):
-      s3_path = s3_path[5:]
+    if not s3_path.startswith('s3://'):
+      s3_path = 's3://' + s3_path
+    if not s3_path.endswith('/'):
+      s3_path = s3_path + '/'
     try:
-      client.upload_file(filepath, s3_path, os.path.basename(filepath))
+      (bucket, path) = gcp_storage.SplitStoragePath(s3_path)
+      client.upload_file(
+          filepath,
+          bucket,
+          '{0:s}{1:s}'.format(path, os.path.basename(filepath)))
     except FileNotFoundError as exception:
       raise errors.ResourceNotFoundError(
           'Could not upload file {0:s}: {1:s}'.format(
@@ -157,5 +165,5 @@ class S3:
         raise exception
     self.Put(s3_path, localcopy)
     logger.info('Attempting to delete local (temporary) copy')
-    os.unlink(localcopy.name)
+    os.unlink(localcopy)
     logger.info('Done')
