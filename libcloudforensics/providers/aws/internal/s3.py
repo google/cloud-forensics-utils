@@ -20,6 +20,8 @@ from typing import TYPE_CHECKING, Dict, Optional, Any
 from libcloudforensics import errors
 from libcloudforensics import logging_utils
 from libcloudforensics.providers.aws.internal import common
+from libcloudforensics.providers.gcp.internal import storage as gcp_storage
+
 
 logging_utils.SetUpLogger(__name__)
 logger = logging_utils.GetLogger(__name__)
@@ -118,3 +120,42 @@ class S3:
           'Could not upload file {0:s}: {1:s}'.format(
               filepath, str(exception)),
           __name__) from exception
+
+  def GCSToS3(self,
+              project_id: str,
+              gcs_path: str,
+              s3_path: str) -> None:
+    """Copy an object in GCS to an S3 bucket.
+
+    (Creates a local copy of the file in a temporary directory)
+
+    Args:
+      project_id (str): Google Cloud project ID.
+      gcs_path (str): File path to the source GCS object.
+          Ex: gs://bucket/folder/obj
+      s3_path (str): Path to the target S3 bucket.
+          Ex: s3://test/bucket
+    Returns:
+      Dict: An API operation object for an S3 Put request.
+        https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html#S3.Client.put_object  # pylint: disable=line-too-long
+    Raises:
+      ResourceCreationError: If the object couldn't be uploaded.
+    """
+    client = self.aws_account.ClientApi(common.S3_SERVICE)
+    gcs = gcp_storage.GoogleCloudStorage(project_id)
+    if not s3_path.startswith('s3://'):
+      s3_path = 's3://' + s3_path
+    if not gcs_path.startswith('gs://'):
+      gcs_path = 'gs://' + gcs_path
+    localcopy = gcs.GetObject(gcs_path)
+    try:
+      self.CreateBucket(gcp_storage.SplitStoragePath(s3_path)[0])
+    except errors.ResourceCreationError as exception:
+      if 'already exists' in exception.message:
+        logger.info('Target bucket already exists. Reusing.')
+      else:
+        raise exception
+    self.Put(s3_path, localcopy)
+    logger.info('Attempting to delete local (temporary) copy')
+    os.unlink(localcopy.name)
+    logger.info('Done')
