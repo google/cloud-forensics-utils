@@ -318,13 +318,13 @@ class GoogleCloudStorage:
       logger.info('Created temporary directory {0:s}'.format(outputdir))
       out_file = os.path.join(outputdir, os.path.basename(filename))
 
-    outputfile = open(out_file, 'wb')
-    downloader = googleapiclient.http.MediaIoBaseDownload(outputfile, request)
+    with open(out_file, 'wb') as outputfile:
+      downloader = googleapiclient.http.MediaIoBaseDownload(outputfile, request)
 
-    done = False
-    while not done:
-      status, done = downloader.next_chunk()
-      logger.info('Download {}%.'.format(int(status.progress() * 100)))
-    logger.info('File successfully written to {0:s}'.format(out_file))
+      done = False
+      while not done:
+        status, done = downloader.next_chunk()
+        logger.info('Download {}%.'.format(int(status.progress() * 100)))
+      logger.info('File successfully written to {0:s}'.format(out_file))
 
     return out_file
