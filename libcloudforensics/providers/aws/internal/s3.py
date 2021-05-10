@@ -149,7 +149,6 @@ class S3:
     Raises:
       ResourceCreationError: If the object couldn't be uploaded.
     """
-    client = self.aws_account.ClientApi(common.S3_SERVICE)
     gcs = gcp_storage.GoogleCloudStorage(project_id)
     if not s3_path.startswith('s3://'):
       s3_path = 's3://' + s3_path
