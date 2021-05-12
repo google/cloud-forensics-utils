@@ -34,7 +34,7 @@ logging_utils.SetUpLogger(__name__)
 logger = logging_utils.GetLogger(__name__)
 
 if TYPE_CHECKING:
-  import googleapiclient
+  import googleapiclient  # pylint: disable=ungrouped-imports
 
 
 def SplitStoragePath(path: str) -> Tuple[str, str]:
