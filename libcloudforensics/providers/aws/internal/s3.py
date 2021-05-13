@@ -155,8 +155,9 @@ class S3:
     if not gcs_path.startswith('gs://'):
       gcs_path = 'gs://' + gcs_path
     object_md = gcs.GetObjectMetadata(gcs_path)
-    logger.warn(
-        'This will download {0:s}b to a local temporary directory before uploading it to S3.'
+    logger.warning(
+        'This will download {0:s}b to a local'
+        ' temporary directory before uploading it to S3.'
         .format(object_md.get('size', 'Error')))
     localcopy = gcs.GetObject(gcs_path)
     try:
