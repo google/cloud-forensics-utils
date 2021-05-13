@@ -154,6 +154,10 @@ class S3:
       s3_path = 's3://' + s3_path
     if not gcs_path.startswith('gs://'):
       gcs_path = 'gs://' + gcs_path
+    object_md = gcs.GetObjectMetadata(gcs_path)
+    logger.warn(
+        'This will download {0:s}b to a local temporary directory before uploading it to S3.'
+        .format(object_md.get('size', 'Error')))
     localcopy = gcs.GetObject(gcs_path)
     try:
       self.CreateBucket(gcp_storage.SplitStoragePath(s3_path)[0])
