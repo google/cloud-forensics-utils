@@ -89,3 +89,21 @@ class GoogleCloudStorageTest(unittest.TestCase):
     size_results = gcp_mocks.FAKE_GCS.GetBucketSize('gs://test_bucket_1')
     self.assertEqual(1, len(size_results))
     self.assertEqual(60, size_results['test_bucket_1'])
+
+  @typing.no_type_check
+  @mock.patch('libcloudforensics.providers.gcp.internal.storage.GoogleCloudStorage.GcsApi')
+  def testCreateBucket(self, mock_gcs_api):
+    """Test GCS bucket Create operation."""
+    api_create_bucket = mock_gcs_api.return_value.buckets.return_value.insert
+    api_create_bucket.return_value.execute.return_value = gcp_mocks.MOCK_GCS_BUCKETS['items'][0]
+    create_result = gcp_mocks.FAKE_GCS.CreateBucket('fake-bucket')
+
+    api_create_bucket.assert_called_with(
+        project='fake-target-project',
+        predefinedAcl='private',
+        predefinedDefaultObjectAcl='private',
+        body={
+            'name': 'fake-bucket', 'labels': None
+        })
+    self.assertEqual('fake-bucket', create_result['name'])
+    self.assertEqual('123456789', create_result['projectNumber'])
