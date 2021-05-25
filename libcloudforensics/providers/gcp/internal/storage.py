@@ -330,7 +330,7 @@ class GoogleCloudStorage:
     else:
       if int(om['size']) > stat.free:
         raise errors.ResourceCreationError(
-            'Target drive does not have enough space ({0!s} free vs {1!s} needed)'
+            'Target drive does not have enough space ({0!s} free vs {1!s} needed)'  # pylint: disable=line-too-long
             .format(stat.free, om['size']),
             __name__)
 
@@ -342,7 +342,7 @@ class GoogleCloudStorage:
         status, done = downloader.next_chunk()
         if status.total_size > stat.free:
           raise errors.ResourceCreationError(
-              'Target drive does not have enough space ({0!s} free vs {1!s} needed)'
+              'Target drive does not have enough space ({0!s} free vs {1!s} needed)'  # pylint: disable=line-too-long
               .format(stat.free, status.total_size),
               __name__)
         logger.info('Download {}%.'.format(int(status.progress() * 100)))
