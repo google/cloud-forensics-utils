@@ -792,16 +792,16 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
   def _SshConnection(self) -> None:
     """Create an SSH connection to the virtual machine."""
 
-    devnull = open(os.devnull, 'w')
-    cmd_list = ['gcloud',
-                'compute',
-                '--project',
-                self.project_id,
-                'ssh',
-                '--zone',
-                self.zone,
-                self.name]
-    subprocess.check_call(cmd_list, stderr=devnull)
+    with open(os.devnull, 'w') as devnull:
+      cmd_list = ['gcloud',
+                  'compute',
+                  '--project',
+                  self.project_id,
+                  'ssh',
+                  '--zone',
+                  self.zone,
+                  self.name]
+      subprocess.check_call(cmd_list, stderr=devnull)
 
   def Ssh(self) -> None:
     """Connect to the virtual machine over SSH."""
