@@ -27,7 +27,8 @@ from libcloudforensics.providers.aws.internal import common
 if TYPE_CHECKING:
   # TYPE_CHECKING is always False at runtime, therefore it is safe to ignore
   # the following cyclic import, as it it only used for type hints
-  from libcloudforensics.providers.aws.internal import account, ebs  # pylint: disable=cyclic-import
+  from libcloudforensics.providers.aws.internal import account  # pylint: disable=cyclic-import
+  from libcloudforensics.providers.aws.internal import ebs  # pylint: disable=cyclic-import
 
 
 class AWSInstance:

@@ -21,10 +21,12 @@ from typing import Dict, Tuple, List, TYPE_CHECKING, Union, Optional, Any
 
 from googleapiclient.errors import HttpError
 
-from libcloudforensics.providers.gcp.internal import common, build
+from libcloudforensics.providers.gcp.internal import build
+from libcloudforensics.providers.gcp.internal import common
 from libcloudforensics.providers.gcp.internal import compute_base_resource
 from libcloudforensics.scripts import utils
-from libcloudforensics import errors, logging_utils
+from libcloudforensics import logging_utils
+from libcloudforensics import errors
 
 if TYPE_CHECKING:
   import googleapiclient

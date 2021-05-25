@@ -20,7 +20,9 @@ import argparse
 import sys
 
 from typing import Tuple, List, Optional, Any, Dict
-from tools import aws_cli, az_cli, gcp_cli
+from tools import aws_cli
+from tools import az_cli
+from tools import gcp_cli
 
 PROVIDER_TO_FUNC = {
     'aws': {

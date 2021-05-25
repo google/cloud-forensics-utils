@@ -18,12 +18,14 @@ import base64
 import random
 from typing import TYPE_CHECKING, List, Tuple, Optional, Dict, Any
 
-from google.auth.exceptions import RefreshError, DefaultCredentialsError
+from google.auth.exceptions import DefaultCredentialsError
+from google.auth.exceptions import RefreshError
 from googleapiclient.errors import HttpError
 
 from libcloudforensics.providers.gcp.internal import project as gcp_project
 from libcloudforensics.providers.gcp.internal import common
-from libcloudforensics import errors, logging_utils
+from libcloudforensics import logging_utils
+from libcloudforensics import errors
 
 if TYPE_CHECKING:
   from libcloudforensics.providers.gcp.internal import compute

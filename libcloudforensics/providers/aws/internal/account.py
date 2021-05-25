@@ -21,7 +21,10 @@ analysis virtual machine to be used in incident response.
 from typing import Optional, TYPE_CHECKING
 import boto3
 
-from libcloudforensics.providers.aws.internal import ec2, ebs, kms, s3
+from libcloudforensics.providers.aws.internal import ec2
+from libcloudforensics.providers.aws.internal import ebs
+from libcloudforensics.providers.aws.internal import kms
+from libcloudforensics.providers.aws.internal import s3
 
 if TYPE_CHECKING:
   import botocore

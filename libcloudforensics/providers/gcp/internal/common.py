@@ -23,9 +23,11 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Any
 import netaddr
 
 from google.auth import default
-from google.auth.exceptions import DefaultCredentialsError, RefreshError
+from google.auth.exceptions import DefaultCredentialsError
+from google.auth.exceptions import RefreshError
 from googleapiclient.discovery import build
-from libcloudforensics import errors, logging_utils  # pylint: disable=ungrouped-imports
+from libcloudforensics import logging_utils  # pylint: disable=ungrouped-imports
+from libcloudforensics import errors  # pylint: disable=ungrouped-imports
 
 if TYPE_CHECKING:
   import googleapiclient
