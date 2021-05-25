@@ -16,8 +16,9 @@
 
 import collections
 import datetime
-import tempfile
 import os
+import shutil
+import tempfile
 from typing import TYPE_CHECKING, List, Dict, Any, Optional, Tuple
 
 import googleapiclient.http
@@ -304,8 +305,12 @@ class GoogleCloudStorage:
       gcs_path (str): Full path to the object (ie: gs://bucket/dir1/dir2/obj)
       out_file (str): Path to the local file that will be written.
         If not provided, will create a temporary file.
+
     Returns:
       str: The filename of the written object.
+
+    Raises:
+      ResourceCreationError: If the file couldn't be downloaded.
     """
     if not gcs_path.startswith('gs://'):
       gcs_path = 'gs://' + gcs_path
@@ -318,12 +323,28 @@ class GoogleCloudStorage:
       logger.info('Created temporary directory {0:s}'.format(outputdir))
       out_file = os.path.join(outputdir, os.path.basename(filename))
 
+    stat = shutil.disk_usage(os.path.dirname(outputdir))
+    om = self.GetObjectMetadata(gcs_path)
+    if 'size' not in om:
+      logger.warning('Unable to retrieve object metadata before fetching')
+    else:
+      if int(om['size']) > stat.free:
+        raise errors.ResourceCreationError(
+            'Target drive does not have enough space ({0!s} free vs {1!s} needed)'
+            .format(stat.free, om['size']),
+            __name__)
+
     with open(out_file, 'wb') as outputfile:
       downloader = googleapiclient.http.MediaIoBaseDownload(outputfile, request)
 
       done = False
       while not done:
         status, done = downloader.next_chunk()
+        if status.total_size > stat.free:
+          raise errors.ResourceCreationError(
+              'Target drive does not have enough space ({0!s} free vs {1!s} needed)'
+              .format(stat.free, status.total_size),
+              __name__)
         logger.info('Download {}%.'.format(int(status.progress() * 100)))
       logger.info('File successfully written to {0:s}'.format(out_file))
 
