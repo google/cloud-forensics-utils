@@ -40,10 +40,8 @@ def ReadStartupScript() -> str:
       # Use the provided script
       script_path = os.path.join(
           os.path.dirname(os.path.realpath(__file__)), STARTUP_SCRIPT)
-    startup_script = open(script_path)
-    script = startup_script.read()
-    startup_script.close()
-    return script
+    with open(script_path) as startup_script:
+      return startup_script.read()
   except OSError as exception:
     raise OSError(
         'Could not open/read/close the startup script {0:s}: {1:s}'.format(
