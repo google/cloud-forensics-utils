@@ -212,3 +212,14 @@ def UploadToBucket(args: 'argparse.Namespace') -> None:
   aws_account.s3.Put(args.bucket, args.filepath)
 
   logger.info('File successfully uploaded.')
+
+def GCSToS3(args: 'argparse.Namespace') -> None:
+  """Transfer a file from GCS to an S3 bucket.
+
+  Args:
+    args (argparse.Namespace): Arguments from ArgumentParser.
+  """
+  aws_account = account.AWSAccount(args.zone)
+  aws_account.s3.GCSToS3(args.project, args.gcs_path, args.s3_path)
+
+  logger.info('File successfully transferred.')
