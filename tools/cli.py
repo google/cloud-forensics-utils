@@ -33,7 +33,8 @@ PROVIDER_TO_FUNC = {
         'querylogs': aws_cli.QueryLogs,
         'startvm': aws_cli.StartAnalysisVm,
         'createbucket': aws_cli.CreateBucket,
-        'uploadtobucket': aws_cli.UploadToBucket
+        'uploadtobucket': aws_cli.UploadToBucket,
+        'gcstos3': aws_cli.GCSToS3
     },
     'az': {
         'copydisk': az_cli.CreateDiskCopy,
@@ -52,6 +53,7 @@ PROVIDER_TO_FUNC = {
         'deleteobject': gcp_cli.DeleteObject,
         'createbucket': gcp_cli.CreateBucket,
         'listbuckets': gcp_cli.ListBuckets,
+        'listcloudsqlinstances': gcp_cli.ListCloudSqlInstances,
         'listdisks': gcp_cli.ListDisks,
         'listinstances': gcp_cli.ListInstances,
         'listlogs': gcp_cli.ListLogs,
@@ -203,6 +205,13 @@ def Main() -> None:
             args=[
                 ('bucket', 'The name of the bucket.', None),
                 ('filepath', 'Local file name.', None),
+            ])
+  AddParser('aws', aws_subparsers, 'gcstos3',
+            'Transfer a file from GCS to an S3 bucket.',
+            args=[
+                ('project', 'GCP Project name.', None),
+                ('gcs_path', 'Source object path.', None),
+                ('s3_path', 'Destination bucket.', None),
             ])
 
   # Azure parser options
@@ -380,6 +389,8 @@ def Main() -> None:
             args=[
                 ('path', 'Path to bucket.', None),
             ])
+  AddParser('gcp', gcp_subparsers, 'listcloudsqlinstances',
+            'List CloudSQL instances for a project.')
   AddParser('gcp', gcp_subparsers, 'deleteobject', 'Deletes a GCS object',
             args=[
                 ('path', 'Path to GCS object.', None),
