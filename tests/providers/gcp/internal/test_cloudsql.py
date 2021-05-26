@@ -30,7 +30,7 @@ class GoogleCloudSqlTest(unittest.TestCase):
     """Test GCSql instance List operation."""
     api_list_instances = mock_gcsql_api.return_value.instances.return_value.list
     api_list_instances.return_value.execute.return_value = gcp_mocks.MOCK_GCSQL_INSTANCES
-    list_results = gcp_mocks.FAKE_CLOUDSQLINSTANCE.ListCloudSqlInstances()
+    list_results = gcp_mocks.FAKE_CLOUDSQLINSTANCE.ListCloudSQLInstances()
     self.assertEqual(1, len(list_results))
     self.assertEqual('FAKE_INSTANCE', list_results[0]['instanceType'])
     self.assertEqual('fake', list_results[0]['name'])

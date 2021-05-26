@@ -79,7 +79,7 @@ FAKE_NEXT_PAGE_TOKEN = 'abcdefg1234567'
 FAKE_GCS = gcp_storage.GoogleCloudStorage('fake-target-project')
 FAKE_GCB = gcp_build.GoogleCloudBuild('fake-target-project')
 FAKE_MONITORING = gcp_monitoring.GoogleCloudMonitoring('fake-target-project')
-FAKE_CLOUDSQLINSTANCE = gcp_cloudsql.GoogleCloudSql('fake-target-project')
+FAKE_CLOUDSQLINSTANCE = gcp_cloudsql.GoogleCloudSQL('fake-target-project')
 
 # Mock struct to mimic GCP's API responses
 MOCK_INSTANCES_AGGREGATED = {

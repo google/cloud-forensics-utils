@@ -21,7 +21,7 @@ if TYPE_CHECKING:
   import googleapiclient
 
 
-class GoogleCloudSql:
+class GoogleCloudSQL:
   """Class to call Google CloudSQL APIs.
 
   Attributes:
@@ -40,7 +40,7 @@ class GoogleCloudSql:
     self.gcsql_api_client = None
     self.project_id = project_id
 
-  def GcsqlApi(self) -> 'googleapiclient.discovery.Resource':
+  def GoogleCloudSQLApi(self) -> 'googleapiclient.discovery.Resource':
     """Get a Google CloudSQL service object.
 
     Returns:
@@ -53,13 +53,13 @@ class GoogleCloudSql:
         'sqladmin', self.SQLADMIN_API_VERSION)
     return self.gcsql_api_client
 
-  def ListCloudSqlInstances(self) -> List[Dict[str, Any]]:
+  def ListCloudSQLInstances(self) -> List[Dict[str, Any]]:
     """List instances of Google CloudSQL within a project.
 
     Returns:
-      List of instances
+      List[Dict[str, Any]]: List of instances.
     """
-    gcsql_instances = self.GcsqlApi().instances()
+    gcsql_instances = self.GoogleCloudSQLApi().instances()
     request = gcsql_instances.list(project=self.project_id)
     instances = request.execute()  # type: Dict[str, Any]
     return instances.get('items', [])

@@ -62,7 +62,7 @@ class GoogleCloudProject:
     # pylint: disable=line-too-long
     self._monitoring = None  # type: Optional[monitoring_module.GoogleCloudMonitoring]
     # pylint: enable=line-too-long
-    self._cloudsql = None  # type: Optional[cloudsql_module.GoogleCloudSql]
+    self._cloudsql = None  # type: Optional[cloudsql_module.GoogleCloudSQL]
 
   @property
   def compute(self) -> compute_module.GoogleCloudCompute:
@@ -162,7 +162,7 @@ class GoogleCloudProject:
     return self._monitoring
 
   @property
-  def cloudsql(self) -> cloudsql_module.GoogleCloudSql:
+  def cloudsql(self) -> cloudsql_module.GoogleCloudSQL:
     """Get a GoogleCloudSql object for the project.
 
     Returns:
@@ -171,6 +171,6 @@ class GoogleCloudProject:
 
     if self._cloudsql:
       return self._cloudsql
-    self._cloudsql = cloudsql_module.GoogleCloudSql(
+    self._cloudsql = cloudsql_module.GoogleCloudSQL(
         self.project_id)
     return self._cloudsql
