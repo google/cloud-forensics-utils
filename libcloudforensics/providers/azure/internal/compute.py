@@ -30,8 +30,10 @@ from azure.mgmt import compute as compute_sdk
 from azure.mgmt.compute.v2020_05_01 import models
 # pylint: enable=import-error
 
-from libcloudforensics import errors, logging_utils
-from libcloudforensics.providers.azure.internal import common, compute_base_resource  # pylint: disable=line-too-long, ungrouped-imports
+from libcloudforensics import logging_utils
+from libcloudforensics import errors
+from libcloudforensics.providers.azure.internal import compute_base_resource  # pylint: disable=line-too-long, ungrouped-imports
+from libcloudforensics.providers.azure.internal import common  # pylint: disable=line-too-long, ungrouped-imports
 
 from libcloudforensics.scripts import utils
 

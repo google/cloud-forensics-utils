@@ -20,7 +20,8 @@ from typing import TYPE_CHECKING
 from Crypto.PublicKey import RSA
 
 from libcloudforensics import logging_utils
-from libcloudforensics.providers.azure.internal import account, monitoring
+from libcloudforensics.providers.azure.internal import account
+from libcloudforensics.providers.azure.internal import monitoring
 from libcloudforensics.providers.azure import forensics
 
 logging_utils.SetUpLogger(__name__)

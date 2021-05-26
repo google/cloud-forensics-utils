@@ -19,7 +19,8 @@ import unittest
 import mock
 
 from libcloudforensics import errors
-from libcloudforensics.providers.aws.internal import ebs, ec2
+from libcloudforensics.providers.aws.internal import ebs
+from libcloudforensics.providers.aws.internal import ec2
 from tests.providers.aws import aws_mocks
 
 

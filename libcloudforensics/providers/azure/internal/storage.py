@@ -21,7 +21,8 @@ from azure.mgmt import storage
 from msrestazure import azure_exceptions
 # pylint: enable=import-error
 
-from libcloudforensics import errors, logging_utils
+from libcloudforensics import logging_utils
+from libcloudforensics import errors
 from libcloudforensics.providers.azure.internal import common
 
 if TYPE_CHECKING:

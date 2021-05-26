@@ -16,7 +16,9 @@
 
 import mock
 
-from libcloudforensics.providers.azure.internal import account, compute, monitoring  # pylint: disable=line-too-long
+from libcloudforensics.providers.azure.internal import account
+from libcloudforensics.providers.azure.internal import compute
+from libcloudforensics.providers.azure.internal import monitoring
 
 RESOURCE_ID_PREFIX = ('/subscriptions/sub/resourceGroups/fake-resource-group'
                       '/providers/Microsoft.Compute/type/')

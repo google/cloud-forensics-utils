@@ -16,8 +16,10 @@
 
 from typing import TYPE_CHECKING, Optional, List, Dict, Tuple
 
-from libcloudforensics import errors, logging_utils
-from libcloudforensics.providers.azure.internal import account, common
+from libcloudforensics import logging_utils
+from libcloudforensics import errors
+from libcloudforensics.providers.azure.internal import account
+from libcloudforensics.providers.azure.internal import common
 
 if TYPE_CHECKING:
   from libcloudforensics.providers.azure.internal import compute
