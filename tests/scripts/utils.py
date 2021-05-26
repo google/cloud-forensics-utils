@@ -40,13 +40,13 @@ def ReadProjectInfo(keys: List[str]) -> Dict[str, str]:
         '"PROJECT_INFO" environment variable pointing '
         'to your project settings.')
   try:
-    json_file = open(project_info_path)
-    try:
-      project_info = json.load(json_file)  # type: Dict[str, str]
-    except ValueError as exception:
-      raise RuntimeError(
-          'Cannot parse JSON file. {0:s}'.format(str(exception))) from exception
-    json_file.close()
+    with open(project_info_path) as json_file:
+      try:
+        project_info = json.load(json_file)  # type: Dict[str, str]
+      except ValueError as exception:
+        raise RuntimeError(
+            'Cannot parse JSON file. {0:s}'.format(
+                str(exception))) from exception
   except OSError as exception:
     raise OSError(
         'Could not open/close file {0:s}: {1:s}'.format(
