@@ -51,6 +51,7 @@ PROVIDER_TO_FUNC = {
         'deleteobject': gcp_cli.DeleteObject,
         'createbucket': gcp_cli.CreateBucket,
         'listbuckets': gcp_cli.ListBuckets,
+        'listcloudsqlinstances': gcp_cli.ListCloudSqlInstances,
         'listdisks': gcp_cli.ListDisks,
         'listinstances': gcp_cli.ListInstances,
         'listlogs': gcp_cli.ListLogs,
@@ -386,6 +387,8 @@ def Main() -> None:
             args=[
                 ('path', 'Path to bucket.', None),
             ])
+  AddParser('gcp', gcp_subparsers, 'listcloudsqlinstances',
+            'List CloudSQL instances for a project.')
   AddParser('gcp', gcp_subparsers, 'deleteobject', 'Deletes a GCS object',
             args=[
                 ('path', 'Path to GCS object.', None),

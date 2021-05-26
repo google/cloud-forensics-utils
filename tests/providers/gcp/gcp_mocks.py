@@ -23,6 +23,7 @@ from libcloudforensics.providers.gcp.internal import project as gcp_project
 from libcloudforensics.providers.gcp.internal import log as gcp_log
 from libcloudforensics.providers.gcp.internal import monitoring as gcp_monitoring
 from libcloudforensics.providers.gcp.internal import storage as gcp_storage
+from libcloudforensics.providers.gcp.internal import cloudsql as gcp_cloudsql
 # pylint: enable=line-too-long
 
 FAKE_ANALYSIS_PROJECT = gcp_project.GoogleCloudProject(
@@ -78,6 +79,7 @@ FAKE_NEXT_PAGE_TOKEN = 'abcdefg1234567'
 FAKE_GCS = gcp_storage.GoogleCloudStorage('fake-target-project')
 FAKE_GCB = gcp_build.GoogleCloudBuild('fake-target-project')
 FAKE_MONITORING = gcp_monitoring.GoogleCloudMonitoring('fake-target-project')
+FAKE_CLOUDSQLINSTANCE = gcp_cloudsql.GoogleCloudSQL('fake-target-project')
 
 # Mock struct to mimic GCP's API responses
 MOCK_INSTANCES_AGGREGATED = {
@@ -420,6 +422,79 @@ MOCK_GCM_METRICS_BUCKETSIZE = {
     }
   ],
   "unit": "By"
+}
+
+MOCK_GCSQL_INSTANCES = {
+    'items': [
+    {
+        'kind': 'sql#instance',
+        'state': 'RUNNABLE',
+        'databaseVersion': 'MYSQL_5_7',
+        'settings': {
+            'authorizedGaeApplications': [],
+            'tier': 'db',
+            'kind': 'sql#settings',
+            'availabilityType': '5555',
+            'pricingPlan': '66666',
+            'replicationType': '777777',
+            'activationPolicy': '888888',
+            'ipConfiguration': {
+                'privateNetwork': 'projects/test/networks/default',
+                'authorizedNetworks': [],
+                'ipv4Enabled': 'false'
+            },
+            'locationPreference': {
+                'zone': 'as-central1-a',
+                'kind': 'sql#locationPreference'
+            },
+            'dataDiskType': 'HDD',
+            'maintenanceWindow': {
+                'kind': 'sql#maintenanceWindow',
+                'hour': '2',
+                'day': '3'
+            },
+            'backupConfiguration': {
+                'startTime': '00:00',
+                'kind': 'sql#backupConfiguration',
+                'location': 'as',
+                'enabled': 'true',
+                'binaryLogEnabled': 'true',
+                'replicationLogArchivingEnabled': 'false',
+                'pointInTimeRecoveryEnabled': 'false'
+            },
+            'settingsVersion': '0',
+            'storageAutoResizeLimit': '0',
+            'storageAutoResize': 'true',
+            'dataDiskSizeGb': '100000'
+        },
+        'etag': '99999999999',
+        'ipAddresses': [
+            {
+                'type': 'PRIVATE',
+                'ipAddress': '10.0.0.0'
+            }
+        ],
+        'serverCaCert': {
+            'kind': 'sql#sslCert',
+            'certSerialNumber': '0',
+            'cert': '222222222',
+            'commonName': '11111111',
+            'sha1Fingerprint': '33333333',
+            'instance': 'test',
+            'createTime': '2020',
+            'expirationTime': '2030'
+        },
+        'instanceType': 'FAKE_INSTANCE',
+        'project': 'test',
+        'serviceAccountEmailAddress': 'test.com',
+        'backendType': 'GEN',
+        'selfLink': 'test.com',
+        'connectionName': 'test:as-central1:test-mysql',
+        'name': 'fake',
+        'region': 'as-central1',
+        'gceZone': 'as-central1-a'
+    }
+    ]
 }
 
 # See: https://cloud.google.com/compute/docs/reference/rest/v1/disks
