@@ -25,7 +25,7 @@ class GoogleCloudSqlTest(unittest.TestCase):
   # pylint: disable=line-too-long
 
   @typing.no_type_check
-  @mock.patch('libcloudforensics.providers.gcp.internal.cloudsql.GoogleCloudSql.GcsqlApi')
+  @mock.patch('libcloudforensics.providers.gcp.internal.cloudsql.GoogleCloudSQL.GoogleCloudSQLApi')
   def testListCloudSqlInstances(self, mock_gcsql_api):
     """Test GCSql instance List operation."""
     api_list_instances = mock_gcsql_api.return_value.instances.return_value.list
