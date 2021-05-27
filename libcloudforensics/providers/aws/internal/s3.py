@@ -81,12 +81,18 @@ class S3:
 
     client = self.aws_account.ClientApi(common.S3_SERVICE)
     try:
-      bucket = client.create_bucket(
-          Bucket=name,
-          ACL=acl,
-          CreateBucketConfiguration={
-              'LocationConstraint': region or self.aws_account.default_region
-          })   # type: Dict[str, Any]
+      desired_region = region or self.aws_account.default_region
+      if desired_region == 'us-east-1':
+        bucket = client.create_bucket(
+            Bucket=name,
+            ACL=acl)
+      else:
+        bucket = client.create_bucket(
+            Bucket=name,
+            ACL=acl,
+            CreateBucketConfiguration={
+                'LocationConstraint': region
+            })   # type: Dict[str, Any]
       bucket_tags = {'TagSet': []}
       for k, v in tags.items():
         bucket_tags['TagSet'].append({'Key': k, 'Value': v})
