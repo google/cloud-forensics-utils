@@ -91,12 +91,13 @@ class S3:
             Bucket=name,
             ACL=acl,
             CreateBucketConfiguration={
-                'LocationConstraint': region
+                'LocationConstraint': desired_region
             })   # type: Dict[str, Any]
-      bucket_tags = {'TagSet': []}
-      for k, v in tags.items():
-        bucket_tags['TagSet'].append({'Key': k, 'Value': v})
-      client.put_bucket_tagging(Bucket=name, Tagging=bucket_tags)
+      if tags:
+        bucket_tags = {'TagSet': []}
+        for k, v in tags.items():
+          bucket_tags['TagSet'].append({'Key': k, 'Value': v})
+        client.put_bucket_tagging(Bucket=name, Tagging=bucket_tags)
       return bucket
     except client.exceptions.BucketAlreadyOwnedByYou as exception:
       raise errors.ResourceCreationError(
