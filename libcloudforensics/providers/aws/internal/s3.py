@@ -55,7 +55,8 @@ class S3:
       self,
       name: str,
       region: Optional[str] = None,
-      acl: str = 'private') -> Dict[str, Any]:
+      acl: str = 'private',
+      tags: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
     """Create an S3 storage bucket.
 
     Args:
@@ -63,6 +64,8 @@ class S3:
       region (str): Optional. The region in which the bucket resides.
       acl (str): Optional. The canned ACL with which to create the bucket.
         Default is 'private'.
+      tags (Dict[str, str]): Optional. A dictionary of tags to add to the
+          bucket, for example {'TagName': 'TagValue'}.
     Appropriate values for the Canned ACLs are here:
     https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl  # pylint: disable=line-too-long
 
@@ -82,6 +85,10 @@ class S3:
           CreateBucketConfiguration={
               'LocationConstraint': region or self.aws_account.default_region
           })   # type: Dict[str, Any]
+      bucket_tags = {'TagSet': []}
+      for k, v in tags.items():
+        bucket_tags['TagSet'].append({'Key': k, 'Value': v})
+      client.put_bucket_tagging(Bucket=name, Tagging=bucket_tags)
       return bucket
     except client.exceptions.BucketAlreadyOwnedByYou as exception:
       raise errors.ResourceCreationError(
