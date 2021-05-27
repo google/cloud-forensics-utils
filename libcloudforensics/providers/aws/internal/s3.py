@@ -69,12 +69,14 @@ class S3:
     Appropriate values for the Canned ACLs are here:
     https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl  # pylint: disable=line-too-long
 
+    New tags will not be set if the bucket already exists.
+
     Returns:
       Dict: An API operation object for a S3 bucket.
         https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html#S3.Bucket.create  # pylint: disable=line-too-long
 
     Raises:
-      ResourceCreationError: If the bucket couldn't be created.
+      ResourceCreationError: If the bucket couldn't be created or already exists.  # pylint: disable=line-too-long
     """
 
     client = self.aws_account.ClientApi(common.S3_SERVICE)
