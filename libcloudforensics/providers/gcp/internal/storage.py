@@ -16,28 +16,40 @@
 
 import collections
 import datetime
+import os
+import shutil
+import tempfile
 from typing import TYPE_CHECKING, List, Dict, Any, Optional, Tuple
+
+import googleapiclient.http
+from googleapiclient.errors import HttpError
+
+from libcloudforensics import errors
+from libcloudforensics import logging_utils
 from libcloudforensics.providers.gcp.internal import common
 # pylint: disable=line-too-long
 from libcloudforensics.providers.gcp.internal import monitoring as gcp_monitoring
 # pylint: enable=line-too-long
 
+logging_utils.SetUpLogger(__name__)
+logger = logging_utils.GetLogger(__name__)
+
 if TYPE_CHECKING:
-  import googleapiclient
+  import googleapiclient  # pylint: disable=ungrouped-imports
 
 
-def SplitGcsPath(gcs_path: str) -> Tuple[str, str]:
-  """Split GCS path to bucket name and object URI.
+def SplitStoragePath(path: str) -> Tuple[str, str]:
+  """Split a path to bucket name and object URI.
 
   Args:
-    gcs_path (str): File path to a resource in GCS.
+    path (str): File path to a resource in GCS.
         Ex: gs://bucket/folder/obj
 
   Returns:
     Tuple[str, str]: Bucket name. Object URI.
   """
 
-  _, _, full_path = gcs_path.partition('//')
+  _, _, full_path = path.partition('//')
   bucket, _, object_uri = full_path.partition('/')
   return bucket, object_uri
 
@@ -91,7 +103,7 @@ class GoogleCloudStorage:
     """
     if not gcs_path.startswith('gs://'):
       gcs_path = 'gs://' + gcs_path
-    bucket, object_path = SplitGcsPath(gcs_path)
+    bucket, object_path = SplitStoragePath(gcs_path)
     gcs_objects = self.GcsApi().objects()
     request = gcs_objects.get(
         bucket=bucket, object=object_path, userProject=user_project)
@@ -167,12 +179,12 @@ class GoogleCloudStorage:
     """Deletes an object in a Google Cloud Storage bucket.
 
     Args:
-      gcs_path (str): Full path to the object (ie: gs://bucket/dir1/dir1/obj)
+      gcs_path (str): Full path to the object (ie: gs://bucket/dir1/dir2/obj)
     """
 
     if not gcs_path.startswith('gs://'):
       gcs_path = 'gs://' + gcs_path
-    bucket, object_path = SplitGcsPath(gcs_path)
+    bucket, object_path = SplitStoragePath(gcs_path)
     gcs_objects = self.GcsApi().objects()
     request = gcs_objects.delete(bucket=bucket, object=object_path)
     request.execute()  # type: Dict[str, Any]
@@ -263,6 +275,8 @@ class GoogleCloudStorage:
       Dict[str, Any]: An API operation object for a Google Cloud Storage bucket.
            https://cloud.google.com/storage/docs/json_api/v1/buckets#resource
     """
+    if bucket.startswith('gs://'):
+      bucket = bucket[5:]
     gcs_buckets = self.GcsApi().buckets()
     body = {'name': bucket, 'labels': labels}
     request = gcs_buckets.insert(
@@ -270,5 +284,68 @@ class GoogleCloudStorage:
         predefinedAcl=predefined_acl,
         predefinedDefaultObjectAcl=predefined_default_object_acl,
         body=body)
-    response = request.execute()  # type: Dict[str, Any]
+    try:
+      response = request.execute()  # type: Dict[str, Any]
+    except HttpError as exception:
+      if exception.resp.status == 409:
+        raise errors.ResourceCreationError(
+            'Bucket {0:s} already exists: {1!s}'.format(bucket, exception),
+            __name__) from exception
+      raise errors.ResourceCreationError(
+          'Unknown error occurred when creating bucket:'
+          ' {0!s}'.format(exception), __name__) from exception
     return response
+
+  def GetObject(self,
+                gcs_path: str,
+                out_file: Optional[str] = None) -> str:
+    """Gets the contents of an object in a Google Cloud Storage bucket.
+
+    Args:
+      gcs_path (str): Full path to the object (ie: gs://bucket/dir1/dir2/obj)
+      out_file (str): Path to the local file that will be written.
+        If not provided, will create a temporary file.
+
+    Returns:
+      str: The filename of the written object.
+
+    Raises:
+      ResourceCreationError: If the file couldn't be downloaded.
+    """
+    if not gcs_path.startswith('gs://'):
+      gcs_path = 'gs://' + gcs_path
+    gcs_objects = self.GcsApi().objects()
+    (bucket, filename) = SplitStoragePath(gcs_path)
+    request = gcs_objects.get_media(bucket=bucket, object=filename)
+
+    if not out_file:
+      outputdir = tempfile.mkdtemp()
+      logger.info('Created temporary directory {0:s}'.format(outputdir))
+      out_file = os.path.join(outputdir, os.path.basename(filename))
+
+    stat = shutil.disk_usage(os.path.dirname(outputdir))
+    om = self.GetObjectMetadata(gcs_path)
+    if 'size' not in om:
+      logger.warning('Unable to retrieve object metadata before fetching')
+    else:
+      if int(om['size']) > stat.free:
+        raise errors.ResourceCreationError(
+            'Target drive does not have enough space ({0!s} free vs {1!s} needed)'  # pylint: disable=line-too-long
+            .format(stat.free, om['size']),
+            __name__)
+
+    with open(out_file, 'wb') as outputfile:
+      downloader = googleapiclient.http.MediaIoBaseDownload(outputfile, request)
+
+      done = False
+      while not done:
+        status, done = downloader.next_chunk()
+        if status.total_size > stat.free:
+          raise errors.ResourceCreationError(
+              'Target drive does not have enough space ({0!s} free vs {1!s} needed)'  # pylint: disable=line-too-long
+              .format(stat.free, status.total_size),
+              __name__)
+        logger.info('Download {}%.'.format(int(status.progress() * 100)))
+      logger.info('File successfully written to {0:s}'.format(out_file))
+
+    return out_file
