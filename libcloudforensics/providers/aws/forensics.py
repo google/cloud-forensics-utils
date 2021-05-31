@@ -17,10 +17,12 @@ from typing import TYPE_CHECKING, Tuple, List, Optional, Dict
 
 from libcloudforensics.providers.aws.internal.common import UBUNTU_1804_FILTER
 from libcloudforensics.providers.aws.internal import account
-from libcloudforensics import logging_utils, errors
+from libcloudforensics import logging_utils
+from libcloudforensics import errors
 
 if TYPE_CHECKING:
-  from libcloudforensics.providers.aws.internal import ebs, ec2
+  from libcloudforensics.providers.aws.internal import ebs
+  from libcloudforensics.providers.aws.internal import ec2
 
 logging_utils.SetUpLogger(__name__)
 logger = logging_utils.GetLogger(__name__)

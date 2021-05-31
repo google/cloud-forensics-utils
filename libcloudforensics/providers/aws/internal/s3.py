@@ -20,6 +20,8 @@ from typing import TYPE_CHECKING, Dict, Optional, Any
 from libcloudforensics import errors
 from libcloudforensics import logging_utils
 from libcloudforensics.providers.aws.internal import common
+from libcloudforensics.providers.gcp.internal import storage as gcp_storage
+
 
 logging_utils.SetUpLogger(__name__)
 logger = logging_utils.GetLogger(__name__)
@@ -95,6 +97,8 @@ class S3:
   def Put(self, s3_path: str, filepath: str) -> None:
     """Upload a local file to an S3 bucket.
 
+    Keeps the local filename intact.
+
     Args:
       s3_path (str): Path to the target S3 bucket.
           Ex: s3://test/bucket
@@ -104,10 +108,16 @@ class S3:
       ResourceCreationError: If the object couldn't be uploaded.
     """
     client = self.aws_account.ClientApi(common.S3_SERVICE)
-    if s3_path.startswith('s3://'):
-      s3_path = s3_path[5:]
+    if not s3_path.startswith('s3://'):
+      s3_path = 's3://' + s3_path
+    if not s3_path.endswith('/'):
+      s3_path = s3_path + '/'
     try:
-      client.upload_file(filepath, s3_path, os.path.basename(filepath))
+      (bucket, path) = gcp_storage.SplitStoragePath(s3_path)
+      client.upload_file(
+          filepath,
+          bucket,
+          '{0:s}{1:s}'.format(path, os.path.basename(filepath)))
     except FileNotFoundError as exception:
       raise errors.ResourceNotFoundError(
           'Could not upload file {0:s}: {1:s}'.format(
@@ -118,3 +128,46 @@ class S3:
           'Could not upload file {0:s}: {1:s}'.format(
               filepath, str(exception)),
           __name__) from exception
+
+  def GCSToS3(self,
+              project_id: str,
+              gcs_path: str,
+              s3_path: str) -> None:
+    """Copy an object in GCS to an S3 bucket.
+
+    (Creates a local copy of the file in a temporary directory)
+
+    Args:
+      project_id (str): Google Cloud project ID.
+      gcs_path (str): File path to the source GCS object.
+          Ex: gs://bucket/folder/obj
+      s3_path (str): Path to the target S3 bucket.
+          Ex: s3://test/bucket
+    Returns:
+      Dict: An API operation object for an S3 Put request.
+        https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html#S3.Client.put_object  # pylint: disable=line-too-long
+    Raises:
+      ResourceCreationError: If the object couldn't be uploaded.
+    """
+    gcs = gcp_storage.GoogleCloudStorage(project_id)
+    if not s3_path.startswith('s3://'):
+      s3_path = 's3://' + s3_path
+    if not gcs_path.startswith('gs://'):
+      gcs_path = 'gs://' + gcs_path
+    object_md = gcs.GetObjectMetadata(gcs_path)
+    logger.warning(
+        'This will download {0:s}b to a local'
+        ' temporary directory before uploading it to S3.'
+        .format(object_md.get('size', 'Error')))
+    localcopy = gcs.GetObject(gcs_path)
+    try:
+      self.CreateBucket(gcp_storage.SplitStoragePath(s3_path)[0])
+    except errors.ResourceCreationError as exception:
+      if 'already exists' in exception.message:
+        logger.info('Target bucket already exists. Reusing.')
+      else:
+        raise exception
+    self.Put(s3_path, localcopy)
+    logger.info('Attempting to delete local (temporary) copy')
+    os.unlink(localcopy)
+    logger.info('Done')

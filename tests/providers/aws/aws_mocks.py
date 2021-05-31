@@ -16,7 +16,10 @@
 
 import mock
 
-from libcloudforensics.providers.aws.internal import account, ebs, ec2, s3
+from libcloudforensics.providers.aws.internal import account
+from libcloudforensics.providers.aws.internal import ebs
+from libcloudforensics.providers.aws.internal import ec2
+from libcloudforensics.providers.aws.internal import s3
 from libcloudforensics.providers.aws.internal import log as aws_log
 
 with mock.patch('boto3.session.Session._setup_loader') as mock_session:

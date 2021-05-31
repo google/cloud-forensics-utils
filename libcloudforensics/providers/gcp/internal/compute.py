@@ -21,10 +21,12 @@ from typing import Dict, Tuple, List, TYPE_CHECKING, Union, Optional, Any
 
 from googleapiclient.errors import HttpError
 
-from libcloudforensics.providers.gcp.internal import common, build
+from libcloudforensics.providers.gcp.internal import build
+from libcloudforensics.providers.gcp.internal import common
 from libcloudforensics.providers.gcp.internal import compute_base_resource
 from libcloudforensics.scripts import utils
-from libcloudforensics import errors, logging_utils
+from libcloudforensics import logging_utils
+from libcloudforensics import errors
 
 if TYPE_CHECKING:
   import googleapiclient
@@ -790,16 +792,16 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
   def _SshConnection(self) -> None:
     """Create an SSH connection to the virtual machine."""
 
-    devnull = open(os.devnull, 'w')
-    cmd_list = ['gcloud',
-                'compute',
-                '--project',
-                self.project_id,
-                'ssh',
-                '--zone',
-                self.zone,
-                self.name]
-    subprocess.check_call(cmd_list, stderr=devnull)
+    with open(os.devnull, 'w') as devnull:
+      cmd_list = ['gcloud',
+                  'compute',
+                  '--project',
+                  self.project_id,
+                  'ssh',
+                  '--zone',
+                  self.zone,
+                  self.name]
+      subprocess.check_call(cmd_list, stderr=devnull)
 
   def Ssh(self) -> None:
     """Connect to the virtual machine over SSH."""

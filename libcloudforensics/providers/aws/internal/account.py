@@ -21,7 +21,10 @@ analysis virtual machine to be used in incident response.
 from typing import Optional, TYPE_CHECKING
 import boto3
 
-from libcloudforensics.providers.aws.internal import ec2, ebs, kms, s3
+from libcloudforensics.providers.aws.internal import ec2
+from libcloudforensics.providers.aws.internal import ebs
+from libcloudforensics.providers.aws.internal import kms
+from libcloudforensics.providers.aws.internal import s3
 
 if TYPE_CHECKING:
   import botocore
@@ -67,7 +70,6 @@ class AWSAccount:
           using these parameters instead of the credential file.
     """
 
-    self.aws_profile = aws_profile or 'default'
     self.default_availability_zone = default_availability_zone
     # The region is given by the zone minus the last letter
     # https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#using-regions-availability-zones-describe # pylint: disable=line-too-long
@@ -78,8 +80,11 @@ class AWSAccount:
           aws_access_key_id=aws_access_key_id,
           aws_secret_access_key=aws_secret_access_key,
           aws_session_token=aws_session_token)
-    else:
+    elif aws_profile:
+      self.aws_profile = aws_profile
       self.session = boto3.session.Session(profile_name=self.aws_profile)
+    else:
+      self.session = boto3.session.Session()
 
     self._ec2 = None  # type: Optional[ec2.EC2]
     self._ebs = None  # type: Optional[ebs.EBS]
