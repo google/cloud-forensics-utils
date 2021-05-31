@@ -109,7 +109,9 @@ def SetUpLogger(name: str) -> None:
     name (str): The name for the logger.
   """
   # We can ignore the mypy warning below since the manager is created at runtime
+  #pylint: disable=no-member
   add_handler = name not in logging.root.manager.loggerDict  # type: ignore
+  # pylint: enable=no-member
   logger = logging.getLogger(name)
   logger.setLevel(logging.INFO)
   if add_handler:
