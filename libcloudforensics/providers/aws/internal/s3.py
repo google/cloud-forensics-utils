@@ -56,7 +56,8 @@ class S3:
       name: str,
       region: Optional[str] = None,
       acl: str = 'private',
-      tags: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
+      tags: Optional[Dict[str, str]] = None,
+      policy: Optional[str] = None) -> Dict[str, Any]:
     """Create an S3 storage bucket.
 
     Args:
@@ -66,6 +67,8 @@ class S3:
         Default is 'private'.
       tags (Dict[str, str]): Optional. A dictionary of tags to add to the
           bucket, for example {'TagName': 'TagValue'}.
+      policy (str): Optional. A bucket policy to be applied after creation.
+        It must be a valid JSON document.
     Appropriate values for the Canned ACLs are here:
     https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl  # pylint: disable=line-too-long
 
@@ -93,12 +96,6 @@ class S3:
             CreateBucketConfiguration={
                 'LocationConstraint': desired_region
             })   # type: Dict[str, Any]
-      if tags:
-        bucket_tags = {'TagSet': []}
-        for k, v in tags.items():
-          bucket_tags['TagSet'].append({'Key': k, 'Value': v})
-        client.put_bucket_tagging(Bucket=name, Tagging=bucket_tags)
-      return bucket
     except client.exceptions.BucketAlreadyOwnedByYou as exception:
       raise errors.ResourceCreationError(
           'Bucket {0:s} already exists: {1:s}'.format(
@@ -109,6 +106,32 @@ class S3:
           'Could not create bucket {0:s}: {1:s}'.format(
               name, str(exception)),
           __name__) from exception
+    logger.info('Bucket successfully created')
+
+    if tags:
+      bucket_tags = {'TagSet': []}
+      for k, v in tags.items():
+        bucket_tags['TagSet'].append({'Key': k, 'Value': v})
+      try:
+        client.put_bucket_tagging(Bucket=name, Tagging=bucket_tags)
+        logger.info('Tags successfully set')
+      except client.exceptions.ClientError as exception:
+        logger.warn(
+            'Error while setting tags: {0:s} - {1:s}'.format(
+                exception.response['Error'].get('Code', ''),
+                exception.response['Error'].get('Message', '')))
+
+    if policy:
+      try:
+        client.put_bucket_policy(Bucket=name, Policy=policy)
+        logger.info('Policy successfully set')
+      except client.exceptions.ClientError as exception:
+        logger.warn(
+            'Error while setting policy: {0:s} - {1:s}'.format(
+                exception.response['Error'].get('Code', ''),
+                exception.response['Error'].get('Message', '')))
+
+    return bucket
 
   def Put(self, s3_path: str, filepath: str) -> None:
     """Upload a local file to an S3 bucket.
