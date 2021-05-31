@@ -133,7 +133,11 @@ class S3:
 
     return bucket
 
-  def Put(self, s3_path: str, filepath: str) -> None:
+  def Put(
+      self,
+      s3_path: str,
+      filepath: str,
+      extra_args: Optional[Dict[str, str]] = None) -> None:
     """Upload a local file to an S3 bucket.
 
     Keeps the local filename intact.
@@ -143,6 +147,10 @@ class S3:
           Ex: s3://test/bucket
       filepath (str): Path to the file to be uploaded.
           Ex: /tmp/myfile
+      extra_args (Dict[str, str]): Optional. A dictionary of extra arguments
+        that will be directly supplied to the upload_file call.  Useful for
+        specifying encryption parameters.
+          Ex: {'ServerSideEncryption': "AES256"}
     Raises:
       ResourceCreationError: If the object couldn't be uploaded.
     """
@@ -156,7 +164,8 @@ class S3:
       client.upload_file(
           filepath,
           bucket,
-          '{0:s}{1:s}'.format(path, os.path.basename(filepath)))
+          '{0:s}{1:s}'.format(path, os.path.basename(filepath)),
+          ExtraArgs=extra_args)
     except FileNotFoundError as exception:
       raise errors.ResourceNotFoundError(
           'Could not upload file {0:s}: {1:s}'.format(
