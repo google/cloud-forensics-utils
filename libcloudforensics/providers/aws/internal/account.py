@@ -80,7 +80,7 @@ class AWSAccount:
           aws_access_key_id=aws_access_key_id,
           aws_secret_access_key=aws_secret_access_key,
           aws_session_token=aws_session_token)
-    elif (aws_profile):
+    elif aws_profile:
       self.aws_profile = aws_profile
       self.session = boto3.session.Session(profile_name=self.aws_profile)
     else:
