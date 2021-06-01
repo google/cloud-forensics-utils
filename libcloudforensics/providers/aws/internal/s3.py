@@ -180,7 +180,8 @@ class S3:
   def GCSToS3(self,
               project_id: str,
               gcs_path: str,
-              s3_path: str) -> None:
+              s3_path: str,
+              s3_args: Optional[Dict[str, str]] = None) -> None:
     """Copy an object in GCS to an S3 bucket.
 
     (Creates a local copy of the file in a temporary directory)
@@ -191,6 +192,10 @@ class S3:
           Ex: gs://bucket/folder/obj
       s3_path (str): Path to the target S3 bucket.
           Ex: s3://test/bucket
+      s3_args (Dict[str, str]): Optional. A dictionary of extra arguments to be
+         supplied to the S3 Put call. Useful for specifying encryption
+         parameters.
+          Ex: {'ServerSideEncryption': "AES256"}
     Returns:
       Dict: An API operation object for an S3 Put request.
         https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html#S3.Client.put_object  # pylint: disable=line-too-long
@@ -215,7 +220,7 @@ class S3:
         logger.info('Target bucket already exists. Reusing.')
       else:
         raise exception
-    self.Put(s3_path, localcopy)
+    self.Put(s3_path, localcopy, s3_args)
     logger.info('Attempting to delete local (temporary) copy')
     os.unlink(localcopy)
     logger.info('Done')
