@@ -15,7 +15,7 @@
 """Bucket functionality."""
 
 import os
-from typing import TYPE_CHECKING, Dict, Optional, Any
+from typing import TYPE_CHECKING, List, Dict, Optional, Any
 
 from libcloudforensics import errors
 from libcloudforensics import logging_utils
@@ -88,14 +88,14 @@ class S3:
       if desired_region == 'us-east-1':
         bucket = client.create_bucket(
             Bucket=name,
-            ACL=acl)
+            ACL=acl)  # type: Dict[str, Any]
       else:
         bucket = client.create_bucket(
             Bucket=name,
             ACL=acl,
             CreateBucketConfiguration={
                 'LocationConstraint': desired_region
-            })   # type: Dict[str, Any]
+            })
     except client.exceptions.BucketAlreadyOwnedByYou as exception:
       raise errors.ResourceCreationError(
           'Bucket {0:s} already exists: {1:s}'.format(
@@ -109,7 +109,7 @@ class S3:
     logger.info('Bucket successfully created')
 
     if tags:
-      bucket_tags = {'TagSet': []}
+      bucket_tags = {'TagSet': []}  # type: Dict[str, List[Dict[str, str]]]
       for k, v in tags.items():
         bucket_tags['TagSet'].append({'Key': k, 'Value': v})
       try:
