@@ -116,7 +116,7 @@ class S3:
         client.put_bucket_tagging(Bucket=name, Tagging=bucket_tags)
         logger.info('Tags successfully set')
       except client.exceptions.ClientError as exception:
-        logger.warn(
+        logger.warning(
             'Error while setting tags: {0:s} - {1:s}'.format(
                 exception.response['Error'].get('Code', ''),
                 exception.response['Error'].get('Message', '')))
@@ -126,7 +126,7 @@ class S3:
         client.put_bucket_policy(Bucket=name, Policy=policy)
         logger.info('Policy successfully set')
       except client.exceptions.ClientError as exception:
-        logger.warn(
+        logger.warning(
             'Error while setting policy: {0:s} - {1:s}'.format(
                 exception.response['Error'].get('Code', ''),
                 exception.response['Error'].get('Message', '')))
