@@ -20,11 +20,15 @@ import sys
 from typing import TYPE_CHECKING
 
 # pylint: disable=line-too-long
+from libcloudforensics import errors
+from libcloudforensics.providers.aws.internal import s3 as aws_s3
+from libcloudforensics.providers.gcp.internal import common
 from libcloudforensics.providers.gcp.internal import compute as gcp_compute
 from libcloudforensics.providers.gcp.internal import log as gcp_log
 from libcloudforensics.providers.gcp.internal import monitoring as gcp_monitoring
 from libcloudforensics.providers.gcp.internal import project as gcp_project
 from libcloudforensics.providers.gcp.internal import storage as gcp_storage
+from libcloudforensics.providers.gcp.internal import storagetransfer as gcp_st
 from libcloudforensics.providers.gcp.internal import cloudsql as gcp_cloudsql
 from libcloudforensics.providers.gcp import forensics
 from libcloudforensics import logging_utils
@@ -347,6 +351,7 @@ def InstanceNetworkQuarantine(args: 'argparse.Namespace') -> None:
   forensics.InstanceNetworkQuarantine(args.project,
       args.instance_name, exempted_ips, args.enable_logging )
 
+
 def VMRemoveServiceAccount(args: 'argparse.Namespace') -> None:
   """Removes an attached service account from a VM instance.
   Requires the instance to be stopped, if it isn't already.
@@ -355,3 +360,85 @@ def VMRemoveServiceAccount(args: 'argparse.Namespace') -> None:
   """
   forensics.VMRemoveServiceAccount(args.project, args.instance_name,
       args.leave_stopped)
+
+
+def ExportDisksToBucket(args: 'argparse.Namespace') -> None:
+  """Copy all the disks from a GCE instance to a Storage bucket.
+
+  Args:
+    args (argparse.Namespace): Arguments from ArgumentParser.
+  """
+  compute_client = gcp_compute.GoogleCloudCompute(args.project)
+  gcs = gcp_storage.GoogleCloudStorage(args.project)
+
+  s3_dest = None
+  if not (args.path.startswith('gs://') or args.path.startswith('s3://')):
+    sys.exit('Destination bucket path must start with gs:// or s3://')
+  if args.path.startswith('s3://'):
+    s3_dest = args.path
+    args.path = 'gs://' + common.GenerateUniqueInstanceName('transfer-from-cfu')
+    logger.info('Setting temporary bucket path to {0:s}'.format(args.path))
+
+  logger.warning('You must enable the following APIs:')
+  logger.warning(
+      'https://cloud.google.com/compute/docs/images/export-image#enable-cloud-build'  # pylint: disable=line-too-long
+  )
+  logger.warning(
+      'If transferring to an S3 bucket: https://console.cloud.google.com/apis/api/storagetransfer.googleapis.com/overview'  # pylint: disable=line-too-long
+  )
+  # TODO(fryy): Automatically find and delete the Daisy bucket
+  logger.warning(
+      'The Cloud Build will leave a bucket full of artifacts that should be deleted (including a compressed export of the disks).'  # pylint: disable=line-too-long
+  )
+
+  try:
+    logger.info('Creating bucket {0:s}'.format(args.path))
+    bucket = gcs.CreateBucket(args.path, labels={
+        'created_by': 'cfu'
+    }).get('name')
+  except errors.ResourceCreationError as exception:
+    if 'already exists' in exception.message:
+      logger.info('Target bucket already exists. Reusing.')
+      bucket = args.path
+    else:
+      sys.exit(str(exception))
+  logger.info('Retrieving instance')
+  instance = compute_client.GetInstance(instance_name=args.instance_name)
+  logger.info('Listing disks')
+  disks = instance.ListDisks()
+  for d in disks.values():
+    logger.info('Processing disk: {0:s}'.format(d.name))
+    i = compute_client.CreateImageFromDisk(d)
+    logger.info(
+        'Image created from disk: {0:s}. Exporting to GCS.'.format(i.name))
+    gcs_dest = 'gs://' + bucket
+    i.ExportImage(gcs_dest)
+    logger.info('Deleting image.')
+    i.Delete()
+    if s3_dest:
+      logger.info('Transferring file {0:s} to {1:s}.'.format(gcs_dest, s3_dest))
+      aws_s3.S3.GCSToS3(args.project, gcs_dest, s3_dest)
+
+
+def DownloadObject(args: 'argparse.Namespace') -> None:
+  """Downloads an object from GCS.
+
+  Args:
+    args (argparse.Namespace): Arguments from ArgumentParser.
+  """
+  gcs = gcp_storage.GoogleCloudStorage(args.project)
+  filename = gcs.GetObject(args.path, args.dest)
+
+  print('Object downloaded to {0:s}.'.format(filename))
+
+
+def S3ToGCS(args: 'argparse.Namespace') -> None:
+  """Transfer a file from S3 to a GCS bucket.
+
+  Args:
+    args (argparse.Namespace): Arguments from ArgumentParser.
+  """
+  gcst = gcp_st.GoogleCloudStorageTransfer(args.project)
+  gcst.S3ToGCS(args.s3_path, args.zone, args.gcs_path)
+
+  logger.info('File successfully transferred.')

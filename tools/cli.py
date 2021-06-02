@@ -52,6 +52,8 @@ PROVIDER_TO_FUNC = {
         'deleteinstance': gcp_cli.DeleteInstance,
         'deleteobject': gcp_cli.DeleteObject,
         'createbucket': gcp_cli.CreateBucket,
+        'downloadobject': gcp_cli.DownloadObject,
+        'exportdiskstobucket': gcp_cli.ExportDisksToBucket,
         'listbuckets': gcp_cli.ListBuckets,
         'listcloudsqlinstances': gcp_cli.ListCloudSqlInstances,
         'listdisks': gcp_cli.ListDisks,
@@ -62,6 +64,7 @@ PROVIDER_TO_FUNC = {
         'objectmetadata': gcp_cli.GetGCSObjectMetadata,
         'quarantinevm': gcp_cli.InstanceNetworkQuarantine,
         'querylogs': gcp_cli.QueryLogs,
+        's3togcs': gcp_cli.S3ToGCS,
         'startvm': gcp_cli.StartAnalysisVm,
         'vmremoveserviceaccount': gcp_cli.VMRemoveServiceAccount
     }
@@ -368,6 +371,17 @@ def Main() -> None:
             args=[
                 ('name', 'Name of bucket.', None),
             ])
+  AddParser('gcp', gcp_subparsers, 'exportdiskstobucket',
+            'Export the disks from a GCE instance to a storage bucket.',
+            args=[
+                ('instance_name', 'Name of the GCE instance to create.', ''),
+                ('path', 'Path to bucket.', None),
+            ])
+  AddParser('gcp', gcp_subparsers, 'downloadobject', 'Downloads a GCS object',
+            args=[
+                ('path', 'Path to GCS object.', None),
+                ('--dest', 'Destination file.', None),
+            ])
   AddParser('gcp', gcp_subparsers, 'listbuckets',
             'List GCS buckets for a project.')
   AddParser('gcp', gcp_subparsers, 'bucketacls', 'List ACLs of a GCS bucket.',
@@ -410,6 +424,13 @@ def Main() -> None:
                 ('instance_name', 'Name of the instance to affect', ''),
                 ('--leave_stopped', 'Leave the machine TERMINATED after '
                     'removing the service account (default: False)', False)
+            ])
+  AddParser('gcp', gcp_subparsers, 's3togcs',
+            'Transfer an S3 object to a GCS bucket.',
+            args=[
+                ('s3_path', 'Path to S3 object.', None),
+                ('zone', 'Amazon availability zone.', None),
+                ('gcs_path', 'Target GCS bucket.', None),
             ])
 
   if len(sys.argv) == 1:
