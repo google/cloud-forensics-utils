@@ -76,12 +76,14 @@ FAKE_LOG_ENTRIES = [{
     'textPayload': 'insert.compute.create'
 }]
 
+# pylint: disable=line-too-long
 FAKE_NEXT_PAGE_TOKEN = 'abcdefg1234567'
 FAKE_GCS = gcp_storage.GoogleCloudStorage('fake-target-project')
 FAKE_GCST = gcp_storagetransfer.GoogleCloudStorageTransfer('fake-target-project')
 FAKE_GCB = gcp_build.GoogleCloudBuild('fake-target-project')
 FAKE_MONITORING = gcp_monitoring.GoogleCloudMonitoring('fake-target-project')
 FAKE_CLOUDSQLINSTANCE = gcp_cloudsql.GoogleCloudSQL('fake-target-project')
+# pylint: enable=line-too-long
 
 # Mock struct to mimic GCP's API responses
 MOCK_INSTANCES_AGGREGATED = {
@@ -537,7 +539,7 @@ MOCK_STORAGE_TRANSFER_OPERATION = {
         "name": "transferOperations/transferJobs-12345-6789",
         "metadata": {
             "@type":
-                "type.googleapis.com/google.storagetransfer.v1.TransferOperation",
+                "type.googleapis.com/google.storagetransfer.v1.TransferOperation",  # pylint: disable=line-too-long
             "name":
                 "transferOperations/transferJobs-12345-6789",
             "projectId":
