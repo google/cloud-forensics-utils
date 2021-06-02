@@ -66,7 +66,7 @@ class S3:
       acl (str): Optional. The canned ACL with which to create the bucket.
         Default is 'private'.
       tags (Dict[str, str]): Optional. A dictionary of tags to add to the
-          bucket, for example {'TagName': 'TagValue'}.
+        bucket, for example {'TagName': 'TagValue'}.
       policy (str): Optional. A bucket policy to be applied after creation.
         It must be a valid JSON document.
     Appropriate values for the Canned ACLs are here:
