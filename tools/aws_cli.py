@@ -215,6 +215,7 @@ def UploadToBucket(args: 'argparse.Namespace') -> None:
 
   logger.info('File successfully uploaded.')
 
+
 def GCSToS3(args: 'argparse.Namespace') -> None:
   """Transfer a file from GCS to an S3 bucket.
 
