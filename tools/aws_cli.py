@@ -180,7 +180,9 @@ def ListImages(args: 'argparse.Namespace') -> None:
   """
   aws_account = account.AWSAccount(args.zone)
 
-  qfilter = [{'Name': 'name', 'Values': [args.filter]}]
+  qfilter = []
+  if args.filter:
+    qfilter = [{'Name': 'name', 'Values': [args.filter]}]
 
   images = aws_account.ec2.ListImages(qfilter)
 
