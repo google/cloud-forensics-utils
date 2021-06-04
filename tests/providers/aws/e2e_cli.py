@@ -17,6 +17,8 @@
 import typing
 import unittest
 import warnings
+from time import sleep
+
 import botocore
 
 from libcloudforensics.providers.aws.internal.common import EC2_SERVICE
@@ -238,6 +240,8 @@ class EndToEndTest(unittest.TestCase):
   @typing.no_type_check
   @IgnoreWarnings
   def tearDownClass(cls):
+    # Wait a bit so that AWS sync
+    sleep(30)
     # Delete the instance
     instance = cls.aws.ResourceApi(EC2_SERVICE).Instance(
         cls.analysis_vm.instance_id)
