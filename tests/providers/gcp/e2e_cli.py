@@ -24,7 +24,7 @@ from libcloudforensics.providers.gcp.internal import common
 from libcloudforensics.providers.gcp.internal import project as gcp_project
 from libcloudforensics import logging_utils
 from tests.scripts import utils
-from tests.scripts.gcp_cli import GCPCLI
+from tests.providers.gcp.gcp_cli import GCPCLI
 
 logging_utils.SetUpLogger(__name__)
 logger = logging_utils.GetLogger(__name__)
