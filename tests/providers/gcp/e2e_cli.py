@@ -24,7 +24,7 @@ from libcloudforensics.providers.gcp.internal import common
 from libcloudforensics.providers.gcp.internal import project as gcp_project
 from libcloudforensics import logging_utils
 from tests.scripts import utils
-from tests.scripts.bashgcp import BashGCP
+from tests.scripts.gcp_cli import GCPCLI
 
 logging_utils.SetUpLogger(__name__)
 logger = logging_utils.GetLogger(__name__)
@@ -88,8 +88,8 @@ class EndToEndTest(unittest.TestCase):
     cls.zone = project_info['zone']
     cls.gcp = gcp_project.GoogleCloudProject(cls.project_id, cls.zone)
     cls.analysis_vm_name = 'new-vm-for-analysis'
-    cls.bash = BashGCP(cls.gcp)
-    cls.analysis_vm = cls.bash.StartAnalysisVm(
+    cls.cli = GCPCLI(cls.gcp)
+    cls.analysis_vm = cls.cli.StartAnalysisVm(
         cls.instance_to_analyse, cls.zone)
 
   @typing.no_type_check
@@ -118,7 +118,7 @@ class EndToEndTest(unittest.TestCase):
     """
 
     # Make a copy of the boot disk of the instance to analyse
-    self.boot_disk_copy = self.bash.CreateDiskCopy(
+    self.boot_disk_copy = self.cli.CreateDiskCopy(
         instance_name=self.instance_to_analyse,
         # disk_name=None by default, boot disk will be copied
     )
@@ -133,7 +133,7 @@ class EndToEndTest(unittest.TestCase):
     self.assertEqual(result['name'], self.boot_disk_copy.name)
 
     # Get the analysis VM and attach the evidence boot disk
-    self.analysis_vm = self.bash.StartAnalysisVm(
+    self.analysis_vm = self.cli.StartAnalysisVm(
         self.instance_to_analyse,
         self.zone,
         attach_disks=[self.boot_disk_copy.name])
@@ -175,7 +175,7 @@ class EndToEndTest(unittest.TestCase):
     """
 
     # Make a copy of another disk of the instance to analyse
-    self.disk_to_forensic_copy = self.bash.CreateDiskCopy(
+    self.disk_to_forensic_copy = self.cli.CreateDiskCopy(
         disk_name=self.disk_to_forensic)
 
     gcp_client_api = common.GoogleCloudComputeClient(self.project_id).GceApi()
@@ -189,7 +189,7 @@ class EndToEndTest(unittest.TestCase):
     self.assertEqual(result['name'], self.disk_to_forensic_copy.name)
 
     # Get the analysis VM and attach the evidence disk to forensic
-    self.analysis_vm = self.bash.StartAnalysisVm(
+    self.analysis_vm = self.cli.StartAnalysisVm(
         self.instance_to_analyse,
         self.zone,
         attach_disks=[self.disk_to_forensic_copy.name])

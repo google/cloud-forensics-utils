@@ -12,7 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Call bash functions for e2e testing of the CLI tools"""
+"""Call libcloudforensics CLI tool for e2e testing."""
 import subprocess
 from typing import List
 from typing import Optional
@@ -28,10 +28,10 @@ logging_utils.SetUpLogger(__name__)
 logger = logging_utils.GetLogger(__name__)
 
 
-class BashGCP:
-  """BashGCP calls the libcloudforensics CLI tool for GCP operations."""
+class GCPCLI:
+  """GCPCLI calls the libcloudforensics CLI tool for GCP operations."""
   def __init__(self, gcp: GoogleCloudProject) -> None:
-    """Initialize the bash class.
+    """Initialize the CLI class.
 
     Attributes:
       gcp (GoogleCloudProject): The GCP project to work with.
