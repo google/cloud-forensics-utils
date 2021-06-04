@@ -120,7 +120,7 @@ class AWSCLI:
         raise ResourceCreationError(
             'Could not find volume copy result', __name__)
       volume_copy_name = output.decode('utf-8').split(' ')[-1]
-      volume_copy_name = volume_copy_name[:volume_copy_name.find('copy') + 4]
+      volume_copy_name = volume_copy_name[:volume_copy_name.rindex('copy') + 4]
       logger.info(output)
       logger.info("Volume successfully copied to {0:s}".format(
           volume_copy_name))

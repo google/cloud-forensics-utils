@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2020 Google Inc.
+# Copyright 2021 Google Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import botocore
 
 from libcloudforensics.providers.aws.internal.common import EC2_SERVICE
 from libcloudforensics.providers.aws.internal import account
-from libcloudforensics.providers.aws import forensics
 from libcloudforensics import logging_utils
 from tests.providers.aws import aws_cli
 from tests.scripts import utils
@@ -96,7 +95,7 @@ class EndToEndTest(unittest.TestCase):
     Test copying the boot volume of an instance.
     """
 
-    volume_copy = forensics.CreateVolumeCopy(
+    volume_copy = self.cli.CreateVolumeCopy(
         self.zone,
         instance_id=self.instance_to_analyse
         # volume_id=None by default, boot volume of instance will be copied
@@ -117,7 +116,7 @@ class EndToEndTest(unittest.TestCase):
     if not self.volume_to_copy:
       return
 
-    volume_copy = forensics.CreateVolumeCopy(
+    volume_copy = self.cli.CreateVolumeCopy(
         self.zone, volume_id=self.volume_to_copy)
     # The volume should be created in AWS
     aws_volume = self.aws.ResourceApi(EC2_SERVICE).Volume(volume_copy.volume_id)
@@ -135,7 +134,7 @@ class EndToEndTest(unittest.TestCase):
     if not (self.volume_to_copy and self.dst_zone):
       return
 
-    volume_copy = forensics.CreateVolumeCopy(
+    volume_copy = self.cli.CreateVolumeCopy(
         self.zone, dst_zone=self.dst_zone, volume_id=self.volume_to_copy)
     # The volume should be created in AWS
     aws_account = account.AWSAccount(self.dst_zone)
@@ -169,7 +168,7 @@ class EndToEndTest(unittest.TestCase):
     if not self.encrypted_volume_to_copy:
       return
 
-    volume_copy = forensics.CreateVolumeCopy(
+    volume_copy = self.cli.CreateVolumeCopy(
         self.zone, volume_id=self.encrypted_volume_to_copy)
     # The volume should be created in AWS
     aws_volume = self.aws.ResourceApi(EC2_SERVICE).Volume(volume_copy.volume_id)
@@ -188,7 +187,7 @@ class EndToEndTest(unittest.TestCase):
     if not (self.encrypted_volume_to_copy and self.dst_zone):
       return
 
-    volume_copy = forensics.CreateVolumeCopy(
+    volume_copy = self.cli.CreateVolumeCopy(
         self.zone,
         dst_zone=self.dst_zone,
         volume_id=self.encrypted_volume_to_copy)
@@ -255,6 +254,9 @@ class EndToEndTest(unittest.TestCase):
         client.get_waiter('volume_deleted').wait(VolumeIds=[volume.volume_id])
       except (client.exceptions.ClientError,
               botocore.exceptions.WaiterError) as exception:
+        if 'InvalidVolume.NotFound' in str(exception):
+          # Volume already deleted, continue
+          continue
         raise RuntimeError('Could not complete cleanup: {0:s}'.format(
             str(exception))) from exception
       logger.info('Volume {0:s} successfully deleted.'.format(volume.volume_id))
