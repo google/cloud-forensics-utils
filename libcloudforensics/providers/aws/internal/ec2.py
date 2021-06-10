@@ -339,7 +339,8 @@ class EC2:
       boot_volume_type: str = 'gp2',
       packages: Optional[List[str]] = None,
       ssh_key_name: Optional[str] = None,
-      tags: Optional[Dict[str, str]] = None) -> Tuple[AWSInstance, bool]:
+      tags: Optional[Dict[str, str]] = None,
+      subnet_id: Optional[str] = None) -> Tuple[AWSInstance, bool]:
     """Get or create a new virtual machine for analysis purposes.
 
     Args:
@@ -408,6 +409,8 @@ class EC2:
     }
     if ssh_key_name:
       vm_args['KeyName'] = ssh_key_name
+    if subnet_id:
+      vm_args['SubnetId'] = subnet_id
     # Create the instance in AWS
     try:
       instance = client.run_instances(**vm_args)

@@ -194,7 +194,7 @@ def CreateVolumeCopy(zone: str,
 
   return new_volume
 
-
+# pylint: disable=too-many-arguments
 def StartAnalysisVm(
     vm_name: str,
     default_availability_zone: str,
@@ -205,7 +205,8 @@ def StartAnalysisVm(
     attach_volumes: Optional[List[Tuple[str, str]]] = None,
     dst_profile: Optional[str] = None,
     ssh_key_name: Optional[str] = None,
-    tags: Optional[Dict[str, str]] = None) -> Tuple['ec2.AWSInstance', bool]:
+    tags: Optional[Dict[str, str]] = None,
+    subnet_id: Optional[str] = None) -> Tuple['ec2.AWSInstance', bool]:
   """Start a virtual machine for analysis purposes.
 
   Look for an existing AWS instance with tag name vm_name. If found,
@@ -241,6 +242,7 @@ def StartAnalysisVm(
     tags (Dict[str, str]): Optional. A dictionary of tags to add to the
           instance, for example {'TicketID': 'xxx'}. An entry for the instance
           name is added by default.
+    subnet_id: Optional. The subnet to launch the instance in
 
   Returns:
     Tuple[AWSInstance, bool]: a tuple with a virtual machine object
@@ -276,7 +278,8 @@ def StartAnalysisVm(
       cpu_cores,
       boot_volume_type=boot_volume_type,
       ssh_key_name=ssh_key_name,
-      tags=tags)
+      tags=tags,
+      subnet_id=subnet_id)
   logger.info('VM started.')
   for volume_id, device_name in (attach_volumes or []):
     logger.info('Attaching volume {0:s} to device {1:s}'.format(
@@ -285,3 +288,5 @@ def StartAnalysisVm(
         aws_account.ebs.GetVolumeById(volume_id), device_name)
   logger.info('VM ready.')
   return analysis_vm, created
+
+# pylint: enable=too-many-arguments
