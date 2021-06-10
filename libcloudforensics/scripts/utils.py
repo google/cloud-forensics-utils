@@ -19,7 +19,7 @@ import os
 FORENSICS_STARTUP_SCRIPT = 'forensics_packages_startup.sh'
 
 
-def ReadStartupScript(filename: str = None) -> str:
+def ReadStartupScript(filename: str = '') -> str:
   """Read and return the startup script that is to be run on the forensics VM.
 
   Users can either write their own script to install custom packages,
