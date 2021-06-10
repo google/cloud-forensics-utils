@@ -378,7 +378,7 @@ class EC2:
       return instances[0], created
 
     instance_type = common.GetInstanceTypeByCPU(cpu_cores)
-    startup_script = utils.ReadStartupScript()
+    startup_script = utils.ReadStartupScript(utils.FORENSICS_STARTUP_SCRIPT)
     if packages:
       startup_script = startup_script.replace('${packages[@]}', ' '.join(
           packages))
