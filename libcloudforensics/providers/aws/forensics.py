@@ -59,16 +59,16 @@ def CreateVolumeCopy(zone: str,
 
   # Copies the boot volume from instance "instance_id" from the default AWS
   # account to the default AWS account.
-  volume_copy = CreateDiskCopy(zone, instance_id='instance_id')
+  volume_copy = CreateVolumeCopy(zone, instance_id='instance_id')
 
   # Copies the boot volume from instance "instance_id" from the default AWS
   # account to the 'forensics' AWS account.
-  volume_copy = CreateDiskCopy(
+  volume_copy = CreateVolumeCopy(
       zone, instance_id='instance_id', dst_profile='forensics')
 
   # Copies the boot volume from instance "instance_id" from the
   # 'investigation' AWS account to the 'forensics' AWS account.
-  volume_copy = CreateDiskCopy(
+  volume_copy = CreateVolumeCopy(
       zone,
       instance_id='instance_id',
       src_profile='investigation',

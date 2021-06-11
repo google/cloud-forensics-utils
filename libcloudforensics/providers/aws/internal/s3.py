@@ -15,7 +15,7 @@
 """Bucket functionality."""
 
 import os
-from typing import TYPE_CHECKING, Dict, Optional, Any
+from typing import TYPE_CHECKING, List, Dict, Optional, Any
 
 from libcloudforensics import errors
 from libcloudforensics import logging_utils
@@ -55,7 +55,9 @@ class S3:
       self,
       name: str,
       region: Optional[str] = None,
-      acl: str = 'private') -> Dict[str, Any]:
+      acl: str = 'private',
+      tags: Optional[Dict[str, str]] = None,
+      policy: Optional[str] = None) -> Dict[str, Any]:
     """Create an S3 storage bucket.
 
     Args:
@@ -63,26 +65,37 @@ class S3:
       region (str): Optional. The region in which the bucket resides.
       acl (str): Optional. The canned ACL with which to create the bucket.
         Default is 'private'.
+      tags (Dict[str, str]): Optional. A dictionary of tags to add to the
+        bucket, for example {'TagName': 'TagValue'}.
+      policy (str): Optional. A bucket policy to be applied after creation.
+        It must be a valid JSON document.
     Appropriate values for the Canned ACLs are here:
     https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl  # pylint: disable=line-too-long
+
+    New tags will not be set if the bucket already exists.
 
     Returns:
       Dict: An API operation object for a S3 bucket.
         https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html#S3.Bucket.create  # pylint: disable=line-too-long
 
     Raises:
-      ResourceCreationError: If the bucket couldn't be created.
+      ResourceCreationError: If the bucket couldn't be created or already exists.  # pylint: disable=line-too-long
     """
 
     client = self.aws_account.ClientApi(common.S3_SERVICE)
     try:
-      bucket = client.create_bucket(
-          Bucket=name,
-          ACL=acl,
-          CreateBucketConfiguration={
-              'LocationConstraint': region or self.aws_account.default_region
-          })   # type: Dict[str, Any]
-      return bucket
+      desired_region = region or self.aws_account.default_region
+      if desired_region == 'us-east-1':
+        bucket = client.create_bucket(
+            Bucket=name,
+            ACL=acl)  # type: Dict[str, Any]
+      else:
+        bucket = client.create_bucket(
+            Bucket=name,
+            ACL=acl,
+            CreateBucketConfiguration={
+                'LocationConstraint': desired_region
+            })
     except client.exceptions.BucketAlreadyOwnedByYou as exception:
       raise errors.ResourceCreationError(
           'Bucket {0:s} already exists: {1:s}'.format(
@@ -93,8 +106,38 @@ class S3:
           'Could not create bucket {0:s}: {1:s}'.format(
               name, str(exception)),
           __name__) from exception
+    logger.info('Bucket successfully created')
 
-  def Put(self, s3_path: str, filepath: str) -> None:
+    if tags:
+      bucket_tags = {'TagSet': []}  # type: Dict[str, List[Dict[str, str]]]
+      for k, v in tags.items():
+        bucket_tags['TagSet'].append({'Key': k, 'Value': v})
+      try:
+        client.put_bucket_tagging(Bucket=name, Tagging=bucket_tags)
+        logger.info('Tags successfully set')
+      except client.exceptions.ClientError as exception:
+        logger.warning(
+            'Error while setting tags: {0:s} - {1:s}'.format(
+                exception.response['Error'].get('Code', ''),
+                exception.response['Error'].get('Message', '')))
+
+    if policy:
+      try:
+        client.put_bucket_policy(Bucket=name, Policy=policy)
+        logger.info('Policy successfully set')
+      except client.exceptions.ClientError as exception:
+        logger.warning(
+            'Error while setting policy: {0:s} - {1:s}'.format(
+                exception.response['Error'].get('Code', ''),
+                exception.response['Error'].get('Message', '')))
+
+    return bucket
+
+  def Put(
+      self,
+      s3_path: str,
+      filepath: str,
+      extra_args: Optional[Dict[str, str]] = None) -> None:
     """Upload a local file to an S3 bucket.
 
     Keeps the local filename intact.
@@ -104,6 +147,10 @@ class S3:
           Ex: s3://test/bucket
       filepath (str): Path to the file to be uploaded.
           Ex: /tmp/myfile
+      extra_args (Dict[str, str]): Optional. A dictionary of extra arguments
+        that will be directly supplied to the upload_file call.  Useful for
+        specifying encryption parameters.
+          Ex: {'ServerSideEncryption': "AES256"}
     Raises:
       ResourceCreationError: If the object couldn't be uploaded.
     """
@@ -117,7 +164,8 @@ class S3:
       client.upload_file(
           filepath,
           bucket,
-          '{0:s}{1:s}'.format(path, os.path.basename(filepath)))
+          '{0:s}{1:s}'.format(path, os.path.basename(filepath)),
+          ExtraArgs=extra_args)
     except FileNotFoundError as exception:
       raise errors.ResourceNotFoundError(
           'Could not upload file {0:s}: {1:s}'.format(
@@ -132,7 +180,8 @@ class S3:
   def GCSToS3(self,
               project_id: str,
               gcs_path: str,
-              s3_path: str) -> None:
+              s3_path: str,
+              s3_args: Optional[Dict[str, str]] = None) -> None:
     """Copy an object in GCS to an S3 bucket.
 
     (Creates a local copy of the file in a temporary directory)
@@ -143,6 +192,10 @@ class S3:
           Ex: gs://bucket/folder/obj
       s3_path (str): Path to the target S3 bucket.
           Ex: s3://test/bucket
+      s3_args (Dict[str, str]): Optional. A dictionary of extra arguments to be
+         supplied to the S3 Put call. Useful for specifying encryption
+         parameters.
+          Ex: {'ServerSideEncryption': "AES256"}
     Returns:
       Dict: An API operation object for an S3 Put request.
         https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html#S3.Client.put_object  # pylint: disable=line-too-long
@@ -167,7 +220,7 @@ class S3:
         logger.info('Target bucket already exists. Reusing.')
       else:
         raise exception
-    self.Put(s3_path, localcopy)
+    self.Put(s3_path, localcopy, s3_args)
     logger.info('Attempting to delete local (temporary) copy')
     os.unlink(localcopy)
     logger.info('Done')
