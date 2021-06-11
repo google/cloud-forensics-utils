@@ -20,7 +20,6 @@ from typing import TYPE_CHECKING, Dict, Optional, List, Any, Tuple
 
 import botocore
 from libcloudforensics import errors
-from libcloudforensics.scripts import utils
 
 from libcloudforensics.providers.aws.internal import common
 
@@ -337,10 +336,10 @@ class EC2:
       ami: str,
       cpu_cores: int,
       boot_volume_type: str = 'gp2',
-      packages: Optional[List[str]] = None,
       ssh_key_name: Optional[str] = None,
       tags: Optional[Dict[str, str]] = None,
-      subnet_id: Optional[str] = None) -> Tuple[AWSInstance, bool]:
+      subnet_id: Optional[str] = None,
+      userdata: Optional[str] = None) -> Tuple[AWSInstance, bool]:
     """Get or create a new virtual machine for analysis purposes.
 
     Args:
@@ -351,7 +350,6 @@ class EC2:
       boot_volume_type (str): Optional. The volume type for the boot volume
           of the VM. Can be one of 'standard'|'io1'|'gp2'|'sc1'|'st1'. The
           default is 'gp2'.
-      packages (List[str]): Optional. List of packages to install in the VM.
       ssh_key_name (str): Optional. A SSH key pair name linked to the AWS
           account to associate with the VM. If none provided, the VM can only
           be accessed through in-browser SSH from the AWS management console
@@ -363,6 +361,8 @@ class EC2:
           instance, for example {'TicketID': 'xxx'}. An entry for the instance
           name is added by default.
       subnet_id str: Optional. Subnet to launch the instance in
+      userdata str: Optional. String to be passed to the instance as a userdata
+          launch script
 
     Returns:
       Tuple[AWSInstance, bool]: A tuple with an AWSInstance object and a
@@ -380,15 +380,6 @@ class EC2:
       return instances[0], created
 
     instance_type = common.GetInstanceTypeByCPU(cpu_cores)
-    startup_script = utils.ReadStartupScript(utils.FORENSICS_STARTUP_SCRIPT)
-    if packages:
-      startup_script = startup_script.replace('${packages[@]}', ' '.join(
-          packages))
-
-    # Install ec2-instance-connect to allow SSH connections from the browser.
-    startup_script = startup_script.replace(
-        '(exit ${exit_code})',
-        'apt -y install ec2-instance-connect && (exit ${exit_code})')
 
     if not tags:
       tags = {}
@@ -404,14 +395,19 @@ class EC2:
         'MaxCount': 1,
         'InstanceType': instance_type,
         'TagSpecifications': [common.CreateTags(common.INSTANCE, tags)],
-        'UserData': startup_script,
         'Placement': {
             'AvailabilityZone': self.aws_account.default_availability_zone}
     }
     if ssh_key_name:
       vm_args['KeyName'] = ssh_key_name
     if subnet_id:
-      vm_args['SubnetId'] = subnet_id
+      vm_args['NetworkInterfaces']=[{
+            'AssociatePublicIpAddress': True,
+            'DeleteOnTermination': True,
+            'DeviceIndex': 0,
+            'SubnetId': subnet_id}]
+    if userdata:
+      vm_args['UserData'] = userdata
     # Create the instance in AWS
     try:
       instance = client.run_instances(**vm_args)

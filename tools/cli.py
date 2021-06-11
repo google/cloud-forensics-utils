@@ -191,7 +191,9 @@ def Main() -> None:
                 ('--dst_profile', 'The name of the profile for the destination '
                                   'account, as defined in the AWS credentials '
                                   'file.', None),
-                ('--subnet_id','Subnet to launch the instance in', None)
+                ('--subnet_id','Subnet to launch the instance in', None),
+                ('--launch_script','Userdata script for the instance to run at'
+                                   ' launch', None)
             ])
   AddParser('aws', aws_subparsers, 'listimages', 'List AMI images.',
             args=[
