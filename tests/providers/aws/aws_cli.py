@@ -128,7 +128,7 @@ class AWSCLI:
         return self.aws.ebs.GetVolumesByName(volume_copy_name)[0]
       except ResourceNotFoundError as error:
         raise ResourceNotFoundError(
-            'Failed finding copied volume in project {0:s}'.format(
+            'Failed finding copied volume in account profile {0:s}'.format(
                 self.aws.aws_profile), __name__) from error
     except subprocess.CalledProcessError as error:
       raise ResourceCreationError('Failed copying volume', __name__) from error
