@@ -38,14 +38,13 @@ def ReadStartupScript(filename: str = '') -> str:
   """
 
   try:
-    script_path = None
     if not filename:
       script_path = os.environ.get('STARTUP_SCRIPT')
     if not script_path:
       # Use the provided script
-      filename = filename if filename else FORENSICS_STARTUP_SCRIPT
       script_path = os.path.join(
-          os.path.dirname(os.path.realpath(__file__)), filename)
+          os.path.dirname(os.path.realpath(__file__)),
+          filename or FORENSICS_STARTUP_SCRIPT)
     with open(script_path) as startup_script:
       return startup_script.read()
   except OSError as exception:

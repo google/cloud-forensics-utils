@@ -157,7 +157,6 @@ def StartAnalysisVm(args: 'argparse.Namespace') -> None:
         '{1:s}'.format(key_name, path))
 
   # Load up the startup script
-  startup_script = None
   if args.launch_script:
     startup_script = utils.ReadStartupScript(args.launch_script)
   else:
