@@ -15,11 +15,14 @@
 """Utils method for cloud providers"""
 
 import os
+from typing import Optional
 
 FORENSICS_STARTUP_SCRIPT = 'forensics_packages_startup.sh'
+FORENSICS_STARTUP_SCRIPT_AWS = 'forensics_packages_startup_aws.sh'
+FORENSICS_STARTUP_SCRIPT_GCP = FORENSICS_STARTUP_SCRIPT
+FORENSICS_STARTUP_SCRIPT_AZ = FORENSICS_STARTUP_SCRIPT
 
-
-def ReadStartupScript(filename: str = '') -> str:
+def ReadStartupScript(filename: Optional[str] = '') -> str:
   """Read and return the startup script that is to be run on the forensics VM.
 
   Users can either write their own script to install custom packages,
@@ -28,7 +31,7 @@ def ReadStartupScript(filename: str = '') -> str:
   "user@terminal:~$ export STARTUP_SCRIPT='absolute/path/script.sh'"
 
   Args:
-    filename: the name of the script in the scripts directory to read
+    filename (str): the name of the script in the scripts directory to read
       Defaults to 'forensics_packages_startup.sh' if none specified
   Returns:
     str: The script to run.
@@ -38,6 +41,7 @@ def ReadStartupScript(filename: str = '') -> str:
   """
 
   try:
+    script_path = None
     if not filename:
       script_path = os.environ.get('STARTUP_SCRIPT')
     if not script_path:

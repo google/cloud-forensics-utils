@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, Tuple, List, Optional, Dict
 
 from libcloudforensics.providers.aws.internal.common import UBUNTU_1804_FILTER
 from libcloudforensics.providers.aws.internal import account
+from libcloudforensics.scripts import utils
 from libcloudforensics import logging_utils
 from libcloudforensics import errors
 
@@ -207,7 +208,8 @@ def StartAnalysisVm(
     ssh_key_name: Optional[str] = None,
     tags: Optional[Dict[str, str]] = None,
     subnet_id: Optional[str] = None,
-    userdata: Optional[str] = None) -> Tuple['ec2.AWSInstance', bool]:
+    userdata_file: Optional[str] = utils.FORENSICS_STARTUP_SCRIPT_AWS
+    ) -> Tuple['ec2.AWSInstance', bool]:
   """Start a virtual machine for analysis purposes.
 
   Look for an existing AWS instance with tag name vm_name. If found,
@@ -220,8 +222,8 @@ def StartAnalysisVm(
         new resources in.
     boot_volume_size (int): The size of the analysis VM boot volume (in GB).
     boot_volume_type (str): Optional. The volume type for the boot volume
-          of the VM. Can be one of 'standard'|'io1'|'gp2'|'sc1'|'st1'. The
-          default is 'gp2'.
+        of the VM. Can be one of 'standard'|'io1'|'gp2'|'sc1'|'st1'. The
+        default is 'gp2'.
     ami (str): Optional. The Amazon Machine Image ID to use to create the VM.
         Default is a version of Ubuntu 18.04.
     cpu_cores (int): Optional. The number of CPU cores to create the machine
@@ -241,11 +243,11 @@ def StartAnalysisVm(
         will not be accessible. It is therefore recommended to fill in this
         parameter.
     tags (Dict[str, str]): Optional. A dictionary of tags to add to the
-          instance, for example {'TicketID': 'xxx'}. An entry for the instance
-          name is added by default.
+        instance, for example {'TicketID': 'xxx'}. An entry for the instance
+        name is added by default.
     subnet_id (str): Optional. The subnet to launch the instance in
-    userdata (str): Optional. String to be passed to the instance as a userdata
-          launch script
+    userdata_file (str): Optional. Filename to be read in as the userdata
+        launch script
 
   Returns:
     Tuple[AWSInstance, bool]: a tuple with a virtual machine object
@@ -272,6 +274,8 @@ def StartAnalysisVm(
                          .format(', '.join(image_names)))
     ami = ami_list[0]['ImageId']
   assert ami  # Mypy: assert that ami is not None
+
+  userdata = utils.ReadStartupScript(userdata_file)
 
   logger.info('Starting analysis VM {0:s}'.format(vm_name))
   analysis_vm, created = aws_account.ec2.GetOrCreateAnalysisVm(

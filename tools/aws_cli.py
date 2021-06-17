@@ -26,7 +26,6 @@ from typing import TYPE_CHECKING
 from libcloudforensics.providers.aws.internal import account
 from libcloudforensics.providers.aws.internal import log as aws_log
 from libcloudforensics.providers.aws import forensics
-from libcloudforensics.scripts import utils
 from libcloudforensics import logging_utils
 
 logging_utils.SetUpLogger(__name__)
@@ -156,16 +155,6 @@ def StartAnalysisVm(args: 'argparse.Namespace') -> None:
         'Created key pair {0:s} in AWS. Your private key is saved in: '
         '{1:s}'.format(key_name, path))
 
-  # Load up the startup script
-  if args.launch_script:
-    startup_script = utils.ReadStartupScript(args.launch_script)
-  else:
-    startup_script = utils.ReadStartupScript(utils.FORENSICS_STARTUP_SCRIPT)
-    # Install ec2-instance-connect to allow SSH connections from the browser.
-    startup_script = startup_script.replace(
-      '(exit ${exit_code})',
-      'apt -y install ec2-instance-connect && (exit ${exit_code})')
-
   logger.info('Starting analysis VM...')
   vm = forensics.StartAnalysisVm(vm_name=args.instance_name,
                                  default_availability_zone=args.zone,
@@ -177,7 +166,7 @@ def StartAnalysisVm(args: 'argparse.Namespace') -> None:
                                  attach_volumes=attach_volumes,
                                  dst_profile=args.dst_profile,
                                  subnet_id=args.subnet_id,
-                                 userdata=startup_script)
+                                 userdata_file=args.launch_script)
 
   logger.info('Analysis VM started.')
   logger.info('Name: {0:s}, Started: {1:s}, Region: {2:s}'.format(vm[0].name,
