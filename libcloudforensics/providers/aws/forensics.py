@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, Tuple, List, Optional, Dict
 
 from libcloudforensics.providers.aws.internal.common import UBUNTU_1804_FILTER
 from libcloudforensics.providers.aws.internal import account
+from libcloudforensics.scripts import utils
 from libcloudforensics import logging_utils
 from libcloudforensics import errors
 
@@ -194,7 +195,7 @@ def CreateVolumeCopy(zone: str,
 
   return new_volume
 
-
+# pylint: disable=too-many-arguments
 def StartAnalysisVm(
     vm_name: str,
     default_availability_zone: str,
@@ -205,7 +206,11 @@ def StartAnalysisVm(
     attach_volumes: Optional[List[Tuple[str, str]]] = None,
     dst_profile: Optional[str] = None,
     ssh_key_name: Optional[str] = None,
-    tags: Optional[Dict[str, str]] = None) -> Tuple['ec2.AWSInstance', bool]:
+    tags: Optional[Dict[str, str]] = None,
+    subnet_id: Optional[str] = None,
+    security_group_id: Optional[str] = None,
+    userdata_file: Optional[str] = None
+    ) -> Tuple['ec2.AWSInstance', bool]:
   """Start a virtual machine for analysis purposes.
 
   Look for an existing AWS instance with tag name vm_name. If found,
@@ -218,8 +223,8 @@ def StartAnalysisVm(
         new resources in.
     boot_volume_size (int): The size of the analysis VM boot volume (in GB).
     boot_volume_type (str): Optional. The volume type for the boot volume
-          of the VM. Can be one of 'standard'|'io1'|'gp2'|'sc1'|'st1'. The
-          default is 'gp2'.
+        of the VM. Can be one of 'standard'|'io1'|'gp2'|'sc1'|'st1'. The
+        default is 'gp2'.
     ami (str): Optional. The Amazon Machine Image ID to use to create the VM.
         Default is a version of Ubuntu 18.04.
     cpu_cores (int): Optional. The number of CPU cores to create the machine
@@ -239,8 +244,12 @@ def StartAnalysisVm(
         will not be accessible. It is therefore recommended to fill in this
         parameter.
     tags (Dict[str, str]): Optional. A dictionary of tags to add to the
-          instance, for example {'TicketID': 'xxx'}. An entry for the instance
-          name is added by default.
+        instance, for example {'TicketID': 'xxx'}. An entry for the instance
+        name is added by default.
+    subnet_id (str): Optional. The subnet to launch the instance in.
+    security_group_id (str): Optional. Security group ID to attach.
+    userdata_file (str): Optional. Filename to be read in as the userdata
+        launch script.
 
   Returns:
     Tuple[AWSInstance, bool]: a tuple with a virtual machine object
@@ -268,6 +277,10 @@ def StartAnalysisVm(
     ami = ami_list[0]['ImageId']
   assert ami  # Mypy: assert that ami is not None
 
+  if not userdata_file:
+    userdata_file = utils.FORENSICS_STARTUP_SCRIPT_AWS
+  userdata = utils.ReadStartupScript(userdata_file)
+
   logger.info('Starting analysis VM {0:s}'.format(vm_name))
   analysis_vm, created = aws_account.ec2.GetOrCreateAnalysisVm(
       vm_name,
@@ -276,7 +289,10 @@ def StartAnalysisVm(
       cpu_cores,
       boot_volume_type=boot_volume_type,
       ssh_key_name=ssh_key_name,
-      tags=tags)
+      tags=tags,
+      subnet_id=subnet_id,
+      security_group_id=security_group_id,
+      userdata=userdata)
   logger.info('VM started.')
   for volume_id, device_name in (attach_volumes or []):
     logger.info('Attaching volume {0:s} to device {1:s}'.format(
@@ -285,3 +301,4 @@ def StartAnalysisVm(
         aws_account.ebs.GetVolumeById(volume_id), device_name)
   logger.info('VM ready.')
   return analysis_vm, created
+# pylint: enable=too-many-arguments

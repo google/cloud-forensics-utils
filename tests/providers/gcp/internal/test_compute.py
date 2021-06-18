@@ -283,7 +283,7 @@ class GoogleCloudComputeTest(unittest.TestCase):
     """Test that the startup script is correctly read."""
     # No environment variable set, reading default script
     # pylint: disable=protected-access
-    script = utils.ReadStartupScript()
+    script = utils.ReadStartupScript(utils.FORENSICS_STARTUP_SCRIPT_GCP)
     self.assertTrue(script.startswith('#!/bin/bash'))
     self.assertTrue(script.endswith('(exit ${exit_code})\n'))
 
