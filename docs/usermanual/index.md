@@ -47,7 +47,7 @@ copy = forensics.CreateDiskCopy('project_A',
 The equivalent CLI command is:
 
 ```bash
-# Create a copy of the boot disk of instance 'inst1' in the same project
+# Create a copy of the boot disk of instance 'inst1' in project_A
 cloudforensics gcp 'project_A' copydisk 'project_A' 'us-east1-b' --instance_name='inst1'
 ```
 
