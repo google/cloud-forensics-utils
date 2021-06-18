@@ -8,3 +8,5 @@ sphinx
 sphinx-autodoc-typehints
 sphinx-rtd-theme
 yapf
+types-six
+types-mock

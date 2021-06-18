@@ -424,7 +424,7 @@ class AZCompute:
                          '{0:s}'.format(str(exception))) from exception
 
     instance_type = self._GetInstanceType(cpu_cores, memory_in_mb)
-    startup_script = utils.ReadStartupScript()
+    startup_script = utils.ReadStartupScript(utils.FORENSICS_STARTUP_SCRIPT_AZ)
     if packages:
       startup_script = startup_script.replace('${packages[@]}', ' '.join(
           packages))
