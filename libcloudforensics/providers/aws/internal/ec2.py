@@ -360,9 +360,9 @@ class EC2:
       tags (Dict[str, str]): Optional. A dictionary of tags to add to the
           instance, for example {'TicketID': 'xxx'}. An entry for the instance
           name is added by default.
-      subnet_id (str): Optional. Subnet to launch the instance in
+      subnet_id (str): Optional. Subnet to launch the instance in.
       userdata (str): Optional. String passed to the instance as a userdata
-          launch script
+          launch script.
 
     Returns:
       Tuple[AWSInstance, bool]: A tuple with an AWSInstance object and a

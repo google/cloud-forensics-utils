@@ -7,9 +7,6 @@ max_retry=100
 
 gift_ppa_track='stable'
 
-# Default packages to install
-# This can be overwritten in GetOrCreateAnalysisVm(
-#   packages=['package1', 'package2', ...])
 packages=(
   binutils
   docker-explorer-tools

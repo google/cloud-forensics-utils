@@ -32,7 +32,7 @@ def ReadStartupScript(filename: Optional[str] = '') -> str:
 
   Args:
     filename (str): the name of the script in the scripts directory to read
-      Defaults to 'forensics_packages_startup.sh' if none specified
+      Defaults to 'forensics_packages_startup.sh' if none specified.
   Returns:
     str: The script to run.
 

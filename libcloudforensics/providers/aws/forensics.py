@@ -208,7 +208,7 @@ def StartAnalysisVm(
     ssh_key_name: Optional[str] = None,
     tags: Optional[Dict[str, str]] = None,
     subnet_id: Optional[str] = None,
-    userdata_file: Optional[str] = utils.FORENSICS_STARTUP_SCRIPT_AWS
+    userdata_file: Optional[str] = None
     ) -> Tuple['ec2.AWSInstance', bool]:
   """Start a virtual machine for analysis purposes.
 
@@ -245,9 +245,9 @@ def StartAnalysisVm(
     tags (Dict[str, str]): Optional. A dictionary of tags to add to the
         instance, for example {'TicketID': 'xxx'}. An entry for the instance
         name is added by default.
-    subnet_id (str): Optional. The subnet to launch the instance in
+    subnet_id (str): Optional. The subnet to launch the instance in.
     userdata_file (str): Optional. Filename to be read in as the userdata
-        launch script
+        launch script.
 
   Returns:
     Tuple[AWSInstance, bool]: a tuple with a virtual machine object
@@ -275,6 +275,8 @@ def StartAnalysisVm(
     ami = ami_list[0]['ImageId']
   assert ami  # Mypy: assert that ami is not None
 
+  if not userdata_file:
+    userdata_file = utils.FORENSICS_STARTUP_SCRIPT_AWS
   userdata = utils.ReadStartupScript(userdata_file)
 
   logger.info('Starting analysis VM {0:s}'.format(vm_name))
