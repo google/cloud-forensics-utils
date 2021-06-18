@@ -329,6 +329,7 @@ class EC2:
 
     return images['Images']
 
+  # pylint: disable=too-many-arguments
   def GetOrCreateAnalysisVm(
       self,
       vm_name: str,
@@ -438,6 +439,7 @@ class EC2:
                            name=vm_name)
     created = True
     return instance, created
+  # pylint: enable=too-many-arguments
 
   def _GetBootVolumeConfigByAmi(self,
                                 ami: str,
