@@ -339,6 +339,7 @@ class EC2:
       ssh_key_name: Optional[str] = None,
       tags: Optional[Dict[str, str]] = None,
       subnet_id: Optional[str] = None,
+      security_group_id: Optional[str] = None,
       userdata: Optional[str] = None) -> Tuple[AWSInstance, bool]:
     """Get or create a new virtual machine for analysis purposes.
 
@@ -361,6 +362,7 @@ class EC2:
           instance, for example {'TicketID': 'xxx'}. An entry for the instance
           name is added by default.
       subnet_id (str): Optional. Subnet to launch the instance in.
+      security_group_id (str): Optional. Security group id to attach.
       userdata (str): Optional. String passed to the instance as a userdata
           launch script.
 
@@ -401,11 +403,16 @@ class EC2:
     if ssh_key_name:
       vm_args['KeyName'] = ssh_key_name
     if subnet_id:
-      vm_args['NetworkInterfaces']=[{
+      interface = {
             'AssociatePublicIpAddress': True,
             'DeleteOnTermination': True,
             'DeviceIndex': 0,
-            'SubnetId': subnet_id}]
+            'SubnetId': subnet_id}
+      if security_group_id:
+        interface['Groups'] = [security_group_id]
+      vm_args['NetworkInterfaces']=[interface]
+    elif security_group_id:
+      vm_args['SecurityGroupIds'] = [security_group_id]
     if userdata:
       vm_args['UserData'] = userdata
     # Create the instance in AWS

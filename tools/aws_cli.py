@@ -166,6 +166,7 @@ def StartAnalysisVm(args: 'argparse.Namespace') -> None:
                                  attach_volumes=attach_volumes,
                                  dst_profile=args.dst_profile,
                                  subnet_id=args.subnet_id,
+                                 security_group_id=args.security_group_id,
                                  userdata_file=args.launch_script)
 
   logger.info('Analysis VM started.')

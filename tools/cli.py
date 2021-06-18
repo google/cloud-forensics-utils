@@ -192,6 +192,8 @@ def Main() -> None:
                                   'account, as defined in the AWS credentials '
                                   'file.', None),
                 ('--subnet_id','Subnet to launch the instance in', None),
+                ('--security_group_id', 'Security group to attach to the '
+                                        'instance', None),
                 ('--launch_script','Userdata script for the instance to run at'
                                    ' launch', None)
             ])

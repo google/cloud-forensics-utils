@@ -208,6 +208,7 @@ def StartAnalysisVm(
     ssh_key_name: Optional[str] = None,
     tags: Optional[Dict[str, str]] = None,
     subnet_id: Optional[str] = None,
+    security_group_id: Optional[str] = None,
     userdata_file: Optional[str] = None
     ) -> Tuple['ec2.AWSInstance', bool]:
   """Start a virtual machine for analysis purposes.
@@ -246,6 +247,7 @@ def StartAnalysisVm(
         instance, for example {'TicketID': 'xxx'}. An entry for the instance
         name is added by default.
     subnet_id (str): Optional. The subnet to launch the instance in.
+    security_group_id (str): Optional. Security group ID to attach.
     userdata_file (str): Optional. Filename to be read in as the userdata
         launch script.
 
@@ -289,6 +291,7 @@ def StartAnalysisVm(
       ssh_key_name=ssh_key_name,
       tags=tags,
       subnet_id=subnet_id,
+      security_group_id=security_group_id,
       userdata=userdata)
   logger.info('VM started.')
   for volume_id, device_name in (attach_volumes or []):
