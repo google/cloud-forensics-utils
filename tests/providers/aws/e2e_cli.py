@@ -13,14 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """End to end test for the aws cli utility."""
-
+import subprocess
 import typing
 import unittest
 import warnings
 from time import sleep
 
 import botocore
-
+from libcloudforensics.errors import ResourceNotFoundError
+from libcloudforensics.errors import ResourceCreationError
 from libcloudforensics.providers.aws.internal.common import EC2_SERVICE
 from libcloudforensics.providers.aws.internal import account
 from libcloudforensics import logging_utils
@@ -84,9 +85,8 @@ class EndToEndTest(unittest.TestCase):
     cls.encrypted_volume_to_copy = project_info.get('encrypted_volume_id', None)
     cls.aws = account.AWSAccount(cls.zone)
     cls.analysis_vm_name = 'new-vm-for-analysis'
-    cls.cli = aws_cli.AWSCLI(cls.aws)
-    cls.analysis_vm = cls.cli.StartAnalysisVm(cls.analysis_vm_name,
-                                              cls.zone)
+    cls.cli = aws_cli.AWSCLIHelper()
+    cls.analysis_vm = cls._RunStartAnalysisVm(cls.analysis_vm_name, cls.zone)
     cls.volumes = []  # List of (AWSAccount, AWSVolume) tuples
 
   @typing.no_type_check
@@ -97,7 +97,7 @@ class EndToEndTest(unittest.TestCase):
     Test copying the boot volume of an instance.
     """
 
-    volume_copy = self.cli.CreateVolumeCopy(
+    volume_copy = self._RunCreateVolumeCopy(
         self.zone,
         instance_id=self.instance_to_analyse
         # volume_id=None by default, boot volume of instance will be copied
@@ -118,7 +118,7 @@ class EndToEndTest(unittest.TestCase):
     if not self.volume_to_copy:
       return
 
-    volume_copy = self.cli.CreateVolumeCopy(
+    volume_copy = self._RunCreateVolumeCopy(
         self.zone, volume_id=self.volume_to_copy)
     # The volume should be created in AWS
     aws_volume = self.aws.ResourceApi(EC2_SERVICE).Volume(volume_copy.volume_id)
@@ -136,7 +136,7 @@ class EndToEndTest(unittest.TestCase):
     if not (self.volume_to_copy and self.dst_zone):
       return
 
-    volume_copy = self.cli.CreateVolumeCopy(
+    volume_copy = self._RunCreateVolumeCopy(
         self.zone, dst_zone=self.dst_zone, volume_id=self.volume_to_copy)
     # The volume should be created in AWS
     aws_account = account.AWSAccount(self.dst_zone)
@@ -153,8 +153,8 @@ class EndToEndTest(unittest.TestCase):
     Test listing AMI images with a filter.
     """
 
-    qfilter = 'ubuntu'
-    images = self.cli.ListImages(self.zone, qfilter)
+    qfilter = 'ubuntu*'
+    images = self._RunListImages(self.zone, qfilter)
 
     self.assertGreater(len(images), 0)
     self.assertIn('Name', images[0])
@@ -170,7 +170,7 @@ class EndToEndTest(unittest.TestCase):
     if not self.encrypted_volume_to_copy:
       return
 
-    volume_copy = self.cli.CreateVolumeCopy(
+    volume_copy = self._RunCreateVolumeCopy(
         self.zone, volume_id=self.encrypted_volume_to_copy)
     # The volume should be created in AWS
     aws_volume = self.aws.ResourceApi(EC2_SERVICE).Volume(volume_copy.volume_id)
@@ -189,7 +189,7 @@ class EndToEndTest(unittest.TestCase):
     if not (self.encrypted_volume_to_copy and self.dst_zone):
       return
 
-    volume_copy = self.cli.CreateVolumeCopy(
+    volume_copy = self._RunCreateVolumeCopy(
         self.zone,
         dst_zone=self.dst_zone,
         volume_id=self.encrypted_volume_to_copy)
@@ -208,11 +208,11 @@ class EndToEndTest(unittest.TestCase):
     Test creating an analysis VM and attaching a copied volume to it.
     """
 
-    volume_copy = self.cli.CreateVolumeCopy(
+    volume_copy = self._RunCreateVolumeCopy(
         self.zone, volume_id=self.volume_to_copy)
     self.volumes.append((self.aws, volume_copy))
     # Create and start the analysis VM and attach the boot volume
-    self.analysis_vm = self.cli.StartAnalysisVm(
+    self.analysis_vm = self._RunStartAnalysisVm(
         self.analysis_vm_name,
         self.zone,
         attach_volumes=[volume_copy.volume_id]
@@ -235,6 +235,68 @@ class EndToEndTest(unittest.TestCase):
       volume (boto3.resource.volume): An AWS volume.
     """
     self.volumes.append((aws_account, volume))
+
+  @classmethod
+  @typing.no_type_check
+  def _RunStartAnalysisVm(cls, vm_name, zone, attach_volumes=None):
+    cmd = cls.cli.PrepareStartAnalysisVmCmd(
+        vm_name, zone, attach_volumes=attach_volumes)
+    try:
+      output = subprocess.check_output(
+          cmd.split(), stderr=subprocess.STDOUT, shell=False)
+      logger.info(output)
+    except subprocess.CalledProcessError as error:
+      raise ResourceCreationError(
+          'Failed creating VM in account profile {0:s}'.format(
+              cls.aws.aws_profile), __name__) from error
+    try:
+      return cls.aws.ec2.GetInstancesByName(vm_name)[0]
+    except ResourceNotFoundError as error:
+      raise ResourceNotFoundError(
+          'Failed finding created VM in account profile {0:s}'.format(
+              cls.aws.aws_profile), __name__) from error
+
+  @classmethod
+  @typing.no_type_check
+  def _RunCreateVolumeCopy(
+      cls, zone, dst_zone=None, instance_id=None, volume_id=None):
+    cmd = cls.cli.PrepareCreateVolumeCopyCmd(
+        zone, dst_zone=dst_zone, instance_id=instance_id, volume_id=volume_id)
+    try:
+      output = subprocess.check_output(
+          cmd.split(), stderr=subprocess.STDOUT, shell=False)
+      if not output:
+        raise ResourceCreationError(
+            'Could not find volume copy result', __name__)
+      volume_copy_name = output.decode('utf-8').split(' ')[-1]
+      volume_copy_name = volume_copy_name[:volume_copy_name.rindex('copy') + 4]
+      logger.info(output)
+      logger.info("Volume successfully copied to {0:s}".format(
+          volume_copy_name))
+    except subprocess.CalledProcessError as error:
+      raise ResourceCreationError('Failed copying volume', __name__) from error
+    try:
+      return cls.aws.ebs.GetVolumesByName(volume_copy_name)[0]
+    except ResourceNotFoundError as error:
+      raise ResourceNotFoundError(
+          'Failed finding copied volume in account profile {0:s}'.format(
+              cls.aws.aws_profile), __name__) from error
+
+  @classmethod
+  @typing.no_type_check
+  def _RunListImages(cls, zone, qfilter=None):
+    cmd = cls.cli.PrepareListImagesCmd(zone, qfilter=qfilter)
+    try:
+      output = subprocess.check_output(
+          cmd.split(), stderr=subprocess.STDOUT, shell=False)
+      if not output:
+        raise RuntimeError('Could not find any images to list')
+      logger.info(output)
+    except subprocess.CalledProcessError as error:
+      raise RuntimeError('Failed retrieving AMI images') from error
+    # For this function, the CLI tool only prints one line per result, or
+    # nothing at all. Therefore if there's an output, there's a result.
+    return str(output).split('\n')
 
   @classmethod
   @typing.no_type_check
