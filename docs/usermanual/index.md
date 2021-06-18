@@ -4,16 +4,102 @@
 
 ### Disk snapshot
 
-TODO
+Use case: you have a disk `disk1` in a GCP project (`project_A`) which you would like to make a copy
+of in a different project (`project_B`). The disk copy should live in zone `us-east1-b`.
 
-### GCS to persistent disk
+#### Using the library and the CLI
 
-TODO
+To make the copy, import the `forensics` package and use the `CreateDiskCopy` method.
 
-### Analysis VM
+```python
+from libcloudforensics.providers.gcp import forensics
 
-TODO
+# Create a copy of the disk 'disk1' from one project to another.
 
+copy = forensics.CreateDiskCopy('project_A',
+                                'project_B',
+                                'us-east1-b',
+                                disk_name='disk1')
+```
+
+The equivalent CLI command is:
+
+```bash
+# Create a copy of the disk 'disk1' from one project to another 
+cloudforensics gcp 'project_A' copydisk 'project_B' 'us-east1-b' --disk_name='disk1'
+```
+
+You can opt to pass an `instance_name` parameter to the method instead of a `disk_name`.
+If you do so, then the boot disk of the instance pointed to by `instance_name` will be copied.
+You can also create the copy in the same project:
+
+```python
+from libcloudforensics.providers.gcp import forensics
+
+# Create a copy of the disk 'disk1' in project_A.
+
+copy = forensics.CreateDiskCopy('project_A',
+                                'project_A',
+                                'us-east1-b',
+                                instance_name='inst1')
+```
+
+The equivalent CLI command is:
+
+```bash
+# Create a copy of the boot disk of instance 'inst1' in the same project
+cloudforensics gcp 'project_A' copydisk 'project_A' 'us-east1-b' --instance_name='inst1'
+```
+
+### Analysis VMs
+
+Use case: you have a disk `disk1` in a GCP project (`project_A`) which you would like to make a copy
+of in a different project (`project_B`). The disk copy should live in zone `us-east1-b`.
+Afterwards, you want to start an analysis VM in `project_B`, and attach the disk
+copy that you created to begin your investigation.
+
+Using the library, you can start an analysis VM as follows:
+
+```python
+from libcloudforensics.providers.gcp import forensics
+
+# Create a copy of the disk 'disk1' from one project to another
+
+copy = forensics.CreateDiskCopy('project_A',
+                                'project_B',
+                                'us-east1-b',
+                                disk_name='disk1')
+
+# Start an analysis VM 'vm-forensics' for investigation in the GCP project
+# project_B, and attach the copy created in the previous step.
+
+analysis_vm, _ = forensics.StartAnalysisVm('project_B',
+                                           'vm-forensics',
+                                           'us-east1-b',
+                                           50,
+                                           'pd-standard',
+                                           4,
+                                           attach_disks=['disk1-copy'])
+```
+
+The equivalent CLI command is:
+
+```bash
+# Create a copy of the disk 'disk1' from one project to another 
+# In this scenario we consider that the final disk copy name is 'disk1-copy' for illustration purpose. 
+cloudforensics gcp 'project_A' copydisk 'project_B' 'us-east1-b' --disk_name='disk1'
+
+# Start an analysis VM 'vm-forensics' for investigation in the GCP project 
+# project_B, and attach a disk to it.
+cloudforensics gcp 'project_A' startvm 'vm-forensics' 'us-east1-b' --attach_disks='disk1-copy'
+```
+
+You're now ready to go! You can connect to your analysis instance.
+
+``` important:: Pro tip: you can export an environment variable 'STARTUP_SCRIPT' that points to a custom bash script. 
+This script will be shipped to the instance being created and executed during the first boot. You can do any kind of 
+pre-processing you want in this script.
+```
 
 ## AWS
 
