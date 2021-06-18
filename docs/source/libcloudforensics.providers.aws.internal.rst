@@ -49,3 +49,11 @@ libcloudforensics.providers.aws.internal.log module
    :members:
    :undoc-members:
    :show-inheritance:
+
+libcloudforensics.providers.aws.internal.s3 module
+---------------------------------------------------
+
+.. automodule:: libcloudforensics.providers.aws.internal.s3
+   :members:
+   :undoc-members:
+   :show-inheritance:
