@@ -224,3 +224,25 @@ class S3:
     logger.info('Attempting to delete local (temporary) copy')
     os.unlink(localcopy)
     logger.info('Done')
+
+  def CheckForObject(
+      self,
+      bucket: str,
+      object: str
+    ) -> bool:
+    """Check if an object exists in S3.
+
+    Args:
+      bucket (str): S3 nucket name.
+      object (str): object path and name.
+    Returns:
+      bool: True if the object exists and you have permissions to GetObject.
+        False otherwise."""
+    s3_client = self.aws_account.ClientApi(common.S3_SERVICE)
+
+    try:
+      s3_client.head_object(Bucket=bucket, Key=object)
+    except s3_client.exceptions.ClientError as e:
+      print(e)
+      return False
+    return True

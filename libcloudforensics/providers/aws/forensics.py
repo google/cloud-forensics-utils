@@ -326,6 +326,7 @@ def CopyEBSSnapshotToS3(
 
   # Create the IAM pieces
   aws_account = account.AWSAccount(zone)
+
   ebs_copy_policy_doc = iam.ReadPolicyDoc(iam.EBS_COPY_POLICY_DOC)
   ec2_assume_role_doc = iam.ReadPolicyDoc(iam.EC2_ASSUME_ROLE_POLICY_DOC)
 
@@ -375,3 +376,20 @@ def CopyEBSSnapshotToS3(
     terminate_on_shutdown=True
   )
   logger.info('Instance creation completed')
+  logger.info('Checking for destination files with exponential backoff')
+
+  wait = 10
+  tries = 10
+  finished = False
+
+  while not finished and tries:
+    tries -= 1
+    logger.info("Waiting {0:d} seconds".format(wait))
+    sleep(wait)
+
+    if aws_account.s3.CheckForObject()
+
+
+    
+
+
