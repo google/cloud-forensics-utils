@@ -330,7 +330,7 @@ class EC2:
     return images['Images']
 
   # pylint: disable=too-many-arguments
-  def GetOrCreateAnalysisVm(
+  def GetOrCreateVm(
       self,
       vm_name: str,
       boot_volume_size: int,
@@ -341,7 +341,10 @@ class EC2:
       tags: Optional[Dict[str, str]] = None,
       subnet_id: Optional[str] = None,
       security_group_id: Optional[str] = None,
-      userdata: Optional[str] = None) -> Tuple[AWSInstance, bool]:
+      userdata: Optional[str] = None,
+      instance_profile: Optional[str] = None,
+      terminate_on_shutdown: Optional[bool] = False
+      ) -> Tuple[AWSInstance, bool]:
     """Get or create a new virtual machine for analysis purposes.
 
     Args:
@@ -366,6 +369,9 @@ class EC2:
       security_group_id (str): Optional. Security group id to attach.
       userdata (str): Optional. String passed to the instance as a userdata
           launch script.
+      instance_profile (str): Optional. Instance role to be attached.
+      terminate_on_shutdown (bool): Optional. Terminate the instance when the
+          instance initiates shutdown
 
     Returns:
       Tuple[AWSInstance, bool]: A tuple with an AWSInstance object and a
@@ -416,6 +422,10 @@ class EC2:
       vm_args['SecurityGroupIds'] = [security_group_id]
     if userdata:
       vm_args['UserData'] = userdata
+    if instance_profile:
+      vm_args['IamInstanceProfile'] = {'Arn': instance_profile}
+    if terminate_on_shutdown:
+      vm_args['InstanceInitiatedShutdownBehavior'] = 'terminate'
     # Create the instance in AWS
     try:
       instance = client.run_instances(**vm_args)

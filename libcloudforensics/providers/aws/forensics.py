@@ -15,8 +15,9 @@
 """Forensics on AWS."""
 from typing import TYPE_CHECKING, Tuple, List, Optional, Dict
 
-from libcloudforensics.providers.aws.internal.common import UBUNTU_1804_FILTER
-from libcloudforensics.providers.aws.internal import account
+from libcloudforensics.providers.aws.internal.common \
+  import UBUNTU_1804_FILTER, ALINUX2_BASE_FILTER
+from libcloudforensics.providers.aws.internal import account, iam
 from libcloudforensics.scripts import utils
 from libcloudforensics import logging_utils
 from libcloudforensics import errors
@@ -282,7 +283,7 @@ def StartAnalysisVm(
   userdata = utils.ReadStartupScript(userdata_file)
 
   logger.info('Starting analysis VM {0:s}'.format(vm_name))
-  analysis_vm, created = aws_account.ec2.GetOrCreateAnalysisVm(
+  analysis_vm, created = aws_account.ec2.GetOrCreateVm(
       vm_name,
       boot_volume_size,
       ami,
@@ -302,3 +303,75 @@ def StartAnalysisVm(
   logger.info('VM ready.')
   return analysis_vm, created
 # pylint: enable=too-many-arguments
+
+def CopyEBSSnapshotToS3(
+    s3_destination: str,
+    snapshot_id: str,
+    instance_profile_name: str,
+    zone: str,
+    subnet_id: Optional[str] = None,
+    security_group_id: Optional[str] = None
+    ) -> None:
+  """Copy an EBS snapshot into S3.
+
+  Unfortunately, this action is not natively supported in AWS, so it requires
+  creating a volume and attaching it to an instance. This instance, using a
+  userdata script then performs a `dd` operation to send the disk image to S3
+
+  Args:
+    instance_profile_name (str): The name of an existing instance profile to
+      attach to the instance, or to create if it does not yet exist.
+    zone (str): AWS Availability Zone the instance will be launched in.
+  """
+
+  # Create the IAM pieces
+  aws_account = account.AWSAccount(zone)
+  ebs_copy_policy_doc = iam.ReadPolicyDoc(iam.EBS_COPY_POLICY_DOC)
+  ec2_assume_role_doc = iam.ReadPolicyDoc(iam.EC2_ASSUME_ROLE_POLICY_DOC)
+
+  policy_arn = aws_account.iam.CreatePolicy(
+    "%s-policy" % instance_profile_name, ebs_copy_policy_doc)
+  instance_profile_arn = aws_account.iam.CreateInstanceProfile(
+    instance_profile_name)
+  aws_account.iam.CreateRole(
+    "%s-role" % instance_profile_name, ec2_assume_role_doc)
+  aws_account.iam.AttachPolicyToRole(
+    policy_arn, "%s-role" % instance_profile_name)
+  aws_account.iam.AttachInstanceProfileToRole(
+    instance_profile_name, "%s-role" % instance_profile_name)
+
+  # read in the instance userdata script, sub in the snap id and S3 dest
+  startup_script = utils.ReadStartupScript(
+    utils.EBS_SNAPSHOT_COPY_SCRIPT_AWS) % ((snapshot_id, s3_destination))
+
+  # Find the AMI - ALinux 2, latest version
+  logger.info('Finding AMI')
+  qfilter = [
+    {'Name': 'name', 'Values': [ALINUX2_BASE_FILTER]},
+    {'Name':'owner-alias', 'Values':['amazon']}
+  ]
+  results = aws_account.ec2.ListImages(qfilter)
+
+  # Find the most recent
+  ami_id = None
+  date = ''
+  for result in results:
+    if result['CreationDate'] > date:
+      ami_id = result['ImageId']
+      date = result['CreationDate']
+  assert ami_id  # Mypy: assert that ami is not None
+
+  # start the VM
+  logger.info('Starting copy instance')
+  aws_account.ec2.GetOrCreateVm(
+    'ebsCopy',
+    10,
+    ami_id,
+    4,
+    subnet_id=subnet_id,
+    security_group_id=security_group_id,
+    userdata=startup_script,
+    instance_profile=instance_profile_arn,
+    terminate_on_shutdown=True
+  )
+  logger.info('Instance creation completed')
