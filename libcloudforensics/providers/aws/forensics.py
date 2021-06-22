@@ -379,7 +379,6 @@ def CopyEBSSnapshotToS3(
     10,
     ami_id,
     4,
-    ssh_key_name='ramoj', # DELETE ME
     subnet_id=subnet_id,
     security_group_id=security_group_id,
     userdata=startup_script,
