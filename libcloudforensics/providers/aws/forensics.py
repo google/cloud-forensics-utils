@@ -15,9 +15,10 @@
 """Forensics on AWS."""
 from typing import TYPE_CHECKING, Tuple, List, Optional, Dict
 
+from time import sleep
 from libcloudforensics.providers.aws.internal.common \
   import UBUNTU_1804_FILTER, ALINUX2_BASE_FILTER
-from libcloudforensics.providers.aws.internal import account, iam
+from libcloudforensics.providers.aws.internal import account, iam, s3
 from libcloudforensics.scripts import utils
 from libcloudforensics import logging_utils
 from libcloudforensics import errors
@@ -324,6 +325,11 @@ def CopyEBSSnapshotToS3(
     zone (str): AWS Availability Zone the instance will be launched in.
   """
 
+  # Correct destination if necessary
+  if not s3_destination.startswith('s3://'):
+    s3_destination = 's3://' + s3_destination
+  path_components = s3.SplitStoragePath(s3_destination)
+
   # Create the IAM pieces
   aws_account = account.AWSAccount(zone)
 
@@ -369,6 +375,7 @@ def CopyEBSSnapshotToS3(
     10,
     ami_id,
     4,
+    ssh_key_name='ramoj', # DELETE ME
     subnet_id=subnet_id,
     security_group_id=security_group_id,
     userdata=startup_script,
@@ -379,17 +386,25 @@ def CopyEBSSnapshotToS3(
   logger.info('Checking for destination files with exponential backoff')
 
   wait = 10
-  tries = 10
-  finished = False
+  tries = 6 # 10.5 minutes
+  success = False
 
-  while not finished and tries:
+  while tries:
     tries -= 1
     logger.info("Waiting {0:d} seconds".format(wait))
     sleep(wait)
+    wait *= 2
 
-    if aws_account.s3.CheckForObject()
+    # pylint: disable=line-too-long
+    if aws_account.s3.CheckForObject(path_components[0], "{0:s}/{1:s}.bin".format(path_components[1], snapshot_id)) and \
+        aws_account.s3.CheckForObject(path_components[0], "{0:s}/{1:s}.sha256".format(path_components[1], snapshot_id)):
+      success = True
+      break
+    # pylint: enable=line-too-long
 
-
-    
-
-
+  if success:
+    logger.info("Image and hash copied to {0:s}/{1:s}.[bin|sha256]".format(
+      s3_destination, snapshot_id))
+  else:
+    logger.info(
+      "Image copy timeout. The process may be ongoing, or might have failed.")

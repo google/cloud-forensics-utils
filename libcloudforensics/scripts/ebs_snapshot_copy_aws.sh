@@ -29,8 +29,8 @@ function ebsCopy {
 	sleep 5 # let the kernel catch up
 
 	# perform the DD to s3
-	dd if=/dev/xvdh bs=256K | sha256sum | aws s3 cp - s3://$bucket/$snapshot.sha256
-	dd if=/dev/xvdh bs=256K | aws s3 cp - s3://$bucket/$snapshot.bin
+	dd if=/dev/xvdh bs=256K | sha256sum | aws s3 cp - $bucket/$snapshot.sha256
+	dd if=/dev/xvdh bs=256K | aws s3 cp - $bucket/$snapshot.bin
 
 	# detach the volume
 	aws ec2 --region $region detach-volume --volume-id $volume
