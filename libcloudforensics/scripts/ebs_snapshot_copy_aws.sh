@@ -28,7 +28,8 @@ function ebsCopy {
 	aws ec2 --region $region wait volume-in-use --volume-ids $volume
 	sleep 5 # let the kernel catch up
 
-	# perform the DD to s3
+	# perform the dd to s3
+	# TODO: improve this somehow to not require the double pass
 	dd if=/dev/xvdh bs=256K | sha256sum | aws s3 cp - $bucket/$snapshot.sha256
 	dd if=/dev/xvdh bs=256K | aws s3 cp - $bucket/$snapshot.bin
 
