@@ -253,7 +253,7 @@ def SplitStoragePath(path: str) -> Tuple[str, str]:
   """Split a path to bucket name and object URI.
 
   Args:
-    path (str): File path to a resource in GCS.
+    path (str): File path to a resource in S3.
         Ex: s3://bucket/folder/obj
 
   Returns:

@@ -317,12 +317,16 @@ def CopyEBSSnapshotToS3(
 
   Unfortunately, this action is not natively supported in AWS, so it requires
   creating a volume and attaching it to an instance. This instance, using a
-  userdata script then performs a `dd` operation to send the disk image to S3
+  userdata script then performs a `dd` operation to send the disk image to S3.
 
   Args:
+    s3_destination (str): S3 directory in the form of s3://bucket/path/folder
+    snapshot_id (str): EBS snapshot ID.
     instance_profile_name (str): The name of an existing instance profile to
       attach to the instance, or to create if it does not yet exist.
     zone (str): AWS Availability Zone the instance will be launched in.
+    subnet_id (str): Optional. The subnet to launch the instance in.
+    security_group_id (str): Optional. Security group ID to attach.
   """
 
   # Correct destination if necessary

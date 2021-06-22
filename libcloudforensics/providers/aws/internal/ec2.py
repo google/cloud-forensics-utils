@@ -371,7 +371,7 @@ class EC2:
           launch script.
       instance_profile (str): Optional. Instance role to be attached.
       terminate_on_shutdown (bool): Optional. Terminate the instance when the
-          instance initiates shutdown
+          instance initiates shutdown.
 
     Returns:
       Tuple[AWSInstance, bool]: A tuple with an AWSInstance object and a
