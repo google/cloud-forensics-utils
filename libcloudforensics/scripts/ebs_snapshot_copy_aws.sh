@@ -5,7 +5,9 @@ set -o pipefail
 snapshot={0:s}
 bucket={1:s}
 
-function ebsCopy {
+# This script gets used by python's string.format, so following curly braces need to be doubled
+
+function ebsCopy {{
 	# params
 	snapshot=$1
 	bucket=$2
@@ -16,7 +18,7 @@ function ebsCopy {
 	instance=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
 
 	# create the new volume
-	volume=$(aws ec2 --region $region create-volume --availability-zone $az --snapshot-id $snapshot --tag-specification 'ResourceType=volume,Tags=[{Key=Name,Value=volumeToCopy}]' | jq -r .VolumeId)
+	volume=$(aws ec2 --region $region create-volume --availability-zone $az --snapshot-id $snapshot --tag-specification 'ResourceType=volume,Tags=[{{Key=Name,Value=volumeToCopy}}]' | jq -r .VolumeId)
 
 	# wait for create to complete
 	aws ec2 --region $region wait volume-available --volume-ids $volume
@@ -39,7 +41,7 @@ function ebsCopy {
 
 	# delete the volume
 	aws ec2 --region $region delete-volume --volume-id $volume
-}
+}}
 
 yum install jq -y
 

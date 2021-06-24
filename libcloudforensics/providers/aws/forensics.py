@@ -361,7 +361,7 @@ def CopyEBSSnapshotToS3(
 
   # read in the instance userdata script, sub in the snap id and S3 dest
   startup_script = utils.ReadStartupScript(
-    utils.EBS_SNAPSHOT_COPY_SCRIPT_AWS).format((snapshot_id, s3_destination))
+    utils.EBS_SNAPSHOT_COPY_SCRIPT_AWS).format(snapshot_id, s3_destination)
 
   # Find the AMI - ALinux 2, latest version
   logger.info('Finding AMI')
