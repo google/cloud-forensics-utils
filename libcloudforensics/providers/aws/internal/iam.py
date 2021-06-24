@@ -56,6 +56,7 @@ class IAM:
 
     Args:
       profile_name (str): Instance profile name.
+
     Returns:
       bool: True if the Instance Profile exists, false otherwise.
     """
@@ -70,11 +71,15 @@ class IAM:
     If the policy exists already, return the Arn of the existing policy.
 
     Args:
-      name: Name for the policy
-      policy_doc: IAM Policy document as a json string.
+      name (str): Name for the policy
+      policy_doc (str): IAM Policy document as a json string.
 
     Returns:
       str: Arn of the policy.
+
+    Raises:
+      ResourceNotFoundError: If the policy failed creation due to already
+        existing, but then could not be found
     """
     logger.info("Creating IAM policy {0:s}".format(name))
     try:
@@ -106,10 +111,14 @@ class IAM:
     the Arn of the existing.
 
     Args:
-      name: The name of the instance profile.
+      name (str): The name of the instance profile.
 
     Returns:
       str: The Arn of the instance profile.
+
+    Raises:
+      ResourceNotFoundError: If the profile failed creation due to already
+        existing, but then could not be found
     """
     try:
       logger.info("Creating IAM Instance Profile {0:s}".format(name))
@@ -131,17 +140,21 @@ class IAM:
           # pylint: enable=line-too-long
             .format(name), __name__) from exception
 
-      profiles = self.client.list_instance_profiles(Marker=profiles['Marker'])
+        profiles = self.client.list_instance_profiles(Marker=profiles['Marker'])
 
   def CreateRole(self, name: str, assume_role_policy_doc: str) -> str:
     """Create an AWS IAM role. If it exists, return the existing.
 
     Args;
-      name: The name of the role.
-      assume_role_policy_doc: Assume Role policy doc.
+      name (str): The name of the role.
+      assume_role_policy_doc (str): Assume Role policy doc.
 
     Returns:
       str: The Arn of the role.
+
+    Raises:
+      ResourceNotFoundError: If the role failed creation due to already
+        existing, but then could not be found
     """
     try:
       logger.info("Creating IAM Role {0:s}".format(name))
@@ -164,14 +177,14 @@ class IAM:
           # pylint: enable=line-too-long
             .format(name), __name__) from exception
 
-      roles = self.client.list_roles(Marker=roles['Marker'])
+        roles = self.client.list_roles(Marker=roles['Marker'])
 
   def AttachPolicyToRole(self, policy_arn: str, role_name: str) -> None:
     """Attaches an IAM policy to an IAM role.
 
     Args:
-      policy_arn: The Policy Arn.
-      role_name: The Role Name.
+      policy_arn (str): The Policy Arn.
+      role_name (str): The Role Name.
     """
     logger.info("Attaching policy {0:s} to role {1:s}"
       .format(policy_arn, role_name))

@@ -235,6 +235,7 @@ class S3:
     Args:
       bucket (str): S3 nucket name.
       key (str): object path and name.
+
     Returns:
       bool: True if the object exists and you have permissions to GetObject.
         False otherwise."""
