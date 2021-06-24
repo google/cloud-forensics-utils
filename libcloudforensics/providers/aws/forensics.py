@@ -16,9 +16,11 @@
 from typing import TYPE_CHECKING, Tuple, List, Optional, Dict
 
 from time import sleep
-from libcloudforensics.providers.aws.internal.common \
-  import UBUNTU_1804_FILTER, ALINUX2_BASE_FILTER
-from libcloudforensics.providers.aws.internal import account, iam, s3
+from libcloudforensics.providers.aws.internal.common import ALINUX2_BASE_FILTER
+from libcloudforensics.providers.aws.internal.common import UBUNTU_1804_FILTER
+from libcloudforensics.providers.aws.internal import account
+from libcloudforensics.providers.aws.internal import iam
+from libcloudforensics.providers.aws.internal import s3
 from libcloudforensics.scripts import utils
 from libcloudforensics import logging_utils
 from libcloudforensics import errors
@@ -327,6 +329,9 @@ def CopyEBSSnapshotToS3(
     zone (str): AWS Availability Zone the instance will be launched in.
     subnet_id (str): Optional. The subnet to launch the instance in.
     security_group_id (str): Optional. Security group ID to attach.
+
+  Raises:
+    ResourceCreationError: If any dependent resource could not be created.
   """
 
   # Correct destination if necessary
@@ -340,20 +345,23 @@ def CopyEBSSnapshotToS3(
   ebs_copy_policy_doc = iam.ReadPolicyDoc(iam.EBS_COPY_POLICY_DOC)
   ec2_assume_role_doc = iam.ReadPolicyDoc(iam.EC2_ASSUME_ROLE_POLICY_DOC)
 
+  policy_name = '{0:s}-policy'.format(instance_profile_name)
+  role_name = '{0:s}-role'.format(instance_profile_name)
+
   policy_arn = aws_account.iam.CreatePolicy(
-    "%s-policy" % instance_profile_name, ebs_copy_policy_doc)
+    policy_name, ebs_copy_policy_doc)
   instance_profile_arn = aws_account.iam.CreateInstanceProfile(
     instance_profile_name)
   aws_account.iam.CreateRole(
-    "%s-role" % instance_profile_name, ec2_assume_role_doc)
+    role_name, ec2_assume_role_doc)
   aws_account.iam.AttachPolicyToRole(
-    policy_arn, "%s-role" % instance_profile_name)
+    policy_arn, role_name)
   aws_account.iam.AttachInstanceProfileToRole(
-    instance_profile_name, "%s-role" % instance_profile_name)
+    instance_profile_name, role_name)
 
   # read in the instance userdata script, sub in the snap id and S3 dest
   startup_script = utils.ReadStartupScript(
-    utils.EBS_SNAPSHOT_COPY_SCRIPT_AWS) % ((snapshot_id, s3_destination))
+    utils.EBS_SNAPSHOT_COPY_SCRIPT_AWS).format((snapshot_id, s3_destination))
 
   # Find the AMI - ALinux 2, latest version
   logger.info('Finding AMI')
@@ -370,7 +378,9 @@ def CopyEBSSnapshotToS3(
     if result['CreationDate'] > date:
       ami_id = result['ImageId']
       date = result['CreationDate']
-  assert ami_id  # Mypy: assert that ami is not None
+  if not ami_id:
+    raise errors.ResourceCreationError(
+      'Could not fnd suitable AMI for instance creation', __name__)
 
   # start the VM
   logger.info('Starting copy instance')

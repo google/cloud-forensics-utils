@@ -343,7 +343,7 @@ class EC2:
       security_group_id: Optional[str] = None,
       userdata: Optional[str] = None,
       instance_profile: Optional[str] = None,
-      terminate_on_shutdown: Optional[bool] = False
+      terminate_on_shutdown: bool = False
       ) -> Tuple[AWSInstance, bool]:
     """Get or create a new virtual machine for analysis purposes.
 

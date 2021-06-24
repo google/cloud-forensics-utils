@@ -17,7 +17,8 @@
 import os
 
 from typing import TYPE_CHECKING, Optional
-from libcloudforensics import errors, logging_utils
+from libcloudforensics import errors
+from libcloudforensics import logging_utils
 from libcloudforensics.providers.aws.internal import common
 
 if TYPE_CHECKING:
@@ -33,7 +34,7 @@ IAM_POLICY_DIR = './iampolicies'
 # Policy allowing an instance to image a volume
 EBS_COPY_POLICY_DOC = 'ebs_copy_to_s3_policy.json'
 
-#Policy doc to allow EC2 to assume the role. Necessary for instance profiles
+# Policy doc to allow EC2 to assume the role. Necessary for instance profiles
 EC2_ASSUME_ROLE_POLICY_DOC = 'ec2_assume_role_policy.json'
 
 
@@ -71,6 +72,7 @@ class IAM:
     Args:
       name: Name for the policy
       policy_doc: IAM Policy document as a json string.
+
     Returns:
       str: Arn of the policy.
     """
@@ -89,9 +91,11 @@ class IAM:
             return str(policy['Arn'])
 
         if not policies['IsTruncated']:
-          # If we reahed here it means the policy was deleted between the
+          # If we reached here it means the policy was deleted between the
           # creation failure and lookup
-          raise errors.ResourceNotFoundError('Could not locate policy with name {0:s} after creation failure due to EntityAlreadyExistsException' # pylint: disable=line-too-long
+          # pylint: disable=line-too-long
+          raise errors.ResourceNotFoundError('Could not locate policy with name {0:s} after creation failure due to EntityAlreadyExistsException'
+          # pylint: enable=line-too-long
             .format(name), __name__) from exception
 
         policies = self.client.list_policies(
@@ -103,6 +107,7 @@ class IAM:
 
     Args:
       name: The name of the instance profile.
+
     Returns:
       str: The Arn of the instance profile.
     """
@@ -119,9 +124,11 @@ class IAM:
           if profile['InstanceProfileName'] == name:
             return str(profile['Arn'])
         if not profiles['IsTruncated']:
-          # If we reahed here it means the profile was deleted between the
+          # If we reached here it means the profile was deleted between the
           # creation failure and lookup
-          raise errors.ResourceNotFoundError('Could not locate instance profile with name {0:s} after creation failure due to EntityAlreadyExistsException' # pylint: disable=line-too-long
+          # pylint: disable=line-too-long
+          raise errors.ResourceNotFoundError('Could not locate instance profile with name {0:s} after creation failure due to EntityAlreadyExistsException'
+          # pylint: enable=line-too-long
             .format(name), __name__) from exception
 
       profiles = self.client.list_instance_profiles(Marker=profiles['Marker'])
@@ -132,6 +139,7 @@ class IAM:
     Args;
       name: The name of the role.
       assume_role_policy_doc: Assume Role policy doc.
+
     Returns:
       str: The Arn of the role.
     """
@@ -149,7 +157,7 @@ class IAM:
           if role['RoleName'] == name:
             return str(role['Arn'])
         if not roles['IsTruncated']:
-          # If we reahed here it means the role was deleted between the
+          # If we reached here it means the role was deleted between the
           # creation failure and lookup
           # pylint: disable=line-too-long
           raise errors.ResourceNotFoundError('Could not locate role with name {0:s} after creation failure due to EntityAlreadyExistsException'
@@ -194,6 +202,7 @@ def ReadPolicyDoc(filename: str) -> str:
 
   Args:
     filename (str): the name of the policy file in the iampolicies directory.
+
   Returns:
     str: The policy doc.
 

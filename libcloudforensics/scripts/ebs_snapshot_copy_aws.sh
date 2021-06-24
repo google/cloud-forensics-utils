@@ -2,8 +2,8 @@
 
 set -o pipefail
 
-snapshot=%s
-bucket=%s
+snapshot={0:s}
+bucket={1:s}
 
 function ebsCopy {
 	# params
