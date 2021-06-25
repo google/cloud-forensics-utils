@@ -78,7 +78,10 @@ def CreateDiskCopy(args: 'argparse.Namespace') -> None:
                                        region=args.region,
                                        src_profile=args.src_profile,
                                        dst_profile=args.dst_profile)
-  logger.info('Done! Disk {0:s} successfully created.'.format(disk_copy.name))
+  logger.info(
+      'Done! Disk {0:s} successfully created. You will find it in '
+      'your Azure subscription under the name {1:s}.'.format(
+          disk_copy.resource_id, disk_copy.name))
 
 
 def StartAnalysisVm(args: 'argparse.Namespace') -> None:
