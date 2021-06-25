@@ -13,12 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """End to end test for the Azure cli utility."""
-
+import subprocess
 import typing
 import unittest
 from time import sleep
-
 from msrestazure import azure_exceptions  # pylint: disable=import-error
+
+from libcloudforensics.errors import ResourceNotFoundError
+from libcloudforensics.errors import ResourceCreationError
 from libcloudforensics import logging_utils
 from libcloudforensics.providers.azure.internal import account
 from tests.providers.azure import azure_cli
@@ -65,8 +67,8 @@ class EndToEndTest(unittest.TestCase):
     cls.az = account.AZAccount(cls.resource_group_name,
                                default_region='switzerlandnorth')
     cls.analysis_vm_name = 'new-vm-for-analysis'
-    cls.cli = azure_cli.AzureCLI(cls.az)
-    cls.analysis_vm = cls.cli.StartAnalysisVm(cls.analysis_vm_name)
+    cls.cli = azure_cli.AzureCLIHelper(cls.az)
+    cls.analysis_vm = cls._RunStartAnalysisVm(cls.analysis_vm_name)
     cls.disks = []  # List of AZDisks for test cleanup
 
   @typing.no_type_check
@@ -76,7 +78,7 @@ class EndToEndTest(unittest.TestCase):
     Test copying the boot disk of an instance.
     """
 
-    disk_copy = self.cli.CreateDiskCopy(
+    disk_copy = self._RunCreateDiskCopy(
         instance_name=self.instance_to_analyse
         # disk_name=None by default, boot disk of instance will be copied
     )
@@ -97,7 +99,7 @@ class EndToEndTest(unittest.TestCase):
     if not self.disk_to_copy:
       return
 
-    disk_copy = self.cli.CreateDiskCopy(disk_name=self.disk_to_copy)
+    disk_copy = self._RunCreateDiskCopy(disk_name=self.disk_to_copy)
     # The disk should be present in Azure
     remote_disk = self.az.compute.compute_client.disks.get(
         disk_copy.resource_group_name, disk_copy.name)
@@ -116,7 +118,7 @@ class EndToEndTest(unittest.TestCase):
       sleep(30)
 
   @typing.no_type_check
-  def testDiskCopyToOtherZone(self):
+  def testDiskCopyToOtherRegion(self):
     """End to end test on Azure.
 
     Test copying a specific disk to a different Azure region.
@@ -125,7 +127,7 @@ class EndToEndTest(unittest.TestCase):
     if not (self.disk_to_copy and self.dst_region):
       return
 
-    disk_copy = self.cli.CreateDiskCopy(
+    disk_copy = self._RunCreateDiskCopy(
         disk_name=self.disk_to_copy,
         region=self.dst_region)
     # The disk should be present in Azure and be in self.dst_region
@@ -134,6 +136,7 @@ class EndToEndTest(unittest.TestCase):
     self.assertIsNotNone(remote_disk)
     self.assertEqual(disk_copy.name, remote_disk.name)
     self.assertEqual(self.dst_region, remote_disk.location)
+    self.assertNotEqual(self.az.default_region, self.dst_region)
 
     # Since we make a copy of the same disk but in a different region in next
     # test, we need to delete the copy we just created as Azure does not
@@ -153,12 +156,12 @@ class EndToEndTest(unittest.TestCase):
     Test creating an analysis VM and attaching a copied disk to it.
     """
 
-    disk_copy = self.cli.CreateDiskCopy(
+    disk_copy = self._RunCreateDiskCopy(
         disk_name=self.disk_to_copy)
     self._StoreDiskForCleanup(disk_copy)
 
     # Create and start the analysis VM and attach the disk
-    self.analysis_vm = self.cli.StartAnalysisVm(
+    self.analysis_vm = self._RunStartAnalysisVm(
         self.analysis_vm_name,
         attach_disks=[disk_copy.name]
     )
@@ -170,6 +173,54 @@ class EndToEndTest(unittest.TestCase):
     self.assertEqual(instance.name, self.analysis_vm.name)
     self.assertIn(disk_copy.name, self.analysis_vm.ListDisks())
     self._StoreDiskForCleanup(self.analysis_vm.GetBootDisk())
+
+  @classmethod
+  @typing.no_type_check
+  def _RunStartAnalysisVm(cls, instance_name, attach_disks=None):
+    cmd = cls.cli.PrepareStartAnalysisVmCmd(
+        instance_name, attach_disks=attach_disks)
+    try:
+      output = subprocess.check_output(
+          cmd.split(), stderr=subprocess.STDOUT, shell=False)
+    except subprocess.CalledProcessError as error:
+      raise ResourceCreationError(
+          'Failed creating VM in resource group {0:s}: {1!s}'.format(
+              cls.az.default_resource_group_name, error), __name__) from error
+    logger.info(output)
+    try:
+      return cls.az.compute.GetInstance(
+          instance_name, cls.az.default_resource_group_name)
+    except ResourceNotFoundError as error:
+      raise ResourceNotFoundError(
+          'Failed finding created VM in resource group {0:s}'.format(
+              cls.az.default_resource_group_name), __name__) from error
+
+  @classmethod
+  @typing.no_type_check
+  def _RunCreateDiskCopy(cls, instance_name=None, disk_name=None, region=None):
+    cmd = cls.cli.PrepareCreateDiskCopyCmd(
+        instance_name=instance_name, disk_name=disk_name, region=region)
+    try:
+      output = subprocess.check_output(
+          cmd.split(), stderr=subprocess.STDOUT, shell=False)
+    except subprocess.CalledProcessError as error:
+      raise ResourceCreationError(
+          'Failed copying disk: {0!s}'.format(error), __name__) from error
+    if not output:
+      raise ResourceCreationError(
+          'Could not find disk copy result', __name__)
+    disk_copy_name = output.decode('utf-8').split(' ')[-1]
+    disk_copy_name = disk_copy_name[:disk_copy_name.rindex('copy') + 4]
+    logger.info(output)
+    logger.info("Disk successfully copied to {0:s}".format(
+        disk_copy_name))
+    try:
+      return cls.az.compute.GetDisk(
+          disk_copy_name, cls.az.default_resource_group_name)
+    except ResourceNotFoundError as error:
+      raise ResourceNotFoundError(
+          'Failed finding copied disk in resource group {0:s}'.format(
+              cls.az.default_resource_group_name), __name__) from error
 
   @typing.no_type_check
   def _StoreDiskForCleanup(self, disk):
