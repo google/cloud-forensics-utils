@@ -190,7 +190,12 @@ def Main() -> None:
                                      'to attach. Maximum of 11.', None),
                 ('--dst_profile', 'The name of the profile for the destination '
                                   'account, as defined in the AWS credentials '
-                                  'file.', None)
+                                  'file.', None),
+                ('--subnet_id','Subnet to launch the instance in', None),
+                ('--security_group_id', 'Security group to attach to the '
+                                        'instance', None),
+                ('--launch_script','Userdata script for the instance to run at'
+                                   ' launch', None)
             ])
   AddParser('aws', aws_subparsers, 'listimages', 'List AMI images.',
             args=[
