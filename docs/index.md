@@ -31,4 +31,11 @@ Documentation for the library's functions and classes can be found below:
 
    source/libcloudforensics.providers.azure
    source/libcloudforensics.providers.azure.internal
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Scripts
+
+   source/libcloudforensics.scripts
+   source/libcloudforensics.scripts.utils
 ```
