@@ -292,7 +292,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
         project=image_project, family=image_family).execute()
     source_disk_image = ubuntu_image['selfLink']
 
-    startup_script = utils.ReadStartupScript()
+    startup_script = utils.ReadStartupScript(utils.FORENSICS_STARTUP_SCRIPT_GCP)
 
     if packages:
       startup_script = startup_script.replace(
