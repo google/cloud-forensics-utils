@@ -1,8 +1,5 @@
-libcloudforensics.scripts package
+Helper classes
 =================================
-
-Submodules
-----------
 
 libcloudforensics.scripts.utils module
 --------------------------------------
@@ -12,11 +9,18 @@ libcloudforensics.scripts.utils module
    :undoc-members:
    :show-inheritance:
 
+libcloudforensics.errors module
+--------------------------------------
 
-Module contents
----------------
+.. automodule:: libcloudforensics.errors
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
-.. automodule:: libcloudforensics.scripts
+libcloudforensics.logging_utils module
+--------------------------------------
+
+.. automodule:: libcloudforensics.logging_utils
    :members:
    :undoc-members:
    :show-inheritance:
