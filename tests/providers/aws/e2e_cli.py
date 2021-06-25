@@ -136,13 +136,22 @@ class EndToEndTest(unittest.TestCase):
     if not (self.volume_to_copy and self.dst_zone):
       return
 
+    # Assert that the source volume is in the source zone
+    self.assertEqual(self.zone, self.aws.ResourceApi(EC2_SERVICE).Volume(
+        self.volume_to_copy).availability_zone)
+
+    # Create the copy
     volume_copy = self._RunCreateVolumeCopy(
         self.zone, dst_zone=self.dst_zone, volume_id=self.volume_to_copy)
-    # The volume should be created in AWS
+
+    # The volume should be created in AWS, and should be in the dest zone
     aws_account = account.AWSAccount(self.dst_zone)
     aws_volume = aws_account.ResourceApi(EC2_SERVICE).Volume(
         volume_copy.volume_id)
     self.assertEqual(aws_volume.volume_id, volume_copy.volume_id)
+    self.assertNotEqual(self.zone, aws_volume.availability_zone)
+    self.assertEqual(self.dst_zone, aws_volume.availability_zone)
+
     self._StoreVolumeForCleanup(aws_account, aws_volume)
 
   @typing.no_type_check
@@ -154,8 +163,18 @@ class EndToEndTest(unittest.TestCase):
     """
 
     qfilter = 'ubuntu*'
-    images = self._RunListImages(self.zone, qfilter)
-
+    cmd = self.cli.PrepareListImagesCmd(self.zone, qfilter=qfilter)
+    try:
+      output = subprocess.check_output(
+          cmd.split(), stderr=subprocess.STDOUT, shell=False)
+    except subprocess.CalledProcessError as error:
+      raise RuntimeError('Failed retrieving AMI images') from error
+    if not output:
+      raise RuntimeError('Could not find any images to list')
+    logger.info(output)
+    # For this function, the CLI tool only prints one line per result, or
+    # nothing at all. Therefore if there's an output, there's a result.
+    images = str(output).split('\n')
     self.assertGreater(len(images), 0)
     self.assertIn('Name', images[0])
 
@@ -170,11 +189,19 @@ class EndToEndTest(unittest.TestCase):
     if not self.encrypted_volume_to_copy:
       return
 
+    # Assert that the source volume is encrypted
+    self.assertTrue(self.aws.ResourceApi(EC2_SERVICE).Volume(
+        self.encrypted_volume_to_copy).encrypted)
+
+    # Create the copy
     volume_copy = self._RunCreateVolumeCopy(
         self.zone, volume_id=self.encrypted_volume_to_copy)
-    # The volume should be created in AWS
+
+    # The volume should be created in AWS, and should also be encrypted
     aws_volume = self.aws.ResourceApi(EC2_SERVICE).Volume(volume_copy.volume_id)
     self.assertEqual(aws_volume.volume_id, volume_copy.volume_id)
+    self.assertTrue(aws_volume.encrypted)
+
     self._StoreVolumeForCleanup(self.aws, aws_volume)
 
   @typing.no_type_check
@@ -189,15 +216,28 @@ class EndToEndTest(unittest.TestCase):
     if not (self.encrypted_volume_to_copy and self.dst_zone):
       return
 
+    # Assert that the source volume is encrypted and in the source zone
+    self.assertTrue(self.aws.ResourceApi(EC2_SERVICE).Volume(
+        self.encrypted_volume_to_copy).encrypted)
+    self.assertEqual(self.zone, self.aws.ResourceApi(EC2_SERVICE).Volume(
+        self.volume_to_copy).availability_zone)
+
+    # Create the copy
     volume_copy = self._RunCreateVolumeCopy(
         self.zone,
         dst_zone=self.dst_zone,
         volume_id=self.encrypted_volume_to_copy)
-    # The volume should be created in AWS
+
+    # The volume should be created in AWS in the dest zone, and should also
+    # be encrypted
     aws_account = account.AWSAccount(self.dst_zone)
     aws_volume = aws_account.ResourceApi(EC2_SERVICE).Volume(
         volume_copy.volume_id)
     self.assertEqual(aws_volume.volume_id, volume_copy.volume_id)
+    self.assertTrue(aws_volume.encrypted)
+    self.assertNotEqual(self.zone, aws_volume.availability_zone)
+    self.assertEqual(self.dst_zone, aws_volume.availability_zone)
+
     self._StoreVolumeForCleanup(aws_account, aws_volume)
 
   @typing.no_type_check
@@ -244,11 +284,11 @@ class EndToEndTest(unittest.TestCase):
     try:
       output = subprocess.check_output(
           cmd.split(), stderr=subprocess.STDOUT, shell=False)
-      logger.info(output)
     except subprocess.CalledProcessError as error:
       raise ResourceCreationError(
           'Failed creating VM in account profile {0:s}'.format(
               cls.aws.aws_profile), __name__) from error
+    logger.info(output)
     try:
       return cls.aws.ec2.GetInstancesByName(vm_name)[0]
     except ResourceNotFoundError as error:
@@ -265,38 +305,22 @@ class EndToEndTest(unittest.TestCase):
     try:
       output = subprocess.check_output(
           cmd.split(), stderr=subprocess.STDOUT, shell=False)
-      if not output:
-        raise ResourceCreationError(
-            'Could not find volume copy result', __name__)
-      volume_copy_name = output.decode('utf-8').split(' ')[-1]
-      volume_copy_name = volume_copy_name[:volume_copy_name.rindex('copy') + 4]
-      logger.info(output)
-      logger.info("Volume successfully copied to {0:s}".format(
-          volume_copy_name))
     except subprocess.CalledProcessError as error:
       raise ResourceCreationError('Failed copying volume', __name__) from error
+    if not output:
+      raise ResourceCreationError(
+          'Could not find volume copy result', __name__)
+    volume_copy_name = output.decode('utf-8').split(' ')[-1]
+    volume_copy_name = volume_copy_name[:volume_copy_name.rindex('copy') + 4]
+    logger.info(output)
+    logger.info("Volume successfully copied to {0:s}".format(
+        volume_copy_name))
     try:
       return cls.aws.ebs.GetVolumesByName(volume_copy_name)[0]
     except ResourceNotFoundError as error:
       raise ResourceNotFoundError(
           'Failed finding copied volume in account profile {0:s}'.format(
               cls.aws.aws_profile), __name__) from error
-
-  @classmethod
-  @typing.no_type_check
-  def _RunListImages(cls, zone, qfilter=None):
-    cmd = cls.cli.PrepareListImagesCmd(zone, qfilter=qfilter)
-    try:
-      output = subprocess.check_output(
-          cmd.split(), stderr=subprocess.STDOUT, shell=False)
-      if not output:
-        raise RuntimeError('Could not find any images to list')
-      logger.info(output)
-    except subprocess.CalledProcessError as error:
-      raise RuntimeError('Failed retrieving AMI images') from error
-    # For this function, the CLI tool only prints one line per result, or
-    # nothing at all. Therefore if there's an output, there's a result.
-    return str(output).split('\n')
 
   @classmethod
   @typing.no_type_check
