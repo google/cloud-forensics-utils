@@ -188,7 +188,12 @@ class IAM:
     """
     logger.info('Attaching policy {0:s} to role {1:s}'
       .format(policy_arn, role_name))
-    self.client.attach_role_policy(RoleName=role_name, PolicyArn=policy_arn)
+    try:
+      self.client.attach_role_policy(RoleName=role_name, PolicyArn=policy_arn)
+    except Exception as e:
+      raise errors.ResourceNotFoundError(
+        'Attaching policy {0:s} to role {1:s} failed'
+        .format(policy_arn, role_name), __name__) from e
 
   def AttachInstanceProfileToRole(self,
     instance_profile_name: str,
