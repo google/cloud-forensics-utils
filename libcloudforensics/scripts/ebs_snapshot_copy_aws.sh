@@ -31,9 +31,10 @@ function ebsCopy {{
 	sleep 5 # let the kernel catch up
 
 	# perform the dd to s3
-	# TODO: improve this somehow to not require the double pass
-	dd if=/dev/xvdh bs=256K | sha256sum | aws s3 cp - $bucket/$snapshot.sha256
-	dd if=/dev/xvdh bs=256K | aws s3 cp - $bucket/$snapshot.bin
+	dc3dd if=/dev/xvdh hash=sha512 hash=sha256 hash=md5 log=/tmp/log.txt hlog=/tmp/hlog.txt mlog=/tmp/mlog.txt | aws s3 cp - $bucket/$snapshot/image.bin
+	aws s3 cp /tmp/log.txt $bucket/$snapshot/
+	aws s3 cp /tmp/hlog.txt $bucket/$snapshot/
+	aws s3 cp /tmp/mlog.txt $bucket/$snapshot/
 
 	# detach the volume
 	aws ec2 --region $region detach-volume --volume-id $volume
@@ -43,7 +44,8 @@ function ebsCopy {{
 	aws ec2 --region $region delete-volume --volume-id $volume
 }}
 
-yum install jq -y
+amazon-linux-extras install epel -y
+yum install jq dc3dd -y
 
 ebsCopy $snapshot $bucket
 

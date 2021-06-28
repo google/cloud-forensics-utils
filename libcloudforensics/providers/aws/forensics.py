@@ -385,6 +385,9 @@ def CopyEBSSnapshotToS3(
   # start the VM
   logger.info('Starting copy instance')
   aws_account.ec2.GetOrCreateVm(
+    # TODO - Add random tail to the name, or attempting to run this multiple
+    # times in parallel on the same account and region will fail since
+    # GetOrCreateVm returns existing instances with the same name
     'ebsCopy',
     10,
     ami_id,
@@ -404,20 +407,22 @@ def CopyEBSSnapshotToS3(
 
   while tries:
     tries -= 1
-    logger.info("Waiting {0:d} seconds".format(wait))
+    logger.info('Waiting {0:d} seconds'.format(wait))
     sleep(wait)
     wait *= 2
 
     # pylint: disable=line-too-long
-    if aws_account.s3.CheckForObject(path_components[0], "{0:s}/{1:s}.bin".format(path_components[1], snapshot_id)) and \
-        aws_account.s3.CheckForObject(path_components[0], "{0:s}/{1:s}.sha256".format(path_components[1], snapshot_id)):
+    if aws_account.s3.CheckForObject(path_components[0], '{0:s}/{1:s}/image.bin'.format(path_components[1], snapshot_id)) and \
+        aws_account.s3.CheckForObject(path_components[0], '{0:s}/{1:s}/log.txt'.format(path_components[1], snapshot_id)) and \
+        aws_account.s3.CheckForObject(path_components[0], '{0:s}/{1:s}/hlog.txt'.format(path_components[1], snapshot_id)) and \
+        aws_account.s3.CheckForObject(path_components[0], '{0:s}/{1:s}/mlog.txt'.format(path_components[1], snapshot_id)):
       success = True
       break
     # pylint: enable=line-too-long
 
   if success:
-    logger.info("Image and hash copied to {0:s}/{1:s}.[bin|sha256]".format(
+    logger.info('Image and hash copied to {0:s}/{1:s}/'.format(
       s3_destination, snapshot_id))
   else:
     logger.info(
-      "Image copy timeout. The process may be ongoing, or might have failed.")
+      'Image copy timeout. The process may be ongoing, or might have failed.')
