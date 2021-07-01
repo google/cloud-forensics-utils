@@ -21,15 +21,20 @@ import re
 
 from typing import Any, List, Dict, Optional, TYPE_CHECKING, Tuple
 
-from azure.identity import DefaultAzureCredential
+from azure.core import exceptions as azure_exceptions
+from azure.identity import DefaultAzureCredential, AzureCliCredential
 
 
+from libcloudforensics import logging_utils
 from libcloudforensics import errors
 
 if TYPE_CHECKING:
   # TYPE_CHECKING is always False at runtime, therefore it is safe to ignore
   # the following cyclic import, as it it only used for type hints
   from libcloudforensics.providers.azure.internal import compute  # pylint: disable=cyclic-import
+
+logging_utils.SetUpLogger(__name__)
+logger = logging_utils.GetLogger(__name__)
 
 # pylint: disable=line-too-long
 # See https://docs.microsoft.com/en-us/azure/azure-resource-manager/management/resource-name-rules
@@ -45,18 +50,12 @@ DEFAULT_DISK_COPY_PREFIX = 'evidence'
 UBUNTU_1804_SKU = '18.04-LTS'
 
 
-def GetCredentials(profile_name: Optional[str] = None
-                   ) -> Tuple[str, DefaultAzureCredential]:
-  # pylint: disable=line-too-long
-  """Get Azure credentials.
+def _ParseCredentialsFile(profile_name: str) -> Dict[str, str]:
+  """Parse Azure credentials.json file.
 
   Args:
     profile_name (str): A name for the Azure account information to retrieve.
-        If not provided, the default behavior is to look for Azure credential
-        information in environment variables as explained in https://docs.microsoft.com/en-us/azure/developer/python/azure-sdk-authenticate
-        If provided, then the library will look into
-        ~/.azure/credentials.json for the account information linked to
-        profile_name. The .json file should have the following format:
+        The .json file should have the following format:
 
         {
           'profile_name': {
@@ -81,8 +80,7 @@ def GetCredentials(profile_name: Optional[str] = None
         there instead of in ~/.azure/credentials.json.
 
   Returns:
-    Tuple[str, DefaultAzureCredential]: Subscription ID and
-        corresponding Azure credentials.
+    Dict[str, str]: A dict containing the required account_info fields.
 
   Raises:
     CredentialsConfigurationError: If there are environment variables that
@@ -90,20 +88,6 @@ def GetCredentials(profile_name: Optional[str] = None
     FileNotFoundError: If the credentials file is not found.
     InvalidFileFormatError: If the credentials file couldn't be parsed.
   """
-  # pylint: enable=line-too-long
-  if not profile_name:
-    subscription_id = os.getenv('AZURE_SUBSCRIPTION_ID')
-    client_id = os.getenv("AZURE_CLIENT_ID")
-    secret = os.getenv("AZURE_CLIENT_SECRET")
-    tenant = os.getenv("AZURE_TENANT_ID")
-    if not (subscription_id and client_id and secret and tenant):
-      raise errors.CredentialsConfigurationError(
-          'Please make sure you defined the following environment variables: '
-          '[AZURE_SUBSCRIPTION_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, '
-          'AZURE_TENANT_ID].', __name__)
-    # DefaultAzureCredential will pick up variables automatically.
-    return subscription_id, DefaultAzureCredential()
-
   path = os.getenv('AZURE_CREDENTIALS_PATH')
   if not path:
     path = os.path.expanduser('~/.azure/credentials.json')
@@ -133,12 +117,87 @@ def GetCredentials(profile_name: Optional[str] = None
           'file should contain at least the following: {0:s}'.format(
               ', '.join(required_entries)), __name__)
 
-    # Set environment variables so that DefaultAzureCredentail can pick them up.
+  return account_info
+
+
+def _CheckCliCredentials() -> str:
+
+  # Check that Azure CLI credentials are configured
+  cli_credentials = AzureCliCredential()
+  try:
+    cli_credentials.get_token('https://management.core.windows.net/')
+  except azure_exceptions.ClientAuthenticationError:
+    return
+
+  path = os.getenv('AZURE_CONFIG_DIR')
+  if path:
+    os.path.join(path, 'azureProfile.json')
+  else:
+    path = os.path.expanduser('~/.azure/azureProfile.json')
+
+  with open(path, encoding='utf-8-sig') as config:
+    config_json = json.load(config)
+
+    for subscription in config_json['subscriptions']:
+      if subscription['isDefault']:
+        return subscription["id"]
+
+
+def GetCredentials(profile_name: Optional[str] = None
+                   ) -> Tuple[str, DefaultAzureCredential]:
+  # pylint: disable=line-too-long
+  """Get Azure credentials.
+
+  Args:
+    profile_name (str): A name for the Azure account information to retrieve.
+        If not provided, the default behavior is to look for Azure credential
+        information in environment variables as explained in https://docs.microsoft.com/en-us/azure/developer/python/azure-sdk-authenticate
+        If provided, then the library will look into
+        ~/.azure/credentials.json for the account information linked to
+        profile_name.
+
+  Returns:
+    Tuple[str, DefaultAzureCredential]: Subscription ID and
+        corresponding Azure credentials.
+
+  Raises:
+    CredentialsConfigurationError: If none of the credential methods work.
+  """
+  # pylint: enable=line-too-long
+
+  # If profile_name is provided then use a credentials file, GetCredentials
+  # will fail if this file is not found or does not contain the required
+  # information.
+  if profile_name:
+    account_info = _ParseCredentialsFile(profile_name)
     os.environ['AZURE_SUBSCRIPTION_ID'] = account_info['subscriptionId']
     os.environ['AZURE_CLIENT_ID'] = account_info['clientId']
     os.environ['AZURE_CLIENT_SECRET'] = account_info['clientSecret']
     os.environ['AZURE_TENANT_ID'] = account_info['tenantId']
-    return account_info['subscriptionId'], DefaultAzureCredential()
+    subscription_id = account_info['subscriptionId']
+
+  # Check if the previous step set the environment variables or they were
+  # already set in the environment, log if this check fails.
+  subscription_id = os.getenv('AZURE_SUBSCRIPTION_ID')
+  client_id = os.getenv("AZURE_CLIENT_ID")
+  secret = os.getenv("AZURE_CLIENT_SECRET")
+  tenant = os.getenv("AZURE_TENANT_ID")
+  if not (subscription_id and client_id and secret and tenant):
+    logger.info('EnvironmentCredentials unavailable, falling back to '
+          'AzureCliCredentials.')
+
+  # Check if AzureCliCredentials are configured, these will be picked up by 
+  # DefaultAzureCredential().
+  subscription_id = _CheckCliCredentials()
+
+  if not subscription_id:
+    raise errors.CredentialsConfigurationError(
+        'profile_name not provided and AzureCliCredentials not configured. '
+        'If using environment variables please make sure to define: '
+        '[AZURE_SUBSCRIPTION_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, '
+          'AZURE_TENANT_ID].', __name__)
+
+  return subscription_id, DefaultAzureCredential()
 
 
 def ExecuteRequest(
