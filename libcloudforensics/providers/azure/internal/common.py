@@ -170,16 +170,15 @@ def GetCredentials(profile_name: Optional[str] = None
   """Get Azure credentials, trying three different methods:
 
   1. If profile_name is provided it will attempt to parse credentials from a
-     credentials.json file, raising an exception if this fails.
-  2. Checks if credentials have been provided in environment variables as per
-     https://docs.microsoft.com/en-us/azure/developer/python/azure-sdk-authenticate:
-  3. Checks if Azure CLI credentials are configured.
+     credentials.json file, failing if this raises an exception.
+  2. Environment variables as per
+     https://docs.microsoft.com/en-us/azure/developer/python/azure-sdk-authenticate
+  3. Azure CLI credentials.
 
   Args:
     profile_name (str): A name for the Azure account information to retrieve.
-        If provided, then the library will look into
-        ~/.azure/credentials.json for the account information linked to
-        profile_name.
+        If provided, then the library will look into ~/.azure/credentials.json
+        for the account information linked to profile_name.
 
   Returns:
     Tuple[str, DefaultAzureCredential]: Subscription ID and

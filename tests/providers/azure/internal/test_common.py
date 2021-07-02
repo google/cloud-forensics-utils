@@ -85,9 +85,9 @@ class AZCommonTest(unittest.TestCase):
     with self.assertRaises(errors.CredentialsConfigurationError) as error:
       _, _ = common.GetCredentials()
     self.assertEqual(
-        'Please make sure you defined the following environment variables: '
-        '[AZURE_SUBSCRIPTION_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, '
-        'AZURE_TENANT_ID].', str(error.exception))
+        'No supported credentials found. If using environment variables '
+        'please make sure to define: [AZURE_SUBSCRIPTION_ID, AZURE_CLIENT_ID, '
+        'AZURE_CLIENT_SECRET, AZURE_TENANT_ID].', str(error.exception))
 
   @mock.patch('azure.identity._credentials.default.DefaultAzureCredential.__init__')
   @typing.no_type_check
