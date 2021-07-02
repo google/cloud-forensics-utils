@@ -349,6 +349,10 @@ def Main() -> None:
                 ('--delete_all_disks',
                  'Force delete disks marked as "Keep when deleting".',
                  False),
+                ('--force_delete',
+                 'Force instance deletion when deletion protection is '
+                 'activated.',
+                 False)
             ])
   AddParser('gcp', gcp_subparsers, 'querylogs', 'Query GCP logs.',
             args=[

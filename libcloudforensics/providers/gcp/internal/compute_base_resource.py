@@ -30,13 +30,16 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
     zone (str): What zone the resource is in.
     name (str): Name of the resource.
     labels (Dict): Dictionary of labels for the resource, if existing.
+    deletion_protection (bool): True if the resource has deletionProtection
+        enabled.
   """
 
   def __init__(self,
                project_id: str,
                zone: str,
                name: str,
-               labels: Optional[Dict[str, Any]] = None) -> None:
+               labels: Optional[Dict[str, Any]] = None,
+               deletion_protection: Optional[bool] = None) -> None:
     """Initialize the Google Compute Resource base object.
 
     Args:
@@ -44,8 +47,12 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
       zone (str): What zone the resource is in.
       name (str): Name of the resource.
       labels (Dict): Dictionary of labels for the resource, if existing.
+      deletion_protection (bool): True if the resource has deletionProtection
+          enabled.
     """
 
+    if deletion_protection is not None:
+      self.deletion_protection = deletion_protection
     self.zone = zone
     self.name = name
     self.labels = labels
