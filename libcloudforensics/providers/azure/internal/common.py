@@ -24,7 +24,7 @@ from typing import Any, List, Dict, Optional, TYPE_CHECKING, Tuple
 from azure.identity import DefaultAzureCredential
 
 from libcloudforensics import logging_utils
-from libcloudforensics import errors
+from libcloudforensics import errors 
 
 if TYPE_CHECKING:
   # TYPE_CHECKING is always False at runtime, therefore it is safe to ignore
@@ -190,12 +190,7 @@ def GetCredentials(profile_name: Optional[str] = None
   """
   # pylint: enable=line-too-long
   if profile_name:
-    try:
-      account_info = _ParseCredentialsFile(profile_name)
-    except Exception as exception:
-      raise errors.CredentialsConfigurationError('profile_name provided but '
-          'could not parse credentials: {0:s}'.format(exception), __name__)
-
+    account_info = _ParseCredentialsFile(profile_name)
     # Set environment variables for DefaultAzureCredentials.
     os.environ['AZURE_SUBSCRIPTION_ID'] = account_info['subscriptionId']
     os.environ['AZURE_CLIENT_ID'] = account_info['clientId']
