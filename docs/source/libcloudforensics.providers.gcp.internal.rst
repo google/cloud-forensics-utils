@@ -10,6 +10,14 @@ libcloudforensics.providers.gcp.internal.build module
    :undoc-members:
    :show-inheritance:
 
+libcloudforensics.providers.gcp.internal.cloudsql module
+-----------------------------------------------------
+
+.. automodule:: libcloudforensics.providers.gcp.internal.cloudsql
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 libcloudforensics.providers.gcp.internal.common module
 ------------------------------------------------------
 
