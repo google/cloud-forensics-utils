@@ -21,9 +21,7 @@ import re
 
 from typing import Any, List, Dict, Optional, TYPE_CHECKING, Tuple
 
-from azure.core import exceptions as azure_exceptions
-from azure.identity import DefaultAzureCredential, AzureCliCredential
-
+from azure.identity import DefaultAzureCredential
 
 from libcloudforensics import logging_utils
 from libcloudforensics import errors
@@ -148,7 +146,7 @@ def _CheckAzureCliCredentials() -> str:
   with open(tokens_path, encoding='utf-8-sig') as tokens_fd:
     tokens = json.load(tokens_fd)
 
-  # If tokens are found then Azure CLI auth should be configured
+  # If tokens are found then Azure CLI auth should be configured.
   if tokens:
     with open(profile_path, encoding='utf-8-sig') as profile_fd:
       profile = json.load(profile_fd)
@@ -196,28 +194,24 @@ def GetCredentials(profile_name: Optional[str] = None
       account_info = _ParseCredentialsFile(profile_name)
     except Exception as exception:
       raise errors.CredentialsConfigurationError('profile_name provided but '
-          'could not parse credentials.',__name__) from exception
+          'could not parse credentials: {0:s}'.format(exception), __name__)
 
     # Set environment variables for DefaultAzureCredentials.
     os.environ['AZURE_SUBSCRIPTION_ID'] = account_info['subscriptionId']
     os.environ['AZURE_CLIENT_ID'] = account_info['clientId']
     os.environ['AZURE_CLIENT_SECRET'] = account_info['clientSecret']
     os.environ['AZURE_TENANT_ID'] = account_info['tenantId']
-    subscription_id = account_info['subscriptionId']
 
-  # Check if environment variables are already set for DefaultAzureCredentials
+  # Check if environment variables are already set for DefaultAzureCredentials.
   subscription_id = os.getenv('AZURE_SUBSCRIPTION_ID')
   client_id = os.getenv("AZURE_CLIENT_ID")
   secret = os.getenv("AZURE_CLIENT_SECRET")
   tenant = os.getenv("AZURE_TENANT_ID")
+
   if not (subscription_id and client_id and secret and tenant):
     logger.info('EnvironmentCredentials unavailable, falling back to '
           'AzureCliCredentials.')
-
-  # If environment credentials aren't found at this point then check if
-  # AzureCliCredentials are configured, these will be picked up by
-  # DefaultAzureCredential() automatically.
-  if not subscription_id:
+    # Will be automatically picked up by DefaultAzureCredential if configured.
     subscription_id = _CheckAzureCliCredentials()
 
   if not subscription_id:
