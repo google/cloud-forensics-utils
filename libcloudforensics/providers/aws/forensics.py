@@ -386,7 +386,8 @@ def CopyEBSSnapshotToS3(
 
   # Instance role creation has a propagation delay betwene creating in IAM and
   # Being usable in EC2.
-  sleep(20)
+  if prof_created:
+    sleep(20)
 
   # start the VM
   logger.info('Starting copy instance')
