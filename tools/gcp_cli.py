@@ -18,6 +18,7 @@ from datetime import datetime
 import json
 import sys
 from typing import TYPE_CHECKING
+from google.auth import default
 
 # pylint: disable=line-too-long
 from libcloudforensics.providers.gcp.internal import compute as gcp_compute
@@ -42,7 +43,13 @@ def ListInstances(args: 'argparse.Namespace') -> None:
 
   Args:
     args (argparse.Namespace): Arguments from ArgumentParser.
+
+  Raises:
+    AttributeError: If no project_id was provided and none was inferred
+        from the gcloud environment.
   """
+
+  AssignProjectID(args)
 
   project = gcp_project.GoogleCloudProject(args.project)
   instances = project.compute.ListInstances()
@@ -60,7 +67,13 @@ def ListDisks(args: 'argparse.Namespace') -> None:
 
   Args:
     args (argparse.Namespace): Arguments from ArgumentParser.
+
+  Raises:
+    AttributeError: If no project_id was provided and none was inferred
+        from the gcloud environment.
   """
+
+  AssignProjectID(args)
 
   project = gcp_project.GoogleCloudProject(args.project)
   disks = project.compute.ListDisks()
@@ -74,7 +87,13 @@ def CreateDiskCopy(args: 'argparse.Namespace') -> None:
 
   Args:
     args (argparse.Namespace): Arguments from ArgumentParser.
+
+  Raises:
+    AttributeError: If no project_id was provided and none was inferred
+        from the gcloud environment.
   """
+
+  AssignProjectID(args)
 
   disk = forensics.CreateDiskCopy(args.project,
                                   args.dst_project,
@@ -92,7 +111,13 @@ def DeleteInstance(args: 'argparse.Namespace') -> None:
 
   Args:
     args (argparse.Namespace): Arguments from ArgumentParser.
+
+  Raises:
+    AttributeError: If no project_id was provided and none was inferred
+        from the gcloud environment.
   """
+
+  AssignProjectID(args)
 
   compute_client = gcp_compute.GoogleCloudCompute(args.project)
   instance = compute_client.GetInstance(instance_name=args.instance_name)
@@ -106,7 +131,14 @@ def ListLogs(args: 'argparse.Namespace') -> None:
 
   Args:
     args (argparse.Namespace): Arguments from ArgumentParser.
+
+  Raises:
+    AttributeError: If no project_id was provided and none was inferred
+        from the gcloud environment.
   """
+
+  AssignProjectID(args)
+
   logs = gcp_log.GoogleCloudLog(args.project)
   results = logs.ListLogs()
   logger.info('Found {0:d} available log types:'.format(len(results)))
@@ -122,7 +154,12 @@ def QueryLogs(args: 'argparse.Namespace') -> None:
 
   Raises:
     ValueError: If the start or end date is not properly formatted.
+    AttributeError: If no project_id was provided and none was inferred
+        from the gcloud environment.
   """
+
+  AssignProjectID(args)
+
   logs = gcp_log.GoogleCloudLog(args.project)
 
   try:
@@ -162,7 +199,13 @@ def CreateDiskFromGCSImage(args: 'argparse.Namespace') -> None:
 
   Args:
       args (argparse.Namespace): Arguments from ArgumentParser.
+
+  Raises:
+    AttributeError: If no project_id was provided and none was inferred
+        from the gcloud environment.
   """
+
+  AssignProjectID(args)
 
   result = forensics.CreateDiskFromGCSImage(
       args.project, args.gcs_path, args.zone, name=args.disk_name)
@@ -181,7 +224,14 @@ def StartAnalysisVm(args: 'argparse.Namespace') -> None:
 
   Args:
     args (argparse.Namespace): Arguments from ArgumentParser.
+
+  Raises:
+    AttributeError: If no project_id was provided and none was inferred
+        from the gcloud environment.
   """
+
+  AssignProjectID(args)
+
   attach_disks = []
   if args.attach_disks:
     attach_disks = args.attach_disks.split(',')
@@ -210,7 +260,14 @@ def ListServices(args: 'argparse.Namespace') -> None:
 
   Args:
     args (argparse.Namespace): Arguments from ArgumentParser.
+
+  Raises:
+    AttributeError: If no project_id was provided and none was inferred
+        from the gcloud environment.
   """
+
+  AssignProjectID(args)
+
   apis = gcp_monitoring.GoogleCloudMonitoring(args.project)
   results = apis.ActiveServices()
   logger.info('Found {0:d} APIs:'.format(len(results)))
@@ -224,7 +281,14 @@ def GetBucketACLs(args: 'argparse.Namespace') -> None:
 
   Args:
     args (argparse.Namespace): Arguments from ArgumentParser.
+
+  Raises:
+    AttributeError: If no project_id was provided and none was inferred
+        from the gcloud environment.
   """
+
+  AssignProjectID(args)
+
   gcs = gcp_storage.GoogleCloudStorage(args.project)
   bucket_acls = gcs.GetBucketACLs(args.path)
   for role in bucket_acls:
@@ -236,7 +300,14 @@ def GetGCSObjectMetadata(args: 'argparse.Namespace') -> None:
 
   Args:
     args (argparse.Namespace): Arguments from ArgumentParser.
+
+  Raises:
+    AttributeError: If no project_id was provided and none was inferred
+        from the gcloud environment.
   """
+
+  AssignProjectID(args)
+
   gcs = gcp_storage.GoogleCloudStorage(args.project)
   results = gcs.GetObjectMetadata(args.path)
   if results.get('kind') == 'storage#objects':
@@ -254,7 +325,14 @@ def ListBuckets(args: 'argparse.Namespace') -> None:
 
   Args:
     args (argparse.Namespace): Arguments from ArgumentParser.
+
+  Raises:
+    AttributeError: If no project_id was provided and none was inferred
+        from the gcloud environment.
   """
+
+  AssignProjectID(args)
+
   gcs = gcp_storage.GoogleCloudStorage(args.project)
   results = gcs.ListBuckets()
   for obj in results:
@@ -267,7 +345,14 @@ def CreateBucket(args: 'argparse.Namespace') -> None:
 
   Args:
     args (argparse.Namespace): Arguments from ArgumentParser.
+
+  Raises:
+    AttributeError: If no project_id was provided and none was inferred
+        from the gcloud environment.
   """
+
+  AssignProjectID(args)
+
   gcs = gcp_storage.GoogleCloudStorage(args.project)
   result = gcs.CreateBucket(args.name, labels={'created_by': 'cfu'})
   logger.info(
@@ -280,7 +365,14 @@ def ListBucketObjects(args: 'argparse.Namespace') -> None:
 
   Args:
     args (argparse.Namespace): Arguments from ArgumentParser.
+
+  Raises:
+    AttributeError: If no project_id was provided and none was inferred
+        from the gcloud environment.
   """
+
+  AssignProjectID(args)
+
   gcs = gcp_storage.GoogleCloudStorage(args.project)
   results = gcs.ListBucketObjects(args.path)
   for obj in results:
@@ -294,7 +386,14 @@ def GetBucketSize(args: 'argparse.Namespace') -> None:
 
   Args:
     args (argparse.Namespace): Arguments from ArgumentParser.
+
+  Raises:
+    AttributeError: If no project_id was provided and none was inferred
+        from the gcloud environment.
   """
+
+  AssignProjectID(args)
+
   gcs = gcp_storage.GoogleCloudStorage(args.project)
   results = gcs.GetBucketSize(args.path)
   for obj in results:
@@ -307,7 +406,14 @@ def ListCloudSqlInstances(args: 'argparse.Namespace') -> None:
 
   Args:
     args (argsparse.Namespace): Arguments from ArgumentParser.
+
+  Raises:
+    AttributeError: If no project_id was provided and none was inferred
+        from the gcloud environment.
   """
+
+  AssignProjectID(args)
+
   gcsql = gcp_cloudsql.GoogleCloudSQL(args.project)
   results = gcsql.ListCloudSQLInstances()
   for obj in results:
@@ -322,7 +428,14 @@ def DeleteObject(args: 'argparse.Namespace') -> None:
 
   Args:
     args (argparse.Namespace): Arguments from ArgumentParser.
+
+  Raises:
+    AttributeError: If no project_id was provided and none was inferred
+        from the gcloud environment.
   """
+
+  AssignProjectID(args)
+
   gcs = gcp_storage.GoogleCloudStorage(args.project)
   gcs.DeleteObject(args.path)
 
@@ -334,7 +447,14 @@ def InstanceNetworkQuarantine(args: 'argparse.Namespace') -> None:
 
   Args:
     args (argparse.Namespace): Arguments from ArgumentParser.
+
+  Raises:
+    AttributeError: If no project_id was provided and none was inferred
+        from the gcloud environment.
   """
+
+  AssignProjectID(args)
+
   exempted_ips = []
   if args.exempted_src_ips:
     exempted_ips = args.exempted_src_ips.split(',')
@@ -347,11 +467,42 @@ def InstanceNetworkQuarantine(args: 'argparse.Namespace') -> None:
   forensics.InstanceNetworkQuarantine(args.project,
       args.instance_name, exempted_ips, args.enable_logging )
 
+
 def VMRemoveServiceAccount(args: 'argparse.Namespace') -> None:
   """Removes an attached service account from a VM instance.
+
   Requires the instance to be stopped, if it isn't already.
+
   Args:
     args (argparse.Namespace): Arguments from ArgumentParser.
+
+  Raises:
+    AttributeError: If no project_id was provided and none was inferred
+        from the gcloud environment.
   """
+
+  AssignProjectID(args)
+
   forensics.VMRemoveServiceAccount(args.project, args.instance_name,
       args.leave_stopped)
+
+
+def AssignProjectID(args: 'argparse.Namespace') -> None:
+  """Configures the project_id to be used by the tool.
+
+  Args:
+    args (argparse.Namespace): Arguments from ArgumentParser.
+
+  Raises:
+    AttributeError: If no project_id was provided and none was inferred
+        from the gcloud environment.
+  """
+  if not args.project:
+    _, project_id = default()
+    if project_id:
+      args.project = project_id
+    else:
+      raise AttributeError(
+          "No project_id was found. Either pass a --project=project_id"
+          " to the CLI (`cloudforensics gcp --project=project_id`), or set "
+          "one in your gcloud SDK: `gcloud config set project project_id`")
