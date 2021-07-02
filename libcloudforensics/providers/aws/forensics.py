@@ -15,6 +15,7 @@
 """Forensics on AWS."""
 from typing import TYPE_CHECKING, Tuple, List, Optional, Dict
 
+import random
 from time import sleep
 from libcloudforensics.providers.aws.internal.common import ALINUX2_BASE_FILTER
 from libcloudforensics.providers.aws.internal.common import UBUNTU_1804_FILTER
@@ -395,7 +396,7 @@ def CopyEBSSnapshotToS3(
     # TODO - Add random tail to the name, or attempting to run this multiple
     # times in parallel on the same account and region will fail since
     # GetOrCreateVm returns existing instances with the same name
-    'ebsCopy',
+    'ebsCopy-{0:d}'.format(random.randint(10**(9),(10**10)-1)),
     10,
     ami_id,
     4,
