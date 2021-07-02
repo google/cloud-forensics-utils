@@ -28,6 +28,13 @@ class AZCommonTest(unittest.TestCase):
   """Test Azure common file."""
   # pylint: disable=line-too-long
 
+  # Stop tests from picking up Azure creds from host.
+  @typing.no_type_check
+  def setUp(self):
+    os.environ['AZURE_CONFIG_DIR'] = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
+            os.path.realpath(__file__))))), azure_mocks.EMPTY_AZURE_CONFIG_DIR)
+
   @typing.no_type_check
   def testGenerateDiskName(self):
     """Test that disk names are correclty generated.
@@ -77,7 +84,6 @@ class AZCommonTest(unittest.TestCase):
 
     with self.assertRaises(errors.CredentialsConfigurationError) as error:
       _, _ = common.GetCredentials()
-      mock_azure_credentials.assert_not_called()
     self.assertEqual(
         'Please make sure you defined the following environment variables: '
         '[AZURE_SUBSCRIPTION_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, '

@@ -153,3 +153,6 @@ MOCK_METRIC_OPERATION_VALUE = mock.Mock(timeseries=[mock.Mock(
     data=[mock.Mock(time_stamp='fake-time-stamp', total='fake-value')])])
 MOCK_METRIC_OPERATION_VALUE.name = mock.Mock(value='fake-metric')
 MOCK_METRIC_OPERATION = mock.Mock(value=[MOCK_METRIC_OPERATION_VALUE])
+
+AZURE_CONFIG_DIR = 'scripts/test_azure_config_dir/'
+EMPTY_AZURE_CONFIG_DIR = 'scripts/test_empty_azure_config_dir/'
