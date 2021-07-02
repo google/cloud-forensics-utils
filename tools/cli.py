@@ -27,6 +27,7 @@ from tools import gcp_cli
 PROVIDER_TO_FUNC = {
     'aws': {
         'copydisk': aws_cli.CreateVolumeCopy,
+        'deleteinstance': aws_cli.DeleteInstance,
         'listimages': aws_cli.ListImages,
         'listinstances': aws_cli.ListInstances,
         'listdisks': aws_cli.ListVolumes,
@@ -217,6 +218,15 @@ def Main() -> None:
                 ('project', 'GCP Project name.', None),
                 ('gcs_path', 'Source object path.', None),
                 ('s3_path', 'Destination bucket.', None),
+            ])
+  AddParser('aws', aws_subparsers, 'deleteinstance', 'Delete an instance.',
+            args=[
+                ('--instance_id', 'ID of EC2 instance to delete.', ''),
+                ('--instance_name', 'Name of EC2 instance to delete.', ''),
+                ('--region', 'Region in which the instance is.', ''),
+                ('--force_delete',
+                 'Force instance deletion when deletion protection is '
+                 'activated.', False),
             ])
 
   # Azure parser options

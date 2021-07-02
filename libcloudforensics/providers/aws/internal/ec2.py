@@ -145,6 +145,43 @@ class AWSInstance:
 
     volume.device_name = device_name
 
+  def Delete(self, force_delete: bool = False) -> None:
+    """Delete an instance.
+
+    Args:
+      force_delete (bool): Optional. True if the instance should be deleted
+          despite DisableApiTermination being set to True on the instance.
+
+    Raises:
+      ResourceDeletionError: If the instance could not be deleted.
+    """
+
+    client = self.aws_account.ClientApi(common.EC2_SERVICE)
+    if force_delete:
+      try:
+        common.ExecuteRequest(
+            client,
+            'modify_instance_attribute',
+            {
+                'InstanceId': self.instance_id,
+                'Attribute': 'disableApiTermination',
+                'Value': 'False'
+            })
+      except client.exceptions.ClientError as exception:
+        raise errors.ResourceDeletionError(
+            'Could not toggle instance attribute disableApiTermination: '
+            '{0!s}'.format(exception), __name__) from exception
+
+    resource_client = self.aws_account.ResourceApi(common.EC2_SERVICE)
+    try:
+      resource_client.Instance(self.instance_id).terminate()
+      client.get_waiter('instance_terminated').wait(
+          InstanceIds=[self.instance_id])
+    except client.exceptions.ClientError as exception:
+      raise errors.ResourceDeletionError(
+          'Could not delete instance: {0!s}'.format(
+              exception), __name__) from exception
+
 
 class EC2:
   """Class that represents AWS EC2 instance services."""
