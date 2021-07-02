@@ -195,10 +195,8 @@ class GoogleCloudComputeTest(unittest.TestCase):
     # If specifying a number of CPU cores that's not available, should throw a
     # ValueError
     with self.assertRaises(ValueError):
-      # pylint: disable=line-too-long
       _, created = gcp_mocks.FAKE_ANALYSIS_PROJECT.compute.GetOrCreateAnalysisVm(
           'non-existent-analysis-vm', boot_disk_size=1, cpu_cores=5)
-      # pylint: enable=line-too-long
 
   @typing.no_type_check
   @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleCloudCompute.ListInstanceByLabels')
