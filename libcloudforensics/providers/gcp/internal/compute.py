@@ -34,6 +34,13 @@ if TYPE_CHECKING:
 logging_utils.SetUpLogger(__name__)
 logger = logging_utils.GetLogger(__name__)
 
+# Default general purpose machine type used for the forensics VM
+DEFAULT_MACHINE_TYPE = 'e2-standard'
+
+# Supported number of cores for the default machine type
+# https://cloud.google.com/compute/docs/general-purpose-machines#e2-standard
+E2_STANDARD_CPU_CORES = [2, 4, 8, 16, 32]
+
 
 class GoogleCloudCompute(common.GoogleCloudComputeClient):
   """Class representing all Google Cloud Compute objects in a project.
@@ -276,6 +283,8 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
 
     Raises:
       RuntimeError: If virtual machine cannot be created.
+      ValueError: If the requested number of CPU cores is not available for the
+          machine type.
     """
 
     # Re-use instance if it already exists, or create a new one.
@@ -286,8 +295,13 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     except errors.ResourceNotFoundError:
       pass
 
-    machine_type = 'zones/{0:s}/machineTypes/e2-standard-{1:d}'.format(
-        self.default_zone, cpu_cores)
+    if cpu_cores not in E2_STANDARD_CPU_CORES:
+      raise ValueError(
+          'Number of requested CPU cores ({0:d}) not available for machine type'
+          ' {1:s}'.format(cpu_cores, DEFAULT_MACHINE_TYPE))
+
+    machine_type = 'zones/{0:s}/machineTypes/{1:s}-{2:d}'.format(
+        self.default_zone, DEFAULT_MACHINE_TYPE, cpu_cores)
     ubuntu_image = self.GceApi().images().getFromFamily(
         project=image_project, family=image_family).execute()
     source_disk_image = ubuntu_image['selfLink']
