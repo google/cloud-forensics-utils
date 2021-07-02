@@ -343,7 +343,8 @@ class EC2:
       security_group_id: Optional[str] = None,
       userdata: Optional[str] = None,
       instance_profile: Optional[str] = None,
-      terminate_on_shutdown: bool = False
+      terminate_on_shutdown: bool = False,
+      wait_for_health_checks: bool = True
       ) -> Tuple[AWSInstance, bool]:
     """Get or create a new virtual machine for analysis purposes.
 
@@ -372,6 +373,8 @@ class EC2:
       instance_profile (str): Optional. Instance role to be attached.
       terminate_on_shutdown (bool): Optional. Terminate the instance when the
           instance initiates shutdown.
+      wait_for_health_checks (bool): Optional. Wait for health checks on the
+          instance before returning
 
     Returns:
       Tuple[AWSInstance, bool]: A tuple with an AWSInstance object and a
@@ -432,10 +435,11 @@ class EC2:
       # If the call to run_instances was successful, then the API response
       # contains the instance ID for the new instance.
       instance_id = instance['Instances'][0]['InstanceId']
-      # Wait for the instance to be running
-      client.get_waiter('instance_running').wait(InstanceIds=[instance_id])
-      # Wait for the status checks to pass
-      client.get_waiter('instance_status_ok').wait(InstanceIds=[instance_id])
+      if wait_for_health_checks:
+        # Wait for the instance to be running
+        client.get_waiter('instance_running').wait(InstanceIds=[instance_id])
+        # Wait for the status checks to pass
+        client.get_waiter('instance_status_ok').wait(InstanceIds=[instance_id])
     except (client.exceptions.ClientError,
             botocore.exceptions.WaiterError) as exception:
       raise errors.ResourceCreationError(

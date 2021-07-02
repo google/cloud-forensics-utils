@@ -255,5 +255,6 @@ def ImageEBSSnapshotToS3(args: 'argparse.Namespace') -> None:
     s3_destination=args.s3_destination,
     snapshot_id=args.snapshot_id,
     subnet_id=args.subnet_id,
-    security_group_id=args.security_group_id
+    security_group_id=args.security_group_id,
+    cleanup_iam=args.cleanup_iam
   )

@@ -232,7 +232,9 @@ def Main() -> None:
                     'The name of the instance profile to use/create.', None),
                 ('--subnet_id','Subnet to launch the instance in.', None),
                 ('--security_group_id', 'Security group to attach to the '
-                                        'instance.', None)
+                                        'instance.', None),
+                ('--cleanup_iam', 'Remove created IAM components afterwards',
+                    False)
             ])
 
   # Azure parser options

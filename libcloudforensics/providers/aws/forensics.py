@@ -313,7 +313,8 @@ def CopyEBSSnapshotToS3(
     instance_profile_name: str,
     zone: str,
     subnet_id: Optional[str] = None,
-    security_group_id: Optional[str] = None
+    security_group_id: Optional[str] = None,
+    cleanup_iam: bool = False
     ) -> None:
   """Copy an EBS snapshot into S3.
 
@@ -329,6 +330,7 @@ def CopyEBSSnapshotToS3(
     zone (str): AWS Availability Zone the instance will be launched in.
     subnet_id (str): Optional. The subnet to launch the instance in.
     security_group_id (str): Optional. Security group ID to attach.
+    cleanup_iam (bool): If we created IAM components, remove them afterwards
 
   Raises:
     ResourceCreationError: If any dependent resource could not be created.
@@ -348,11 +350,11 @@ def CopyEBSSnapshotToS3(
   policy_name = '{0:s}-policy'.format(instance_profile_name)
   role_name = '{0:s}-role'.format(instance_profile_name)
 
-  policy_arn = aws_account.iam.CreatePolicy(
-    policy_name, ebs_copy_policy_doc)
-  instance_profile_arn = aws_account.iam.CreateInstanceProfile(
+  instance_profile_arn, prof_created = aws_account.iam.CreateInstanceProfile(
     instance_profile_name)
-  aws_account.iam.CreateRole(
+  policy_arn, pol_created = aws_account.iam.CreatePolicy(
+    policy_name, ebs_copy_policy_doc)
+  _, role_created = aws_account.iam.CreateRole(
     role_name, ec2_assume_role_doc)
   aws_account.iam.AttachPolicyToRole(
     policy_arn, role_name)
@@ -382,6 +384,10 @@ def CopyEBSSnapshotToS3(
     raise errors.ResourceCreationError(
       'Could not fnd suitable AMI for instance creation', __name__)
 
+  # Instance role creation has a propagation delay betwene creating in IAM and
+  # Being usable in EC2.
+  sleep(20)
+
   # start the VM
   logger.info('Starting copy instance')
   aws_account.ec2.GetOrCreateVm(
@@ -396,10 +402,10 @@ def CopyEBSSnapshotToS3(
     security_group_id=security_group_id,
     userdata=startup_script,
     instance_profile=instance_profile_arn,
-    terminate_on_shutdown=True
+    terminate_on_shutdown=True,
+    wait_for_health_checks=False
   )
-  logger.info('Instance creation completed')
-  logger.info('Checking for destination files with exponential backoff')
+  logger.info('Checking for output files with exponential backoff')
 
   wait = 10
   tries = 6 # 10.5 minutes
@@ -419,6 +425,19 @@ def CopyEBSSnapshotToS3(
       success = True
       break
     # pylint: enable=line-too-long
+
+  if not cleanup_iam:
+    return
+  if role_created and pol_created:
+    aws_account.iam.DetachInstanceProfileFromRole(
+      role_name, instance_profile_name)
+  if prof_created:
+    aws_account.iam.DetachPolicyFromRole(policy_arn, role_name)
+    aws_account.iam.DeleteInstanceProfile(instance_profile_name)
+  if role_created:
+    aws_account.iam.DeleteRole(role_name)
+  if pol_created:
+    aws_account.iam.DeletePolicy(policy_arn)
 
   if success:
     logger.info('Image and hash copied to {0:s}/{1:s}/'.format(
