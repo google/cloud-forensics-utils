@@ -119,7 +119,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
           for instance in response['items'][zone]['instances']:
             _, zone = instance['zone'].rsplit('/', 1)
             name = instance['name']
-            deletion_protection = instance.get('deletionProtection')
+            deletion_protection = instance.get('deletionProtection', False)
             instances[name] = GoogleComputeInstance(
                 self.project_id,
                 zone,
