@@ -48,7 +48,7 @@ DEFAULT_DISK_COPY_PREFIX = 'evidence'
 UBUNTU_1804_SKU = '18.04-LTS'
 
 
-def _ParseCredentialsFile(profile_name: str) -> Dict[str, str]:
+def _ParseCredentialsFile(profile_name: str) -> Dict[str, Any]:
   """Parse Azure credentials.json file.
 
   Args:
@@ -98,7 +98,7 @@ def _ParseCredentialsFile(profile_name: str) -> Dict[str, str]:
 
   with open(path) as profiles:
     try:
-      account_info = json.load(profiles).get(profile_name)
+      account_info: dict[str, Any] = json.load(profiles).get(profile_name)
     except ValueError as exception:
       raise errors.InvalidFileFormatError(
           'Could not decode JSON file. Please verify the file format:'
@@ -118,7 +118,7 @@ def _ParseCredentialsFile(profile_name: str) -> Dict[str, str]:
   return account_info
 
 
-def _CheckAzureCliCredentials() -> str:
+def _CheckAzureCliCredentials() -> Optional[str]:
   """Test if AzureCliCredentials are configured, returning the subscription
   id if successful.
 
