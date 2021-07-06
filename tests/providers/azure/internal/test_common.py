@@ -84,6 +84,7 @@ class AZCommonTest(unittest.TestCase):
 
     with self.assertRaises(errors.CredentialsConfigurationError) as error:
       _, _ = common.GetCredentials()
+      mock_azure_credentials.assert_not_called()
     self.assertEqual(
         'No supported credentials found. If using environment variables '
         'please make sure to define: [AZURE_SUBSCRIPTION_ID, AZURE_CLIENT_ID, '
@@ -162,3 +163,17 @@ class AZCommonTest(unittest.TestCase):
         'Profile name incomplete_profile_name not found in credentials file '
         '{0:s}'.format(
             os.environ['AZURE_CREDENTIALS_PATH']), str(error.exception))
+
+  @mock.patch('azure.identity._credentials.default.DefaultAzureCredential.__init__')
+  @typing.no_type_check
+  def testGetCliCredentials(self, mock_azure_credentials):
+    """Test that AzureCliCredentials are properly parsed"""
+    mock_azure_credentials.return_value = None
+
+    os.environ['AZURE_CONFIG_DIR'] = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
+            os.path.realpath(__file__))))), azure_mocks.AZURE_CONFIG_DIR)
+
+    subscription_id, _ = common.GetCredentials()
+
+    self.assertEqual('12345678-1234-5678-1234-567812345678', subscription_id)
