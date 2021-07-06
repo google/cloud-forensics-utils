@@ -901,7 +901,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
       force_delete (bool): force delete the instance, even if deletionProtection
           is set to true.
     """
-    if not force_delete and self.deletion_protection:
+    if not force_delete and (self.deletion_protection or False):
       logger.warning('This instance is protected against accidental deletion.'
                      'To delete it, pass the flag force_delete=True.')
       # We can abort directly since calling the API will fail.
@@ -914,7 +914,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
 
     gce_instance_client = self.GceApi().instances()
 
-    if force_delete and self.deletion_protection:
+    if force_delete and (self.deletion_protection or False):
       logger.info('Deletion protection detected. Disabling due to '
                   'force_delete=True')
       try:
