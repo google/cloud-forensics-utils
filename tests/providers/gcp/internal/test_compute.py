@@ -192,6 +192,12 @@ class GoogleCloudComputeTest(unittest.TestCase):
     self.assertEqual('non-existent-analysis-vm', vm.name)
     self.assertTrue(created)
 
+    # If specifying a number of CPU cores that's not available, should throw a
+    # ValueError
+    with self.assertRaises(ValueError):
+      _, created = gcp_mocks.FAKE_ANALYSIS_PROJECT.compute.GetOrCreateAnalysisVm(
+          'non-existent-analysis-vm', boot_disk_size=1, cpu_cores=5)
+
   @typing.no_type_check
   @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleCloudCompute.ListInstanceByLabels')
   @mock.patch('libcloudforensics.providers.gcp.internal.common.GoogleCloudComputeClient.GceApi')

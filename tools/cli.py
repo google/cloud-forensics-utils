@@ -321,7 +321,10 @@ def Main() -> None:
             ])
 
   # GCP parser options
-  gcp_parser.add_argument('project', help='GCP project ID.')
+  gcp_parser.add_argument(
+      '--project', help='GCP project ID. If not provided, the library will look'
+                        ' for a project ID configured with your gcloud SDK. If '
+                        'none found, errors.')
   gcp_subparsers = gcp_parser.add_subparsers()
   AddParser('gcp', gcp_subparsers, 'listinstances',
             'List GCE instances in GCP project.')
