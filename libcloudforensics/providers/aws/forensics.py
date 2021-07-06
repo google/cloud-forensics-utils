@@ -385,17 +385,14 @@ def CopyEBSSnapshotToS3(
     raise errors.ResourceCreationError(
       'Could not fnd suitable AMI for instance creation', __name__)
 
-  # Instance role creation has a propagation delay betwene creating in IAM and
-  # Being usable in EC2.
+  # Instance role creation has a propagation delay between creating in IAM and
+  # being usable in EC2.
   if prof_created:
     sleep(20)
 
   # start the VM
   logger.info('Starting copy instance')
   aws_account.ec2.GetOrCreateVm(
-    # TODO - Add random tail to the name, or attempting to run this multiple
-    # times in parallel on the same account and region will fail since
-    # GetOrCreateVm returns existing instances with the same name
     'ebsCopy-{0:d}'.format(random.randint(10**(9),(10**10)-1)),
     10,
     ami_id,

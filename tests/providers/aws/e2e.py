@@ -21,6 +21,7 @@ import botocore
 
 from libcloudforensics.providers.aws.internal.common import EC2_SERVICE
 from libcloudforensics.providers.aws.internal import account
+from libcloudforensics.providers.aws.internal import s3
 from libcloudforensics.providers.aws import forensics
 from libcloudforensics import logging_utils
 from tests.scripts import utils
@@ -58,6 +59,10 @@ class EndToEndTest(unittest.TestCase):
     "destination_zone": "xxx", # optional
     "volume_id": "xxx", # optional
     "encrypted_volume_id": "xxx", # optional
+    "subnet_id": "xxx", # optional
+    "security_group_id": "xxx", # optional
+    "s3_destination": "xxx", # optional
+    "snapshot_id": "xxx" # optional
   }
 
   Export a PROJECT_INFO environment variable with the absolute path to your
@@ -82,9 +87,16 @@ class EndToEndTest(unittest.TestCase):
     cls.encrypted_volume_to_copy = project_info.get('encrypted_volume_id', None)
     cls.aws = account.AWSAccount(cls.zone)
     cls.analysis_vm_name = 'new-vm-for-analysis'
-    cls.analysis_vm, _ = forensics.StartAnalysisVm(cls.analysis_vm_name,
-                                                   cls.zone,
-                                                   10)
+    cls.subnet_id = project_info.get('subnet_id', None)
+    cls.security_group_id = project_info.get('security_group_id', None)
+    cls.s3_destination = project_info.get('s3_destination', None)
+    cls.snapshot_id = project_info.get('snapshot_id', None)
+    cls.analysis_vm, _ = forensics.StartAnalysisVm(
+        cls.analysis_vm_name,
+        cls.zone,
+        10,
+        security_group_id=cls.security_group_id,
+        subnet_id=cls.subnet_id)
     cls.volumes = []  # List of (AWSAccount, AWSVolume) tuples
 
   @typing.no_type_check
@@ -225,6 +237,33 @@ class EndToEndTest(unittest.TestCase):
     self.assertEqual(instance.instance_id, self.analysis_vm.instance_id)
     self.assertIn(volume_copy.volume_id,
                   [vol.volume_id for vol in instance.volumes.all()])
+
+  @typing.no_type_check
+  @IgnoreWarnings
+  def testCopyEBSSnapshotToS3(self):
+    """End to end test on AWS.
+
+    Test copying an EBS snapshot into S3.
+    """
+
+    if not self.s3_destination.startswith('s3://'):
+      self.s3_destination = 's3://' + self.s3_destination
+    path_components = s3.SplitStoragePath(self.s3_destination)
+
+    forensics.CopyEBSSnapshotToS3(
+      self.s3_destination,
+      self.snapshot_id,
+      'ebsCopy',
+      self.zone,
+      subnet_id=self.subnet_id,
+      security_group_id=self.security_group_id,
+      cleanup_iam=True)
+
+    aws_account = account.AWSAccount(self.dst_zone)
+    self.assertEqual(aws_account.s3.CheckForObject(path_components[0], '{0:s}/{1:s}/image.bin'.format(path_components[1], self.snapshot_id)), True)
+    self.assertEqual(aws_account.s3.CheckForObject(path_components[0], '{0:s}/{1:s}/log.txt'.format(path_components[1], self.snapshot_id)), True)
+    self.assertEqual(aws_account.s3.CheckForObject(path_components[0], '{0:s}/{1:s}/hlog.txt'.format(path_components[1], self.snapshot_id)), True)
+    self.assertEqual(aws_account.s3.CheckForObject(path_components[0], '{0:s}/{1:s}/mlog.txt'.format(path_components[1], self.snapshot_id)), True)
 
   @typing.no_type_check
   def _StoreVolumeForCleanup(self, aws_account, volume):
