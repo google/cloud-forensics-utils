@@ -39,7 +39,7 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
                zone: str,
                name: str,
                labels: Optional[Dict[str, Any]] = None,
-               deletion_protection: Optional[bool] = None) -> None:
+               deletion_protection: bool = False) -> None:
     """Initialize the Google Compute Resource base object.
 
     Args:
@@ -51,8 +51,7 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
           enabled.
     """
 
-    if deletion_protection is not None:
-      self.deletion_protection = deletion_protection
+    self.deletion_protection = deletion_protection
     self.zone = zone
     self.name = name
     self.labels = labels
