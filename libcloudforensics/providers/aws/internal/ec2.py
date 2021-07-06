@@ -150,7 +150,7 @@ class AWSInstance:
 
     Args:
       force_delete (bool): Optional. True if the instance should be deleted
-          despite DisableApiTermination being set to True on the instance.
+          despite disableApiTermination being set to True on the instance.
 
     Raises:
       ResourceDeletionError: If the instance could not be deleted.

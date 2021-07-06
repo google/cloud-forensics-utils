@@ -901,6 +901,12 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
       force_delete (bool): force delete the instance, even if deletionProtection
           is set to true.
     """
+    if not force_delete and self.deletion_protection:
+      logger.warning('This instance is protected against accidental deletion.'
+                     'To delete it, pass the flag force_delete=True.')
+      # We can abort directly since calling the API will fail.
+      return
+
     disks_to_delete = []
     if delete_disks:
       disks_to_delete = [
@@ -908,24 +914,23 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
 
     gce_instance_client = self.GceApi().instances()
 
-    if force_delete:
-      if self.deletion_protection:
-        logger.info('Deletion protection detected. Disabling due to '
-                    'force_delete=True')
-        try:
-          request = gce_instance_client.setDeletionProtection(
-              project=self.project_id,
-              zone=self.zone,
-              resource=self.name,
-              deletionProtection=False)
-          response = request.execute()
-        except HttpError as exception:
-          logger.error('Unable to toggle deleteProtection on instance {0:s}: '
-                       '{1:s}'.format(self.name, str(exception)))
-          raise errors.ResourceDeletionError(
-              'Could not delete instance {0:s}: {1!s}'.format(
-                  self.name, exception), __name__) from exception
-        self.BlockOperation(response, zone=self.zone)
+    if force_delete and self.deletion_protection:
+      logger.info('Deletion protection detected. Disabling due to '
+                  'force_delete=True')
+      try:
+        request = gce_instance_client.setDeletionProtection(
+            project=self.project_id,
+            zone=self.zone,
+            resource=self.name,
+            deletionProtection=False)
+        response = request.execute()
+      except HttpError as exception:
+        logger.error('Unable to toggle deleteProtection on instance {0:s}: '
+                     '{1:s}'.format(self.name, str(exception)))
+        raise errors.ResourceDeletionError(
+            'Unable to toggle deleteProtection on instance {0:s}: {1!s}'.format(
+                self.name, exception), __name__) from exception
+      self.BlockOperation(response, zone=self.zone)
 
     logger.info(
         self.FormatLogMessage('Deleting Instance: {0:s}'.format(self.name)))
