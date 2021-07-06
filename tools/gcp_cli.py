@@ -396,9 +396,8 @@ def GetBucketSize(args: 'argparse.Namespace') -> None:
 
   gcs = gcp_storage.GoogleCloudStorage(args.project)
   results = gcs.GetBucketSize(args.path)
-  for obj in results:
-    logger.info('{0:s}: {1:d}b'.format(
-        obj, results[obj]))
+  for bucket_name, bucket_size in results.items():
+    logger.info('{0:s}: {1:d}b'.format(bucket_name, bucket_size))
 
 
 def ListCloudSqlInstances(args: 'argparse.Namespace') -> None:
