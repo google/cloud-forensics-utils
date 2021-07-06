@@ -24,7 +24,7 @@ from typing import Any, List, Dict, Optional, TYPE_CHECKING, Tuple
 from azure.identity import DefaultAzureCredential
 
 from libcloudforensics import logging_utils
-from libcloudforensics import errors 
+from libcloudforensics import errors
 
 if TYPE_CHECKING:
   # TYPE_CHECKING is always False at runtime, therefore it is safe to ignore
