@@ -204,7 +204,7 @@ def QueryMetrics(args: 'argparse.Namespace') -> None:
       aggregation=args.aggregation or 'Total',
       qfilter=args.qfilter)
 
-  for metric in metrics:
+  for metric, metric_value in metrics.items():
     logger.info('Metric: {0:s}'.format(metric))
-    for timestamp, value in metrics[metric].items():
+    for timestamp, value in metric_value.items():
       logger.info('  Timestamp: {0:s}, value: {1:s}'.format(timestamp, value))
