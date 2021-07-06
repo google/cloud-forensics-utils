@@ -98,7 +98,7 @@ def _ParseCredentialsFile(profile_name: str) -> Dict[str, Any]:
 
   with open(path) as profiles:
     try:
-      account_info: dict[str, Any] = json.load(profiles).get(profile_name)
+      account_info: Dict[str, Any] = json.load(profiles).get(profile_name)
     except ValueError as exception:
       raise errors.InvalidFileFormatError(
           'Could not decode JSON file. Please verify the file format:'
