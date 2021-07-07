@@ -147,7 +147,8 @@ def _CheckAzureCliCredentials() -> Optional[str]:
     tokens = json.load(tokens_fd)
 
   # If tokens are found then Azure CLI auth should be configured.
-  if tokens:
+  if not tokens:
+    return None
     with open(profile_path, encoding='utf-8-sig') as profile_fd:
       profile = json.load(profile_fd)
 
