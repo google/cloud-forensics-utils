@@ -153,7 +153,7 @@ def _CheckAzureCliCredentials() -> Optional[str]:
 
       for subscription in profile['subscriptions']:
         if subscription['isDefault']:
-          subscription_id = subscription["id"]
+          return subscription["id"]
           break
       else:
         raise errors.CredentialsConfigurationError(
