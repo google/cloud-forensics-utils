@@ -154,7 +154,7 @@ def _CheckAzureCliCredentials() -> Optional[str]:
 
     for subscription in profile['subscriptions']:
       if subscription['isDefault']:
-        return subscription["id"]
+        return str(subscription["id"])
 
     raise errors.CredentialsConfigurationError(
         'AzureCliCredentials tokens found but could not determine active '
