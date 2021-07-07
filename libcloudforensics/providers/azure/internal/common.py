@@ -146,23 +146,21 @@ def _CheckAzureCliCredentials() -> Optional[str]:
   with open(tokens_path, encoding='utf-8-sig') as tokens_fd:
     tokens = json.load(tokens_fd)
 
-  # If tokens are found then Azure CLI auth should be configured.
+  # If tokens are not found then Azure CLI auth is not configured.
   if not tokens:
     return None
-    with open(profile_path, encoding='utf-8-sig') as profile_fd:
-      profile = json.load(profile_fd)
 
-      for subscription in profile['subscriptions']:
-        if subscription['isDefault']:
-          return subscription["id"]
-          break
-      else:
-        raise errors.CredentialsConfigurationError(
-            'AzureCliCredentials tokens found but could not determine active '
-            'subscription. No "isDefault" set in "{0:s}"'.format(config_dir),
-            __name__)
+  with open(profile_path, encoding='utf-8-sig') as profile_fd:
+    profile = json.load(profile_fd)
 
-  return subscription_id
+    for subscription in profile['subscriptions']:
+      if subscription['isDefault']:
+        return subscription["id"]
+
+    raise errors.CredentialsConfigurationError(
+        'AzureCliCredentials tokens found but could not determine active '
+        'subscription. No "isDefault" set in "{0:s}"'.format(config_dir),
+        __name__)
 
 
 def GetCredentials(profile_name: Optional[str] = None

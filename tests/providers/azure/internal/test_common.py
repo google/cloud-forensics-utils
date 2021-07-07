@@ -31,9 +31,11 @@ class AZCommonTest(unittest.TestCase):
   # Stop tests from picking up Azure creds from host.
   @typing.no_type_check
   def setUp(self):
+    tests_dir = os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.dirname(
+            os.path.realpath(__file__)))))
     os.environ['AZURE_CONFIG_DIR'] = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
-            os.path.realpath(__file__))))), azure_mocks.EMPTY_AZURE_CONFIG_DIR)
+        tests_dir, azure_mocks.EMPTY_AZURE_CONFIG_DIR)
 
   @typing.no_type_check
   def testGenerateDiskName(self):
