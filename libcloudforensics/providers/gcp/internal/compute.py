@@ -119,8 +119,13 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
           for instance in response['items'][zone]['instances']:
             _, zone = instance['zone'].rsplit('/', 1)
             name = instance['name']
+            deletion_protection = instance.get('deletionProtection', False)
             instances[name] = GoogleComputeInstance(
-                self.project_id, zone, name, labels=instance.get('labels'))
+                self.project_id,
+                zone,
+                name,
+                labels=instance.get('labels'),
+                deletion_protection=deletion_protection)
         except KeyError:
           pass
 
@@ -886,19 +891,47 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
     response = request.execute()
     self.BlockOperation(response, zone=self.zone)
 
-  def Delete(self, delete_disks: bool = False) -> None:
+  def Delete(
+      self, delete_disks: bool = False, force_delete: bool = False) -> None:
     """Delete an Instance.
 
     Args:
       delete_disks (bool): force delete all attached disks (ignores the 'Keep
-        when instance is deleted' bit).
+          when instance is deleted' bit).
+      force_delete (bool): force delete the instance, even if deletionProtection
+          is set to true.
     """
+    if not force_delete and self.deletion_protection:
+      logger.warning('This instance is protected against accidental deletion.'
+                     'To delete it, pass the flag force_delete=True.')
+      # We can abort directly since calling the API will fail.
+      return
+
     disks_to_delete = []
     if delete_disks:
       disks_to_delete = [
           disk['source'].split('/')[-1] for disk in self.GetValue('disks')]
 
     gce_instance_client = self.GceApi().instances()
+
+    if force_delete and self.deletion_protection:
+      logger.info('Deletion protection detected. Disabling due to '
+                  'force_delete=True')
+      try:
+        request = gce_instance_client.setDeletionProtection(
+            project=self.project_id,
+            zone=self.zone,
+            resource=self.name,
+            deletionProtection=False)
+        response = request.execute()
+      except HttpError as exception:
+        logger.error('Unable to toggle deleteProtection on instance {0:s}: '
+                     '{1:s}'.format(self.name, str(exception)))
+        raise errors.ResourceDeletionError(
+            'Unable to toggle deleteProtection on instance {0:s}: {1!s}'.format(
+                self.name, exception), __name__) from exception
+      self.BlockOperation(response, zone=self.zone)
+
     logger.info(
         self.FormatLogMessage('Deleting Instance: {0:s}'.format(self.name)))
     try:
@@ -915,7 +948,9 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
         logger.error((
             'While deleting GCE instance {0:s} the following error occurred: '
             '{1:s}').format(self.name, str(exception)))
-        raise errors.ResourceDeletionError
+        raise errors.ResourceDeletionError(
+            'Could not delete instance {0:s}: {1!s}'.format(
+                self.name, exception), __name__) from exception
 
     self.BlockOperation(response, zone=self.zone)
 
@@ -1118,7 +1153,9 @@ class GoogleComputeDisk(compute_base_resource.GoogleComputeBaseResource):
         logger.error((
             'While deleting GCE disk {0:s} the following error occurred: '
             '{1:s}').format(self.name, str(exception)))
-        raise errors.ResourceDeletionError
+        raise errors.ResourceDeletionError(
+            'Could not delete disk {0:s}: {1!s}'.format(
+                self.name, exception), __name__) from exception
     logger.info(
         self.FormatLogMessage('Deleted Disk: {0:s}'.format(self.name)))
 

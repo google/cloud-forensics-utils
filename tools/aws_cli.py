@@ -229,3 +229,15 @@ def GCSToS3(args: 'argparse.Namespace') -> None:
   aws_account.s3.GCSToS3(args.project, args.gcs_path, args.s3_path)
 
   logger.info('File successfully transferred.')
+
+
+def DeleteInstance(args: 'argparse.Namespace') -> None:
+  """Delete an instance.
+
+  Args:
+    args (argparse.Namespace): Arguments from ArgumentParser.
+  """
+  aws_account = account.AWSAccount(args.zone)
+  instance = aws_account.ec2.GetInstancesByNameOrId(
+      args.instance_name, args.instance_id, args.region)[0]
+  instance.Delete(force_delete=args.force_delete)
