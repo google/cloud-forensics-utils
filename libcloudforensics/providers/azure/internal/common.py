@@ -130,7 +130,6 @@ def _CheckAzureCliCredentials() -> Optional[str]:
     CredentialsConfigurationError: If AzureCliCredentials are configured but
       the active subscription could not be determined.
   """
-  subscription_id = None
   tokens = None
 
   config_dir = os.getenv('AZURE_CONFIG_DIR')
