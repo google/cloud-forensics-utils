@@ -258,3 +258,11 @@ def ImageEBSSnapshotToS3(args: 'argparse.Namespace') -> None:
     security_group_id=args.security_group_id,
     cleanup_iam=args.cleanup_iam
   )
+
+def DeleteInstance(args: 'argparse.Namespace') -> None:
+  """Delete an instance.
+
+  aws_account = account.AWSAccount(args.zone)
+  instance = aws_account.ec2.GetInstancesByNameOrId(
+      args.instance_name, args.instance_id, args.region)[0]
+  instance.Delete(force_delete=args.force_delete)
