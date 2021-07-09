@@ -112,7 +112,7 @@ class IAM:
     """Deletes the IAM policy with the given name.
 
     Args:
-      name (str): The Arn of the policy to delete.
+      name (str): The ARN of the policy to delete.
     """
     logger.info('Deleting IAM policy {0:s}'.format(arn))
     try:

@@ -341,6 +341,8 @@ def CopyEBSSnapshotToS3(
   if not s3_destination.startswith('s3://'):
     s3_destination = 's3://' + s3_destination
   path_components = s3.SplitStoragePath(s3_destination)
+  bucket = path_components[0]
+  object_path = path_components[1]
 
   # Create the IAM pieces
   aws_account = account.AWSAccount(zone)
@@ -409,6 +411,8 @@ def CopyEBSSnapshotToS3(
   wait = 10
   tries = 6 # 10.5 minutes
   success = False
+  prefix = '{0:s}/{1:s}/'.format(object_path, snapshot_id)
+  files = ['image.bin', 'log.txt', 'hlog.txt', 'mlog.txt']
 
   while tries:
     tries -= 1
@@ -416,14 +420,11 @@ def CopyEBSSnapshotToS3(
     sleep(wait)
     wait *= 2
 
-    # pylint: disable=line-too-long
-    if aws_account.s3.CheckForObject(path_components[0], '{0:s}/{1:s}/image.bin'.format(path_components[1], snapshot_id)) and \
-        aws_account.s3.CheckForObject(path_components[0], '{0:s}/{1:s}/log.txt'.format(path_components[1], snapshot_id)) and \
-        aws_account.s3.CheckForObject(path_components[0], '{0:s}/{1:s}/hlog.txt'.format(path_components[1], snapshot_id)) and \
-        aws_account.s3.CheckForObject(path_components[0], '{0:s}/{1:s}/mlog.txt'.format(path_components[1], snapshot_id)):
+    checks = [aws_account.s3.CheckForObject(bucket, prefix + file) for file in files]
+    if all(checks):
+      logger.info('Here I am')
       success = True
       break
-    # pylint: enable=line-too-long
 
   if not cleanup_iam:
     return
