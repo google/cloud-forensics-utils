@@ -333,11 +333,7 @@ class EndToEndTest(unittest.TestCase):
     # Wait a bit so that AWS sync
     sleep(30)
     # Delete the instance
-    instance = cls.aws.ResourceApi(EC2_SERVICE).Instance(
-        cls.analysis_vm.instance_id)
-    instance.terminate()
-    cls.aws.ClientApi(EC2_SERVICE).get_waiter('instance_terminated').wait(
-        InstanceIds=[instance.instance_id])
+    cls.analysis_vm.Delete()
 
     # Delete the volumes
     for aws_account, volume in cls.volumes:
