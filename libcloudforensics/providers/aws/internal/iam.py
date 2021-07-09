@@ -75,9 +75,9 @@ class IAM:
       policy_doc (str): IAM Policy document as a json string.
 
     Returns:
-      Tuple[str, bool]: A tuple
-        str: with the policy Arn.
-        bool: True if the policy was created, false if it existed already.
+      Tuple[str, bool]: A tuple containing:
+        str: The policy Amazon Resource Name (ARN).
+        bool: True if the policy was created, False if it existed already.
 
     Raises:
       ResourceNotFoundError: If the policy failed creation due to already
@@ -128,9 +128,9 @@ class IAM:
       name (str): The name of the instance profile.
 
     Returns:
-      Tuple[str, bool]: A tuple
-        str: The Arn of the instance profile.
-        bool: True if the policy was created, false if it existed already.
+      Tuple[str, bool]: A tuple containing:
+        str: The instance profile Amazon Resource Name (ARN).
+        bool: True if the instance profile was created, False if it existed already.
 
     Raises:
       ResourceNotFoundError: If the profile failed creation due to already
