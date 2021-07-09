@@ -26,7 +26,7 @@ class GoogleCloudLog:
   """Class representing a Google Cloud Logs interface.
 
   Attributes:
-    project_id: Google Cloud project ID.
+    project_ids: Comma-separated list of Google Cloud project IDs.
     gcl_api_client: Client to interact with GCP logging API.
 
   Example use:
@@ -39,14 +39,13 @@ class GoogleCloudLog:
 
   LOGGING_API_VERSION = 'v2'
 
-  def __init__(self, project_id: str) -> None:
+  def __init__(self, project_ids: str) -> None:
     """Initialize the GoogleCloudProject object.
 
     Args:
-      project_id (str): The name of the project.
+      project_ids (str): Comma-separated list of names of projects.
     """
-
-    self.project_id = project_id
+    self.project_ids = project_ids.split(',')
     self.gcl_api_client = None
 
   def GclApi(self) -> 'googleapiclient.discovery.Resource':
@@ -75,12 +74,14 @@ class GoogleCloudLog:
 
     logs = []
     gcl_instance_client = self.GclApi().logs()
-    responses = common.ExecuteRequest(
-        gcl_instance_client, 'list', {'parent': 'projects/' + self.project_id})
-
-    for response in responses:
-      for logtypes in response.get('logNames', []):
-        logs.append(logtypes)
+    for project_id in self.project_ids:
+      responses = common.ExecuteRequest(
+          gcl_instance_client,
+          'list',
+          {'parent': 'projects/' + project_id})
+      for response in responses:
+        for logtypes in response.get('logNames', []):
+          logs.append(logtypes)
 
     return logs
 
@@ -96,21 +97,28 @@ class GoogleCloudLog:
 
     Raises:
       RuntimeError: If API call failed.
+      ValueError: If the number of project IDs being queried doesn't match
+          the number of provided filters.
     """
-
-    body = {
-        'resourceNames': 'projects/' + self.project_id,
-        'filter': qfilter,
-        'orderBy': 'timestamp desc',
-    }
 
     entries = []
     gcl_instance_client = self.GclApi().entries()
-    responses = common.ExecuteRequest(
-        gcl_instance_client, 'list', {'body': body}, throttle=True)
+    if qfilter:
+      qfilter = qfilter.split(',')
+      if len(self.project_ids) != len(qfilter):
+        raise ValueError(
+            'Several project IDs detected ({0:d}) but only {1:d} query filters '
+            'provided.'.format(len(self.project_ids), len(qfilter)))
 
-    for response in responses:
-      for entry in response.get('entries', []):
-        entries.append(entry)
-
+    for idx, project_id in enumerate(self.project_ids):
+      body = {
+          'resourceNames': 'projects/' + project_id,
+          'filter': qfilter[idx] if qfilter else '',
+          'orderBy': 'timestamp desc',
+      }
+      responses = common.ExecuteRequest(
+          gcl_instance_client, 'list', {'body': body}, throttle=True)
+      for response in responses:
+        for entry in response.get('entries', []):
+          entries.append(entry)
     return entries
