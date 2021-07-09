@@ -422,7 +422,6 @@ def CopyEBSSnapshotToS3(
 
     checks = [aws_account.s3.CheckForObject(bucket, prefix + file) for file in files]
     if all(checks):
-      logger.info('Here I am')
       success = True
       break
 

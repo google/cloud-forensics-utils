@@ -236,6 +236,7 @@ def Main() -> None:
                                         'instance.', None),
                 ('--cleanup_iam', 'Remove created IAM components afterwards',
                     False)
+            ])
   AddParser('aws', aws_subparsers, 'deleteinstance', 'Delete an instance.',
             args=[
                 ('--instance_id', 'ID of EC2 instance to delete.', ''),

@@ -249,6 +249,8 @@ class EndToEndTest(unittest.TestCase):
     if not self.s3_destination.startswith('s3://'):
       self.s3_destination = 's3://' + self.s3_destination
     path_components = s3.SplitStoragePath(self.s3_destination)
+    bucket = path_components[0]
+    object_path = path_components[1]
 
     forensics.CopyEBSSnapshotToS3(
       self.s3_destination,
@@ -260,11 +262,16 @@ class EndToEndTest(unittest.TestCase):
       cleanup_iam=True)
 
     aws_account = account.AWSAccount(self.dst_zone)
+    directory = '{0:s}/{1:s}/'.format(path_components[1], self.snapshot_id)
     # pylint: disable=line-too-long
-    self.assertEqual(aws_account.s3.CheckForObject(path_components[0], '{0:s}/{1:s}/image.bin'.format(path_components[1], self.snapshot_id)), True)
-    self.assertEqual(aws_account.s3.CheckForObject(path_components[0], '{0:s}/{1:s}/log.txt'.format(path_components[1], self.snapshot_id)), True)
-    self.assertEqual(aws_account.s3.CheckForObject(path_components[0], '{0:s}/{1:s}/hlog.txt'.format(path_components[1], self.snapshot_id)), True)
-    self.assertEqual(aws_account.s3.CheckForObject(path_components[0], '{0:s}/{1:s}/mlog.txt'.format(path_components[1], self.snapshot_id)), True)
+    self.assertEqual(
+      aws_account.s3.CheckForObject(bucket, directory + 'image.bin'), True)
+    self.assertEqual(
+      aws_account.s3.CheckForObject(bucket, directory + 'log.txt'), True)
+    self.assertEqual(
+      aws_account.s3.CheckForObject(bucket, directory + 'hlog.txt'), True)
+    self.assertEqual(
+      aws_account.s3.CheckForObject(bucket, directory + 'mlog.txt'), True)
     # pylint: enable=line-too-long
 
   @typing.no_type_check

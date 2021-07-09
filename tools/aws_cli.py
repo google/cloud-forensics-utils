@@ -248,7 +248,6 @@ def ImageEBSSnapshotToS3(args: 'argparse.Namespace') -> None:
   Args:
     args (argparse.Namespace): Arguments from ArgumentParser.
   """
-
   forensics.CopyEBSSnapshotToS3(
     instance_profile_name=args.instance_profile_name or 'ebsCopy',
     zone=args.zone,
@@ -262,6 +261,9 @@ def ImageEBSSnapshotToS3(args: 'argparse.Namespace') -> None:
 def DeleteInstance(args: 'argparse.Namespace') -> None:
   """Delete an instance.
 
+  Args:
+    args (argparse.Namespace): Arguments from ArgumentParser.
+  """
   aws_account = account.AWSAccount(args.zone)
   instance = aws_account.ec2.GetInstancesByNameOrId(
       args.instance_name, args.instance_id, args.region)[0]

@@ -181,7 +181,7 @@ class IAM:
     Returns:
       Tuple[str, bool]: A tuple
         str: The Arn of the role.
-        bool: True if the policy was created, false if it existed already.
+        bool: True if the role was created, false if it existed already.
 
     Raises:
       ResourceNotFoundError: If the role failed creation due to already
