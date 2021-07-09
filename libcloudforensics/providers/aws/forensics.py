@@ -420,7 +420,8 @@ def CopyEBSSnapshotToS3(
     sleep(wait)
     wait *= 2
 
-    checks = [aws_account.s3.CheckForObject(bucket, prefix + file) for file in files]
+    checks = [aws_account.s3.CheckForObject(bucket, prefix + file) for file in
+      files]
     if all(checks):
       success = True
       break

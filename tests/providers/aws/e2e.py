@@ -262,7 +262,7 @@ class EndToEndTest(unittest.TestCase):
       cleanup_iam=True)
 
     aws_account = account.AWSAccount(self.dst_zone)
-    directory = '{0:s}/{1:s}/'.format(path_components[1], self.snapshot_id)
+    directory = '{0:s}/{1:s}/'.format(object_path, self.snapshot_id)
     # pylint: disable=line-too-long
     self.assertEqual(
       aws_account.s3.CheckForObject(bucket, directory + 'image.bin'), True)

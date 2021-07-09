@@ -130,7 +130,8 @@ class IAM:
     Returns:
       Tuple[str, bool]: A tuple containing:
         str: The instance profile Amazon Resource Name (ARN).
-        bool: True if the instance profile was created, False if it existed already.
+        bool: True if the instance profile was created, False if it existed
+          already.
 
     Raises:
       ResourceNotFoundError: If the profile failed creation due to already
