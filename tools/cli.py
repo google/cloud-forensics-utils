@@ -27,6 +27,7 @@ from tools import gcp_cli
 PROVIDER_TO_FUNC = {
     'aws': {
         'copydisk': aws_cli.CreateVolumeCopy,
+        'deleteinstance': aws_cli.DeleteInstance,
         'listimages': aws_cli.ListImages,
         'listinstances': aws_cli.ListInstances,
         'listdisks': aws_cli.ListVolumes,
@@ -218,6 +219,15 @@ def Main() -> None:
                 ('gcs_path', 'Source object path.', None),
                 ('s3_path', 'Destination bucket.', None),
             ])
+  AddParser('aws', aws_subparsers, 'deleteinstance', 'Delete an instance.',
+            args=[
+                ('--instance_id', 'ID of EC2 instance to delete.', ''),
+                ('--instance_name', 'Name of EC2 instance to delete.', ''),
+                ('--region', 'Region in which the instance is.', ''),
+                ('--force_delete',
+                 'Force instance deletion when deletion protection is '
+                 'activated.', False),
+            ])
 
   # Azure parser options
   az_parser.add_argument('default_resource_group_name',
@@ -311,7 +321,10 @@ def Main() -> None:
             ])
 
   # GCP parser options
-  gcp_parser.add_argument('project', help='GCP project ID.')
+  gcp_parser.add_argument(
+      '--project', help='GCP project ID. If not provided, the library will look'
+                        ' for a project ID configured with your gcloud SDK. If '
+                        'none found, errors.')
   gcp_subparsers = gcp_parser.add_subparsers()
   AddParser('gcp', gcp_subparsers, 'listinstances',
             'List GCE instances in GCP project.')
@@ -349,6 +362,10 @@ def Main() -> None:
                 ('--delete_all_disks',
                  'Force delete disks marked as "Keep when deleting".',
                  False),
+                ('--force_delete',
+                 'Force instance deletion when deletion protection is '
+                 'activated.',
+                 False)
             ])
   AddParser('gcp', gcp_subparsers, 'querylogs', 'Query GCP logs.',
             args=[
