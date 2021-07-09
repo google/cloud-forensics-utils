@@ -104,16 +104,16 @@ class GoogleCloudLog:
     entries = []
     gcl_instance_client = self.GclApi().entries()
     if qfilter:
-      qfilter = qfilter.split(',')
-      if len(self.project_ids) != len(qfilter):
+      qfilter_list = qfilter.split(',')
+      if len(self.project_ids) != len(qfilter_list):
         raise ValueError(
             'Several project IDs detected ({0:d}) but only {1:d} query filters '
-            'provided.'.format(len(self.project_ids), len(qfilter)))
+            'provided.'.format(len(self.project_ids), len(qfilter_list)))
 
     for idx, project_id in enumerate(self.project_ids):
       body = {
           'resourceNames': 'projects/' + project_id,
-          'filter': qfilter[idx] if qfilter else '',
+          'filter': qfilter_list[idx] if qfilter else qfilter,
           'orderBy': 'timestamp desc',
       }
       responses = common.ExecuteRequest(
