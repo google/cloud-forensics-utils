@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Google Cloud Logging functionalities."""
-
+from typing import Optional
 from typing import TYPE_CHECKING, List, Dict, Any
 
 from libcloudforensics.providers.gcp.internal import common
@@ -39,13 +39,13 @@ class GoogleCloudLog:
 
   LOGGING_API_VERSION = 'v2'
 
-  def __init__(self, project_ids: str) -> None:
+  def __init__(self, project_ids: List[str]) -> None:
     """Initialize the GoogleCloudProject object.
 
     Args:
-      project_ids (str): Comma-separated list of names of projects.
+      project_ids (List[str]): List of project IDs.
     """
-    self.project_ids = project_ids.split(',')
+    self.project_ids = project_ids
     self.gcl_api_client = None
 
   def GclApi(self) -> 'googleapiclient.discovery.Resource':
@@ -85,11 +85,12 @@ class GoogleCloudLog:
 
     return logs
 
-  def ExecuteQuery(self, qfilter: str) -> List[Dict[str, Any]]:
+  def ExecuteQuery(
+      self, qfilter: Optional[List[str]] = None) -> List[Dict[str, Any]]:
     """Query logs in GCP project.
 
     Args:
-      qfilter (str): The query filter to use.
+      qfilter (List[str]): Optional. A list of query filters to use.
 
     Returns:
       List[Dict]: Log entries returned by the query, e.g. [{'projectIds':
@@ -103,17 +104,16 @@ class GoogleCloudLog:
 
     entries = []
     gcl_instance_client = self.GclApi().entries()
-    if qfilter:
-      qfilter_list = qfilter.split(',')
-      if len(self.project_ids) != len(qfilter_list):
-        raise ValueError(
-            'Several project IDs detected ({0:d}) but only {1:d} query filters '
-            'provided.'.format(len(self.project_ids), len(qfilter_list)))
+
+    if qfilter and len(self.project_ids) != len(qfilter):
+      raise ValueError(
+          'Several project IDs detected ({0:d}) but only {1:d} query filters '
+          'provided.'.format(len(self.project_ids), len(qfilter)))
 
     for idx, project_id in enumerate(self.project_ids):
       body = {
           'resourceNames': 'projects/' + project_id,
-          'filter': qfilter_list[idx] if qfilter else qfilter,
+          'filter': qfilter[idx] if qfilter else '',
           'orderBy': 'timestamp desc',
       }
       responses = common.ExecuteRequest(
