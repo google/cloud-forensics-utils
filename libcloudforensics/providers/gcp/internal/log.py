@@ -26,7 +26,7 @@ class GoogleCloudLog:
   """Class representing a Google Cloud Logs interface.
 
   Attributes:
-    project_ids: Comma-separated list of Google Cloud project IDs.
+    project_ids: List of Google Cloud project IDs.
     gcl_api_client: Client to interact with GCP logging API.
 
   Example use:
