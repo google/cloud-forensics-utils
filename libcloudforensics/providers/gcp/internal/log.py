@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Google Cloud Logging functionalities."""
-
+from typing import Optional
 from typing import TYPE_CHECKING, List, Dict, Any
 
 from libcloudforensics.providers.gcp.internal import common
@@ -26,7 +26,7 @@ class GoogleCloudLog:
   """Class representing a Google Cloud Logs interface.
 
   Attributes:
-    project_id: Google Cloud project ID.
+    project_ids: List of Google Cloud project IDs.
     gcl_api_client: Client to interact with GCP logging API.
 
   Example use:
@@ -39,14 +39,13 @@ class GoogleCloudLog:
 
   LOGGING_API_VERSION = 'v2'
 
-  def __init__(self, project_id: str) -> None:
+  def __init__(self, project_ids: List[str]) -> None:
     """Initialize the GoogleCloudProject object.
 
     Args:
-      project_id (str): The name of the project.
+      project_ids (List[str]): List of project IDs.
     """
-
-    self.project_id = project_id
+    self.project_ids = project_ids
     self.gcl_api_client = None
 
   def GclApi(self) -> 'googleapiclient.discovery.Resource':
@@ -75,20 +74,23 @@ class GoogleCloudLog:
 
     logs = []
     gcl_instance_client = self.GclApi().logs()
-    responses = common.ExecuteRequest(
-        gcl_instance_client, 'list', {'parent': 'projects/' + self.project_id})
-
-    for response in responses:
-      for logtypes in response.get('logNames', []):
-        logs.append(logtypes)
+    for project_id in self.project_ids:
+      responses = common.ExecuteRequest(
+          gcl_instance_client,
+          'list',
+          {'parent': 'projects/' + project_id})
+      for response in responses:
+        for logtypes in response.get('logNames', []):
+          logs.append(logtypes)
 
     return logs
 
-  def ExecuteQuery(self, qfilter: str) -> List[Dict[str, Any]]:
+  def ExecuteQuery(
+      self, qfilter: Optional[List[str]] = None) -> List[Dict[str, Any]]:
     """Query logs in GCP project.
 
     Args:
-      qfilter (str): The query filter to use.
+      qfilter (List[str]): Optional. A list of query filters to use.
 
     Returns:
       List[Dict]: Log entries returned by the query, e.g. [{'projectIds':
@@ -96,21 +98,27 @@ class GoogleCloudLog:
 
     Raises:
       RuntimeError: If API call failed.
+      ValueError: If the number of project IDs being queried doesn't match
+          the number of provided filters.
     """
-
-    body = {
-        'resourceNames': 'projects/' + self.project_id,
-        'filter': qfilter,
-        'orderBy': 'timestamp desc',
-    }
 
     entries = []
     gcl_instance_client = self.GclApi().entries()
-    responses = common.ExecuteRequest(
-        gcl_instance_client, 'list', {'body': body}, throttle=True)
 
-    for response in responses:
-      for entry in response.get('entries', []):
-        entries.append(entry)
+    if qfilter and len(self.project_ids) != len(qfilter):
+      raise ValueError(
+          'Several project IDs detected ({0:d}) but only {1:d} query filters '
+          'provided.'.format(len(self.project_ids), len(qfilter)))
 
+    for idx, project_id in enumerate(self.project_ids):
+      body = {
+          'resourceNames': 'projects/' + project_id,
+          'filter': qfilter[idx] if qfilter else '',
+          'orderBy': 'timestamp desc',
+      }
+      responses = common.ExecuteRequest(
+          gcl_instance_client, 'list', {'body': body}, throttle=True)
+      for response in responses:
+        for entry in response.get('entries', []):
+          entries.append(entry)
     return entries

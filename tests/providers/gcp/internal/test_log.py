@@ -41,7 +41,7 @@ class GoogleCloudLogTest(unittest.TestCase):
     """Test that logs of project are correctly queried."""
     query = mock_gcl_api.return_value.entries.return_value.list
     query.return_value.execute.return_value = gcp_mocks.MOCK_LOG_ENTRIES
-    qfilter = '*'
+    qfilter = ['*']
     query_logs = gcp_mocks.FAKE_LOGS.ExecuteQuery(qfilter)
     self.assertEqual(2, len(query_logs))
     self.assertEqual(gcp_mocks.FAKE_LOG_ENTRIES[0], query_logs[0])
