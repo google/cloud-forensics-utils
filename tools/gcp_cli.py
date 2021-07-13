@@ -140,7 +140,7 @@ def ListLogs(args: 'argparse.Namespace') -> None:
 
   AssignProjectID(args)
 
-  logs = gcp_log.GoogleCloudLog(args.project)
+  logs = gcp_log.GoogleCloudLog(args.project.split(','))
   results = logs.ListLogs()
   logger.info('Found {0:d} available log types:'.format(len(results)))
   for line in results:
@@ -161,7 +161,7 @@ def QueryLogs(args: 'argparse.Namespace') -> None:
 
   AssignProjectID(args)
 
-  logs = gcp_log.GoogleCloudLog(args.project)
+  logs = gcp_log.GoogleCloudLog(args.project.split(','))
 
   try:
     if args.start:
@@ -186,7 +186,7 @@ def QueryLogs(args: 'argparse.Namespace') -> None:
   elif args.filter:
     qfilter += args.filter
 
-  results = logs.ExecuteQuery(qfilter)
+  results = logs.ExecuteQuery(qfilter.split(',') if qfilter else None)
   logger.info('Found {0:d} log entries:'.format(len(results)))
   for line in results:
     logger.info(json.dumps(line))
