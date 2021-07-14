@@ -51,8 +51,6 @@ class GoogleCloudMonitoring:
       googleapiclient.discovery.Resource: A Google Cloud Monitoring
           service object.
     """
-    if self.gcm_api_client:
-      return self.gcm_api_client
     self.gcm_api_client = common.CreateService(
         'monitoring', self.CLOUD_MONITORING_API_VERSION)
     return self.gcm_api_client

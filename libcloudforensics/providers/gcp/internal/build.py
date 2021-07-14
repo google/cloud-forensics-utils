@@ -51,8 +51,6 @@ class GoogleCloudBuild:
       googleapiclient.discovery.Resource: A Google Cloud Build service object.
     """
 
-    if self.gcb_api_client:
-      return self.gcb_api_client
     self.gcb_api_client = common.CreateService(
         'cloudbuild', self.CLOUD_BUILD_API_VERSION)
     return self.gcb_api_client

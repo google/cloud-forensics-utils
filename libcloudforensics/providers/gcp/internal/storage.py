@@ -80,8 +80,6 @@ class GoogleCloudStorage:
       googleapiclient.discovery.Resource: A Google Cloud Storage service object.
     """
 
-    if self.gcs_api_client:
-      return self.gcs_api_client
     self.gcs_api_client = common.CreateService(
         'storage', self.CLOUD_STORAGE_API_VERSION)
     return self.gcs_api_client

@@ -56,8 +56,6 @@ class GoogleCloudLog:
           object.
     """
 
-    if self.gcl_api_client:
-      return self.gcl_api_client
     self.gcl_api_client = common.CreateService(
         'logging', self.LOGGING_API_VERSION)
     return self.gcl_api_client

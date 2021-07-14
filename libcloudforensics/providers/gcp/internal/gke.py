@@ -47,8 +47,6 @@ class GoogleKubernetesEngine:
       googleapiclient.discovery.Resource: A Google Container service object.
     """
 
-    if self.gke_api_client:
-      return self.gke_api_client
     self.gke_api_client = common.CreateService(
         'container', self.GKE_API_VERSION)
     return self.gke_api_client

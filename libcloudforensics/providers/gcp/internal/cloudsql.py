@@ -47,8 +47,6 @@ class GoogleCloudSQL:
       googleapiclient.discovery.Resource: A Google CloudSQL service object.
     """
 
-    if self.gcsql_api_client:
-      return self.gcsql_api_client
     self.gcsql_api_client = common.CreateService(
         'sqladmin', self.SQLADMIN_API_VERSION)
     return self.gcsql_api_client
