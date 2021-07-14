@@ -56,8 +56,6 @@ class GoogleCloudFunction:
           object.
     """
 
-    if self.gcf_api_client:
-      return self.gcf_api_client
     self.gcf_api_client = common.CreateService(
         'cloudfunctions', self.CLOUD_FUNCTIONS_API_VERSION)
     return self.gcf_api_client
