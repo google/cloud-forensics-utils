@@ -145,7 +145,7 @@ class GoogleCloudProject:
     if self._log:
       return self._log
     self._log = log_module.GoogleCloudLog(
-        self.project_id)
+        [self.project_id])
     return self._log
 
   @property
