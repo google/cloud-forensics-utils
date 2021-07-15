@@ -27,7 +27,6 @@ class GoogleCloudLog:
 
   Attributes:
     project_ids: List of Google Cloud project IDs.
-    gcl_api_client: Client to interact with GCP logging API.
 
   Example use:
     # pylint: disable=line-too-long
@@ -46,7 +45,6 @@ class GoogleCloudLog:
       project_ids (List[str]): List of project IDs.
     """
     self.project_ids = project_ids
-    self.gcl_api_client = None
 
   def GclApi(self) -> 'googleapiclient.discovery.Resource':
     """Get a Google Compute Logging service object.
@@ -56,9 +54,8 @@ class GoogleCloudLog:
           object.
     """
 
-    self.gcl_api_client = common.CreateService(
+    return common.CreateService(
         'logging', self.LOGGING_API_VERSION)
-    return self.gcl_api_client
 
   def ListLogs(self) -> List[str]:
     """List logs in project.

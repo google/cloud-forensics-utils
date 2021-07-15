@@ -33,7 +33,6 @@ class GoogleCloudFunction:
 
   Attributes:
     project_id: Google Cloud project ID.
-    gcf_api_client: Client to interact with GCF APIs.
   """
 
   CLOUD_FUNCTIONS_API_VERSION = 'v1'
@@ -45,7 +44,6 @@ class GoogleCloudFunction:
       project_id (str): The name of the project.
     """
 
-    self.gcf_api_client = None
     self.project_id = project_id
 
   def GcfApi(self) -> 'googleapiclient.discovery.Resource':
@@ -56,9 +54,8 @@ class GoogleCloudFunction:
           object.
     """
 
-    self.gcf_api_client = common.CreateService(
+    return common.CreateService(
         'cloudfunctions', self.CLOUD_FUNCTIONS_API_VERSION)
-    return self.gcf_api_client
 
   def ExecuteFunction(self,
                       function_name: str,
