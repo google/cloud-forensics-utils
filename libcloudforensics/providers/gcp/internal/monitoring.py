@@ -15,7 +15,7 @@
 """Google Cloud Monitoring functionality."""
 
 import datetime
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING, Dict, List, Tuple, Optional
 
 from libcloudforensics.providers.gcp.internal import common
 
@@ -96,7 +96,7 @@ class GoogleCloudMonitoring:
               ret[service] = int(val)
     return ret
 
-  def _BuildCpuUsageFilter(self, instances: Optional[list[str]]) -> str:
+  def _BuildCpuUsageFilter(self, instances: Optional[List[str]]) -> str:
     """Builds a metrics query filter based on a list of instances.
 
     Args:
@@ -119,8 +119,8 @@ class GoogleCloudMonitoring:
     return ''.join(instances_filter)
 
 
-  def GetCpuUsage(self, instances: Optional[list[str]] = None, days: int = 7,
-      aggregation_minutes: int = 60) -> dict[str, tuple[str, float]]:
+  def GetCpuUsage(self, instances: Optional[List[str]] = None, days: int = 7,
+      aggregation_minutes: int = 60) -> Dict[str, Tuple[str, float]]:
     """Returns CPU usage metrics for compute instances.
 
     By default returns hourly usage for the last seven days for all instances
