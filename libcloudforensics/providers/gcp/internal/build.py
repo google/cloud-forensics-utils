@@ -28,9 +28,6 @@ class GoogleCloudBuild:
 
   Dictionary objects content can be found in
   https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds
-
-  Attributes:
-    gcb_api_client: Client to interact with GCB APIs.
   """
   CLOUD_BUILD_API_VERSION = 'v1'
 
@@ -41,7 +38,6 @@ class GoogleCloudBuild:
       project_id (str): Google Cloud project ID.
     """
 
-    self.gcb_api_client = None
     self.project_id = project_id
 
   def GcbApi(self) -> 'googleapiclient.discovery.Resource':
@@ -51,11 +47,8 @@ class GoogleCloudBuild:
       googleapiclient.discovery.Resource: A Google Cloud Build service object.
     """
 
-    if self.gcb_api_client:
-      return self.gcb_api_client
-    self.gcb_api_client = common.CreateService(
+    return common.CreateService(
         'cloudbuild', self.CLOUD_BUILD_API_VERSION)
-    return self.gcb_api_client
 
   def CreateBuild(self, build_body: Dict[str, Any]) -> Dict[str, Any]:
     """Create a cloud build.
