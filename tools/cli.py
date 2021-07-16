@@ -324,7 +324,9 @@ def Main() -> None:
   gcp_parser.add_argument(
       '--project', help='GCP project ID. If not provided, the library will look'
                         ' for a project ID configured with your gcloud SDK. If '
-                        'none found, errors.')
+                        'none found, errors. For GCP logs operations, a list of'
+                        ' project IDs can be passed, as a comma-separated '
+                        'string: project_id1,project_id2,...')
   gcp_subparsers = gcp_parser.add_subparsers()
   AddParser('gcp', gcp_subparsers, 'listinstances',
             'List GCE instances in GCP project.')
@@ -369,7 +371,10 @@ def Main() -> None:
             ])
   AddParser('gcp', gcp_subparsers, 'querylogs', 'Query GCP logs.',
             args=[
-                ('--filter', 'Query filter', None),
+                ('--filter', 'Query filter. If querying multiple logs / '
+                             'multiple project IDs, enter each filter in a '
+                             'single string that is comma-separated: '
+                             '--filter="filter1,filter2,..."', None),
                 ('--start', 'Start date for query (2020-05-01T11:13:00Z)',
                  None),
                 ('--end', 'End date for query (2020-05-01T11:13:00Z)', None)
