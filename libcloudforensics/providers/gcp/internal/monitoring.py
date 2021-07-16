@@ -164,12 +164,13 @@ class GoogleCloudMonitoring:
       for ts in time_series:
         instance_name = ts['metric']['labels']['instance_name']
         instance_id = ts['resource']['labels']['instance_id']
+        instance_key = str(instance_name + '_' + instance_id)
         points = ts['points']
         parsed_points = []
         for point in points:
           timestamp = point['interval']['startTime']
           cpu_usage = point['value']['doubleValue']
           parsed_points.append((timestamp, cpu_usage))
-        cpu_usage_instances[instance_name + '_' + instance_id] = parsed_points
+        cpu_usage_instances[instance_key] = parsed_points
 
     return cpu_usage_instances
