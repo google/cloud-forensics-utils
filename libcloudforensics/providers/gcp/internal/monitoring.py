@@ -119,8 +119,11 @@ class GoogleCloudMonitoring:
     return ''.join(instances_filter)
 
 
-  def GetCpuUsage(self, instances: Optional[List[str]] = None, days: int = 7,
-      aggregation_minutes: int = 60) -> Dict[str, List[Tuple[str, float]]]:
+  def GetCpuUsage(self,
+    instances: Optional[List[str]] = None,
+    days: int = 7,
+    aggregation_minutes: int = 60
+    ) -> Dict[str, List[Tuple[str, float]]]:
     """Returns CPU usage metrics for compute instances.
 
     By default returns hourly usage for the last seven days for all instances
