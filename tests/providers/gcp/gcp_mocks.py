@@ -58,7 +58,7 @@ FAKE_SNAPSHOT_LONG_NAME = compute.GoogleComputeSnapshot(
 FAKE_DISK_COPY = compute.GoogleComputeDisk(
     FAKE_SOURCE_PROJECT.project_id, 'fake-zone', 'fake-disk-copy')
 
-FAKE_LOGS = gcp_log.GoogleCloudLog('fake-target-project')
+FAKE_LOGS = gcp_log.GoogleCloudLog(['fake-target-project'])
 
 FAKE_LOG_LIST = [
     'projects/fake-target-project/logs/GCEGuestAgent',
