@@ -120,7 +120,7 @@ class GoogleCloudMonitoring:
 
 
   def GetCpuUsage(self, instances: Optional[List[str]] = None, days: int = 7,
-      aggregation_minutes: int = 60) -> Dict[str, Tuple[str, float]]:
+      aggregation_minutes: int = 60) -> Dict[str, List[Tuple[str, float]]]:
     """Returns CPU usage metrics for compute instances.
 
     By default returns hourly usage for the last seven days for all instances
@@ -164,12 +164,12 @@ class GoogleCloudMonitoring:
       for ts in time_series:
         instance_name = ts['metric']['labels']['instance_name']
         instance_id = ts['resource']['labels']['instance_id']
-        instance_key = str(instance_name + '_' + instance_id)
+        instance_key = instance_name + '_' + instance_id # type: str
         points = ts['points']
         parsed_points = []
         for point in points:
-          timestamp = point['interval']['startTime']
-          cpu_usage = point['value']['doubleValue']
+          timestamp = point['interval']['startTime'] # type: str
+          cpu_usage = point['value']['doubleValue'] # type: float
           parsed_points.append((timestamp, cpu_usage))
         cpu_usage_instances[instance_key] = parsed_points
 
