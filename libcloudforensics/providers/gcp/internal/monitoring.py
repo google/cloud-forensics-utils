@@ -134,7 +134,7 @@ class GoogleCloudMonitoring:
       aggregate_minutes (int): Optional. The minutes to aggregate on.
 
     Returns:
-      dict[str, tuple[str, float]]: the CPU usage for the instances with
+      Dict[str, List[Tuple[str, float]]]: the CPU usage for the instances with
         instancename_instanceid as the key and (timestamp, usage) tuples
         as values.
     """
