@@ -30,7 +30,6 @@ class GoogleCloudMonitoring:
 
   Attributes:
     project_id: Project name.
-    gcm_api_client: Client to interact with Monitoring APIs.
   """
   CLOUD_MONITORING_API_VERSION = 'v3'
 
@@ -41,7 +40,6 @@ class GoogleCloudMonitoring:
       project_id (str): The name of the project.
     """
 
-    self.gcm_api_client = None
     self.project_id = project_id
 
   def GcmApi(self) -> 'googleapiclient.discovery.Resource':
@@ -51,11 +49,8 @@ class GoogleCloudMonitoring:
       googleapiclient.discovery.Resource: A Google Cloud Monitoring
           service object.
     """
-    if self.gcm_api_client:
-      return self.gcm_api_client
-    self.gcm_api_client = common.CreateService(
+    return common.CreateService(
         'monitoring', self.CLOUD_MONITORING_API_VERSION)
-    return self.gcm_api_client
 
   def ActiveServices(self, timeframe: int = 30) -> Dict[str, int]:
     """List active services in the project (default: last 30 days).
@@ -72,7 +67,7 @@ class GoogleCloudMonitoring:
     end_time = common.FormatRFC3339(datetime.datetime.utcnow())
     period = timeframe * 24 * 60 * 60
     service = self.GcmApi()
-    gcm_timeseries_client = service.projects().timeSeries()
+    gcm_timeseries_client = service.projects().timeSeries() # pylint: disable=no-member
     responses = common.ExecuteRequest(gcm_timeseries_client, 'list', {
         'name': 'projects/{0:s}'.format(self.project_id),
         'filter':

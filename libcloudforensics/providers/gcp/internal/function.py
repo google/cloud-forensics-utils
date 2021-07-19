@@ -33,7 +33,6 @@ class GoogleCloudFunction:
 
   Attributes:
     project_id: Google Cloud project ID.
-    gcf_api_client: Client to interact with GCF APIs.
   """
 
   CLOUD_FUNCTIONS_API_VERSION = 'v1'
@@ -45,7 +44,6 @@ class GoogleCloudFunction:
       project_id (str): The name of the project.
     """
 
-    self.gcf_api_client = None
     self.project_id = project_id
 
   def GcfApi(self) -> 'googleapiclient.discovery.Resource':
@@ -56,11 +54,8 @@ class GoogleCloudFunction:
           object.
     """
 
-    if self.gcf_api_client:
-      return self.gcf_api_client
-    self.gcf_api_client = common.CreateService(
+    return common.CreateService(
         'cloudfunctions', self.CLOUD_FUNCTIONS_API_VERSION)
-    return self.gcf_api_client
 
   def ExecuteFunction(self,
                       function_name: str,
@@ -84,7 +79,7 @@ class GoogleCloudFunction:
     """
 
     service = self.GcfApi()
-    cloud_function = service.projects().locations().functions()
+    cloud_function = service.projects().locations().functions() # pylint: disable=no-member
 
     try:
       json_args = json.dumps(args)

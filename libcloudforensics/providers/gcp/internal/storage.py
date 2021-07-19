@@ -58,7 +58,6 @@ class GoogleCloudStorage:
   """Class to call Google Cloud Storage APIs.
 
   Attributes:
-    gcs_api_client: Client to interact with GCS APIs.
     project_id: Google Cloud project ID.
   """
   CLOUD_STORAGE_API_VERSION = 'v1'
@@ -70,7 +69,6 @@ class GoogleCloudStorage:
       project_id (str): Optional. Google Cloud project ID.
     """
 
-    self.gcs_api_client = None
     self.project_id = project_id
 
   def GcsApi(self) -> 'googleapiclient.discovery.Resource':
@@ -80,11 +78,8 @@ class GoogleCloudStorage:
       googleapiclient.discovery.Resource: A Google Cloud Storage service object.
     """
 
-    if self.gcs_api_client:
-      return self.gcs_api_client
-    self.gcs_api_client = common.CreateService(
+    return common.CreateService(
         'storage', self.CLOUD_STORAGE_API_VERSION)
-    return self.gcs_api_client
 
   def GetObjectMetadata(self,
                         gcs_path: str,
@@ -104,7 +99,7 @@ class GoogleCloudStorage:
     if not gcs_path.startswith('gs://'):
       gcs_path = 'gs://' + gcs_path
     bucket, object_path = SplitStoragePath(gcs_path)
-    gcs_objects = self.GcsApi().objects()
+    gcs_objects = self.GcsApi().objects() # pylint: disable=no-member
     request = gcs_objects.get(
         bucket=bucket, object=object_path, userProject=user_project)
     response = request.execute()  # type: Dict[str, Any]
@@ -130,14 +125,14 @@ class GoogleCloudStorage:
     if bucket.startswith('gs://'):
       # Can change to removeprefix() in 3.9
       bucket = bucket[5:]
-    gcs_bac = self.GcsApi().bucketAccessControls()
+    gcs_bac = self.GcsApi().bucketAccessControls() # pylint: disable=no-member
     request = gcs_bac.list(bucket=bucket, userProject=user_project)
     # https://cloud.google.com/storage/docs/json_api/v1/bucketAccessControls#resource
     ac_response = request.execute()
     for item in ac_response.get('items', []):
       if item.get('kind') == 'storage#bucketAccessControl':  # Sanity check
         ret[item['role']].append(item['entity'])
-    gcs_buckets = self.GcsApi().buckets()
+    gcs_buckets = self.GcsApi().buckets() # pylint: disable=no-member
     request = gcs_buckets.getIamPolicy(bucket=bucket)
     # https://cloud.google.com/storage/docs/json_api/v1/buckets/getIamPolicy
     iam_response = request.execute()
@@ -153,7 +148,7 @@ class GoogleCloudStorage:
       List[Dict[str, Any]]: List of object dicts.
       (https://cloud.google.com/storage/docs/json_api/v1/buckets#resource)
     """
-    gcs_buckets = self.GcsApi().buckets()
+    gcs_buckets = self.GcsApi().buckets() # pylint: disable=no-member
     request = gcs_buckets.list(project=self.project_id)
     objects = request.execute()  # type: Dict[str, Any]
     return objects.get('items', [])
@@ -170,7 +165,7 @@ class GoogleCloudStorage:
     if bucket.startswith('gs://'):
       # Can change to removeprefix() in 3.9
       bucket = bucket[5:]
-    gcs_objects = self.GcsApi().objects()
+    gcs_objects = self.GcsApi().objects() # pylint: disable=no-member
     request = gcs_objects.list(bucket=bucket)
     objects = request.execute()  # type: Dict[str, Any]
     return objects.get('items', [])
@@ -185,7 +180,7 @@ class GoogleCloudStorage:
     if not gcs_path.startswith('gs://'):
       gcs_path = 'gs://' + gcs_path
     bucket, object_path = SplitStoragePath(gcs_path)
-    gcs_objects = self.GcsApi().objects()
+    gcs_objects = self.GcsApi().objects() # pylint: disable=no-member
     request = gcs_objects.delete(bucket=bucket, object=object_path)
     request.execute()  # type: Dict[str, Any]
 
@@ -218,7 +213,7 @@ class GoogleCloudStorage:
     assert self.project_id  # Necessary for mypy check
     gcm = gcp_monitoring.GoogleCloudMonitoring(self.project_id)
     gcm_api = gcm.GcmApi()
-    gcm_timeseries_client = gcm_api.projects().timeSeries()
+    gcm_timeseries_client = gcm_api.projects().timeSeries() # pylint: disable=no-member
     qfilter = ('metric.type="storage.googleapis.com/storage/total_bytes" '
                'resource.type="gcs_bucket"')
     qfilter += ' resource.label.bucket_name="{0:s}"'.format(bucket)
@@ -277,7 +272,7 @@ class GoogleCloudStorage:
     """
     if bucket.startswith('gs://'):
       bucket = bucket[5:]
-    gcs_buckets = self.GcsApi().buckets()
+    gcs_buckets = self.GcsApi().buckets() # pylint: disable=no-member
     body = {'name': bucket, 'labels': labels}
     request = gcs_buckets.insert(
         project=self.project_id,
@@ -314,7 +309,7 @@ class GoogleCloudStorage:
     """
     if not gcs_path.startswith('gs://'):
       gcs_path = 'gs://' + gcs_path
-    gcs_objects = self.GcsApi().objects()
+    gcs_objects = self.GcsApi().objects() # pylint: disable=no-member
     (bucket, filename) = SplitStoragePath(gcs_path)
     request = gcs_objects.get_media(bucket=bucket, object=filename)
 
