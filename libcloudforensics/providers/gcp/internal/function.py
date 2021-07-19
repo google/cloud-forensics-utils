@@ -79,7 +79,7 @@ class GoogleCloudFunction:
     """
 
     service = self.GcfApi()
-    cloud_function = service.projects().locations().functions()
+    cloud_function = service.projects().locations().functions() # pylint: disable=no-member
 
     try:
       json_args = json.dumps(args)

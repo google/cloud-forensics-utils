@@ -61,7 +61,7 @@ class GoogleCloudBuild:
       Dict: Represents long-running operation that is the result of a network
           API call.
     """
-    cloud_build_client = self.GcbApi().projects().builds()
+    cloud_build_client = self.GcbApi().projects().builds() # pylint: disable=no-member
     build_info = cloud_build_client.create(
         projectId=self.project_id,
         body=build_body).execute()  # type: Dict[str, Any]
@@ -86,7 +86,7 @@ class GoogleCloudBuild:
     """
     block_retry_max = 10
     service = self.GcbApi()
-    request = service.operations().get(name=operation_name)
+    request = service.operations().get(name=operation_name) # pylint: disable=no-member
     get_success = False
     for block_retry in range(block_retry_max):
       try:

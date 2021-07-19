@@ -67,7 +67,7 @@ class GoogleCloudMonitoring:
     end_time = common.FormatRFC3339(datetime.datetime.utcnow())
     period = timeframe * 24 * 60 * 60
     service = self.GcmApi()
-    gcm_timeseries_client = service.projects().timeSeries()
+    gcm_timeseries_client = service.projects().timeSeries() # pylint: disable=no-member
     responses = common.ExecuteRequest(gcm_timeseries_client, 'list', {
         'name': 'projects/{0:s}'.format(self.project_id),
         'filter':
