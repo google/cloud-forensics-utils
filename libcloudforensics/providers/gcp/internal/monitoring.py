@@ -118,7 +118,6 @@ class GoogleCloudMonitoring:
 
     return ''.join(instances_filter)
 
-
   def GetCpuUsage(self,
     instances: Optional[List[str]] = None,
     days: int = 7,
