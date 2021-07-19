@@ -1,2 +1,3 @@
 include requirements*.txt
 include libcloudforensics/scripts/*
+include libcloudforensics/providers/aws/internal/iampolicies/*

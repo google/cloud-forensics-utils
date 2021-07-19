@@ -72,3 +72,6 @@ class InstanceStateChangeError(LCFError):
 
 class ServiceAccountRemovalError(LCFError):
   """Error when an issue with removing a service account is encountered."""
+
+class InstanceProfileCreationError(LCFError):
+  """Error when there is an issue creating an instance profile"""

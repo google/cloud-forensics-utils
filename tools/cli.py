@@ -35,7 +35,8 @@ PROVIDER_TO_FUNC = {
         'startvm': aws_cli.StartAnalysisVm,
         'createbucket': aws_cli.CreateBucket,
         'uploadtobucket': aws_cli.UploadToBucket,
-        'gcstos3': aws_cli.GCSToS3
+        'gcstos3': aws_cli.GCSToS3,
+        'imageebssnapshottos3': aws_cli.ImageEBSSnapshotToS3
     },
     'az': {
         'copydisk': az_cli.CreateDiskCopy,
@@ -218,6 +219,23 @@ def Main() -> None:
                 ('project', 'GCP Project name.', None),
                 ('gcs_path', 'Source object path.', None),
                 ('s3_path', 'Destination bucket.', None),
+            ])
+  AddParser('aws', aws_subparsers, 'imageebssnapshottos3',
+            'Copy an image of an EBS volume to S3. This is not natively '
+                'supported in AWS, so requires launching of an instance to '
+                'perform a `dd`. In the S3 destination dir will be a copy of '
+                'the snapshot and a hash.',
+            args=[
+                ('snapshot_id','EBS snapshot ID to make the copy of.', None),
+                ('s3_destination','The S3 destination in the format '
+                    'bucket[/optional/child/folders]', None),
+                ('--instance_profile_name',
+                    'The name of the instance profile to use/create.', None),
+                ('--subnet_id','Subnet to launch the instance in.', None),
+                ('--security_group_id', 'Security group to attach to the '
+                                        'instance.', None),
+                ('--cleanup_iam', 'Remove created IAM components afterwards',
+                    False)
             ])
   AddParser('aws', aws_subparsers, 'deleteinstance', 'Delete an instance.',
             args=[

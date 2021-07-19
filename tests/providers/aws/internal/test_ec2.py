@@ -126,16 +126,16 @@ class EC2Test(unittest.TestCase):
   @mock.patch('libcloudforensics.scripts.utils.ReadStartupScript')
   @mock.patch('libcloudforensics.providers.aws.internal.ec2.EC2.GetInstancesByName')
   @mock.patch('libcloudforensics.providers.aws.internal.account.AWSAccount.ClientApi')
-  def testGetOrCreateAnalysisVm(self,
+  def testGetOrCreateVm(self,
                                 mock_ec2_api,
                                 mock_get_instance,
                                 mock_script):
     """Test that a VM is created or retrieved if it already exists."""
     mock_get_instance.return_value = [aws_mocks.FAKE_INSTANCE_WITH_NAME]
     mock_script.return_value = ''
-    # GetOrCreateAnalysisVm(vm_name, boot_volume_size, AMI, cpu_cores) where
+    # GetOrCreateVm(vm_name, boot_volume_size, AMI, cpu_cores) where
     # vm_name is the name of an analysis instance that already exists.
-    vm, created = aws_mocks.FAKE_AWS_ACCOUNT.ec2.GetOrCreateAnalysisVm(
+    vm, created = aws_mocks.FAKE_AWS_ACCOUNT.ec2.GetOrCreateVm(
         aws_mocks.FAKE_INSTANCE_WITH_NAME.name, 1, 'ami-id', 2)
     mock_get_instance.assert_called_with(aws_mocks.FAKE_INSTANCE_WITH_NAME.name)
     mock_ec2_api.return_value.run_instances.assert_not_called()
@@ -143,12 +143,12 @@ class EC2Test(unittest.TestCase):
     self.assertEqual('fake-instance', vm.name)
     self.assertFalse(created)
 
-    # GetOrCreateAnalysisVm(non_existing_vm, boot_volume_size, AMI, cpu_cores).
+    # GetOrCreateVm(non_existing_vm, boot_volume_size, AMI, cpu_cores).
     # We mock the GetInstanceById() call to return an empty list, which should
     # mimic an instance that wasn't found. This should trigger run_instances
     # to be called.
     mock_get_instance.return_value = []
-    vm, created = aws_mocks.FAKE_AWS_ACCOUNT.ec2.GetOrCreateAnalysisVm(
+    vm, created = aws_mocks.FAKE_AWS_ACCOUNT.ec2.GetOrCreateVm(
         'non-existent-instance-name', 1, 'ami-id', 2)
     mock_get_instance.assert_called_with('non-existent-instance-name')
     mock_ec2_api.return_value.run_instances.assert_called()

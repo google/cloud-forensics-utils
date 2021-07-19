@@ -21,6 +21,7 @@ FORENSICS_STARTUP_SCRIPT = 'forensics_packages_startup.sh'
 FORENSICS_STARTUP_SCRIPT_AWS = 'forensics_packages_startup_aws.sh'
 FORENSICS_STARTUP_SCRIPT_GCP = FORENSICS_STARTUP_SCRIPT
 FORENSICS_STARTUP_SCRIPT_AZ = FORENSICS_STARTUP_SCRIPT
+EBS_SNAPSHOT_COPY_SCRIPT_AWS = 'ebs_snapshot_copy_aws.sh'
 
 def ReadStartupScript(filename: Optional[str] = '') -> str:
   """Read and return the startup script that is to be run on the forensics VM.

@@ -61,6 +61,10 @@ class EndToEndTest(unittest.TestCase):
     "destination_zone": "xxx", # optional
     "volume_id": "xxx", # optional
     "encrypted_volume_id": "xxx", # optional
+    "subnet_id": "xxx", # optional
+    "security_group_id": "xxx", # optional
+    "s3_destination": "xxx", # optional
+    "snapshot_id": "xxx" # optional
   }
 
   Export a PROJECT_INFO environment variable with the absolute path to your
