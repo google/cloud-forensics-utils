@@ -136,7 +136,7 @@ class GoogleCloudMonitoring:
         as values.
     """
     service = self.GcmApi()
-    gcm_timeseries_client = service.projects().timeSeries()
+    gcm_timeseries_client = service.projects().timeSeries() # pylint: disable=no-member
 
     start_time = common.FormatRFC3339(
         datetime.datetime.utcnow() - datetime.timedelta(days=days))
