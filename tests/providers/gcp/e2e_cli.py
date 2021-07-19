@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """End to end test for the gcp cli utility."""
+import subprocess
 import typing
 import unittest
 import time
@@ -20,11 +21,13 @@ import warnings
 
 from googleapiclient.errors import HttpError
 
+from libcloudforensics.errors import ResourceCreationError
+from libcloudforensics.errors import ResourceNotFoundError
 from libcloudforensics.providers.gcp.internal import common
 from libcloudforensics.providers.gcp.internal import project as gcp_project
 from libcloudforensics import logging_utils
 from tests.scripts import utils
-from tests.providers.gcp.gcp_cli import GCPCLI
+from tests.providers.gcp.gcp_cli import GCPCLIHelper
 
 logging_utils.SetUpLogger(__name__)
 logger = logging_utils.GetLogger(__name__)
@@ -88,9 +91,9 @@ class EndToEndTest(unittest.TestCase):
     cls.zone = project_info['zone']
     cls.gcp = gcp_project.GoogleCloudProject(cls.project_id, cls.zone)
     cls.analysis_vm_name = 'new-vm-for-analysis'
-    cls.cli = GCPCLI(cls.gcp)
-    cls.analysis_vm = cls.cli.StartAnalysisVm(
-        cls.instance_to_analyse, cls.zone)
+    cls.cli = GCPCLIHelper(cls.gcp)
+    cls.analysis_vm = cls._RunStartAnalysisVm(
+        cls.analysis_vm_name, cls.zone)
 
   @typing.no_type_check
   @IgnoreWarnings
@@ -118,7 +121,7 @@ class EndToEndTest(unittest.TestCase):
     """
 
     # Make a copy of the boot disk of the instance to analyse
-    self.boot_disk_copy = self.cli.CreateDiskCopy(
+    self.boot_disk_copy = self._RunCreateDiskCopy(
         instance_name=self.instance_to_analyse,
         # disk_name=None by default, boot disk will be copied
     )
@@ -133,8 +136,8 @@ class EndToEndTest(unittest.TestCase):
     self.assertEqual(result['name'], self.boot_disk_copy.name)
 
     # Get the analysis VM and attach the evidence boot disk
-    self.analysis_vm = self.cli.StartAnalysisVm(
-        self.instance_to_analyse,
+    self.analysis_vm = self._RunStartAnalysisVm(
+        self.analysis_vm_name,
         self.zone,
         attach_disks=[self.boot_disk_copy.name])
 
@@ -175,7 +178,7 @@ class EndToEndTest(unittest.TestCase):
     """
 
     # Make a copy of another disk of the instance to analyse
-    self.disk_to_forensic_copy = self.cli.CreateDiskCopy(
+    self.disk_to_forensic_copy = self._RunCreateDiskCopy(
         disk_name=self.disk_to_forensic)
 
     gcp_client_api = common.GoogleCloudComputeClient(self.project_id).GceApi()
@@ -189,8 +192,8 @@ class EndToEndTest(unittest.TestCase):
     self.assertEqual(result['name'], self.disk_to_forensic_copy.name)
 
     # Get the analysis VM and attach the evidence disk to forensic
-    self.analysis_vm = self.cli.StartAnalysisVm(
-        self.instance_to_analyse,
+    self.analysis_vm = self._RunStartAnalysisVm(
+        self.analysis_vm_name,
         self.zone,
         attach_disks=[self.disk_to_forensic_copy.name])
 
@@ -214,6 +217,51 @@ class EndToEndTest(unittest.TestCase):
     self.fail(
         'Error: could not find the disk {0:s} in instance {1:s}'.format(
             self.disk_to_forensic_copy.name, self.analysis_vm_name))
+
+  @classmethod
+  @typing.no_type_check
+  def _RunStartAnalysisVm(cls, instance_name, zone, attach_disks=None):
+    cmd = cls.cli.PrepareStartAnalysisVmCmd(
+        instance_name, zone, attach_disks=attach_disks)
+    try:
+      output = subprocess.check_output(
+          cmd.split(), stderr=subprocess.STDOUT, shell=False)
+    except subprocess.CalledProcessError as error:
+      raise ResourceCreationError(
+          'Failed creating VM in project {0:s}'.format(
+              cls.gcp.project_id), __name__) from error
+    logger.info(output)
+    try:
+      return cls.gcp.compute.GetInstance(instance_name)
+    except ResourceNotFoundError as error:
+      raise ResourceNotFoundError(
+          'Failed finding created VM in project {0:s}'.format(
+              cls.gcp.project_id), __name__) from error
+
+  @classmethod
+  @typing.no_type_check
+  def _RunCreateDiskCopy(cls, instance_name=None, disk_name=None):
+    cmd = cls.cli.PrepareCreateDiskCopyCmd(
+        instance_name=instance_name, disk_name=disk_name)
+    try:
+      output = subprocess.check_output(
+          cmd.split(), stderr=subprocess.STDOUT, shell=False)
+    except subprocess.CalledProcessError as error:
+      raise ResourceCreationError('Failed copying disk', __name__) from error
+
+    if not output:
+      raise ResourceCreationError('Could not find disk copy result', __name__)
+    disk_copy_name = output.decode('utf-8').split(' ')[-1]
+    disk_copy_name = disk_copy_name[:disk_copy_name.find('copy') + 4]
+    logger.info(output)
+    logger.info("Disk successfully copied to {0:s}".format(disk_copy_name))
+
+    try:
+      return cls.gcp.compute.GetDisk(disk_copy_name)
+    except ResourceNotFoundError as error:
+      raise ResourceNotFoundError(
+          'Failed finding copied disk in project {0:s}'.format(
+              cls.gcp.project_id), __name__) from error
 
   @classmethod
   @typing.no_type_check

@@ -58,7 +58,6 @@ class GoogleCloudStorage:
   """Class to call Google Cloud Storage APIs.
 
   Attributes:
-    gcs_api_client: Client to interact with GCS APIs.
     project_id: Google Cloud project ID.
   """
   CLOUD_STORAGE_API_VERSION = 'v1'
@@ -70,7 +69,6 @@ class GoogleCloudStorage:
       project_id (str): Optional. Google Cloud project ID.
     """
 
-    self.gcs_api_client = None
     self.project_id = project_id
 
   def GcsApi(self) -> 'googleapiclient.discovery.Resource':
@@ -80,11 +78,8 @@ class GoogleCloudStorage:
       googleapiclient.discovery.Resource: A Google Cloud Storage service object.
     """
 
-    if self.gcs_api_client:
-      return self.gcs_api_client
-    self.gcs_api_client = common.CreateService(
+    return common.CreateService(
         'storage', self.CLOUD_STORAGE_API_VERSION)
-    return self.gcs_api_client
 
   def GetObjectMetadata(self,
                         gcs_path: str,
