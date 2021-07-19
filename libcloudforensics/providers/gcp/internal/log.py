@@ -68,7 +68,7 @@ class GoogleCloudLog:
     """
 
     logs = []
-    gcl_instance_client = self.GclApi().logs()
+    gcl_instance_client = self.GclApi().logs() # pylint: disable=no-member
     for project_id in self.project_ids:
       responses = common.ExecuteRequest(
           gcl_instance_client,
@@ -98,7 +98,7 @@ class GoogleCloudLog:
     """
 
     entries = []
-    gcl_instance_client = self.GclApi().entries()
+    gcl_instance_client = self.GclApi().entries() # pylint: disable=no-member
 
     if qfilter and len(self.project_ids) != len(qfilter):
       raise ValueError(
