@@ -15,7 +15,7 @@
 """Bucket functionality."""
 
 import os
-from typing import TYPE_CHECKING, List, Dict, Optional, Any
+from typing import TYPE_CHECKING, List, Dict, Optional, Any, Tuple
 
 from libcloudforensics import errors
 from libcloudforensics import logging_utils
@@ -224,3 +224,43 @@ class S3:
     logger.info('Attempting to delete local (temporary) copy')
     os.unlink(localcopy)
     logger.info('Done')
+
+  def CheckForObject(
+      self,
+      bucket: str,
+      key: str
+    ) -> bool:
+    """Check if an object exists in S3.
+
+    Args:
+      bucket (str): S3 nucket name.
+      key (str): object path and name.
+
+    Returns:
+      bool: True if the object exists and you have permissions to GetObject.
+        False otherwise."""
+    s3_client = self.aws_account.ClientApi(common.S3_SERVICE)
+
+    if key.startswith('/'):
+      key = key.lstrip('/')
+
+    try:
+      s3_client.head_object(Bucket=bucket, Key=key)
+    except s3_client.exceptions.ClientError:
+      return False
+    return True
+
+def SplitStoragePath(path: str) -> Tuple[str, str]:
+  """Split a path to bucket name and object URI.
+
+  Args:
+    path (str): File path to a resource in S3.
+        Ex: s3://bucket/folder/obj
+
+  Returns:
+    Tuple[str, str]: Bucket name. Object URI.
+  """
+
+  _, _, full_path = path.partition('//')
+  bucket, _, object_uri = full_path.partition('/')
+  return bucket, object_uri

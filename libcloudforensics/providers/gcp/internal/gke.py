@@ -53,7 +53,7 @@ class GoogleKubernetesEngine:
       Dict: A Google Kubernetes Engine cluster object:
           https://cloud.google.com/kubernetes-engine/docs/reference/rest/v1/projects.locations.clusters#Cluster  # pylint: disable=line-too-long
     """
-    gke_clusters = self.GkeApi().projects().locations().clusters()
+    gke_clusters = self.GkeApi().projects().locations().clusters() # pylint: disable=no-member
     request = gke_clusters.get(name=name)
     response = request.execute()  # type: Dict[str, Any]
     return response

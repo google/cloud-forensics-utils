@@ -23,14 +23,16 @@ ACCOUNT_SERVICE = 'sts'
 KMS_SERVICE = 'kms'
 CLOUDTRAIL_SERVICE = 'cloudtrail'
 S3_SERVICE = 's3'
+IAM_SERVICE = 'iam'
 
 # Resource types constant
 INSTANCE = 'instance'
 VOLUME = 'volume'
 SNAPSHOT = 'snapshot'
 
-# Default Amazon Machine Image to use for bootstrapping instances
+# Default Amazon Machine Images to use for bootstrapping instances
 UBUNTU_1804_FILTER = 'ubuntu/images/hvm-ssd/ubuntu-bionic-18.04-amd64-server-20200611'  # pylint: disable=line-too-long
+ALINUX2_BASE_FILTER = 'amzn2-ami-hvm-2*-x86_64-gp2'
 
 
 def CreateTags(resource: str, tags: Dict[str, str]) -> Dict[str, Any]:

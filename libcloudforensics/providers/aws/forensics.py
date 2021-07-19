@@ -15,8 +15,13 @@
 """Forensics on AWS."""
 from typing import TYPE_CHECKING, Tuple, List, Optional, Dict
 
+import random
+from time import sleep
+from libcloudforensics.providers.aws.internal.common import ALINUX2_BASE_FILTER
 from libcloudforensics.providers.aws.internal.common import UBUNTU_1804_FILTER
 from libcloudforensics.providers.aws.internal import account
+from libcloudforensics.providers.aws.internal import iam
+from libcloudforensics.providers.aws.internal import s3
 from libcloudforensics.scripts import utils
 from libcloudforensics import logging_utils
 from libcloudforensics import errors
@@ -282,7 +287,7 @@ def StartAnalysisVm(
   userdata = utils.ReadStartupScript(userdata_file)
 
   logger.info('Starting analysis VM {0:s}'.format(vm_name))
-  analysis_vm, created = aws_account.ec2.GetOrCreateAnalysisVm(
+  analysis_vm, created = aws_account.ec2.GetOrCreateVm(
       vm_name,
       boot_volume_size,
       ami,
@@ -302,3 +307,141 @@ def StartAnalysisVm(
   logger.info('VM ready.')
   return analysis_vm, created
 # pylint: enable=too-many-arguments
+
+def CopyEBSSnapshotToS3(
+    s3_destination: str,
+    snapshot_id: str,
+    instance_profile_name: str,
+    zone: str,
+    subnet_id: Optional[str] = None,
+    security_group_id: Optional[str] = None,
+    cleanup_iam: bool = False
+    ) -> None:
+  """Copy an EBS snapshot into S3.
+
+  Unfortunately, this action is not natively supported in AWS, so it requires
+  creating a volume and attaching it to an instance. This instance, using a
+  userdata script then performs a `dd` operation to send the disk image to S3.
+
+  Args:
+    s3_destination (str): S3 directory in the form of s3://bucket/path/folder
+    snapshot_id (str): EBS snapshot ID.
+    instance_profile_name (str): The name of an existing instance profile to
+      attach to the instance, or to create if it does not yet exist.
+    zone (str): AWS Availability Zone the instance will be launched in.
+    subnet_id (str): Optional. The subnet to launch the instance in.
+    security_group_id (str): Optional. Security group ID to attach.
+    cleanup_iam (bool): If we created IAM components, remove them afterwards
+
+  Raises:
+    ResourceCreationError: If any dependent resource could not be created.
+  """
+
+  # Correct destination if necessary
+  if not s3_destination.startswith('s3://'):
+    s3_destination = 's3://' + s3_destination
+  path_components = s3.SplitStoragePath(s3_destination)
+  bucket = path_components[0]
+  object_path = path_components[1]
+
+  # Create the IAM pieces
+  aws_account = account.AWSAccount(zone)
+
+  ebs_copy_policy_doc = iam.ReadPolicyDoc(iam.EBS_COPY_POLICY_DOC)
+  ec2_assume_role_doc = iam.ReadPolicyDoc(iam.EC2_ASSUME_ROLE_POLICY_DOC)
+
+  policy_name = '{0:s}-policy'.format(instance_profile_name)
+  role_name = '{0:s}-role'.format(instance_profile_name)
+
+  instance_profile_arn, prof_created = aws_account.iam.CreateInstanceProfile(
+    instance_profile_name)
+  policy_arn, pol_created = aws_account.iam.CreatePolicy(
+    policy_name, ebs_copy_policy_doc)
+  _, role_created = aws_account.iam.CreateRole(
+    role_name, ec2_assume_role_doc)
+  aws_account.iam.AttachPolicyToRole(
+    policy_arn, role_name)
+  aws_account.iam.AttachInstanceProfileToRole(
+    instance_profile_name, role_name)
+
+  # read in the instance userdata script, sub in the snap id and S3 dest
+  startup_script = utils.ReadStartupScript(
+    utils.EBS_SNAPSHOT_COPY_SCRIPT_AWS).format(snapshot_id, s3_destination)
+
+  # Find the AMI - ALinux 2, latest version
+  logger.info('Finding AMI')
+  qfilter = [
+    {'Name': 'name', 'Values': [ALINUX2_BASE_FILTER]},
+    {'Name':'owner-alias', 'Values':['amazon']}
+  ]
+  results = aws_account.ec2.ListImages(qfilter)
+
+  # Find the most recent
+  ami_id = None
+  date = ''
+  for result in results:
+    if result['CreationDate'] > date:
+      ami_id = result['ImageId']
+      date = result['CreationDate']
+  if not ami_id:
+    raise errors.ResourceCreationError(
+      'Could not fnd suitable AMI for instance creation', __name__)
+
+  # Instance role creation has a propagation delay between creating in IAM and
+  # being usable in EC2.
+  if prof_created:
+    sleep(20)
+
+  # start the VM
+  logger.info('Starting copy instance')
+  aws_account.ec2.GetOrCreateVm(
+    'ebsCopy-{0:d}'.format(random.randint(10**(9),(10**10)-1)),
+    10,
+    ami_id,
+    4,
+    subnet_id=subnet_id,
+    security_group_id=security_group_id,
+    userdata=startup_script,
+    instance_profile=instance_profile_arn,
+    terminate_on_shutdown=True,
+    wait_for_health_checks=False
+  )
+  logger.info('Checking for output files with exponential backoff')
+
+  wait = 10
+  tries = 6 # 10.5 minutes
+  success = False
+  prefix = '{0:s}/{1:s}/'.format(object_path, snapshot_id)
+  files = ['image.bin', 'log.txt', 'hlog.txt', 'mlog.txt']
+
+  while tries:
+    tries -= 1
+    logger.info('Waiting {0:d} seconds'.format(wait))
+    sleep(wait)
+    wait *= 2
+
+    checks = [aws_account.s3.CheckForObject(bucket, prefix + file) for file in
+      files]
+    if all(checks):
+      success = True
+      break
+
+  if not cleanup_iam:
+    return
+  if role_created and pol_created:
+    aws_account.iam.DetachInstanceProfileFromRole(
+      role_name, instance_profile_name)
+  if prof_created:
+    aws_account.iam.DetachPolicyFromRole(policy_arn, role_name)
+    aws_account.iam.DeleteInstanceProfile(instance_profile_name)
+  if role_created:
+    aws_account.iam.DeleteRole(role_name)
+  if pol_created:
+    aws_account.iam.DeletePolicy(policy_arn)
+
+  if success:
+    logger.info('Image and hash copied to {0:s}/{1:s}/'.format(
+      s3_destination, snapshot_id))
+  else:
+    logger.info(
+      'Image copy timeout. The process may be ongoing, or might have failed.')

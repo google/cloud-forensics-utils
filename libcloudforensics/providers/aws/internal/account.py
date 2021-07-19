@@ -23,6 +23,7 @@ import boto3
 
 from libcloudforensics.providers.aws.internal import ec2
 from libcloudforensics.providers.aws.internal import ebs
+from libcloudforensics.providers.aws.internal import iam
 from libcloudforensics.providers.aws.internal import kms
 from libcloudforensics.providers.aws.internal import s3
 
@@ -90,6 +91,7 @@ class AWSAccount:
     self._ebs = None  # type: Optional[ebs.EBS]
     self._kms = None  # type: Optional[kms.KMS]
     self._s3 = None  # type: Optional[s3.S3]
+    self._iam = None # type: Optional[iam.IAM]
 
   @property
   def ec2(self) -> ec2.EC2:
@@ -142,6 +144,19 @@ class AWSAccount:
       return self._s3
     self._s3 = s3.S3(self)
     return self._s3
+
+  @property
+  def iam(self) -> iam.IAM:
+    """Get an AWS IAM object for the account.
+
+    Returns:
+      AWSIAM: Object that represents AWS IAM services.
+    """
+
+    if self._iam:
+      return self._iam
+    self._iam = iam.IAM(self)
+    return self._iam
 
   def ClientApi(self,
                 service: str,

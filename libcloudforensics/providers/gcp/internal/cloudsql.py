@@ -54,7 +54,7 @@ class GoogleCloudSQL:
     Returns:
       List[Dict[str, Any]]: List of instances.
     """
-    gcsql_instances = self.GoogleCloudSQLApi().instances()
+    gcsql_instances = self.GoogleCloudSQLApi().instances() # pylint: disable=no-member
     request = gcsql_instances.list(project=self.project_id)
     instances = request.execute()  # type: Dict[str, Any]
     return instances.get('items', [])

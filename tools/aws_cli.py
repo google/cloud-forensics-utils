@@ -13,9 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: disable=line-too-long
 # Make sure that your AWS credentials are configured correclty, see
-# https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html #pylint: disable=line-too-long
+# https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html
 """Demo CLI tool for AWS."""
+
+# pylint: enable=line-too-long
 
 import json
 import os
@@ -24,6 +27,8 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 from libcloudforensics.providers.aws.internal import account
+from libcloudforensics.providers.aws.internal import ec2
+from libcloudforensics.providers.aws.internal import iam
 from libcloudforensics.providers.aws.internal import log as aws_log
 from libcloudforensics.providers.aws import forensics
 from libcloudforensics import logging_utils
@@ -230,6 +235,28 @@ def GCSToS3(args: 'argparse.Namespace') -> None:
 
   logger.info('File successfully transferred.')
 
+def ImageEBSSnapshotToS3(args: 'argparse.Namespace') -> None:
+  """Image an EBS snapshot with the result placed into an S3 location.
+
+  Unfortunately, this is not a natively supported operation in AWS. As such, we
+  must create a instance, create a volume, mount the volume to the instance and
+  perform a `dd` operation to perform the image. We acheive the creation of
+  the volume, the attachment and the upload to S3 with a userdata script on the
+  instance. That does mean however, the instance needs an instance profile with
+  appropriate permissions.
+
+  Args:
+    args (argparse.Namespace): Arguments from ArgumentParser.
+  """
+  forensics.CopyEBSSnapshotToS3(
+    instance_profile_name=args.instance_profile_name or 'ebsCopy',
+    zone=args.zone,
+    s3_destination=args.s3_destination,
+    snapshot_id=args.snapshot_id,
+    subnet_id=args.subnet_id,
+    security_group_id=args.security_group_id,
+    cleanup_iam=args.cleanup_iam
+  )
 
 def DeleteInstance(args: 'argparse.Namespace') -> None:
   """Delete an instance.

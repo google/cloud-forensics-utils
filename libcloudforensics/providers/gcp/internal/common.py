@@ -288,7 +288,9 @@ def ExecuteRequest(client: 'googleapiclient.discovery.Resource',
   next_token = None
   while True:
     if throttle:
-      time.sleep(1)
+      # https://cloud.google.com/logging/quotas#api-limits
+      # 1 call per second per project
+      time.sleep(1.5)
     if next_token:
       if 'body' in kwargs:
         kwargs['body']['pageToken'] = next_token
