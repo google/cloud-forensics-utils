@@ -87,7 +87,7 @@ MOCK_DESCRIBE_INSTANCES = {
             'State': {
                 'Name': 'running'
             },
-            'VpcId': 'fake-vpc-id'
+            'VpcId': FAKE_INSTANCE.vpc
         }]
     }]
 }
@@ -106,7 +106,7 @@ MOCK_DESCRIBE_INSTANCES_TAGS = {
                 'Key': 'Name',
                 'Value': FAKE_INSTANCE_WITH_NAME.name
             }],
-            'VpcId': 'fake-vpc-id'
+            'VpcId': FAKE_INSTANCE_WITH_NAME.vpc
         }]
     }]
 }
