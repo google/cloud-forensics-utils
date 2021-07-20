@@ -15,6 +15,7 @@
 """Forensics on AWS."""
 from typing import TYPE_CHECKING, Tuple, List, Optional, Dict
 
+import ipaddress
 import random
 from time import sleep
 from libcloudforensics.providers.aws.internal.common import ALINUX2_BASE_FILTER
@@ -445,3 +446,36 @@ def CopyEBSSnapshotToS3(
   else:
     logger.info(
       'Image copy timeout. The process may be ongoing, or might have failed.')
+
+def InstanceNetworkQuarantine(zone: str,
+    instance_id: str,
+    exempted_src_subnets: Optional[List[str]] = None
+    ) -> None:
+  """Put an AWS EC2 instance in network quarantine.
+
+  Network quarantine is imposed via applying empty security groups to the
+  instance.
+
+  Args:
+    instance_id (str): : The id (i-xxxxxx) of the virtual machine.
+    exempted_src_subnets (List[str]): List of subnets that will be permitted
+  """
+  # Add /32 to any specified subnets that don't have a mask
+  # We're not checking the subnet is well formed, CreateIsolationSecurityGroup
+  # will take care of that
+  if exempted_src_subnets:
+    exempted_src_subnets[:] = [subnet if subnet.__contains__('/') else
+      subnet + '/32' for subnet in exempted_src_subnets]
+
+  try:
+    aws_account = account.AWSAccount(zone)
+    vpc = aws_account.ec2.GetInstanceById(instance_id).vpc
+    sg_id = \
+      aws_account.ec2.CreateIsolationSecurityGroup(vpc, exempted_src_subnets)
+    aws_account.ec2.SetInstanceSecurityGroup(instance_id, sg_id)
+  except errors.ResourceNotFoundError:
+    logger.error('Cannot qurantine non-existent instance')
+  except errors.ResourceCreationError:
+    logger.error('Failed to create security group')
+  except ipaddress.AddressValueError:
+    logger.error('Invalid subnet provided')
