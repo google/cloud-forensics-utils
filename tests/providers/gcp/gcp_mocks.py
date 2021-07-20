@@ -497,6 +497,62 @@ MOCK_GCSQL_INSTANCES = {
     ]
 }
 
+MOCK_GCM_METRICS_CPU_POINTS = [
+    {
+        'interval': {
+            'startTime': '2021-01-01T00:00:00.000000Z',
+            'endTime': '2021-01-01T00:00:00.000000Z'
+        },
+        'value': {
+            'doubleValue': 0.100000000000000000
+        }
+    }
+] * 24 * 7
+
+MOCK_GCM_METRICS_CPU = {
+    'timeSeries': [
+        {
+            'metric': {
+                'labels': {
+                    'instance_name': 'instance-a'
+                },
+                'type': 'compute.googleapis.com/instance/cpu/utilization'
+            },
+            'resource': {
+                'type': 'gce_instance',
+                'labels': {
+                    'instance_id': '0000000000000000000',
+                    'zone': 'us-central1-a',
+                    'project_id': 'fake-project'
+                }
+            },
+            'metricKind': 'GAUGE',
+            'valueType': 'DOUBLE',
+            'points': MOCK_GCM_METRICS_CPU_POINTS
+        },
+        {
+            'metric': {
+                'labels': {
+                    'instance_name': 'instance-b'
+                },
+                'type': 'compute.googleapis.com/instance/cpu/utilization'
+            },
+            'resource': {
+                'type': 'gce_instance',
+                'labels': {
+                    'instance_id': '0000000000000000000',
+                    'zone': 'us-central1-a',
+                    'project_id': 'fake-project'
+                }
+            },
+            'metricKind': 'GAUGE',
+            'valueType': 'DOUBLE',
+            'points': MOCK_GCM_METRICS_CPU_POINTS
+        }
+    ],
+    'unit': '10^2.%'
+}
+
 # See: https://cloud.google.com/compute/docs/reference/rest/v1/disks
 REGEX_DISK_NAME = re.compile('^(?=.{1,63}$)[a-z]([-a-z0-9]*[a-z0-9])?$')
 STARTUP_SCRIPT = 'scripts/startup.sh'
