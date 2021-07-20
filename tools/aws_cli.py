@@ -276,14 +276,14 @@ def InstanceNetworkQuarantine(args: 'argparse.Namespace') -> None:
     args (argparse.Namespace): Arguments from ArgumentParser.
   """
 
-  exempted_ips = []
-  if args.exempted_src_ips:
-    exempted_ips = args.exempted_src_ips.split(',')
-    # Check if exempted_src_ips argument exists and if there
+  exempted_src_subnets = []
+  if args.exempted_src_subnets:
+    exempted_src_subnets = args.exempted_src_subnets.split(',')
+    # Check if exempted_src_subnets argument exists and if there
     # are any empty entries.
-    if not (exempted_ips and all(exempted_ips)):
-      logger.error('parameter --exempted_src_ips: {0:s}'.format(
-          args.exempted_src_ips))
+    if not (exempted_src_subnets and all(exempted_src_subnets)):
+      logger.error('parameter --exempted_src_subnets: {0:s}'.format(
+          args.exempted_src_subnets))
       return
   forensics.InstanceNetworkQuarantine(args.zone,
-      args.instance_id, exempted_ips)
+      args.instance_id, exempted_src_subnets)

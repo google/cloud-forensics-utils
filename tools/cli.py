@@ -252,8 +252,8 @@ def Main() -> None:
             args=[
                 ('instance_id', 'ID (i-xxxxxx) of the instance to quranitne.',
                     None),
-                ('--exempted_src_ips', 'Comma separated list of source IPs '
-                    'to exempt from ingress firewall rules.', None)
+                ('--exempted_src_subnets', 'Comma separated list of source '
+                    'subnets to exempt from ingress firewall rules.', None)
             ])
 
   # Azure parser options
