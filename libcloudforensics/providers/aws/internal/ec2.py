@@ -15,7 +15,9 @@
 """Instance functionality."""
 
 import binascii
+import ipaddress
 import os
+import random
 from typing import TYPE_CHECKING, Dict, Optional, List, Any, Tuple
 
 import botocore
@@ -47,6 +49,7 @@ class AWSInstance:
                instance_id: str,
                region: str,
                availability_zone: str,
+               vpc: str,
                name: Optional[str] = None) -> None:
     """Initialize the AWS EC2 instance.
 
@@ -56,6 +59,7 @@ class AWSInstance:
       region (str): The region the instance is in.
       availability_zone (str): The zone within the region in which the instance
           is.
+      vpc (str): The VPC the instance resides in
       name (str): Optional. The name tag of the instance, if existing.
     """
 
@@ -63,6 +67,7 @@ class AWSInstance:
     self.instance_id = instance_id
     self.region = region
     self.availability_zone = availability_zone
+    self.vpc = vpc
     self.name = name
 
   def GetBootVolume(self) -> 'ebs.AWSVolume':
@@ -242,8 +247,9 @@ class EC2:
 
           zone = instance['Placement']['AvailabilityZone']
           instance_id = instance['InstanceId']
+          vpc = instance['VpcId']
           aws_instance = AWSInstance(
-              self.aws_account, instance_id, zone[:-1], zone)
+              self.aws_account, instance_id, zone[:-1], zone, vpc)
 
           for tag in instance.get('Tags', []):
             if tag.get('Key') == 'Name':
@@ -477,6 +483,7 @@ class EC2:
         client.get_waiter('instance_running').wait(InstanceIds=[instance_id])
         # Wait for the status checks to pass
         client.get_waiter('instance_status_ok').wait(InstanceIds=[instance_id])
+      vpc = instance['Instances'][0]['VpcId']
     except (client.exceptions.ClientError,
             botocore.exceptions.WaiterError) as exception:
       raise errors.ResourceCreationError(
@@ -487,6 +494,7 @@ class EC2:
                            instance_id,
                            self.aws_account.default_region,
                            self.aws_account.default_availability_zone,
+                           vpc,
                            name=vm_name)
     created = True
     return instance, created
@@ -566,3 +574,101 @@ class EC2:
               exception), __name__) from exception
     # If the call was successful, the response contains key information
     return key['KeyName'], key['KeyMaterial']
+
+  def CreateIsolationSecurityGroup(
+      self,
+      vpc: str,
+      ingress_subnets: Optional[List[str]] = None
+    ) -> str:
+    """Creates an isolation security group.
+
+    Args:
+      vpc (str): VPC ID for the security group.
+      ingress_subnets (List[str]): Optional. Subnets to allow ingress from.
+
+    Returns:
+      str: The ID of the newly created security group.
+
+    Raises:
+      ipaddress.AddressValueError: If an invalid subnet is provided.
+      errors.ResourceCreationError: If an invalid VPC ID is provided.
+    """
+    client = self.aws_account.ClientApi(common.EC2_SERVICE)
+    description = 'Quarantine Security Group'
+    name = 'quarantine-{0:d}'.format(random.randint(10**(9),(10**10)-1))
+
+    # Test the subnets are well formed
+    if ingress_subnets:
+      for subnet in ingress_subnets:
+        ipaddress.IPv4Network(subnet, False)
+
+    # Create the SG
+    try:
+      sg_info = client.create_security_group(
+        Description=description,
+        GroupName=name,
+        VpcId=vpc)
+    except client.exceptions.ClientError as exception:
+      raise errors.ResourceCreationError(
+        'Could not create security group: {0!s}'.format(
+           exception), __name__) from exception
+
+    # SG's automatically include an everything outbound rule - remove it
+    sg_rules = client.describe_security_group_rules(
+      MaxResults=5,
+      Filters=[{
+          'Name': 'group-id',
+          'Values': [sg_info['GroupId']]
+        }]
+      )
+    for sg_rule in sg_rules['SecurityGroupRules']:
+      client.revoke_security_group_egress(
+        GroupId=sg_info['GroupId'],
+        SecurityGroupRuleIds=[sg_rule['SecurityGroupRuleId']]
+      )
+
+    # Add the permitted ingress rules, if any
+    if ingress_subnets:
+      ranges = [{'CidrIp':subnet} for subnet in ingress_subnets]
+      client.authorize_security_group_ingress(
+        GroupId=sg_info['GroupId'],
+        IpPermissions=[{
+          'IpProtocol': '-1',
+          'FromPort': 0,
+          'ToPort': 65535,
+          'IpRanges': ranges
+        }]
+      )
+      client.authorize_security_group_egress(
+        GroupId=sg_info['GroupId'],
+        IpPermissions=[{
+          'IpProtocol': '-1',
+          'FromPort': 0,
+          'ToPort': 65535,
+          'IpRanges': ranges
+        }]
+      )
+
+    return str(sg_info['GroupId'])
+
+  def SetInstanceSecurityGroup(
+      self,
+      instance_id: str,
+      sg_id: str) -> None:
+    """Attach a security group to an instance, removing all others.
+
+    Args:
+      instance_id (str): The instance ID (i-xxxxxx)
+      sg_id (str): The Security Group ID (sg-xxxxxx)
+    """
+    client = self.aws_account.ClientApi(common.EC2_SERVICE)
+
+    try:
+      client.modify_instance_attribute(
+        Groups=[sg_id],
+        InstanceId=instance_id
+      )
+    except client.exceptions.ClientError as exception:
+      raise errors.ResourceCreationError(
+        'Could not modify instance attributes: {0!s}'.format(
+           exception), __name__) from exception
