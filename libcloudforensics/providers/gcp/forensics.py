@@ -359,6 +359,9 @@ def InstanceNetworkQuarantine(project_id: str,
         'gcloud compute ssh --zone "{0:s}" "{1:s}" --project "{2:s}"\n'
         'Connecting from the browser via GCP console will not work.'.format(
               instance.zone, instance_name, project_id))
+  # Then remove the VM's external IP address, to break all ongoing
+  # connections
+  instance.RemoveExternalIps()
 
 def VMRemoveServiceAccount(project_id: str,
                            instance_name: str,

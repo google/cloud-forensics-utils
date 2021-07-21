@@ -963,6 +963,47 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
             self.FormatLogMessage(
                 'Could not find disk: {0:s}, skipping'.format(disk_name)))
 
+  def RemoveExternalIps(self) -> List[str]:
+    """
+    Removes any external IP of the instance, thus breaking
+    any ongoing connections
+    """
+    external_ip_addresses = []  # Result variable
+    # Iterate through instance's network interfaces, removing
+    # all access configurations (NAT)
+    instance_info = self.GetOperation()
+    for network_interface in instance_info['networkInterfaces']:
+      if 'accessConfigs' not in network_interface:
+        # No way to access this network interface externally,
+        # skip the removal
+        continue
+      # Extract relevant identifiers for deletion request
+      network_interface_name = network_interface['name']
+      access_config = network_interface['accessConfigs'][0]
+      access_config_name = access_config['name']
+      external_ip_address = access_config['natIP']
+      # Inform analyst of the deletion
+      logger.info(
+        "Deleting access config for {} (external IP: {})".format(
+          self.name,
+          external_ip_address,
+        ))
+      # Execute the IP address removal by deleting access
+      # config
+      gce_instance_client = self.GceApi().instances()
+      request = gce_instance_client.deleteAccessConfig(
+        project=self.project_id,
+        zone=self.zone,
+        instance=self.name,
+        accessConfig=access_config_name,
+        networkInterface=network_interface_name)
+      response = request.execute()
+      # Save deleted external IP address
+      self.BlockOperation(response, zone=self.zone)
+      external_ip_addresses.append(external_ip_address)
+    # Return the deleted external IP address for future use
+    return external_ip_addresses
+
   def SetTags(self, new_tags: List[str]) -> None:
     """Sets tags for the compute instance.
 
