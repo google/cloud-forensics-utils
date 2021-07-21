@@ -250,7 +250,7 @@ def Main() -> None:
   AddParser('aws', aws_subparsers, 'quarantinevm', 'Put a VM in '
                                                    'network quarantine.',
             args=[
-                ('instance_id', 'ID (i-xxxxxx) of the instance to quranitne.',
+                ('instance_id', 'ID (i-xxxxxx) of the instance to quarantine.',
                     None),
                 ('--exempted_src_subnets', 'Comma separated list of source '
                     'subnets to exempt from ingress firewall rules.', None)
