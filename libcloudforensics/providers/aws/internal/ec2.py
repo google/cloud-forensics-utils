@@ -575,7 +575,8 @@ class EC2:
     # If the call was successful, the response contains key information
     return key['KeyName'], key['KeyMaterial']
 
-  def CreateIsolationSecurityGroup(self,
+  def CreateIsolationSecurityGroup(
+      self,
       vpc: str,
       ingress_subnets: Optional[List[str]] = None
     ) -> str:
@@ -650,7 +651,8 @@ class EC2:
 
     return str(sg_info['GroupId'])
 
-  def SetInstanceSecurityGroup(self,
+  def SetInstanceSecurityGroup(
+      self,
       instance_id: str,
       sg_id: str) -> None:
     """Attach a security group to an instance, removing all others.
