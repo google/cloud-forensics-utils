@@ -15,7 +15,6 @@
 """Forensics on AWS."""
 from typing import TYPE_CHECKING, Tuple, List, Optional, Dict
 
-import ipaddress
 import random
 from time import sleep
 from libcloudforensics.providers.aws.internal.common import ALINUX2_BASE_FILTER
@@ -470,7 +469,7 @@ def InstanceNetworkQuarantine(
   # We're not checking the subnet is well formed, CreateIsolationSecurityGroup
   # will take care of that
   if exempted_src_subnets:
-    exempted_src_subnets[:] = [subnet if '/' in subnet else subnet + '/32' 
+    exempted_src_subnets[:] = [subnet if '/' in subnet else subnet + '/32'
       for subnet in exempted_src_subnets]
 
   try:
