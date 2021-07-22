@@ -421,8 +421,8 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     """Lists all static external IP addresses that are reserved (i.e. not in
     use) and can be used in a particular zone.
 
-    The method first converts the zone is converted to a region,
-    and then queries the GCE addresses.
+    The method first converts the zone to a region,
+    and then queries the GCE addresses resource.
 
     Args:
       zone (str): The zone in which the returned IPs would be available.
@@ -431,18 +431,22 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       List[str]: The list of available IPs in the specified zone.
     """
     # Convert zone to region
-    region = '-'.join(zone.split('-')[:-1])
+    zone_parts = zone.split('-')
+    if len(zone_parts) != 3:
+      raise ValueError("Invalid zone: {}.")
+    region = '-'.join(zone_parts[:-1])
     # Request list of addresses
     addresses_client = self.GceApi().addresses()
     request = addresses_client.list(project=self.project_id, region=region)
     response = request.execute()
-    addresses = []
+    ip_addresses = []
     for address in response.get('items', []):
       is_reserved = address['status'] == 'RESERVED'
       is_external = address['addressType'] == 'EXTERNAL'
       if is_reserved and is_external:
-        addresses.append(address['address'])
-    return addresses
+        ip_address = address['address']
+        ip_addresses.append(ip_address)
+    return ip_addresses
 
   def _ListByLabel(self,
                    labels_filter: Dict[str, str],
