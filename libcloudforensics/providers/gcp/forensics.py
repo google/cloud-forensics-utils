@@ -362,6 +362,7 @@ def InstanceNetworkQuarantine(project_id: str,
   # Then remove the VM's external IP address, to break all ongoing
   # connections
   instance.RemoveExternalIps()
+  logger.info(project.compute.ListReservedExternalIps(instance.zone))
 
 def VMRemoveServiceAccount(project_id: str,
                            instance_name: str,
