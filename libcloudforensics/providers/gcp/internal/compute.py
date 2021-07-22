@@ -417,9 +417,13 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     return self._ListByLabel(
         labels_filter, disk_service_object, filter_union)
 
-  def ListReservedExternalIps(self, region: str) -> List[str]:
-    request = self.GceApi().addresses().list(project=self.project_id, region=region)
-    response = self.BlockOperation(request.execute())
+  def ListReservedExternalIps(self, zone: str) -> List[str]:
+    # Convert zone to region
+    region = '-'.join(zone.split('-')[:-1])
+    # Request list of addresses
+    addresses_client = self.GceApi().addresses()
+    request = addresses_client.list(project=self.project_id, region=region)
+    response = request.execute()
     addresses = []
     for address in response.get('items', []):
       is_reserved = address['status'] == 'RESERVED'
