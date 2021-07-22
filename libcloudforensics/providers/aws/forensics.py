@@ -476,8 +476,10 @@ def InstanceNetworkQuarantine(
   try:
     aws_account = account.AWSAccount(zone)
     vpc = aws_account.ec2.GetInstanceById(instance_id).vpc
+    logger.info('Creating isolation security group')
     sg_id = \
       aws_account.ec2.CreateIsolationSecurityGroup(vpc, exempted_src_subnets)
+    logger.info('Replacing attached security groups with isolation group')
     aws_account.ec2.SetInstanceSecurityGroup(instance_id, sg_id)
   except errors.ResourceNotFoundError as exception:
     raise errors.ResourceNotFoundError(
@@ -502,6 +504,7 @@ def InstanceProfileMitigator(
     ResourceNotFoundError: If the instance cannot be found, or does not have a
       profile attachment.
   """
+  logger.info('Finding profile attachment')
   aws_account = account.AWSAccount(zone)
   assoc_id, profile = aws_account.ec2.GetInstanceProfileAttachment(instance_id)
 
@@ -510,8 +513,10 @@ def InstanceProfileMitigator(
         'Instance not found or does not have a profile attachment: {0:s}'.
         format(instance_id), __name__)
 
+  logger.info('Removing profile attachment')
   aws_account.ec2.DisassociateInstanceProfile(assoc_id)
 
   if revoke_existing:
+    logger.info('Invalidating old tokens')
     role_name = profile.split('/')[1]
     aws_account.iam.RevokeOldSessionsForRole(role_name)
