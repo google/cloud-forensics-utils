@@ -287,3 +287,13 @@ def InstanceNetworkQuarantine(args: 'argparse.Namespace') -> None:
       return
   forensics.InstanceNetworkQuarantine(args.zone,
       args.instance_id, exempted_src_subnets)
+
+def InstanceProfileMitigator(args: 'argparse.Namespace') -> None:
+  """Remove an instance profile attachment from an instance. Also, optionally
+  revoke existing issued tokens for the profile.
+
+  Args:
+    args (argparse.Namespace): Arguments from ArgumentParser.
+  """
+
+  forensics.InstanceProfileMitigator(args.zone, args.instance_id, args.revoke)

@@ -31,6 +31,7 @@ PROVIDER_TO_FUNC = {
         'deleteinstance': aws_cli.DeleteInstance,
         'gcstos3': aws_cli.GCSToS3,
         'imageebssnapshottos3': aws_cli.ImageEBSSnapshotToS3,
+        'instanceprofilemitigator': aws_cli.InstanceProfileMitigator,
         'listdisks': aws_cli.ListVolumes,
         'listimages': aws_cli.ListImages,
         'listinstances': aws_cli.ListInstances,
@@ -254,6 +255,15 @@ def Main() -> None:
                     None),
                 ('--exempted_src_subnets', 'Comma separated list of source '
                     'subnets to exempt from ingress firewall rules.', None)
+            ])
+  AddParser('aws', aws_subparsers, 'instanceprofilemitigator',
+            'Remove an instance profile from an instance, and optionally '
+            'revoke all previously issued temporary credentials.',
+            args=[
+                ('instance_id', 'ID (i-xxxxxx) of the instance to quarantine.',
+                    None),
+                ('--revoke', 'Revoke existing temporary creds for the instance'
+                ' profile.', False)
             ])
 
   # Azure parser options

@@ -14,8 +14,9 @@
 # limitations under the License.
 """AWS IAM Functionality"""
 
+import datetime
+import json
 import os
-
 from typing import TYPE_CHECKING, Optional, Tuple
 from libcloudforensics import errors
 from libcloudforensics import logging_utils
@@ -36,6 +37,9 @@ EBS_COPY_POLICY_DOC = 'ebs_copy_to_s3_policy.json'
 
 # Policy doc to allow EC2 to assume the role. Necessary for instance profiles
 EC2_ASSUME_ROLE_POLICY_DOC = 'ec2_assume_role_policy.json'
+
+# Policy to deny all session tokens generated after a date
+IAM_DENY_ALL_AFTER_TOKEN_ISSUE_DATE = 'revoke_old_sessions.json'
 
 
 class IAM:
@@ -291,6 +295,30 @@ class IAM:
     except self.client.exceptions.NoSuchEntityException:
       pass
       # It doesn't matter if this fails.
+
+  def RevokeOldSessionsForRole(self, role_name: str) -> None:
+    """Revoke old session tokens for a role. This is acheived by adding an
+    inline policy to the role, Deny *:* on the condition of TokenIssueTime.
+
+    Args:
+      role_name (str): The role name to act on.
+    """
+    now = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.000Z")
+    policy = json.loads(ReadPolicyDoc(IAM_DENY_ALL_AFTER_TOKEN_ISSUE_DATE))
+    policy['Statement'][0]['Condition']['DateLessThan']['aws:TokenIssueTime']\
+      = now
+    policy = json.dumps(policy)
+
+    try:
+      self.client.put_role_policy(
+        RoleName=role_name,
+        PolicyName='RevokeOldSessions',
+        PolicyDocument=policy
+      )
+    except self.client.exceptions.ClientError as exception:
+      raise errors.ResourceNotFoundError(
+        'Could not add inline policy to IAM role {0:s}: {1!s}'.format(
+          role_name, exception), __name__) from exception
 
 def ReadPolicyDoc(filename: str) -> str:
   """Read and return the IAM policy doc at filename.
