@@ -418,7 +418,18 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
         labels_filter, disk_service_object, filter_union)
 
   def ListReservedExternalIps(self, zone: str) -> List[str]:
-    """Lists all external IP addresses that are reserved (i.e. not in use)."""
+    """Lists all static external IP addresses that are reserved (i.e. not in
+    use) and can be used in a particular zone.
+
+    The method first converts the zone is converted to a region,
+    and then queries the GCE addresses.
+
+    Args:
+      zone (str): The zone in which the returned IPs would be available.
+
+    Returns:
+      List[str]: The list of available IPs in the specified zone.
+    """
     # Convert zone to region
     region = '-'.join(zone.split('-')[:-1])
     # Request list of addresses
@@ -980,7 +991,18 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
                 'Could not find disk: {0:s}, skipping'.format(disk_name)))
 
   def AssignExternalIp(self, net_if: str, ip_addr: Optional[str]) -> None:
-    """Assigns an external IP to an instance"""
+    """Assigns an external IP to an instance's network interface.
+
+    The instance must not have an IP assigned to the network interface when
+    calling this method. If the IP address is specified, it must be one that
+    is available to the project.
+
+    Args:
+      net_if (str): The instance's network interface to which the IP address
+        must be assigned.
+      ip_addr (Optional[str]): The static IP address that exposes the network
+        interface. If None, the assigned IP address will be ephemeral.
+    """
     body = {}
     if ip_addr is not None:
       body['natIP'] = ip_addr
@@ -998,7 +1020,14 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
   def RemoveExternalIps(self) -> Dict[str, str]:
     """
     Removes any external IP of the instance, thus breaking
-    any ongoing connections
+    any ongoing connections.
+
+    Note that if the instance's IP address was static, that
+    the IP will still belong to the project.
+
+    Returns:
+      Dict[str, str]: A mapping from an instance's network
+        interfaces to the corresponding removed external IP.
     """
     external_ip_addresses = {}  # Result variable
     # Iterate through instance's network interfaces, removing
