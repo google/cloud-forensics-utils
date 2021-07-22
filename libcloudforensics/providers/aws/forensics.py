@@ -510,7 +510,7 @@ def InstanceProfileMitigator(
         'Instance not found or does not have a profile attachment: {0:s}'.
         format(instance_id), __name__)
 
-#  aws_account.ec2.DisassociateInstanceProfile(assoc_id)
+  aws_account.ec2.DisassociateInstanceProfile(assoc_id)
 
   if revoke_existing:
     role_name = profile.split('/')[1]
