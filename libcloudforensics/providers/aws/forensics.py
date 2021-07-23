@@ -409,7 +409,7 @@ def CopyEBSSnapshotToS3(
   logger.info('Checking for output files with exponential backoff')
 
   wait = 10
-  tries = 6 # 10.5 minutes
+  tries = 9 # Just under 1.5 hours
   success = False
   prefix = '{0:s}/{1:s}/'.format(object_path, snapshot_id)
   files = ['image.bin', 'log.txt', 'hlog.txt', 'mlog.txt']

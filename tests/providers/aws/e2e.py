@@ -21,7 +21,6 @@ import botocore
 
 from libcloudforensics.providers.aws.internal.common import EC2_SERVICE
 from libcloudforensics.providers.aws.internal import account
-from libcloudforensics.providers.aws.internal import s3
 from libcloudforensics.providers.aws import forensics
 from libcloudforensics import logging_utils
 from tests.scripts import utils
@@ -237,46 +236,6 @@ class EndToEndTest(unittest.TestCase):
     self.assertEqual(instance.instance_id, self.analysis_vm.instance_id)
     self.assertIn(volume_copy.volume_id,
                   [vol.volume_id for vol in instance.volumes.all()])
-
-  @typing.no_type_check
-  @IgnoreWarnings
-  def testCopyEBSSnapshotToS3(self):
-    """End to end test on AWS.
-
-    Test copying an EBS snapshot into S3.
-    """
-
-    if not self.s3_destination.startswith('s3://'):
-      self.s3_destination = 's3://' + self.s3_destination
-    path_components = s3.SplitStoragePath(self.s3_destination)
-    bucket = path_components[0]
-    object_path = path_components[1]
-
-    forensics.CopyEBSSnapshotToS3(
-      self.s3_destination,
-      self.snapshot_id,
-      'ebsCopy',
-      self.zone,
-      subnet_id=self.subnet_id,
-      security_group_id=self.security_group_id,
-      cleanup_iam=True)
-
-    aws_account = account.AWSAccount(self.zone)
-    directory = '{0:s}/{1:s}/'.format(object_path, self.snapshot_id)
-    self.assertEqual(
-      aws_account.s3.CheckForObject(bucket, directory + 'image.bin'), True)
-    self.assertEqual(
-      aws_account.s3.CheckForObject(bucket, directory + 'log.txt'), True)
-    self.assertEqual(
-      aws_account.s3.CheckForObject(bucket, directory + 'hlog.txt'), True)
-    self.assertEqual(
-      aws_account.s3.CheckForObject(bucket, directory + 'mlog.txt'), True)
-
-    # Cleanup
-    aws_account.s3.RmObject(bucket, directory + 'image.bin')
-    aws_account.s3.RmObject(bucket, directory + 'log.txt')
-    aws_account.s3.RmObject(bucket, directory + 'hlog.txt')
-    aws_account.s3.RmObject(bucket, directory + 'mlog.txt')
 
   @typing.no_type_check
   def _StoreVolumeForCleanup(self, aws_account, volume):
