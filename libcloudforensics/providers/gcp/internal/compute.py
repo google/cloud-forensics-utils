@@ -428,6 +428,9 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
 
     Returns:
       List[str]: The list of available IPs in the specified zone.
+
+    Raises:
+      ValueError: If the zone is malformed.
     """
     # Convert zone to region
     zone_parts = zone.split('-')
@@ -993,7 +996,9 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
             self.FormatLogMessage(
                 'Could not find disk: {0:s}, skipping'.format(disk_name)))
 
-  def AssignExternalIp(self, net_if: str, ip_addr: Optional[str]) -> None:
+  def AssignExternalIp(self,
+                       net_if: str,
+                       ip_addr: Optional[str] = None) -> None:
     """Assigns an external IP to an instance's network interface.
 
     The instance must not have an IP assigned to the network interface when
@@ -1032,28 +1037,33 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
       Dict[str, str]: A mapping from an instance's network
         interfaces to the corresponding removed external IP.
     """
-    external_ip_addresses = {}  # Result variable
+    external_ip_addresses = {}
     # Iterate through instance's network interfaces, removing
     # all access configurations (NAT)
     instance_info = self.GetOperation()
-    for network_interface in instance_info['networkInterfaces']:
-      if 'accessConfigs' not in network_interface:
+    for network_interface in instance_info.get('networkInterfaces', []):
+      access_configs = network_interface.get('accessConfigs', [])
+      if len(access_configs) == 0:
         # No way to access this network interface externally,
         # skip the removal
         continue
-      # Extract relevant identifiers for deletion request
       network_interface_name = network_interface['name']
-      access_config = network_interface['accessConfigs'][0]
+      # From the `get` operation response documentation, for
+      # the `networkInterfaces[].accessConfigs[]` field:
+      #
+      # > Currently, only one access config, ONE_TO_ONE_NAT, is
+      #   supported.
+      #
+      # It is thus safe to access only the first element.
+      access_config = access_configs[0]
       access_config_name = access_config['name']
       external_ip_address = access_config['natIP']
-      # Inform analyst of the deletion
       logger.info(
         'Deleting access config for {0:s} (external IP: {1:s})'.format(
           self.name,
           external_ip_address,
         ))
-      # Execute the IP address removal by deleting access
-      # config
+      # Execute the IP address removal by deleting access config
       gce_instance_client = self.GceApi().instances()
       request = gce_instance_client.deleteAccessConfig(
         project=self.project_id,
@@ -1062,8 +1072,8 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
         accessConfig=access_config_name,
         networkInterface=network_interface_name)
       response = request.execute()
-      # Save deleted external IP address
       self.BlockOperation(response, zone=self.zone)
+      # Save deleted external IP address
       external_ip_addresses[network_interface_name] = external_ip_address
     # Return the deleted external IP address for future use
     return external_ip_addresses
