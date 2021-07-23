@@ -1008,7 +1008,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
     Args:
       net_if (str): The instance's network interface to which the IP address
         must be assigned.
-      ip_addr (Optional[str]): The static IP address that exposes the network
+      ip_addr (str): Optional. The static IP address that exposes the network
         interface. If None, the assigned IP address will be ephemeral.
     """
     body = {}
@@ -1026,9 +1026,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
     self.BlockOperation(response, self.zone)
 
   def RemoveExternalIps(self) -> Dict[str, str]:
-    """
-    Removes any external IP of the instance, thus breaking
-    any ongoing connections.
+    """Removes any external IP of the instance, breaking ongoing connections.
 
     Note that if the instance's IP address was static, that
     the IP will still belong to the project.
