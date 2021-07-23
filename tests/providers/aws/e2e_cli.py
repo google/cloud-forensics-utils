@@ -54,7 +54,7 @@ def IgnoreWarnings(test_func):
   return DoTest
 
 
-class EndToEndTest(unittest.TestCase):
+class AnalysisVMEndToEndTest(unittest.TestCase):
   """End to end test on AWS.
 
   To run these tests, add your project information to a project_info.json file:
@@ -67,8 +67,6 @@ class EndToEndTest(unittest.TestCase):
     "encrypted_volume_id": "xxx", # optional
     "subnet_id": "xxx", # optional
     "security_group_id": "xxx", # optional
-    "s3_destination": "xxx", # optional
-    "snapshot_id": "xxx" # optional
   }
 
   Export a PROJECT_INFO environment variable with the absolute path to your
@@ -93,8 +91,14 @@ class EndToEndTest(unittest.TestCase):
     cls.encrypted_volume_to_copy = project_info.get('encrypted_volume_id', None)
     cls.aws = account.AWSAccount(cls.zone)
     cls.analysis_vm_name = 'new-vm-for-analysis'
-    cls.cli = aws_cli.AWSCLIHelper()
-    cls.analysis_vm = cls._RunStartAnalysisVm(cls.analysis_vm_name, cls.zone)
+    cls.subnet_id = project_info.get('subnet_id', None)
+    cls.security_group_id = project_info.get('security_group_id', None)
+    cls.analysis_vm, _ = forensics.StartAnalysisVm(
+        cls.analysis_vm_name,
+        cls.zone,
+        10,
+        security_group_id=cls.security_group_id,
+        subnet_id=cls.subnet_id)
     cls.volumes = []  # List of (AWSAccount, AWSVolume) tuples
 
   @typing.no_type_check
@@ -105,7 +109,7 @@ class EndToEndTest(unittest.TestCase):
     Test copying the boot volume of an instance.
     """
 
-    volume_copy = self._RunCreateVolumeCopy(
+    volume_copy = forensics.CreateVolumeCopy(
         self.zone,
         instance_id=self.instance_to_analyse
         # volume_id=None by default, boot volume of instance will be copied
@@ -126,7 +130,7 @@ class EndToEndTest(unittest.TestCase):
     if not self.volume_to_copy:
       return
 
-    volume_copy = self._RunCreateVolumeCopy(
+    volume_copy = forensics.CreateVolumeCopy(
         self.zone, volume_id=self.volume_to_copy)
     # The volume should be created in AWS
     aws_volume = self.aws.ResourceApi(EC2_SERVICE).Volume(volume_copy.volume_id)
@@ -144,22 +148,13 @@ class EndToEndTest(unittest.TestCase):
     if not (self.volume_to_copy and self.dst_zone):
       return
 
-    # Assert that the source volume is in the source zone
-    self.assertEqual(self.zone, self.aws.ResourceApi(EC2_SERVICE).Volume(
-        self.volume_to_copy).availability_zone)
-
-    # Create the copy
-    volume_copy = self._RunCreateVolumeCopy(
+    volume_copy = forensics.CreateVolumeCopy(
         self.zone, dst_zone=self.dst_zone, volume_id=self.volume_to_copy)
-
-    # The volume should be created in AWS, and should be in the dest zone
+    # The volume should be created in AWS
     aws_account = account.AWSAccount(self.dst_zone)
     aws_volume = aws_account.ResourceApi(EC2_SERVICE).Volume(
         volume_copy.volume_id)
     self.assertEqual(aws_volume.volume_id, volume_copy.volume_id)
-    self.assertNotEqual(self.zone, aws_volume.availability_zone)
-    self.assertEqual(self.dst_zone, aws_volume.availability_zone)
-
     self._StoreVolumeForCleanup(aws_account, aws_volume)
 
   @typing.no_type_check
@@ -170,19 +165,10 @@ class EndToEndTest(unittest.TestCase):
     Test listing AMI images with a filter.
     """
 
-    qfilter = 'ubuntu*'
-    cmd = self.cli.PrepareListImagesCmd(self.zone, qfilter=qfilter)
-    try:
-      output = subprocess.check_output(
-          cmd.split(), stderr=subprocess.STDOUT, shell=False)
-    except subprocess.CalledProcessError as error:
-      raise RuntimeError('Failed retrieving AMI images') from error
-    if not output:
-      raise RuntimeError('Could not find any images to list')
-    logger.info(output)
-    # For this function, the CLI tool only prints one line per result, or
-    # nothing at all. Therefore if there's an output, there's a result.
-    images = str(output).split('\n')
+    aws_account = account.AWSAccount(self.zone)
+    qfilter = [{'Name': 'name', 'Values': ['Ubuntu 18.04*']}]
+    images = aws_account.ec2.ListImages(qfilter)
+
     self.assertGreater(len(images), 0)
     self.assertIn('Name', images[0])
 
@@ -197,19 +183,11 @@ class EndToEndTest(unittest.TestCase):
     if not self.encrypted_volume_to_copy:
       return
 
-    # Assert that the source volume is encrypted
-    self.assertTrue(self.aws.ResourceApi(EC2_SERVICE).Volume(
-        self.encrypted_volume_to_copy).encrypted)
-
-    # Create the copy
-    volume_copy = self._RunCreateVolumeCopy(
+    volume_copy = forensics.CreateVolumeCopy(
         self.zone, volume_id=self.encrypted_volume_to_copy)
-
-    # The volume should be created in AWS, and should also be encrypted
+    # The volume should be created in AWS
     aws_volume = self.aws.ResourceApi(EC2_SERVICE).Volume(volume_copy.volume_id)
     self.assertEqual(aws_volume.volume_id, volume_copy.volume_id)
-    self.assertTrue(aws_volume.encrypted)
-
     self._StoreVolumeForCleanup(self.aws, aws_volume)
 
   @typing.no_type_check
@@ -224,28 +202,15 @@ class EndToEndTest(unittest.TestCase):
     if not (self.encrypted_volume_to_copy and self.dst_zone):
       return
 
-    # Assert that the source volume is encrypted and in the source zone
-    self.assertTrue(self.aws.ResourceApi(EC2_SERVICE).Volume(
-        self.encrypted_volume_to_copy).encrypted)
-    self.assertEqual(self.zone, self.aws.ResourceApi(EC2_SERVICE).Volume(
-        self.volume_to_copy).availability_zone)
-
-    # Create the copy
-    volume_copy = self._RunCreateVolumeCopy(
+    volume_copy = forensics.CreateVolumeCopy(
         self.zone,
         dst_zone=self.dst_zone,
         volume_id=self.encrypted_volume_to_copy)
-
-    # The volume should be created in AWS in the dest zone, and should also
-    # be encrypted
+    # The volume should be created in AWS
     aws_account = account.AWSAccount(self.dst_zone)
     aws_volume = aws_account.ResourceApi(EC2_SERVICE).Volume(
         volume_copy.volume_id)
     self.assertEqual(aws_volume.volume_id, volume_copy.volume_id)
-    self.assertTrue(aws_volume.encrypted)
-    self.assertNotEqual(self.zone, aws_volume.availability_zone)
-    self.assertEqual(self.dst_zone, aws_volume.availability_zone)
-
     self._StoreVolumeForCleanup(aws_account, aws_volume)
 
   @typing.no_type_check
@@ -256,14 +221,15 @@ class EndToEndTest(unittest.TestCase):
     Test creating an analysis VM and attaching a copied volume to it.
     """
 
-    volume_copy = self._RunCreateVolumeCopy(
+    volume_copy = forensics.CreateVolumeCopy(
         self.zone, volume_id=self.volume_to_copy)
     self.volumes.append((self.aws, volume_copy))
     # Create and start the analysis VM and attach the boot volume
-    self.analysis_vm = self._RunStartAnalysisVm(
+    self.analysis_vm, _ = forensics.StartAnalysisVm(
         self.analysis_vm_name,
         self.zone,
-        attach_volumes=[volume_copy.volume_id]
+        10,
+        attach_volumes=[(volume_copy.volume_id, '/dev/sdp')]
     )
 
     # The forensic instance should be live in the analysis AWS account and
@@ -286,56 +252,8 @@ class EndToEndTest(unittest.TestCase):
 
   @classmethod
   @typing.no_type_check
-  def _RunStartAnalysisVm(cls, vm_name, zone, attach_volumes=None):
-    cmd = cls.cli.PrepareStartAnalysisVmCmd(
-        vm_name, zone, attach_volumes=attach_volumes)
-    try:
-      output = subprocess.check_output(
-          cmd.split(), stderr=subprocess.STDOUT, shell=False)
-    except subprocess.CalledProcessError as error:
-      raise ResourceCreationError(
-          'Failed creating VM in account profile {0:s}'.format(
-              cls.aws.aws_profile), __name__) from error
-    logger.info(output)
-    try:
-      return cls.aws.ec2.GetInstancesByName(vm_name)[0]
-    except ResourceNotFoundError as error:
-      raise ResourceNotFoundError(
-          'Failed finding created VM in account profile {0:s}'.format(
-              cls.aws.aws_profile), __name__) from error
-
-  @classmethod
-  @typing.no_type_check
-  def _RunCreateVolumeCopy(
-      cls, zone, dst_zone=None, instance_id=None, volume_id=None):
-    cmd = cls.cli.PrepareCreateVolumeCopyCmd(
-        zone, dst_zone=dst_zone, instance_id=instance_id, volume_id=volume_id)
-    try:
-      output = subprocess.check_output(
-          cmd.split(), stderr=subprocess.STDOUT, shell=False)
-    except subprocess.CalledProcessError as error:
-      raise ResourceCreationError('Failed copying volume', __name__) from error
-    if not output:
-      raise ResourceCreationError(
-          'Could not find volume copy result', __name__)
-    volume_copy_name = output.decode('utf-8').split(' ')[-1]
-    volume_copy_name = volume_copy_name[:volume_copy_name.rindex('copy') + 4]
-    logger.info(output)
-    logger.info("Volume successfully copied to {0:s}".format(
-        volume_copy_name))
-    try:
-      return cls.aws.ebs.GetVolumesByName(volume_copy_name)[0]
-    except ResourceNotFoundError as error:
-      raise ResourceNotFoundError(
-          'Failed finding copied volume in account profile {0:s}'.format(
-              cls.aws.aws_profile), __name__) from error
-
-  @classmethod
-  @typing.no_type_check
   @IgnoreWarnings
   def tearDownClass(cls):
-    # Wait a bit so that AWS sync
-    sleep(30)
     # Delete the instance
     cls.analysis_vm.Delete()
 
@@ -348,9 +266,6 @@ class EndToEndTest(unittest.TestCase):
         client.get_waiter('volume_deleted').wait(VolumeIds=[volume.volume_id])
       except (client.exceptions.ClientError,
               botocore.exceptions.WaiterError) as exception:
-        if 'InvalidVolume.NotFound' in str(exception):
-          # Volume already deleted, continue
-          continue
         raise RuntimeError('Could not complete cleanup: {0:s}'.format(
             str(exception))) from exception
       logger.info('Volume {0:s} successfully deleted.'.format(volume.volume_id))
