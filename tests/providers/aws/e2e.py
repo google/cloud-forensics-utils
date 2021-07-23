@@ -261,7 +261,7 @@ class EndToEndTest(unittest.TestCase):
       security_group_id=self.security_group_id,
       cleanup_iam=True)
 
-    aws_account = account.AWSAccount(self.dst_zone)
+    aws_account = account.AWSAccount(self.zone)
     directory = '{0:s}/{1:s}/'.format(object_path, self.snapshot_id)
     self.assertEqual(
       aws_account.s3.CheckForObject(bucket, directory + 'image.bin'), True)

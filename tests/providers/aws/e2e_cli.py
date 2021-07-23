@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """End to end test for the aws cli utility."""
+import os
 import subprocess
 import typing
 import unittest
@@ -23,6 +24,7 @@ import botocore
 from libcloudforensics.errors import ResourceNotFoundError
 from libcloudforensics.errors import ResourceCreationError
 from libcloudforensics.providers.aws.internal.common import EC2_SERVICE
+from libcloudforensics.providers.aws.internal.common import S3_SERVICE
 from libcloudforensics.providers.aws.internal import account
 from libcloudforensics import logging_utils
 from tests.providers.aws import aws_cli
@@ -351,6 +353,75 @@ class EndToEndTest(unittest.TestCase):
             str(exception))) from exception
       logger.info('Volume {0:s} successfully deleted.'.format(volume.volume_id))
 
+class S3EndToEndTest(unittest.TestCase):
+  """End to end test on AWS.
+
+  To run this tests, add your project information to a project_info.json file:
+
+  {
+    "zone": "xxx" # required
+    "s3_bucket": "xxx", # required, should not exist
+  }
+
+  Export a PROJECT_INFO environment variable with the absolute path to your
+  file: "user@terminal:~$ export PROJECT_INFO='absolute/path/project_info.json'"
+
+  You will also need to configure your AWS account credentials as per the
+  guidelines in https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html # pylint: disable=line-too-long
+  """
+
+  @classmethod
+  @typing.no_type_check
+  @IgnoreWarnings
+  def setUpClass(cls):
+    try:
+      project_info = utils.ReadProjectInfo(['s3_bucket', 'zone'])
+    except (OSError, RuntimeError, ValueError) as exception:
+      raise unittest.SkipTest(str(exception))
+    cls.zone = project_info['zone']
+    cls.s3_bucket = project_info['s3_bucket']
+
+  @typing.no_type_check
+  @IgnoreWarnings
+  def testS3(self):
+    """S3 End to end test on AWS.
+
+    Test creating a bucket, uploading an object, fetching it, removing the
+    object and deleting the bucket.
+    """
+    aws_account = account.AWSAccount(self.zone)
+    client = aws_account.ClientApi(S3_SERVICE)
+    key = __file__.split('/')[-1]
+    local_path = os.path.realpath(__file__)
+
+    # Create the bucket
+    aws_account.s3.CreateBucket(self.s3_bucket)
+    self.assertIn('LocationConstraint',
+      client.get_bucket_location(Bucket=self.s3_bucket))
+
+    # Upload an object
+    aws_account.s3.Put(self.s3_bucket, local_path)
+    self.assertTrue(aws_account.s3.CheckForObject(self.s3_bucket, key))
+
+    # Remove the object
+    aws_account.s3.RmObject(self.s3_bucket, key)
+    self.assertTrue(not aws_account.s3.CheckForObject(self.s3_bucket, key))
+
+    # Remove the bucket
+    aws_account.s3.RmBucket(self.s3_bucket)
+    with self.assertRaises(client.exceptions.ClientError):
+      client.get_bucket_location(Bucket=self.s3_bucket)
+
+  @classmethod
+  @typing.no_type_check
+  @IgnoreWarnings
+  def tearDownClass(cls):
+    try:
+      aws_account = account.AWSAccount(cls.zone)
+      aws_account.s3.RmBucket(cls.s3_bucket)
+    except botocore.exceptions.ClientError:
+      # Was already deleted, or failed creation
+      pass
 
 if __name__ == '__main__':
   unittest.main()

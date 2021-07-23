@@ -284,6 +284,19 @@ class S3:
     s3_client = self.aws_account.ClientApi(common.S3_SERVICE)
     s3_client.delete_object(Bucket=bucket, Key=key)
 
+  def RmBucket(
+      self,
+      bucket: str
+    ) -> None:
+    """Delete an S3 bucket.
+
+    Args:
+      bucket (str): The bucket name.
+    """
+    logger.info('Deleting bucket {0:s}'.format(bucket))
+    s3_client = self.aws_account.ClientApi(common.S3_SERVICE)
+    s3_client.delete_bucket(Bucket=bucket)
+
 def SplitStoragePath(path: str) -> Tuple[str, str]:
   """Split a path to bucket name and object URI.
 
