@@ -263,7 +263,6 @@ class EndToEndTest(unittest.TestCase):
 
     aws_account = account.AWSAccount(self.dst_zone)
     directory = '{0:s}/{1:s}/'.format(object_path, self.snapshot_id)
-    # pylint: disable=line-too-long
     self.assertEqual(
       aws_account.s3.CheckForObject(bucket, directory + 'image.bin'), True)
     self.assertEqual(
@@ -272,7 +271,12 @@ class EndToEndTest(unittest.TestCase):
       aws_account.s3.CheckForObject(bucket, directory + 'hlog.txt'), True)
     self.assertEqual(
       aws_account.s3.CheckForObject(bucket, directory + 'mlog.txt'), True)
-    # pylint: enable=line-too-long
+
+    # Cleanup
+    aws_account.s3.RmObject(bucket, directory + 'image.bin')
+    aws_account.s3.RmObject(bucket, directory + 'log.txt')
+    aws_account.s3.RmObject(bucket, directory + 'hlog.txt')
+    aws_account.s3.RmObject(bucket, directory + 'mlog.txt')
 
   @typing.no_type_check
   def _StoreVolumeForCleanup(self, aws_account, volume):
