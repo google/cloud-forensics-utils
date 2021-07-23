@@ -418,8 +418,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
         labels_filter, disk_service_object, filter_union)
 
   def ListReservedExternalIps(self, zone: str) -> List[str]:
-    """Lists all static external IP addresses that are reserved (i.e. not in
-    use) and can be used in a particular zone.
+    """Lists all static external IP addresses that are available to a zone.
 
     The method first converts the zone to a region,
     and then queries the GCE addresses resource.
@@ -433,7 +432,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     # Convert zone to region
     zone_parts = zone.split('-')
     if len(zone_parts) != 3:
-      raise ValueError("Invalid zone: {}.")
+      raise ValueError('Invalid zone: {0:s}.'.format(zone))
     region = '-'.join(zone_parts[:-1])
     # Request list of addresses
     addresses_client = self.GceApi().addresses()
@@ -1049,7 +1048,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
       external_ip_address = access_config['natIP']
       # Inform analyst of the deletion
       logger.info(
-        "Deleting access config for {} (external IP: {})".format(
+        'Deleting access config for {0:s} (external IP: {1:s})'.format(
           self.name,
           external_ip_address,
         ))
