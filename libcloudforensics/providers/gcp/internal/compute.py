@@ -431,6 +431,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
 
     Raises:
       ValueError: If the zone is malformed.
+      errors.ResourceNotFoundError: If the request did not succeed.
     """
     # Convert zone to region
     zone_parts = zone.split('-')
@@ -440,7 +441,13 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     # Request list of addresses
     addresses_client = self.GceApi().addresses()
     request = addresses_client.list(project=self.project_id, region=region)
-    response = request.execute()
+    try:
+      response = request.execute()
+    except HttpError as exception:
+      message = 'Unable to list external IPs for {0:s}: {1:s}'.format(
+        self.project_id,
+        exception.error_details)
+      raise errors.ResourceNotFoundError(message, __name__)
     ip_addresses = []
     for address in response.get('items', []):
       is_reserved = address['status'] == 'RESERVED'
@@ -1010,6 +1017,9 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
         must be assigned.
       ip_addr (str): Optional. The static IP address that exposes the network
         interface. If None, the assigned IP address will be ephemeral.
+
+    Raises:
+      errors.ResourceCreationError: If the assignment did not succeed.
     """
     body = {}
     if ip_addr is not None:
@@ -1022,7 +1032,13 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
       networkInterface=net_if,
       body=body
     )
-    response = request.execute()
+    try:
+      response = request.execute()
+    except HttpError as exception:
+      message = 'Unable to assign IP to {0:s}: {1:s}'.format(
+        self.name,
+        exception.error_details)
+      raise errors.ResourceCreationError(message, __name__)
     self.BlockOperation(response, self.zone)
 
   def RemoveExternalIps(self) -> Dict[str, str]:
@@ -1034,6 +1050,9 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
     Returns:
       Dict[str, str]: A mapping from an instance's network
         interfaces to the corresponding removed external IP.
+
+    Raises:
+      errors.ResourceDeletionError: If the removal did not succeed.
     """
     external_ip_addresses = {}
     # Iterate through instance's network interfaces, removing
@@ -1069,7 +1088,13 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
         instance=self.name,
         accessConfig=access_config_name,
         networkInterface=network_interface_name)
-      response = request.execute()
+      try:
+        response = request.execute()
+      except HttpError as exception:
+        message = 'Unable to delete access config for {0:s}: {1:s}'.format(
+          self.name,
+          exception.error_details)
+        raise errors.ResourceDeletionError(message, __name__)
       self.BlockOperation(response, zone=self.zone)
       # Save deleted external IP address
       external_ip_addresses[network_interface_name] = external_ip_address
