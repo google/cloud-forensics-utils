@@ -440,21 +440,22 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     region = '-'.join(zone_parts[:-1])
     # Request list of addresses
     addresses_client = self.GceApi().addresses()
-    request = addresses_client.list(project=self.project_id, region=region)
+    params = dict(project=self.project_id, region=region)
     try:
-      response = request.execute()
+      responses = common.ExecuteRequest(addresses_client, 'list', params)
     except HttpError as exception:
       message = 'Unable to list external IPs for {0:s}: {1:s}'.format(
         self.project_id,
         exception.error_details)
       raise errors.ResourceNotFoundError(message, __name__)
     ip_addresses = []
-    for address in response.get('items', []):
-      is_reserved = address['status'] == 'RESERVED'
-      is_external = address['addressType'] == 'EXTERNAL'
-      if is_reserved and is_external:
-        ip_address = address['address']
-        ip_addresses.append(ip_address)
+    for response in responses:
+      for address in response.get('items', []):
+        is_reserved = address['status'] == 'RESERVED'
+        is_external = address['addressType'] == 'EXTERNAL'
+        if is_reserved and is_external:
+          ip_address = address['address']
+          ip_addresses.append(ip_address)
     return ip_addresses
 
   def _ListByLabel(self,
@@ -1025,7 +1026,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
     if ip_addr is not None:
       body['natIP'] = ip_addr
     instances_client = self.GceApi().instances()
-    request = instances_client.addAccessConfig(
+    params = dict(
       project=self.project_id,
       zone=self.zone,
       instance=self.name,
@@ -1033,7 +1034,10 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
       body=body
     )
     try:
-      response = request.execute()
+      # Safe to unpack, as the response is not paged
+      response = common.ExecuteRequest(instances_client,
+                                       'addAccessConfig',
+                                       params)[0]
     except HttpError as exception:
       message = 'Unable to assign IP to {0:s}: {1:s}'.format(
         self.name,
@@ -1082,14 +1086,17 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
         ))
       # Execute the IP address removal by deleting access config
       gce_instance_client = self.GceApi().instances()
-      request = gce_instance_client.deleteAccessConfig(
+      params = dict(
         project=self.project_id,
         zone=self.zone,
         instance=self.name,
         accessConfig=access_config_name,
         networkInterface=network_interface_name)
       try:
-        response = request.execute()
+        # Safe to unpack since this response is not paged
+        response = common.ExecuteRequest(gce_instance_client,
+                                         'deleteAccessConfig',
+                                         params)[0]
       except HttpError as exception:
         message = 'Unable to delete access config for {0:s}: {1:s}'.format(
           self.name,
