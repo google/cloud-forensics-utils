@@ -683,5 +683,5 @@ class EC2:
       snapshot_id (str): the snapshot id to fetch info for (snap-xxxxxx).
     """
     client = self.aws_account.ClientApi(common.EC2_SERVICE)
-    return Dict(client.describe_snapshots(SnapshotIds=[snapshot_id])\
+    return dict(client.describe_snapshots(SnapshotIds=[snapshot_id])\
       ['Snapshots'][0])
