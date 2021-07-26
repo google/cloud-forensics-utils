@@ -417,6 +417,9 @@ def CopyEBSSnapshotToS3(
   prefix = '{0:s}/{1:s}/'.format(object_path, snapshot_id)
   files = ['image.bin', 'log.txt', 'hlog.txt', 'mlog.txt']
 
+  logger.info('Transfer expected to take {0:d} seconds'.
+    format(snapshot_size * transfer_speed))
+
   for percentile in percentiles:
     curr_step = int(percentile * snapshot_size * transfer_speed)
     logger.info('Waiting {0:d} seconds ({1:d} seconds total wait time) '
