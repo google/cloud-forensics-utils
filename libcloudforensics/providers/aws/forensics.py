@@ -406,24 +406,29 @@ def CopyEBSSnapshotToS3(
     terminate_on_shutdown=True,
     wait_for_health_checks=False
   )
-  logger.info('Checking for output files with exponential backoff')
 
-  wait = 10
-  tries = 6 # 10.5 minutes
+  # Calculate the times we should check for completion based on volume size
+  # and transfer rates (documented in cloud-forensics-utils/issues/354)
+  snapshot_size = aws_account.ec2.GetSnapshotInfo(snapshot_id)['VolumeSize']
+  percentiles = [0.25, 0.5, 0.85, 1.15, 1.5, 2.0]
+  transfer_speed = 150 # seconds per GB
+  curr_wait = 0
   success = False
   prefix = '{0:s}/{1:s}/'.format(object_path, snapshot_id)
   files = ['image.bin', 'log.txt', 'hlog.txt', 'mlog.txt']
 
-  while tries:
-    tries -= 1
-    logger.info('Waiting {0:d} seconds'.format(wait))
-    sleep(wait)
-    wait *= 2
+  for percentile in percentiles:
+    curr_step = int(percentile * snapshot_size * transfer_speed)
+    logger.info('Waiting {0:d} seconds ({1:d} seconds total wait time) '
+      'to check for outputs'.format(curr_step - curr_wait, curr_step))
+    sleep(curr_step - curr_wait)
+    curr_wait = curr_step
 
-    checks = [aws_account.s3.CheckForObject(bucket, prefix + file) for file in
-      files]
+    checks = [aws_account.s3.CheckForObject(bucket, prefix + file)
+      for file in files]
     if all(checks):
       success = True
+      logger.info('Output files found')
       break
 
   if not cleanup_iam:

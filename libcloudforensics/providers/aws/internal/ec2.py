@@ -672,3 +672,16 @@ class EC2:
       raise errors.ResourceCreationError(
         'Could not modify instance attributes: {0!s}'.format(
            exception), __name__) from exception
+
+  def GetSnapshotInfo(
+    self,
+    snapshot_id: str,
+    ) -> Dict[str, Any]:
+    """Get information about the snapshot.
+
+    Args:
+      snapshot_id (str): the snapshot id to fetch info for (snap-xxxxxx).
+    """
+    client = self.aws_account.ClientApi(common.EC2_SERVICE)
+    return Dict(client.describe_snapshots(SnapshotIds=[snapshot_id])\
+      ['Snapshots'][0])
