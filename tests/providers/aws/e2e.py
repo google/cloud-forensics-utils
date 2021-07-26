@@ -17,8 +17,8 @@
 import typing
 import unittest
 import warnings
-import botocore
 import os
+import botocore
 
 from libcloudforensics.providers.aws.internal.common import EC2_SERVICE
 from libcloudforensics.providers.aws.internal.common import S3_SERVICE
