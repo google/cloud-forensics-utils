@@ -411,7 +411,7 @@ def CopyEBSSnapshotToS3(
   # and transfer rates (documented in cloud-forensics-utils/issues/354)
   snapshot_size = aws_account.ec2.GetSnapshotInfo(snapshot_id)['VolumeSize']
   percentiles = [0.25, 0.5, 0.85, 1.15, 1.5, 2.0]
-  transfer_speed = 150 # seconds per GB
+  transfer_speed = 60 # seconds per GB
   curr_wait = 0
   success = False
   prefix = '{0:s}/{1:s}/'.format(object_path, snapshot_id)
