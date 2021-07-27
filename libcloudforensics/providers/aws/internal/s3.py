@@ -255,6 +255,7 @@ class S3:
       s3_path: str
     ) -> None:
     """Remove an object from S3.
+
     Args:
       s3_path (str): The path of the object to remove.
     """
@@ -270,6 +271,7 @@ class S3:
       key: str
     ) -> None:
     """Remove an object from S3.
+
     Args:
       bucket (str): The S3 bucket.
       key (str): The object key (path).
@@ -285,6 +287,7 @@ class S3:
       bucket: str
     ) -> None:
     """Delete an S3 bucket.
+
     Args:
       bucket (str): The bucket name.
     """

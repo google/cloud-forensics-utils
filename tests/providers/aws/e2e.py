@@ -312,6 +312,7 @@ class EndToEndTest(unittest.TestCase):
 
 class S3EndToEndTest(unittest.TestCase):
   """End to end test on AWS.
+  
   To run this tests, add your project information to a project_info.json file:
   {
     "zone": "xxx" # required
@@ -338,6 +339,7 @@ class S3EndToEndTest(unittest.TestCase):
   @IgnoreWarnings
   def testS3(self):
     """S3 End to end test on AWS.
+
     Test creating a bucket, uploading an object, fetching it, removing the
     object and deleting the bucket.
     """
@@ -357,7 +359,7 @@ class S3EndToEndTest(unittest.TestCase):
 
     # Remove the object
     aws_account.s3.RmObject(self.s3_bucket, key)
-    self.assertTrue(not aws_account.s3.CheckForObject(self.s3_bucket, key))
+    self.assertFalse(aws_account.s3.CheckForObject(self.s3_bucket, key))
 
     # Remove the bucket
     aws_account.s3.RmBucket(self.s3_bucket)
