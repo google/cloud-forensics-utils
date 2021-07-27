@@ -660,6 +660,9 @@ class EC2:
     Args:
       instance_id (str): The instance ID (i-xxxxxx)
       sg_id (str): The Security Group ID (sg-xxxxxx)
+
+    Raises:
+      ResourceNotFoundError: If the snapshot ID cannot be found.
     """
     client = self.aws_account.ClientApi(common.EC2_SERVICE)
 
@@ -683,5 +686,10 @@ class EC2:
       snapshot_id (str): the snapshot id to fetch info for (snap-xxxxxx).
     """
     client = self.aws_account.ClientApi(common.EC2_SERVICE)
-    return dict(client.describe_snapshots(SnapshotIds=[snapshot_id])\
-      ['Snapshots'][0])
+    try:
+      response = client.describe_snapshots(SnapshotIds=[snapshot_id])
+    except client.exceptions.ClientError as exception:
+      raise errors.ResourceNotFoundError(
+          'Could not find snapshot {0:s}: {1!s}'.format(
+              snapshot_id, exception), __name__) from exception
+    return dict(response['Snapshots'][0])

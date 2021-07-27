@@ -335,6 +335,7 @@ def CopyEBSSnapshotToS3(
 
   Raises:
     ResourceCreationError: If any dependent resource could not be created.
+    ResourceNotFoundError: If the snapshot ID cannot be found.
   """
 
   # Correct destination if necessary
