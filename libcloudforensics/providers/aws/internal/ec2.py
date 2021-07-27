@@ -662,7 +662,7 @@ class EC2:
       sg_id (str): The Security Group ID (sg-xxxxxx)
 
     Raises:
-      ResourceNotFoundError: If the snapshot ID cannot be found.
+      ResourceCreationError: If the instance or security group cannot be found.
     """
     client = self.aws_account.ClientApi(common.EC2_SERVICE)
 
@@ -684,6 +684,9 @@ class EC2:
 
     Args:
       snapshot_id (str): the snapshot id to fetch info for (snap-xxxxxx).
+
+    Raises:
+      ResourceNotFoundError: If the snapshot ID cannot be found.
     """
     client = self.aws_account.ClientApi(common.EC2_SERVICE)
     try:
