@@ -417,6 +417,50 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     return self._ListByLabel(
         labels_filter, disk_service_object, filter_union)
 
+  def ListReservedExternalIps(self, zone: str) -> List[str]:
+    """Lists all static external IP addresses that are available to a zone.
+
+    The method first converts the zone to a region,
+    and then queries the GCE addresses resource.
+
+    Args:
+      zone (str): The zone in which the returned IPs would be available.
+
+    Returns:
+      List[str]: The list of available IPs in the specified zone.
+
+    Raises:
+      ValueError: If the zone is malformed.
+      errors.ResourceNotFoundError: If the request did not succeed.
+    """
+    # Convert zone to region
+    zone_parts = zone.split('-')
+    if len(zone_parts) != 3:
+      raise ValueError('Invalid zone: {0:s}.'.format(zone))
+    region = '-'.join(zone_parts[:-1])
+    # Request list of addresses
+    addresses_client = self.GceApi().addresses()
+    params = {
+      'project': self.project_id,
+      'region': region
+   }
+    try:
+      responses = common.ExecuteRequest(addresses_client, 'list', params)
+    except HttpError as exception:
+      message = 'Unable to list external IPs for {0:s}: {1:s}'.format(
+        self.project_id,
+        exception.error_details)
+      raise errors.ResourceNotFoundError(message, __name__) from exception
+    ip_addresses = []
+    for response in responses:
+      for address in response.get('items', []):
+        is_reserved = address['status'] == 'RESERVED'
+        is_external = address['addressType'] == 'EXTERNAL'
+        if is_reserved and is_external:
+          ip_address = address['address']
+          ip_addresses.append(ip_address)
+    return ip_addresses
+
   def _ListByLabel(self,
                    labels_filter: Dict[str, str],
                    service_object: 'googleapiclient.discovery.Resource',
@@ -962,6 +1006,111 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
         logger.info(
             self.FormatLogMessage(
                 'Could not find disk: {0:s}, skipping'.format(disk_name)))
+
+  def AssignExternalIp(self,
+                       net_if: str,
+                       ip_addr: Optional[str] = None) -> None:
+    """Assigns an external IP to an instance's network interface.
+
+    The instance must not have an IP assigned to the network interface when
+    calling this method. If the IP address is specified, it must be one that
+    is available to the project.
+
+    Args:
+      net_if (str): The instance's network interface to which the IP address
+        must be assigned.
+      ip_addr (str): Optional. The static IP address that exposes the network
+        interface. If None, the assigned IP address will be ephemeral.
+
+    Raises:
+      errors.ResourceCreationError: If the assignment did not succeed.
+    """
+    body = {}
+    if ip_addr is not None:
+      body['natIP'] = ip_addr
+    instances_client = self.GceApi().instances()
+    params = {
+      'project': self.project_id,
+      'zone': self.zone,
+      'instance': self.name,
+      'networkInterface': net_if,
+      'body': body
+    }
+    try:
+      # Safe to unpack, as the response is not paged
+      response = common.ExecuteRequest(instances_client,
+                                       'addAccessConfig',
+                                       params)[0]
+    except HttpError as exception:
+      message = 'Unable to assign IP to {0:s}: {1:s}'.format(
+        self.name,
+        exception.error_details)
+      raise errors.ResourceCreationError(message, __name__) from exception
+    self.BlockOperation(response, self.zone)
+
+  def RemoveExternalIps(self) -> Dict[str, str]:
+    """Removes any external IP of the instance, breaking ongoing connections.
+
+    Note that if the instance's IP address was static, that
+    the IP will still belong to the project.
+
+    Returns:
+      Dict[str, str]: A mapping from an instance's network
+        interfaces to the corresponding removed external IP.
+
+    Raises:
+      errors.ResourceDeletionError: If the removal did not succeed.
+    """
+    external_ip_addresses = {}
+    # Iterate through instance's network interfaces, removing
+    # all access configurations (NAT)
+    instance_info = self.GetOperation()
+    for network_interface in instance_info.get('networkInterfaces', []):
+      access_configs = network_interface.get('accessConfigs', [])
+      if len(access_configs) == 0:
+        # No way to access this network interface externally,
+        # skip the removal
+        continue
+      network_interface_name = network_interface['name']
+      # From the `get` operation response documentation, for
+      # the `networkInterfaces[].accessConfigs[]` field:
+      #
+      # > Currently, only one access config, ONE_TO_ONE_NAT, is
+      #   supported.
+      #
+      # It is thus safe to access only the first element.
+      access_config = access_configs[0]
+      access_config_name = access_config['name']
+      external_ip_address = access_config['natIP']
+      logger.info(
+        'Deleting access config for {0:s} (external IP: {1:s})'.format(
+          self.name,
+          external_ip_address,
+        ))
+      # Execute the IP address removal by deleting access config
+      gce_instance_client = self.GceApi().instances()
+      params = {
+        'project': self.project_id,
+        'zone': self.zone,
+        'instance': self.name,
+        'accessConfig': access_config_name,
+        'networkInterface': network_interface_name
+      }
+      try:
+        # Safe to unpack since this response is not paged
+        response = common.ExecuteRequest(gce_instance_client,
+                                         'deleteAccessConfig',
+                                         params)[0]
+      except HttpError as exception:
+        message = 'Unable to delete access config for {0:s}: {1:s}'.format(
+          self.name,
+          exception.error_details)
+        raise errors.ResourceDeletionError(message, __name__) from exception
+      self.BlockOperation(response, zone=self.zone)
+      # Save deleted external IP address
+      external_ip_addresses[network_interface_name] = external_ip_address
+    # Return the deleted external IP address for future use
+    return external_ip_addresses
 
   def SetTags(self, new_tags: List[str]) -> None:
     """Sets tags for the compute instance.
