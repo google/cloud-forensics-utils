@@ -441,7 +441,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     # Request list of addresses
     addresses_client = self.GceApi().addresses()
     params = {
-      'project': self.project_id, 
+      'project': self.project_id,
       'region': region
    }
     try:
