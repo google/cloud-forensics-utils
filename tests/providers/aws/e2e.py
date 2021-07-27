@@ -312,7 +312,7 @@ class EndToEndTest(unittest.TestCase):
 
 class S3EndToEndTest(unittest.TestCase):
   """End to end test on AWS.
-  
+
   To run this tests, add your project information to a project_info.json file:
   {
     "zone": "xxx" # required
