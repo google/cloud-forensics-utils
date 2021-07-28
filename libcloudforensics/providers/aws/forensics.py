@@ -405,8 +405,11 @@ def CopyEBSSnapshotToS3(
     userdata=startup_script,
     instance_profile=instance_profile_arn,
     terminate_on_shutdown=True,
-    wait_for_health_checks=True
+    wait_for_health_checks=False
   )
+
+  logger.info('Pausing 60 seconds while copy instance launches')
+  sleep(60)
 
   # Calculate the times we should check for completion based on volume size
   # and transfer rates (documented in cloud-forensics-utils/issues/354)
