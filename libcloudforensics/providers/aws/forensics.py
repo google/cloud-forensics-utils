@@ -405,7 +405,7 @@ def CopyEBSSnapshotToS3(
     userdata=startup_script,
     instance_profile=instance_profile_arn,
     terminate_on_shutdown=True,
-    wait_for_health_checks=False
+    wait_for_health_checks=True
   )
 
   logger.info('Pausing 60 seconds while copy instance launches')
