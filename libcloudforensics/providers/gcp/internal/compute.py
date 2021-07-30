@@ -1075,6 +1075,80 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
       raise errors.ServiceAccountRemovalError('Service account detatchment '
           'failure: {0:s}'.format(str(exception)), __name__)
 
+  def GetNetworkInterfaces(self) -> List[Any]:
+    """Get the network interfaces for an instance.
+
+    Returns:
+      List[Any]: A list of network interfaces in the format documented at
+        https://cloud.google.com/compute/docs/reference/rest/v1/instances/get 
+    """
+
+    get_operation = self.GetOperation()
+    return get_operation.get('networkInterfaces')
+
+  def _NormaliseFirewallRules(self, nic_rules: Dict[str, Any]) -> List[Any]:
+    """Normalise firewall policies and firewall rules into a common format.
+
+    Args:
+      nic_rules: the effective firewall rules for an individual NIC.
+
+    Returns:
+      The normalised firewall rules.
+    """
+    normalised_rules = []
+    firewall_policies = nic_rules['firewallPolicys']
+    firewalls = nic_rules['firewalls']
+
+    for policy_level, policy in enumerate(firewall_policies):
+      for rule in policy['rules']:
+        match = rule['match']
+        ingress = rule['direction'] == 'INGRESS'
+        normalised_rule = {
+            'type': 'policy',
+            'policy_level': policy_level,
+            'priority': rule['priority'],
+            'direction': rule['direction'],
+            'l4config': match['layer4Configs'],
+            'ips': match['srcIpRanges'] if ingress else match['destIpRanges'],
+            'action': rule['action']}
+        normalised_rules.append(normalised_rule)
+
+    for rule in firewalls:
+      ingress = rule['direction'] == 'INGRESS'
+      allow = 'allowed' in rule
+      normalised_rule = {
+          'type': 'firewall',
+          'policy_level': 99,
+          'priority': rule['priority'],
+          'direction': rule['direction'],
+          'l4config': rule['allowed'] if allow else rule['denied'],
+          'ips': (rule['sourceRanges'] if ingress else
+              rule['destinationRanges']),
+          'action': 'allow' if allow else 'deny'}
+      normalised_rules.append(normalised_rule)
+
+    return normalised_rules
+
+  def GetEffectiveFirewallRules(self) -> List[Any]:
+    """Get the effective firewall rules for an instance
+
+    Returns:
+      List[Any]: a list of effective firewall rules for an instance.
+    """
+    gce_instance_client = self.GceApi().instances()
+    network_interfaces = self.GetNetworkInterfaces()
+    fw_rules = {}
+    for nic in network_interfaces:
+      nic_name = nic['name']
+      request = gce_instance_client.getEffectiveFirewalls(
+          project=self.project_id, instance=self.name, zone=self.zone,
+          networkInterface=nic_name)
+      response = request.execute()
+      fw_rules[nic_name] = self._NormaliseFirewallRules(response)
+
+    return fw_rules
+
+
 class GoogleComputeDisk(compute_base_resource.GoogleComputeBaseResource):
   """Class representing a Compute Engine disk."""
 
