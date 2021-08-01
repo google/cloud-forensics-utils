@@ -27,16 +27,17 @@ from tools import gcp_cli
 PROVIDER_TO_FUNC = {
     'aws': {
         'copydisk': aws_cli.CreateVolumeCopy,
+        'createbucket': aws_cli.CreateBucket,
         'deleteinstance': aws_cli.DeleteInstance,
+        'gcstos3': aws_cli.GCSToS3,
+        'imageebssnapshottos3': aws_cli.ImageEBSSnapshotToS3,
+        'listdisks': aws_cli.ListVolumes,
         'listimages': aws_cli.ListImages,
         'listinstances': aws_cli.ListInstances,
-        'listdisks': aws_cli.ListVolumes,
+        'quarantinevm': aws_cli.InstanceNetworkQuarantine,
         'querylogs': aws_cli.QueryLogs,
         'startvm': aws_cli.StartAnalysisVm,
-        'createbucket': aws_cli.CreateBucket,
-        'uploadtobucket': aws_cli.UploadToBucket,
-        'gcstos3': aws_cli.GCSToS3,
-        'imageebssnapshottos3': aws_cli.ImageEBSSnapshotToS3
+        'uploadtobucket': aws_cli.UploadToBucket
     },
     'az': {
         'copydisk': az_cli.CreateDiskCopy,
@@ -245,6 +246,14 @@ def Main() -> None:
                 ('--force_delete',
                  'Force instance deletion when deletion protection is '
                  'activated.', False),
+            ])
+  AddParser('aws', aws_subparsers, 'quarantinevm', 'Put a VM in '
+                                                   'network quarantine.',
+            args=[
+                ('instance_id', 'ID (i-xxxxxx) of the instance to quarantine.',
+                    None),
+                ('--exempted_src_subnets', 'Comma separated list of source '
+                    'subnets to exempt from ingress firewall rules.', None)
             ])
 
   # Azure parser options

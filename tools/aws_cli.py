@@ -268,3 +268,22 @@ def DeleteInstance(args: 'argparse.Namespace') -> None:
   instance = aws_account.ec2.GetInstancesByNameOrId(
       args.instance_name, args.instance_id, args.region)[0]
   instance.Delete(force_delete=args.force_delete)
+
+def InstanceNetworkQuarantine(args: 'argparse.Namespace') -> None:
+  """Put an AWS Ec2 instance in network quarantine.
+
+  Args:
+    args (argparse.Namespace): Arguments from ArgumentParser.
+  """
+
+  exempted_src_subnets = []
+  if args.exempted_src_subnets:
+    exempted_src_subnets = args.exempted_src_subnets.split(',')
+    # Check if exempted_src_subnets argument exists and if there
+    # are any empty entries.
+    if not (exempted_src_subnets and all(exempted_src_subnets)):
+      logger.error('parameter --exempted_src_subnets: {0:s}'.format(
+          args.exempted_src_subnets))
+      return
+  forensics.InstanceNetworkQuarantine(args.zone,
+      args.instance_id, exempted_src_subnets)
