@@ -1224,17 +1224,6 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
       raise errors.ServiceAccountRemovalError('Service account detatchment '
           'failure: {0:s}'.format(str(exception)), __name__)
 
-  def GetNetworkInterfaces(self) -> List[Any]:
-    """Get the network interfaces for an instance.
-
-    Returns:
-      List[Any]: A list of network interfaces in the format documented at
-        https://cloud.google.com/compute/docs/reference/rest/v1/instances/get 
-    """
-
-    get_operation = self.GetOperation()
-    return get_operation.get('networkInterfaces')
-
   def _NormaliseFirewallRules(self, nic_rules: Dict[str, Any]) -> List[Any]:
     """Normalise firewall policies and firewall rules into a common format.
 
@@ -1242,7 +1231,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
       nic_rules: the effective firewall rules for an individual NIC.
 
     Returns:
-      List[Dict[str, Any]]: The normalised firewall rules per NIC with
+      List[Dict[str, Any]]: The normalised firewall rules for a NIC with
         individual rules in the following format:
         {
           'type': 'policy' OR 'firewall',
@@ -1282,7 +1271,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
       is_allow = 'allowed' in rule
       normalised_rule = {
           'type': 'firewall',
-          'policy_level': 99,
+          'policy_level': None,
           'priority': rule['priority'],
           'direction': rule['direction'],
           'l4config': rule['allowed'] if is_allow else rule['denied'],
@@ -1294,15 +1283,16 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
     return normalised_rules
 
   def GetEffectiveFirewallRules(self) -> List[Any]:
-    """Get the effective firewall rules for an instance
+    """Get the effective firewall rules for an instance.
 
     Returns:
-      List[Any]: a list of effective firewall rules per NIC for an instance.
+      List[Any]: a list of effective firewall rules per NIC.
     """
     gce_instance_client = self.GceApi().instances()
-    network_interfaces = self.GetNetworkInterfaces()
+    instance_info = self.GetOperation()
     fw_rules = {}
-    for nic in network_interfaces:
+
+    for nic in instance_info.get('networkInterfaces', []):
       nic_name = nic['name']
       request = gce_instance_client.getEffectiveFirewalls(
           project=self.project_id, instance=self.name, zone=self.zone,
