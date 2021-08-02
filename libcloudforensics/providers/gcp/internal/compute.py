@@ -1242,38 +1242,53 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
       nic_rules: the effective firewall rules for an individual NIC.
 
     Returns:
-      The normalised firewall rules.
+      List[Dict[str, Any]]: The normalised firewall rules per NIC with
+        individual rules in the following format:
+        {
+          'type': 'policy' OR 'firewall',
+          'policy_level': int,
+          'priority': int,
+          'direction': 'INGRESS' OR 'EGRESS',
+          'l4config': [
+            {
+              'ipProtocol': 'tcp' OR 'udp OR 'icmp',
+              'ports': List[str]
+            }]
+          'ips': List[str],
+          'action': 'allow' OR 'deny' OR 'goto_next'
+        }
     """
+
     normalised_rules = []
     firewall_policies = nic_rules['firewallPolicys']
     firewalls = nic_rules['firewalls']
 
     for policy_level, policy in enumerate(firewall_policies):
       for rule in policy['rules']:
-        match = rule['match']
-        ingress = rule['direction'] == 'INGRESS'
+        is_ingress = rule['direction'] == 'INGRESS'
         normalised_rule = {
             'type': 'policy',
             'policy_level': policy_level,
             'priority': rule['priority'],
             'direction': rule['direction'],
-            'l4config': match['layer4Configs'],
-            'ips': match['srcIpRanges'] if ingress else match['destIpRanges'],
+            'l4config': rule['match']['layer4Configs'],
+            'ips': (rule['match']['srcIpRanges'] if is_ingress else
+                    rule['match']['destIpRanges']),
             'action': rule['action']}
         normalised_rules.append(normalised_rule)
 
     for rule in firewalls:
-      ingress = rule['direction'] == 'INGRESS'
-      allow = 'allowed' in rule
+      is_ingress = rule['direction'] == 'INGRESS'
+      is_allow = 'allowed' in rule
       normalised_rule = {
           'type': 'firewall',
           'policy_level': 99,
           'priority': rule['priority'],
           'direction': rule['direction'],
-          'l4config': rule['allowed'] if allow else rule['denied'],
-          'ips': (rule['sourceRanges'] if ingress else
+          'l4config': rule['allowed'] if is_allow else rule['denied'],
+          'ips': (rule['sourceRanges'] if is_ingress else
               rule['destinationRanges']),
-          'action': 'allow' if allow else 'deny'}
+          'action': 'allow' if is_allow else 'deny'}
       normalised_rules.append(normalised_rule)
 
     return normalised_rules
@@ -1282,7 +1297,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
     """Get the effective firewall rules for an instance
 
     Returns:
-      List[Any]: a list of effective firewall rules for an instance.
+      List[Any]: a list of effective firewall rules per NIC for an instance.
     """
     gce_instance_client = self.GceApi().instances()
     network_interfaces = self.GetNetworkInterfaces()
