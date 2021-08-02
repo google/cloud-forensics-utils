@@ -1234,17 +1234,17 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
       List[Dict[str, Any]]: The normalised firewall rules for a NIC with
         individual rules in the following format:
         {
-          'type': 'policy' OR 'firewall',
+          'type': 'policy' or 'firewall',
           'policy_level': int,
           'priority': int,
-          'direction': 'INGRESS' OR 'EGRESS',
+          'direction': 'INGRESS' or 'EGRESS',
           'l4config': [
             {
-              'ipProtocol': 'tcp' OR 'udp OR 'icmp',
+              'ipProtocol': 'tcp' or 'udp or 'icmp',
               'ports': List[str]
             }]
           'ips': List[str],
-          'action': 'allow' OR 'deny' OR 'goto_next'
+          'action': 'allow' or 'deny' or 'goto_next'
         }
     """
 

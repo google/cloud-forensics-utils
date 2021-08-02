@@ -572,8 +572,8 @@ MOCK_NETWORK_INTERFACES = [
                 'networkTier': 'PREMIUM',
                 'kind': 'compute#accessConfig'
                 }
-        ], 
-        'fingerprint': 'bm9mcGZwZnA=', 
+        ],
+        'fingerprint': 'bm9mcGZwZnA=',
         'kind': 'compute#networkInterface'}
 ]
 MOCK_EFFECTIVE_FIREWALLS = {
