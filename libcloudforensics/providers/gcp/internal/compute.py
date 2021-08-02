@@ -1282,11 +1282,11 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
 
     return normalised_rules
 
-  def GetEffectiveFirewallRules(self) -> List[Any]:
+  def GetEffectiveFirewallRules(self) -> Dict[str, List[Any]]:
     """Get the effective firewall rules for an instance.
 
     Returns:
-      List[Any]: a list of effective firewall rules per NIC.
+      Dict[str, List[Any]]: The effective firewall rules per NIC.
     """
     gce_instance_client = self.GceApi().instances()
     instance_info = self.GetOperation()
