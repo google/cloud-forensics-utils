@@ -470,9 +470,6 @@ def CheckInstanceSSHAuth(project_id: str,
         if 'natIP' in config:
           external_ips.append(config['natIP'])
 
-  if not external_ips:
-    return
-
   for ip in external_ips:
     # Will generate a log line on the target host: "Connection closed by
     # authenticating user root <your_ip> port <port> [preauth]"
@@ -484,3 +481,5 @@ def CheckInstanceSSHAuth(project_id: str,
     pattern_match = ssh_auth_pattern.search(ssh_stderr).group(1)
     if pattern_match:
       return pattern_match.replace('\r', '').split(',')
+
+  return None
