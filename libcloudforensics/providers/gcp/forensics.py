@@ -461,7 +461,7 @@ def CheckInstanceSSHAuth(project_id: str,
   project = gcp_project.GoogleCloudProject(project_id)
   instance = project.compute.GetInstance(instance_name)
   instance_info = instance.GetOperation()
-  networks = instance_info.get('networkInterfaces')
+  networks = instance_info.get('networkInterfaces', [])
 
   external_ips = []
   for network in networks:
@@ -478,8 +478,9 @@ def CheckInstanceSSHAuth(project_id: str,
     ssh_run = subprocess.run(ssh_command, capture_output=True)
     ssh_stderr = ssh_run.stderr.decode()
 
-    pattern_match = ssh_auth_pattern.search(ssh_stderr).group(1)
+    pattern_match = ssh_auth_pattern.search(ssh_stderr)
     if pattern_match:
-      return pattern_match.replace('\r', '').split(',')
+      match_group = pattern_match.group(1)
+      return match_group.replace('\r', '').split(',')
 
   return None
