@@ -250,6 +250,51 @@ class S3:
       return False
     return True
 
+  def RmObjectByPath(
+      self,
+      s3_path: str
+    ) -> None:
+    """Remove an object from S3.
+
+    Args:
+      s3_path (str): The path of the object to remove.
+    """
+    if not s3_path.startswith('s3://'):
+      s3_path = 's3://' + s3_path
+    bucket, key = SplitStoragePath(s3_path)
+
+    self.RmObject(bucket, key)
+
+  def RmObject(
+      self,
+      bucket: str,
+      key: str
+    ) -> None:
+    """Remove an object from S3.
+
+    Args:
+      bucket (str): The S3 bucket.
+      key (str): The object key (path).
+    """
+    if key.startswith('/'):
+      key = key.lstrip('/')
+
+    s3_client = self.aws_account.ClientApi(common.S3_SERVICE)
+    s3_client.delete_object(Bucket=bucket, Key=key)
+
+  def RmBucket(
+      self,
+      bucket: str
+    ) -> None:
+    """Delete an S3 bucket.
+
+    Args:
+      bucket (str): The bucket name.
+    """
+    logger.info('Deleting bucket {0:s}'.format(bucket))
+    s3_client = self.aws_account.ClientApi(common.S3_SERVICE)
+    s3_client.delete_bucket(Bucket=bucket)
+
 def SplitStoragePath(path: str) -> Tuple[str, str]:
   """Split a path to bucket name and object URI.
 

@@ -660,6 +660,9 @@ class EC2:
     Args:
       instance_id (str): The instance ID (i-xxxxxx)
       sg_id (str): The Security Group ID (sg-xxxxxx)
+
+    Raises:
+      ResourceCreationError: If the instance or security group cannot be found.
     """
     client = self.aws_account.ClientApi(common.EC2_SERVICE)
 
@@ -717,3 +720,24 @@ class EC2:
       raise errors.ResourceNotFoundError(
         'AssociationID {0:s} not found: {1!s}'.format(assoc_id,
            exception), __name__) from exception
+
+  def GetSnapshotInfo(
+    self,
+    snapshot_id: str,
+    ) -> Dict[str, Any]:
+    """Get information about the snapshot.
+
+    Args:
+      snapshot_id (str): the snapshot id to fetch info for (snap-xxxxxx).
+
+    Raises:
+      ResourceNotFoundError: If the snapshot ID cannot be found.
+    """
+    client = self.aws_account.ClientApi(common.EC2_SERVICE)
+    try:
+      response = client.describe_snapshots(SnapshotIds=[snapshot_id])
+    except client.exceptions.ClientError as exception:
+      raise errors.ResourceNotFoundError(
+          'Could not find snapshot {0:s}: {1!s}'.format(
+              snapshot_id, exception), __name__) from exception
+    return dict(response['Snapshots'][0])
