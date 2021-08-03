@@ -173,7 +173,7 @@ MOCK_GCE_OPERATION_LABELS_FAILED = {
         'message': 'Not Found'
     }
 }
-
+# pylint: disable=line-too-long
 MOCK_GCE_OPERATION_INSTANCES_GET = {
     # See https://cloud.google.com/compute/docs/reference/rest/v1/instances/get
     # for complete structure
@@ -188,8 +188,24 @@ MOCK_GCE_OPERATION_INSTANCES_GET = {
         'initializeParams': {
             'diskName': FAKE_DISK.name
         }
+    }],
+    'networkInterfaces': [{
+        'accessConfigs': [{
+            'kind': 'compute#accessConfig',
+            'name': 'External NAT',
+            'natIP': '8.8.8.8',
+            'networkTier': 'PREMIUM',
+            'type': 'ONE_TO_ONE_NAT'
+        }],
+        'fingerprint': 'bm9mcGZwZnA=',
+        'kind': 'compute#networkInterface',
+        'name': 'nic0',
+        'network': 'https://www.googleapis.com/compute/v1/projects/fake-project/global/networks/default',
+        'networkIP': '10.0.0.1',
+        'subnetwork': 'https://www.googleapis.com/compute/v1/projects/fake-project/regions/us-central1/subnetworks/default'
     }]
 }
+# pylint: enable=line-too-long
 
 MOCK_GCS_BUCKETS = {
     'kind':
@@ -556,3 +572,9 @@ MOCK_GCM_METRICS_CPU = {
 # See: https://cloud.google.com/compute/docs/reference/rest/v1/disks
 REGEX_DISK_NAME = re.compile('^(?=.{1,63}$)[a-z]([-a-z0-9]*[a-z0-9])?$')
 STARTUP_SCRIPT = 'scripts/startup.sh'
+
+# pylint: disable=line-too-long
+MOCK_SSH_VERBOSE_STDERR = b"""debug1: SSH2_MSG_SERVICE_ACCEPT received
+    debug1: Authentications that can continue: publickey,password,keyboard-interactive
+    debug1: Next authentication method: publickey"""
+# pylint: enable=line-too-long

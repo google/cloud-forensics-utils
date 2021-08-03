@@ -138,3 +138,17 @@ class GCPForensicsTest(unittest.TestCase):
                                gcp_mocks.FAKE_ANALYSIS_PROJECT.project_id,
                                instance_name='non-existent-instance',
                                zone=gcp_mocks.FAKE_INSTANCE.zone, disk_name='')
+
+  @typing.no_type_check
+  @mock.patch('libcloudforensics.providers.gcp.internal.project.GoogleCloudProject')
+  @mock.patch('subprocess.run')
+  def testCheckInstanceSSHAuth(self, mock_subprocess, mock_project):
+    """Test that ssh authentication options are properly parsed."""
+    mock_instance =  mock_project.return_value.compute.GetInstance.return_value
+    mock_instance.GetOperation.return_value = (
+        gcp_mocks.MOCK_GCE_OPERATION_INSTANCES_GET)
+    mock_subprocess.return_value.stderr = gcp_mocks.MOCK_SSH_VERBOSE_STDERR
+    ssh_auth = forensics.CheckInstanceSSHAuth(
+        'fake_project' , 'fake_instance')
+    self.assertListEqual(
+        ssh_auth, ['publickey', 'password', 'keyboard-interactive'])
