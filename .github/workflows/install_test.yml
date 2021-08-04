@@ -1,7 +1,7 @@
 name: Install and test
 
 on:
-  push
+  push:
   pull_request:
     types: [opened, synchronize, reopened]
 
