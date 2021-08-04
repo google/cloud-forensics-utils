@@ -75,3 +75,6 @@ class ServiceAccountRemovalError(LCFError):
 
 class InstanceProfileCreationError(LCFError):
   """Error when there is an issue creating an instance profile"""
+
+class OperationFailedError(LCFError):
+  """Error when an operation did not succeed."""

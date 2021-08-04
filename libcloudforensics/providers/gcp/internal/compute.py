@@ -1120,7 +1120,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
           be abondoned from.
 
     Raises:
-      errors.ResourceDeletionError: If the request did not succeed.
+      errors.OperationFailedError: If the request did not succeed.
     """
 
     def RaiseException(exception: Exception, details: str) -> None:
@@ -1130,7 +1130,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
         instance_group,
         details,
       )
-      raise errors.ResourceNotFoundError(msg, __name__) from exception
+      raise errors.OperationFailedError(msg, __name__) from exception
 
     mig_client = self.GceApi().instanceGroupManagers()
     params = {
