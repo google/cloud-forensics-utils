@@ -1123,7 +1123,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
       errors.ResourceDeletionError: If the request did not succeed.
     """
 
-    def RaiseException(exception, details):
+    def RaiseException(exception: Exception, details: str) -> None:
       msg = ('Unable to abandon {0:s} from managed '
              'instance group {1:s}: {2:s}').format(
         self.name,
