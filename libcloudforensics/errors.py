@@ -65,8 +65,13 @@ class ResourceCreationError(LCFError):
 class ResourceDeletionError(LCFError):
   """Error when an issue with deleting a resource is encountered."""
 
+
 class InstanceStateChangeError(LCFError):
   """Error when an issue with changing an instance state is encountered."""
 
+
 class ServiceAccountRemovalError(LCFError):
   """Error when an issue with removing a service account is encountered."""
+
+class InstanceProfileCreationError(LCFError):
+  """Error when there is an issue creating an instance profile"""

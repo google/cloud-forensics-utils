@@ -34,6 +34,13 @@ if TYPE_CHECKING:
 logging_utils.SetUpLogger(__name__)
 logger = logging_utils.GetLogger(__name__)
 
+# Default general purpose machine type used for the forensics VM
+DEFAULT_MACHINE_TYPE = 'e2-standard'
+
+# Supported number of cores for the default machine type
+# https://cloud.google.com/compute/docs/general-purpose-machines#e2-standard
+E2_STANDARD_CPU_CORES = [2, 4, 8, 16, 32]
+
 
 class GoogleCloudCompute(common.GoogleCloudComputeClient):
   """Class representing all Google Cloud Compute objects in a project.
@@ -112,8 +119,13 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
           for instance in response['items'][zone]['instances']:
             _, zone = instance['zone'].rsplit('/', 1)
             name = instance['name']
+            deletion_protection = instance.get('deletionProtection', False)
             instances[name] = GoogleComputeInstance(
-                self.project_id, zone, name, labels=instance.get('labels'))
+                self.project_id,
+                zone,
+                name,
+                labels=instance.get('labels'),
+                deletion_protection=deletion_protection)
         except KeyError:
           pass
 
@@ -276,6 +288,8 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
 
     Raises:
       RuntimeError: If virtual machine cannot be created.
+      ValueError: If the requested number of CPU cores is not available for the
+          machine type.
     """
 
     # Re-use instance if it already exists, or create a new one.
@@ -286,13 +300,18 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     except errors.ResourceNotFoundError:
       pass
 
-    machine_type = 'zones/{0:s}/machineTypes/e2-standard-{1:d}'.format(
-        self.default_zone, cpu_cores)
+    if cpu_cores not in E2_STANDARD_CPU_CORES:
+      raise ValueError(
+          'Number of requested CPU cores ({0:d}) not available for machine type'
+          ' {1:s}'.format(cpu_cores, DEFAULT_MACHINE_TYPE))
+
+    machine_type = 'zones/{0:s}/machineTypes/{1:s}-{2:d}'.format(
+        self.default_zone, DEFAULT_MACHINE_TYPE, cpu_cores)
     ubuntu_image = self.GceApi().images().getFromFamily(
         project=image_project, family=image_family).execute()
     source_disk_image = ubuntu_image['selfLink']
 
-    startup_script = utils.ReadStartupScript()
+    startup_script = utils.ReadStartupScript(utils.FORENSICS_STARTUP_SCRIPT_GCP)
 
     if packages:
       startup_script = startup_script.replace(
@@ -397,6 +416,50 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     disk_service_object = self.GceApi().disks()
     return self._ListByLabel(
         labels_filter, disk_service_object, filter_union)
+
+  def ListReservedExternalIps(self, zone: str) -> List[str]:
+    """Lists all static external IP addresses that are available to a zone.
+
+    The method first converts the zone to a region,
+    and then queries the GCE addresses resource.
+
+    Args:
+      zone (str): The zone in which the returned IPs would be available.
+
+    Returns:
+      List[str]: The list of available IPs in the specified zone.
+
+    Raises:
+      ValueError: If the zone is malformed.
+      errors.ResourceNotFoundError: If the request did not succeed.
+    """
+    # Convert zone to region
+    zone_parts = zone.split('-')
+    if len(zone_parts) != 3:
+      raise ValueError('Invalid zone: {0:s}.'.format(zone))
+    region = '-'.join(zone_parts[:-1])
+    # Request list of addresses
+    addresses_client = self.GceApi().addresses()
+    params = {
+      'project': self.project_id,
+      'region': region
+   }
+    try:
+      responses = common.ExecuteRequest(addresses_client, 'list', params)
+    except HttpError as exception:
+      message = 'Unable to list external IPs for {0:s}: {1:s}'.format(
+        self.project_id,
+        exception.error_details)
+      raise errors.ResourceNotFoundError(message, __name__) from exception
+    ip_addresses = []
+    for response in responses:
+      for address in response.get('items', []):
+        is_reserved = address['status'] == 'RESERVED'
+        is_external = address['addressType'] == 'EXTERNAL'
+        if is_reserved and is_external:
+          ip_address = address['address']
+          ip_addresses.append(ip_address)
+    return ip_addresses
 
   def _ListByLabel(self,
                    labels_filter: Dict[str, str],
@@ -872,19 +935,47 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
     response = request.execute()
     self.BlockOperation(response, zone=self.zone)
 
-  def Delete(self, delete_disks: bool = False) -> None:
+  def Delete(
+      self, delete_disks: bool = False, force_delete: bool = False) -> None:
     """Delete an Instance.
 
     Args:
       delete_disks (bool): force delete all attached disks (ignores the 'Keep
-        when instance is deleted' bit).
+          when instance is deleted' bit).
+      force_delete (bool): force delete the instance, even if deletionProtection
+          is set to true.
     """
+    if not force_delete and self.deletion_protection:
+      logger.warning('This instance is protected against accidental deletion.'
+                     'To delete it, pass the flag force_delete=True.')
+      # We can abort directly since calling the API will fail.
+      return
+
     disks_to_delete = []
     if delete_disks:
       disks_to_delete = [
           disk['source'].split('/')[-1] for disk in self.GetValue('disks')]
 
     gce_instance_client = self.GceApi().instances()
+
+    if force_delete and self.deletion_protection:
+      logger.info('Deletion protection detected. Disabling due to '
+                  'force_delete=True')
+      try:
+        request = gce_instance_client.setDeletionProtection(
+            project=self.project_id,
+            zone=self.zone,
+            resource=self.name,
+            deletionProtection=False)
+        response = request.execute()
+      except HttpError as exception:
+        logger.error('Unable to toggle deleteProtection on instance {0:s}: '
+                     '{1:s}'.format(self.name, str(exception)))
+        raise errors.ResourceDeletionError(
+            'Unable to toggle deleteProtection on instance {0:s}: {1!s}'.format(
+                self.name, exception), __name__) from exception
+      self.BlockOperation(response, zone=self.zone)
+
     logger.info(
         self.FormatLogMessage('Deleting Instance: {0:s}'.format(self.name)))
     try:
@@ -901,7 +992,9 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
         logger.error((
             'While deleting GCE instance {0:s} the following error occurred: '
             '{1:s}').format(self.name, str(exception)))
-        raise errors.ResourceDeletionError
+        raise errors.ResourceDeletionError(
+            'Could not delete instance {0:s}: {1!s}'.format(
+                self.name, exception), __name__) from exception
 
     self.BlockOperation(response, zone=self.zone)
 
@@ -913,6 +1006,111 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
         logger.info(
             self.FormatLogMessage(
                 'Could not find disk: {0:s}, skipping'.format(disk_name)))
+
+  def AssignExternalIp(self,
+                       net_if: str,
+                       ip_addr: Optional[str] = None) -> None:
+    """Assigns an external IP to an instance's network interface.
+
+    The instance must not have an IP assigned to the network interface when
+    calling this method. If the IP address is specified, it must be one that
+    is available to the project.
+
+    Args:
+      net_if (str): The instance's network interface to which the IP address
+        must be assigned.
+      ip_addr (str): Optional. The static IP address that exposes the network
+        interface. If None, the assigned IP address will be ephemeral.
+
+    Raises:
+      errors.ResourceCreationError: If the assignment did not succeed.
+    """
+    body = {}
+    if ip_addr is not None:
+      body['natIP'] = ip_addr
+    instances_client = self.GceApi().instances()
+    params = {
+      'project': self.project_id,
+      'zone': self.zone,
+      'instance': self.name,
+      'networkInterface': net_if,
+      'body': body
+    }
+    try:
+      # Safe to unpack, as the response is not paged
+      response = common.ExecuteRequest(instances_client,
+                                       'addAccessConfig',
+                                       params)[0]
+    except HttpError as exception:
+      message = 'Unable to assign IP to {0:s}: {1:s}'.format(
+        self.name,
+        exception.error_details)
+      raise errors.ResourceCreationError(message, __name__) from exception
+    self.BlockOperation(response, self.zone)
+
+  def RemoveExternalIps(self) -> Dict[str, str]:
+    """Removes any external IP of the instance, breaking ongoing connections.
+
+    Note that if the instance's IP address was static, that
+    the IP will still belong to the project.
+
+    Returns:
+      Dict[str, str]: A mapping from an instance's network
+        interfaces to the corresponding removed external IP.
+
+    Raises:
+      errors.ResourceDeletionError: If the removal did not succeed.
+    """
+    external_ip_addresses = {}
+    # Iterate through instance's network interfaces, removing
+    # all access configurations (NAT)
+    instance_info = self.GetOperation()
+    for network_interface in instance_info.get('networkInterfaces', []):
+      access_configs = network_interface.get('accessConfigs', [])
+      if len(access_configs) == 0:
+        # No way to access this network interface externally,
+        # skip the removal
+        continue
+      network_interface_name = network_interface['name']
+      # From the `get` operation response documentation, for
+      # the `networkInterfaces[].accessConfigs[]` field:
+      #
+      # > Currently, only one access config, ONE_TO_ONE_NAT, is
+      #   supported.
+      #
+      # It is thus safe to access only the first element.
+      access_config = access_configs[0]
+      access_config_name = access_config['name']
+      external_ip_address = access_config['natIP']
+      logger.info(
+        'Deleting access config for {0:s} (external IP: {1:s})'.format(
+          self.name,
+          external_ip_address,
+        ))
+      # Execute the IP address removal by deleting access config
+      gce_instance_client = self.GceApi().instances()
+      params = {
+        'project': self.project_id,
+        'zone': self.zone,
+        'instance': self.name,
+        'accessConfig': access_config_name,
+        'networkInterface': network_interface_name
+      }
+      try:
+        # Safe to unpack since this response is not paged
+        response = common.ExecuteRequest(gce_instance_client,
+                                         'deleteAccessConfig',
+                                         params)[0]
+      except HttpError as exception:
+        message = 'Unable to delete access config for {0:s}: {1:s}'.format(
+          self.name,
+          exception.error_details)
+        raise errors.ResourceDeletionError(message, __name__) from exception
+      self.BlockOperation(response, zone=self.zone)
+      # Save deleted external IP address
+      external_ip_addresses[network_interface_name] = external_ip_address
+    # Return the deleted external IP address for future use
+    return external_ip_addresses
 
   def SetTags(self, new_tags: List[str]) -> None:
     """Sets tags for the compute instance.
@@ -1104,7 +1302,9 @@ class GoogleComputeDisk(compute_base_resource.GoogleComputeBaseResource):
         logger.error((
             'While deleting GCE disk {0:s} the following error occurred: '
             '{1:s}').format(self.name, str(exception)))
-        raise errors.ResourceDeletionError
+        raise errors.ResourceDeletionError(
+            'Could not delete disk {0:s}: {1!s}'.format(
+                self.name, exception), __name__) from exception
     logger.info(
         self.FormatLogMessage('Deleted Disk: {0:s}'.format(self.name)))
 

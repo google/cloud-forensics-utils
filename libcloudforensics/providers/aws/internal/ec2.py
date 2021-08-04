@@ -15,12 +15,13 @@
 """Instance functionality."""
 
 import binascii
+import ipaddress
 import os
+import random
 from typing import TYPE_CHECKING, Dict, Optional, List, Any, Tuple
 
 import botocore
 from libcloudforensics import errors
-from libcloudforensics.scripts import utils
 
 from libcloudforensics.providers.aws.internal import common
 
@@ -48,6 +49,7 @@ class AWSInstance:
                instance_id: str,
                region: str,
                availability_zone: str,
+               vpc: str,
                name: Optional[str] = None) -> None:
     """Initialize the AWS EC2 instance.
 
@@ -57,6 +59,7 @@ class AWSInstance:
       region (str): The region the instance is in.
       availability_zone (str): The zone within the region in which the instance
           is.
+      vpc (str): The VPC the instance resides in
       name (str): Optional. The name tag of the instance, if existing.
     """
 
@@ -64,6 +67,7 @@ class AWSInstance:
     self.instance_id = instance_id
     self.region = region
     self.availability_zone = availability_zone
+    self.vpc = vpc
     self.name = name
 
   def GetBootVolume(self) -> 'ebs.AWSVolume':
@@ -146,6 +150,43 @@ class AWSInstance:
 
     volume.device_name = device_name
 
+  def Delete(self, force_delete: bool = False) -> None:
+    """Delete an instance.
+
+    Args:
+      force_delete (bool): Optional. True if the instance should be deleted
+          despite disableApiTermination being set to True on the instance.
+
+    Raises:
+      ResourceDeletionError: If the instance could not be deleted.
+    """
+
+    client = self.aws_account.ClientApi(common.EC2_SERVICE)
+    if force_delete:
+      try:
+        common.ExecuteRequest(
+            client,
+            'modify_instance_attribute',
+            {
+                'InstanceId': self.instance_id,
+                'Attribute': 'disableApiTermination',
+                'Value': 'False'
+            })
+      except client.exceptions.ClientError as exception:
+        raise errors.ResourceDeletionError(
+            'Could not toggle instance attribute disableApiTermination: '
+            '{0!s}'.format(exception), __name__) from exception
+
+    resource_client = self.aws_account.ResourceApi(common.EC2_SERVICE)
+    try:
+      resource_client.Instance(self.instance_id).terminate()
+      client.get_waiter('instance_terminated').wait(
+          InstanceIds=[self.instance_id])
+    except client.exceptions.ClientError as exception:
+      raise errors.ResourceDeletionError(
+          'Could not delete instance: {0!s}'.format(
+              exception), __name__) from exception
+
 
 class EC2:
   """Class that represents AWS EC2 instance services."""
@@ -206,8 +247,9 @@ class EC2:
 
           zone = instance['Placement']['AvailabilityZone']
           instance_id = instance['InstanceId']
+          vpc = instance['VpcId']
           aws_instance = AWSInstance(
-              self.aws_account, instance_id, zone[:-1], zone)
+              self.aws_account, instance_id, zone[:-1], zone, vpc)
 
           for tag in instance.get('Tags', []):
             if tag.get('Key') == 'Name':
@@ -330,16 +372,23 @@ class EC2:
 
     return images['Images']
 
-  def GetOrCreateAnalysisVm(
+  # pylint: disable=too-many-arguments
+  def GetOrCreateVm(
       self,
       vm_name: str,
       boot_volume_size: int,
       ami: str,
       cpu_cores: int,
       boot_volume_type: str = 'gp2',
-      packages: Optional[List[str]] = None,
       ssh_key_name: Optional[str] = None,
-      tags: Optional[Dict[str, str]] = None) -> Tuple[AWSInstance, bool]:
+      tags: Optional[Dict[str, str]] = None,
+      subnet_id: Optional[str] = None,
+      security_group_id: Optional[str] = None,
+      userdata: Optional[str] = None,
+      instance_profile: Optional[str] = None,
+      terminate_on_shutdown: bool = False,
+      wait_for_health_checks: bool = True
+      ) -> Tuple[AWSInstance, bool]:
     """Get or create a new virtual machine for analysis purposes.
 
     Args:
@@ -350,7 +399,6 @@ class EC2:
       boot_volume_type (str): Optional. The volume type for the boot volume
           of the VM. Can be one of 'standard'|'io1'|'gp2'|'sc1'|'st1'. The
           default is 'gp2'.
-      packages (List[str]): Optional. List of packages to install in the VM.
       ssh_key_name (str): Optional. A SSH key pair name linked to the AWS
           account to associate with the VM. If none provided, the VM can only
           be accessed through in-browser SSH from the AWS management console
@@ -361,6 +409,15 @@ class EC2:
       tags (Dict[str, str]): Optional. A dictionary of tags to add to the
           instance, for example {'TicketID': 'xxx'}. An entry for the instance
           name is added by default.
+      subnet_id (str): Optional. Subnet to launch the instance in.
+      security_group_id (str): Optional. Security group id to attach.
+      userdata (str): Optional. String passed to the instance as a userdata
+          launch script.
+      instance_profile (str): Optional. Instance role to be attached.
+      terminate_on_shutdown (bool): Optional. Terminate the instance when the
+          instance initiates shutdown.
+      wait_for_health_checks (bool): Optional. Wait for health checks on the
+          instance before returning
 
     Returns:
       Tuple[AWSInstance, bool]: A tuple with an AWSInstance object and a
@@ -378,15 +435,6 @@ class EC2:
       return instances[0], created
 
     instance_type = common.GetInstanceTypeByCPU(cpu_cores)
-    startup_script = utils.ReadStartupScript()
-    if packages:
-      startup_script = startup_script.replace('${packages[@]}', ' '.join(
-          packages))
-
-    # Install ec2-instance-connect to allow SSH connections from the browser.
-    startup_script = startup_script.replace(
-        '(exit ${exit_code})',
-        'apt -y install ec2-instance-connect && (exit ${exit_code})')
 
     if not tags:
       tags = {}
@@ -402,22 +450,40 @@ class EC2:
         'MaxCount': 1,
         'InstanceType': instance_type,
         'TagSpecifications': [common.CreateTags(common.INSTANCE, tags)],
-        'UserData': startup_script,
         'Placement': {
             'AvailabilityZone': self.aws_account.default_availability_zone}
     }
     if ssh_key_name:
       vm_args['KeyName'] = ssh_key_name
+    if subnet_id:
+      interface = {
+            'AssociatePublicIpAddress': True,
+            'DeleteOnTermination': True,
+            'DeviceIndex': 0,
+            'SubnetId': subnet_id}
+      if security_group_id:
+        interface['Groups'] = [security_group_id]
+      vm_args['NetworkInterfaces']=[interface]
+    elif security_group_id:
+      vm_args['SecurityGroupIds'] = [security_group_id]
+    if userdata:
+      vm_args['UserData'] = userdata
+    if instance_profile:
+      vm_args['IamInstanceProfile'] = {'Arn': instance_profile}
+    if terminate_on_shutdown:
+      vm_args['InstanceInitiatedShutdownBehavior'] = 'terminate'
     # Create the instance in AWS
     try:
       instance = client.run_instances(**vm_args)
       # If the call to run_instances was successful, then the API response
       # contains the instance ID for the new instance.
       instance_id = instance['Instances'][0]['InstanceId']
-      # Wait for the instance to be running
-      client.get_waiter('instance_running').wait(InstanceIds=[instance_id])
-      # Wait for the status checks to pass
-      client.get_waiter('instance_status_ok').wait(InstanceIds=[instance_id])
+      if wait_for_health_checks:
+        # Wait for the instance to be running
+        client.get_waiter('instance_running').wait(InstanceIds=[instance_id])
+        # Wait for the status checks to pass
+        client.get_waiter('instance_status_ok').wait(InstanceIds=[instance_id])
+      vpc = instance['Instances'][0]['VpcId']
     except (client.exceptions.ClientError,
             botocore.exceptions.WaiterError) as exception:
       raise errors.ResourceCreationError(
@@ -428,9 +494,11 @@ class EC2:
                            instance_id,
                            self.aws_account.default_region,
                            self.aws_account.default_availability_zone,
+                           vpc,
                            name=vm_name)
     created = True
     return instance, created
+  # pylint: enable=too-many-arguments
 
   def _GetBootVolumeConfigByAmi(self,
                                 ami: str,
@@ -506,3 +574,125 @@ class EC2:
               exception), __name__) from exception
     # If the call was successful, the response contains key information
     return key['KeyName'], key['KeyMaterial']
+
+  def CreateIsolationSecurityGroup(
+      self,
+      vpc: str,
+      ingress_subnets: Optional[List[str]] = None
+    ) -> str:
+    """Creates an isolation security group.
+
+    Args:
+      vpc (str): VPC ID for the security group.
+      ingress_subnets (List[str]): Optional. Subnets to allow ingress from.
+
+    Returns:
+      str: The ID of the newly created security group.
+
+    Raises:
+      ipaddress.AddressValueError: If an invalid subnet is provided.
+      errors.ResourceCreationError: If an invalid VPC ID is provided.
+    """
+    client = self.aws_account.ClientApi(common.EC2_SERVICE)
+    description = 'Quarantine Security Group'
+    name = 'quarantine-{0:d}'.format(random.randint(10**(9),(10**10)-1))
+
+    # Test the subnets are well formed
+    if ingress_subnets:
+      for subnet in ingress_subnets:
+        ipaddress.IPv4Network(subnet, False)
+
+    # Create the SG
+    try:
+      sg_info = client.create_security_group(
+        Description=description,
+        GroupName=name,
+        VpcId=vpc)
+    except client.exceptions.ClientError as exception:
+      raise errors.ResourceCreationError(
+        'Could not create security group: {0!s}'.format(
+           exception), __name__) from exception
+
+    # SG's automatically include an everything outbound rule - remove it
+    sg_rules = client.describe_security_group_rules(
+      MaxResults=5,
+      Filters=[{
+          'Name': 'group-id',
+          'Values': [sg_info['GroupId']]
+        }]
+      )
+    for sg_rule in sg_rules['SecurityGroupRules']:
+      client.revoke_security_group_egress(
+        GroupId=sg_info['GroupId'],
+        SecurityGroupRuleIds=[sg_rule['SecurityGroupRuleId']]
+      )
+
+    # Add the permitted ingress rules, if any
+    if ingress_subnets:
+      ranges = [{'CidrIp':subnet} for subnet in ingress_subnets]
+      client.authorize_security_group_ingress(
+        GroupId=sg_info['GroupId'],
+        IpPermissions=[{
+          'IpProtocol': '-1',
+          'FromPort': 0,
+          'ToPort': 65535,
+          'IpRanges': ranges
+        }]
+      )
+      client.authorize_security_group_egress(
+        GroupId=sg_info['GroupId'],
+        IpPermissions=[{
+          'IpProtocol': '-1',
+          'FromPort': 0,
+          'ToPort': 65535,
+          'IpRanges': ranges
+        }]
+      )
+
+    return str(sg_info['GroupId'])
+
+  def SetInstanceSecurityGroup(
+      self,
+      instance_id: str,
+      sg_id: str) -> None:
+    """Attach a security group to an instance, removing all others.
+
+    Args:
+      instance_id (str): The instance ID (i-xxxxxx)
+      sg_id (str): The Security Group ID (sg-xxxxxx)
+
+    Raises:
+      ResourceCreationError: If the instance or security group cannot be found.
+    """
+    client = self.aws_account.ClientApi(common.EC2_SERVICE)
+
+    try:
+      client.modify_instance_attribute(
+        Groups=[sg_id],
+        InstanceId=instance_id
+      )
+    except client.exceptions.ClientError as exception:
+      raise errors.ResourceCreationError(
+        'Could not modify instance attributes: {0!s}'.format(
+           exception), __name__) from exception
+
+  def GetSnapshotInfo(
+    self,
+    snapshot_id: str,
+    ) -> Dict[str, Any]:
+    """Get information about the snapshot.
+
+    Args:
+      snapshot_id (str): the snapshot id to fetch info for (snap-xxxxxx).
+
+    Raises:
+      ResourceNotFoundError: If the snapshot ID cannot be found.
+    """
+    client = self.aws_account.ClientApi(common.EC2_SERVICE)
+    try:
+      response = client.describe_snapshots(SnapshotIds=[snapshot_id])
+    except client.exceptions.ClientError as exception:
+      raise errors.ResourceNotFoundError(
+          'Could not find snapshot {0:s}: {1!s}'.format(
+              snapshot_id, exception), __name__) from exception
+    return dict(response['Snapshots'][0])

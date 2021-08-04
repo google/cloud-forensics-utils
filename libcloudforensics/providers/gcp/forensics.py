@@ -359,6 +359,23 @@ def InstanceNetworkQuarantine(project_id: str,
         'gcloud compute ssh --zone "{0:s}" "{1:s}" --project "{2:s}"\n'
         'Connecting from the browser via GCP console will not work.'.format(
               instance.zone, instance_name, project_id))
+  # Then remove the VM's external IP address, to break all ongoing
+  # connections
+  logger.info('Removing external IP addresses to break ongoing connections')
+  removed_ips = instance.RemoveExternalIps()
+  # Now re-assign the IP address
+  available_ips = set(project.compute.ListReservedExternalIps(instance.zone))
+  for net_if, removed_ip in removed_ips.items():
+    if removed_ip in available_ips:
+      # IP address was static, re-assign static
+      logger.info('Re-assigning static IP {0:s} to {1:s}'.format(
+        removed_ip,
+        net_if))
+      instance.AssignExternalIp(net_if, removed_ip)
+    else:
+      # IP address was ephemeral, re-assign ephemeral
+      logger.info('Re-assigning ephemeral IP to {0:s}'.format(net_if))
+      instance.AssignExternalIp(net_if, None)
 
 def VMRemoveServiceAccount(project_id: str,
                            instance_name: str,

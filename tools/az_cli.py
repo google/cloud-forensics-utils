@@ -44,8 +44,9 @@ def ListInstances(args: 'argparse.Namespace') -> None:
 
   logger.info('Instances found:')
   for instance in instances.values():
-    boot_disk = instance.GetBootDisk().name
-    logger.info('Name: {0:s}, Boot disk: {1:s}'.format(instance, boot_disk))
+    boot_disk = instance.GetBootDisk()
+    logger.info(
+        'Name: {0:s}, Boot disk: {1:s}'.format(instance.name, boot_disk.name))
 
 
 def ListDisks(args: 'argparse.Namespace') -> None:
@@ -78,7 +79,10 @@ def CreateDiskCopy(args: 'argparse.Namespace') -> None:
                                        region=args.region,
                                        src_profile=args.src_profile,
                                        dst_profile=args.dst_profile)
-  logger.info('Done! Disk {0:s} successfully created.'.format(disk_copy.name))
+  logger.info(
+      'Done! Disk {0:s} successfully created. You will find it in '
+      'your Azure subscription under the name {1:s}.'.format(
+          disk_copy.resource_id, disk_copy.name))
 
 
 def StartAnalysisVm(args: 'argparse.Namespace') -> None:
@@ -200,7 +204,7 @@ def QueryMetrics(args: 'argparse.Namespace') -> None:
       aggregation=args.aggregation or 'Total',
       qfilter=args.qfilter)
 
-  for metric in metrics:
+  for metric, metric_value in metrics.items():
     logger.info('Metric: {0:s}'.format(metric))
-    for timestamp, value in metrics[metric].items():
+    for timestamp, value in metric_value.items():
       logger.info('  Timestamp: {0:s}, value: {1:s}'.format(timestamp, value))

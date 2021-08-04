@@ -27,14 +27,17 @@ from tools import gcp_cli
 PROVIDER_TO_FUNC = {
     'aws': {
         'copydisk': aws_cli.CreateVolumeCopy,
+        'createbucket': aws_cli.CreateBucket,
+        'deleteinstance': aws_cli.DeleteInstance,
+        'gcstos3': aws_cli.GCSToS3,
+        'imageebssnapshottos3': aws_cli.ImageEBSSnapshotToS3,
+        'listdisks': aws_cli.ListVolumes,
         'listimages': aws_cli.ListImages,
         'listinstances': aws_cli.ListInstances,
-        'listdisks': aws_cli.ListVolumes,
+        'quarantinevm': aws_cli.InstanceNetworkQuarantine,
         'querylogs': aws_cli.QueryLogs,
         'startvm': aws_cli.StartAnalysisVm,
-        'createbucket': aws_cli.CreateBucket,
-        'uploadtobucket': aws_cli.UploadToBucket,
-        'gcstos3': aws_cli.GCSToS3
+        'uploadtobucket': aws_cli.UploadToBucket
     },
     'az': {
         'copydisk': az_cli.CreateDiskCopy,
@@ -190,7 +193,12 @@ def Main() -> None:
                                      'to attach. Maximum of 11.', None),
                 ('--dst_profile', 'The name of the profile for the destination '
                                   'account, as defined in the AWS credentials '
-                                  'file.', None)
+                                  'file.', None),
+                ('--subnet_id','Subnet to launch the instance in', None),
+                ('--security_group_id', 'Security group to attach to the '
+                                        'instance', None),
+                ('--launch_script','Userdata script for the instance to run at'
+                                   ' launch', None)
             ])
   AddParser('aws', aws_subparsers, 'listimages', 'List AMI images.',
             args=[
@@ -212,6 +220,40 @@ def Main() -> None:
                 ('project', 'GCP Project name.', None),
                 ('gcs_path', 'Source object path.', None),
                 ('s3_path', 'Destination bucket.', None),
+            ])
+  AddParser('aws', aws_subparsers, 'imageebssnapshottos3',
+            'Copy an image of an EBS volume to S3. This is not natively '
+                'supported in AWS, so requires launching of an instance to '
+                'perform a `dd`. In the S3 destination dir will be a copy of '
+                'the snapshot and a hash.',
+            args=[
+                ('snapshot_id','EBS snapshot ID to make the copy of.', None),
+                ('s3_destination','The S3 destination in the format '
+                    'bucket[/optional/child/folders]', None),
+                ('--instance_profile_name',
+                    'The name of the instance profile to use/create.', None),
+                ('--subnet_id','Subnet to launch the instance in.', None),
+                ('--security_group_id', 'Security group to attach to the '
+                                        'instance.', None),
+                ('--cleanup_iam', 'Remove created IAM components afterwards',
+                    False)
+            ])
+  AddParser('aws', aws_subparsers, 'deleteinstance', 'Delete an instance.',
+            args=[
+                ('--instance_id', 'ID of EC2 instance to delete.', ''),
+                ('--instance_name', 'Name of EC2 instance to delete.', ''),
+                ('--region', 'Region in which the instance is.', ''),
+                ('--force_delete',
+                 'Force instance deletion when deletion protection is '
+                 'activated.', False),
+            ])
+  AddParser('aws', aws_subparsers, 'quarantinevm', 'Put a VM in '
+                                                   'network quarantine.',
+            args=[
+                ('instance_id', 'ID (i-xxxxxx) of the instance to quarantine.',
+                    None),
+                ('--exempted_src_subnets', 'Comma separated list of source '
+                    'subnets to exempt from ingress firewall rules.', None)
             ])
 
   # Azure parser options
@@ -306,7 +348,12 @@ def Main() -> None:
             ])
 
   # GCP parser options
-  gcp_parser.add_argument('project', help='GCP project ID.')
+  gcp_parser.add_argument(
+      '--project', help='GCP project ID. If not provided, the library will look'
+                        ' for a project ID configured with your gcloud SDK. If '
+                        'none found, errors. For GCP logs operations, a list of'
+                        ' project IDs can be passed, as a comma-separated '
+                        'string: project_id1,project_id2,...')
   gcp_subparsers = gcp_parser.add_subparsers()
   AddParser('gcp', gcp_subparsers, 'listinstances',
             'List GCE instances in GCP project.')
@@ -344,10 +391,17 @@ def Main() -> None:
                 ('--delete_all_disks',
                  'Force delete disks marked as "Keep when deleting".',
                  False),
+                ('--force_delete',
+                 'Force instance deletion when deletion protection is '
+                 'activated.',
+                 False)
             ])
   AddParser('gcp', gcp_subparsers, 'querylogs', 'Query GCP logs.',
             args=[
-                ('--filter', 'Query filter', None),
+                ('--filter', 'Query filter. If querying multiple logs / '
+                             'multiple project IDs, enter each filter in a '
+                             'single string that is comma-separated: '
+                             '--filter="filter1,filter2,..."', None),
                 ('--start', 'Start date for query (2020-05-01T11:13:00Z)',
                  None),
                 ('--end', 'End date for query (2020-05-01T11:13:00Z)', None)

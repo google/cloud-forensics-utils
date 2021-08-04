@@ -15,8 +15,14 @@
 """Forensics on AWS."""
 from typing import TYPE_CHECKING, Tuple, List, Optional, Dict
 
+import random
+from time import sleep
+from libcloudforensics.providers.aws.internal.common import ALINUX2_BASE_FILTER
 from libcloudforensics.providers.aws.internal.common import UBUNTU_1804_FILTER
 from libcloudforensics.providers.aws.internal import account
+from libcloudforensics.providers.aws.internal import iam
+from libcloudforensics.providers.aws.internal import s3
+from libcloudforensics.scripts import utils
 from libcloudforensics import logging_utils
 from libcloudforensics import errors
 
@@ -59,16 +65,16 @@ def CreateVolumeCopy(zone: str,
 
   # Copies the boot volume from instance "instance_id" from the default AWS
   # account to the default AWS account.
-  volume_copy = CreateDiskCopy(zone, instance_id='instance_id')
+  volume_copy = CreateVolumeCopy(zone, instance_id='instance_id')
 
   # Copies the boot volume from instance "instance_id" from the default AWS
   # account to the 'forensics' AWS account.
-  volume_copy = CreateDiskCopy(
+  volume_copy = CreateVolumeCopy(
       zone, instance_id='instance_id', dst_profile='forensics')
 
   # Copies the boot volume from instance "instance_id" from the
   # 'investigation' AWS account to the 'forensics' AWS account.
-  volume_copy = CreateDiskCopy(
+  volume_copy = CreateVolumeCopy(
       zone,
       instance_id='instance_id',
       src_profile='investigation',
@@ -194,7 +200,7 @@ def CreateVolumeCopy(zone: str,
 
   return new_volume
 
-
+# pylint: disable=too-many-arguments
 def StartAnalysisVm(
     vm_name: str,
     default_availability_zone: str,
@@ -205,7 +211,11 @@ def StartAnalysisVm(
     attach_volumes: Optional[List[Tuple[str, str]]] = None,
     dst_profile: Optional[str] = None,
     ssh_key_name: Optional[str] = None,
-    tags: Optional[Dict[str, str]] = None) -> Tuple['ec2.AWSInstance', bool]:
+    tags: Optional[Dict[str, str]] = None,
+    subnet_id: Optional[str] = None,
+    security_group_id: Optional[str] = None,
+    userdata_file: Optional[str] = None
+    ) -> Tuple['ec2.AWSInstance', bool]:
   """Start a virtual machine for analysis purposes.
 
   Look for an existing AWS instance with tag name vm_name. If found,
@@ -218,8 +228,8 @@ def StartAnalysisVm(
         new resources in.
     boot_volume_size (int): The size of the analysis VM boot volume (in GB).
     boot_volume_type (str): Optional. The volume type for the boot volume
-          of the VM. Can be one of 'standard'|'io1'|'gp2'|'sc1'|'st1'. The
-          default is 'gp2'.
+        of the VM. Can be one of 'standard'|'io1'|'gp2'|'sc1'|'st1'. The
+        default is 'gp2'.
     ami (str): Optional. The Amazon Machine Image ID to use to create the VM.
         Default is a version of Ubuntu 18.04.
     cpu_cores (int): Optional. The number of CPU cores to create the machine
@@ -239,8 +249,12 @@ def StartAnalysisVm(
         will not be accessible. It is therefore recommended to fill in this
         parameter.
     tags (Dict[str, str]): Optional. A dictionary of tags to add to the
-          instance, for example {'TicketID': 'xxx'}. An entry for the instance
-          name is added by default.
+        instance, for example {'TicketID': 'xxx'}. An entry for the instance
+        name is added by default.
+    subnet_id (str): Optional. The subnet to launch the instance in.
+    security_group_id (str): Optional. Security group ID to attach.
+    userdata_file (str): Optional. Filename to be read in as the userdata
+        launch script.
 
   Returns:
     Tuple[AWSInstance, bool]: a tuple with a virtual machine object
@@ -268,15 +282,22 @@ def StartAnalysisVm(
     ami = ami_list[0]['ImageId']
   assert ami  # Mypy: assert that ami is not None
 
+  if not userdata_file:
+    userdata_file = utils.FORENSICS_STARTUP_SCRIPT_AWS
+  userdata = utils.ReadStartupScript(userdata_file)
+
   logger.info('Starting analysis VM {0:s}'.format(vm_name))
-  analysis_vm, created = aws_account.ec2.GetOrCreateAnalysisVm(
+  analysis_vm, created = aws_account.ec2.GetOrCreateVm(
       vm_name,
       boot_volume_size,
       ami,
       cpu_cores,
       boot_volume_type=boot_volume_type,
       ssh_key_name=ssh_key_name,
-      tags=tags)
+      tags=tags,
+      subnet_id=subnet_id,
+      security_group_id=security_group_id,
+      userdata=userdata)
   logger.info('VM started.')
   for volume_id, device_name in (attach_volumes or []):
     logger.info('Attaching volume {0:s} to device {1:s}'.format(
@@ -285,3 +306,191 @@ def StartAnalysisVm(
         aws_account.ebs.GetVolumeById(volume_id), device_name)
   logger.info('VM ready.')
   return analysis_vm, created
+# pylint: enable=too-many-arguments
+
+def CopyEBSSnapshotToS3(
+    s3_destination: str,
+    snapshot_id: str,
+    instance_profile_name: str,
+    zone: str,
+    subnet_id: Optional[str] = None,
+    security_group_id: Optional[str] = None,
+    cleanup_iam: bool = False
+    ) -> None:
+  """Copy an EBS snapshot into S3.
+
+  Unfortunately, this action is not natively supported in AWS, so it requires
+  creating a volume and attaching it to an instance. This instance, using a
+  userdata script then performs a `dd` operation to send the disk image to S3.
+
+  Args:
+    s3_destination (str): S3 directory in the form of s3://bucket/path/folder
+    snapshot_id (str): EBS snapshot ID.
+    instance_profile_name (str): The name of an existing instance profile to
+      attach to the instance, or to create if it does not yet exist.
+    zone (str): AWS Availability Zone the instance will be launched in.
+    subnet_id (str): Optional. The subnet to launch the instance in.
+    security_group_id (str): Optional. Security group ID to attach.
+    cleanup_iam (bool): If we created IAM components, remove them afterwards
+
+  Raises:
+    ResourceCreationError: If any dependent resource could not be created.
+    ResourceNotFoundError: If the snapshot ID cannot be found.
+  """
+
+  # Correct destination if necessary
+  if not s3_destination.startswith('s3://'):
+    s3_destination = 's3://' + s3_destination
+  path_components = s3.SplitStoragePath(s3_destination)
+  bucket = path_components[0]
+  object_path = path_components[1]
+
+  # Create the IAM pieces
+  aws_account = account.AWSAccount(zone)
+
+  ebs_copy_policy_doc = iam.ReadPolicyDoc(iam.EBS_COPY_POLICY_DOC)
+  ec2_assume_role_doc = iam.ReadPolicyDoc(iam.EC2_ASSUME_ROLE_POLICY_DOC)
+
+  policy_name = '{0:s}-policy'.format(instance_profile_name)
+  role_name = '{0:s}-role'.format(instance_profile_name)
+
+  instance_profile_arn, prof_created = aws_account.iam.CreateInstanceProfile(
+    instance_profile_name)
+  policy_arn, pol_created = aws_account.iam.CreatePolicy(
+    policy_name, ebs_copy_policy_doc)
+  _, role_created = aws_account.iam.CreateRole(
+    role_name, ec2_assume_role_doc)
+  aws_account.iam.AttachPolicyToRole(
+    policy_arn, role_name)
+  aws_account.iam.AttachInstanceProfileToRole(
+    instance_profile_name, role_name)
+
+  # read in the instance userdata script, sub in the snap id and S3 dest
+  startup_script = utils.ReadStartupScript(
+    utils.EBS_SNAPSHOT_COPY_SCRIPT_AWS).format(snapshot_id, s3_destination)
+
+  # Find the AMI - ALinux 2, latest version
+  logger.info('Finding AMI')
+  qfilter = [
+    {'Name': 'name', 'Values': [ALINUX2_BASE_FILTER]},
+    {'Name':'owner-alias', 'Values':['amazon']}
+  ]
+  results = aws_account.ec2.ListImages(qfilter)
+
+  # Find the most recent
+  ami_id = None
+  date = ''
+  for result in results:
+    if result['CreationDate'] > date:
+      ami_id = result['ImageId']
+      date = result['CreationDate']
+  if not ami_id:
+    raise errors.ResourceCreationError(
+      'Could not fnd suitable AMI for instance creation', __name__)
+
+  # Instance role creation has a propagation delay between creating in IAM and
+  # being usable in EC2.
+  if prof_created:
+    sleep(20)
+
+  # start the VM
+  logger.info('Starting copy instance')
+  aws_account.ec2.GetOrCreateVm(
+    'ebsCopy-{0:d}'.format(random.randint(10**(9),(10**10)-1)),
+    10,
+    ami_id,
+    4,
+    subnet_id=subnet_id,
+    security_group_id=security_group_id,
+    userdata=startup_script,
+    instance_profile=instance_profile_arn,
+    terminate_on_shutdown=True,
+    wait_for_health_checks=False
+  )
+
+  logger.info('Pausing 60 seconds while copy instance launches')
+  sleep(60)
+
+  # Calculate the times we should check for completion based on volume size
+  # and transfer rates (documented in cloud-forensics-utils/issues/354)
+  snapshot_size = aws_account.ec2.GetSnapshotInfo(snapshot_id)['VolumeSize']
+  percentiles = [0.25, 0.5, 0.85, 1.15, 1.5, 2.0]
+  transfer_speed = 60 # seconds per GB
+  curr_wait = 0
+  success = False
+  prefix = '{0:s}/{1:s}/'.format(object_path, snapshot_id)
+  files = ['image.bin', 'log.txt', 'hlog.txt', 'mlog.txt']
+
+  logger.info('Transfer expected to take {0:d} seconds'.
+    format(snapshot_size * transfer_speed))
+
+  for percentile in percentiles:
+    curr_step = int(percentile * snapshot_size * transfer_speed)
+    logger.info('Waiting {0:d} seconds ({1:d} seconds total wait time) '
+      'to check for outputs'.format(curr_step - curr_wait, curr_step))
+    sleep(curr_step - curr_wait)
+    curr_wait = curr_step
+
+    checks = [aws_account.s3.CheckForObject(bucket, prefix + file)
+      for file in files]
+    if all(checks):
+      success = True
+      logger.info('Output files found')
+      break
+
+  if not cleanup_iam:
+    return
+  if role_created and pol_created:
+    aws_account.iam.DetachInstanceProfileFromRole(
+      role_name, instance_profile_name)
+  if prof_created:
+    aws_account.iam.DetachPolicyFromRole(policy_arn, role_name)
+    aws_account.iam.DeleteInstanceProfile(instance_profile_name)
+  if role_created:
+    aws_account.iam.DeleteRole(role_name)
+  if pol_created:
+    aws_account.iam.DeletePolicy(policy_arn)
+
+  if success:
+    logger.info('Image and hash copied to {0:s}/{1:s}/'.format(
+      s3_destination, snapshot_id))
+  else:
+    logger.info(
+      'Image copy timeout. The process may be ongoing, or might have failed.')
+
+def InstanceNetworkQuarantine(
+    zone: str,
+    instance_id: str,
+    exempted_src_subnets: Optional[List[str]] = None
+    ) -> None:
+  """Put an AWS EC2 instance in network quarantine.
+
+  Network quarantine is imposed via applying empty security groups to the
+  instance.
+
+  Args:
+    instance_id (str): : The id (i-xxxxxx) of the virtual machine.
+    exempted_src_subnets (List[str]): List of subnets that will be permitted
+
+  Raises:
+    ResourceNotFoundError: If the instance cannot be found.
+    ResourceCreationError: If the security group could not be created.
+    AddressValueError: If a provided subnet is invalid.
+  """
+  # Add /32 to any specified subnets that don't have a mask
+  # We're not checking the subnet is well formed, CreateIsolationSecurityGroup
+  # will take care of that
+  if exempted_src_subnets:
+    exempted_src_subnets[:] = [subnet if '/' in subnet else subnet + '/32'
+      for subnet in exempted_src_subnets]
+
+  try:
+    aws_account = account.AWSAccount(zone)
+    vpc = aws_account.ec2.GetInstanceById(instance_id).vpc
+    sg_id = \
+      aws_account.ec2.CreateIsolationSecurityGroup(vpc, exempted_src_subnets)
+    aws_account.ec2.SetInstanceSecurityGroup(instance_id, sg_id)
+  except errors.ResourceNotFoundError as exception:
+    raise errors.ResourceNotFoundError(
+      'Cannot qurantine non-existent instance {0:s}: {1!s}'.format(instance_id,
+        exception), __name__) from exception

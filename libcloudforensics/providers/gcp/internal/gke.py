@@ -25,18 +25,8 @@ class GoogleKubernetesEngine:
   """Class to call Google Kubernetes Engine (GKE) APIs.
 
   https://cloud.google.com/kubernetes-engine/docs/reference/rest
-
-  Attributes:
-    gke_api_client (googleapiclient.discovery.Resource): Client to interact
-        with GKE APIs.
   """
   GKE_API_VERSION = 'v1'
-
-  def __init__(self) -> None:
-    """Initialize the GoogleCloudStorage object.
-    """
-
-    self.gke_api_client = None
 
   def GkeApi(self) -> 'googleapiclient.discovery.Resource':
     """Gets a Google Container service object.
@@ -47,11 +37,8 @@ class GoogleKubernetesEngine:
       googleapiclient.discovery.Resource: A Google Container service object.
     """
 
-    if self.gke_api_client:
-      return self.gke_api_client
-    self.gke_api_client = common.CreateService(
+    return common.CreateService(
         'container', self.GKE_API_VERSION)
-    return self.gke_api_client
 
   def GetCluster(self, name: str) -> Dict[str, Any]:
     """ Gets the details of a specific cluster.
@@ -66,7 +53,7 @@ class GoogleKubernetesEngine:
       Dict: A Google Kubernetes Engine cluster object:
           https://cloud.google.com/kubernetes-engine/docs/reference/rest/v1/projects.locations.clusters#Cluster  # pylint: disable=line-too-long
     """
-    gke_clusters = self.GkeApi().projects().locations().clusters()
+    gke_clusters = self.GkeApi().projects().locations().clusters() # pylint: disable=no-member
     request = gke_clusters.get(name=name)
     response = request.execute()  # type: Dict[str, Any]
     return response

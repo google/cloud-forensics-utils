@@ -25,7 +25,6 @@ class GoogleCloudSQL:
   """Class to call Google CloudSQL APIs.
 
   Attributes:
-    gcsql_api_client: Client to interact with GCSql APIs.
     project_id: Google Cloud project ID.
   """
   SQLADMIN_API_VERSION = 'v1beta4'
@@ -37,7 +36,6 @@ class GoogleCloudSQL:
       project_id (str): Optional. Google Cloud project ID.
     """
 
-    self.gcsql_api_client = None
     self.project_id = project_id
 
   def GoogleCloudSQLApi(self) -> 'googleapiclient.discovery.Resource':
@@ -47,11 +45,8 @@ class GoogleCloudSQL:
       googleapiclient.discovery.Resource: A Google CloudSQL service object.
     """
 
-    if self.gcsql_api_client:
-      return self.gcsql_api_client
-    self.gcsql_api_client = common.CreateService(
+    return common.CreateService(
         'sqladmin', self.SQLADMIN_API_VERSION)
-    return self.gcsql_api_client
 
   def ListCloudSQLInstances(self) -> List[Dict[str, Any]]:
     """List instances of Google CloudSQL within a project.
@@ -59,7 +54,7 @@ class GoogleCloudSQL:
     Returns:
       List[Dict[str, Any]]: List of instances.
     """
-    gcsql_instances = self.GoogleCloudSQLApi().instances()
+    gcsql_instances = self.GoogleCloudSQLApi().instances() # pylint: disable=no-member
     request = gcsql_instances.list(project=self.project_id)
     instances = request.execute()  # type: Dict[str, Any]
     return instances.get('items', [])

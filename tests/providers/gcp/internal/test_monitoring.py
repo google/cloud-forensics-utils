@@ -41,3 +41,27 @@ class GoogleCloudMonitoringTest(unittest.TestCase):
     self.assertIn('logging.googleapis.com', active_services)
     self.assertEqual(active_services['logging.googleapis.com'],
                      gcp_mocks.MOCK_LOGGING_METRIC)
+
+  @typing.no_type_check
+  def testBuildCpuUsageFilter(self):
+    """Validates the query filter builder functionality"""
+    # pylint: disable=protected-access
+    instances_filter = gcp_mocks.FAKE_MONITORING._BuildCpuUsageFilter(
+        ['instance-a', 'instance-b'])
+    self.assertEqual(
+        instances_filter, ('metric.type = "compute.googleapis.com/instance/'
+        'cpu/utilization" AND (metric.label.instance_name = "instance-a" OR '
+        'metric.label.instance_name = "instance-b")'))
+
+  @typing.no_type_check
+  @mock.patch('libcloudforensics.providers.gcp.internal.monitoring.GoogleCloudMonitoring.GcmApi')
+  def testGetCpuUsage(self, mock_gcm_api):
+    """Validates the parsing of CPU usage metrics."""
+    services = mock_gcm_api.return_value.projects.return_value.timeSeries.return_value.list
+    services.return_value.execute.return_value = gcp_mocks.MOCK_GCM_METRICS_CPU
+    cpu_usage = gcp_mocks.FAKE_MONITORING.GetCpuUsage()
+    self.assertEqual(len(cpu_usage), 2)
+    self.assertIn('instance-a_0000000000000000000', cpu_usage)
+    self.assertEqual(
+        cpu_usage['instance-a_0000000000000000000'],
+        [('2021-01-01T00:00:00.000000Z', 0.100000000000000000)] * 24*7)

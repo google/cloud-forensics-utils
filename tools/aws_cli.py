@@ -13,9 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: disable=line-too-long
 # Make sure that your AWS credentials are configured correclty, see
-# https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html #pylint: disable=line-too-long
+# https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html
 """Demo CLI tool for AWS."""
+
+# pylint: enable=line-too-long
 
 import json
 import os
@@ -24,6 +27,8 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 from libcloudforensics.providers.aws.internal import account
+from libcloudforensics.providers.aws.internal import ec2
+from libcloudforensics.providers.aws.internal import iam
 from libcloudforensics.providers.aws.internal import log as aws_log
 from libcloudforensics.providers.aws import forensics
 from libcloudforensics import logging_utils
@@ -164,7 +169,10 @@ def StartAnalysisVm(args: 'argparse.Namespace') -> None:
                                  ami=args.ami,
                                  ssh_key_name=key_name,
                                  attach_volumes=attach_volumes,
-                                 dst_profile=args.dst_profile)
+                                 dst_profile=args.dst_profile,
+                                 subnet_id=args.subnet_id,
+                                 security_group_id=args.security_group_id,
+                                 userdata_file=args.launch_script)
 
   logger.info('Analysis VM started.')
   logger.info('Name: {0:s}, Started: {1:s}, Region: {2:s}'.format(vm[0].name,
@@ -180,7 +188,9 @@ def ListImages(args: 'argparse.Namespace') -> None:
   """
   aws_account = account.AWSAccount(args.zone)
 
-  qfilter = [{'Name': 'name', 'Values': [args.filter]}]
+  qfilter = []
+  if args.filter:
+    qfilter = [{'Name': 'name', 'Values': [args.filter]}]
 
   images = aws_account.ec2.ListImages(qfilter)
 
@@ -213,6 +223,7 @@ def UploadToBucket(args: 'argparse.Namespace') -> None:
 
   logger.info('File successfully uploaded.')
 
+
 def GCSToS3(args: 'argparse.Namespace') -> None:
   """Transfer a file from GCS to an S3 bucket.
 
@@ -223,3 +234,56 @@ def GCSToS3(args: 'argparse.Namespace') -> None:
   aws_account.s3.GCSToS3(args.project, args.gcs_path, args.s3_path)
 
   logger.info('File successfully transferred.')
+
+def ImageEBSSnapshotToS3(args: 'argparse.Namespace') -> None:
+  """Image an EBS snapshot with the result placed into an S3 location.
+
+  Unfortunately, this is not a natively supported operation in AWS. As such, we
+  must create a instance, create a volume, mount the volume to the instance and
+  perform a `dd` operation to perform the image. We acheive the creation of
+  the volume, the attachment and the upload to S3 with a userdata script on the
+  instance. That does mean however, the instance needs an instance profile with
+  appropriate permissions.
+
+  Args:
+    args (argparse.Namespace): Arguments from ArgumentParser.
+  """
+  forensics.CopyEBSSnapshotToS3(
+    instance_profile_name=args.instance_profile_name or 'ebsCopy',
+    zone=args.zone,
+    s3_destination=args.s3_destination,
+    snapshot_id=args.snapshot_id,
+    subnet_id=args.subnet_id,
+    security_group_id=args.security_group_id,
+    cleanup_iam=args.cleanup_iam
+  )
+
+def DeleteInstance(args: 'argparse.Namespace') -> None:
+  """Delete an instance.
+
+  Args:
+    args (argparse.Namespace): Arguments from ArgumentParser.
+  """
+  aws_account = account.AWSAccount(args.zone)
+  instance = aws_account.ec2.GetInstancesByNameOrId(
+      args.instance_name, args.instance_id, args.region)[0]
+  instance.Delete(force_delete=args.force_delete)
+
+def InstanceNetworkQuarantine(args: 'argparse.Namespace') -> None:
+  """Put an AWS Ec2 instance in network quarantine.
+
+  Args:
+    args (argparse.Namespace): Arguments from ArgumentParser.
+  """
+
+  exempted_src_subnets = []
+  if args.exempted_src_subnets:
+    exempted_src_subnets = args.exempted_src_subnets.split(',')
+    # Check if exempted_src_subnets argument exists and if there
+    # are any empty entries.
+    if not (exempted_src_subnets and all(exempted_src_subnets)):
+      logger.error('parameter --exempted_src_subnets: {0:s}'.format(
+          args.exempted_src_subnets))
+      return
+  forensics.InstanceNetworkQuarantine(args.zone,
+      args.instance_id, exempted_src_subnets)

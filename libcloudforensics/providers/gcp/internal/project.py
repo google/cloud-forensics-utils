@@ -17,6 +17,7 @@
 from __future__ import unicode_literals
 
 from typing import Optional
+from google.auth import default
 
 import libcloudforensics.providers.gcp.internal.build as build_module
 import libcloudforensics.providers.gcp.internal.compute as compute_module
@@ -41,17 +42,31 @@ class GoogleCloudProject:
   """
 
   def __init__(self,
-               project_id: str,
+               project_id: Optional[str] = None,
                default_zone: str = 'us-central1-f') -> None:
     """Initialize the GoogleCloudProject object.
 
     Args:
-      project_id (str): The name of the project.
+      project_id (str): Optional. The name of the project. If not provided, we
+          look in the default gcloud environment if a project is already set. If
+          none is found, we raise an AttributeError.
       default_zone (str): Optional. Default zone to create new resources in.
           Default is 'us-central1-f'.
-    """
 
-    self.project_id = project_id
+    Raises:
+        AttributeError: If no project_id was provided and none was inferred
+            from the gcloud environment.
+    """
+    if project_id:
+      self.project_id = project_id
+    else:
+      _, project_id = default()
+      if project_id:
+        self.project_id = project_id
+      else:
+        raise AttributeError("No project_id was found. Either pass a project_id"
+                             " to the function, or set one in your gcloud SDK: "
+                             "`gcloud config set project project_id`")
     self.default_zone = default_zone
     self._compute = None  # type: Optional[compute_module.GoogleCloudCompute]
     self._function = None  # type: Optional[function_module.GoogleCloudFunction]
@@ -130,7 +145,7 @@ class GoogleCloudProject:
     if self._log:
       return self._log
     self._log = log_module.GoogleCloudLog(
-        self.project_id)
+        [self.project_id])
     return self._log
 
   @property

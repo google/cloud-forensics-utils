@@ -15,7 +15,7 @@
 """Google Cloud Monitoring functionality."""
 
 import datetime
-from typing import TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING, Dict, List, Tuple, Optional
 
 from libcloudforensics.providers.gcp.internal import common
 
@@ -30,7 +30,6 @@ class GoogleCloudMonitoring:
 
   Attributes:
     project_id: Project name.
-    gcm_api_client: Client to interact with Monitoring APIs.
   """
   CLOUD_MONITORING_API_VERSION = 'v3'
 
@@ -41,7 +40,6 @@ class GoogleCloudMonitoring:
       project_id (str): The name of the project.
     """
 
-    self.gcm_api_client = None
     self.project_id = project_id
 
   def GcmApi(self) -> 'googleapiclient.discovery.Resource':
@@ -51,11 +49,8 @@ class GoogleCloudMonitoring:
       googleapiclient.discovery.Resource: A Google Cloud Monitoring
           service object.
     """
-    if self.gcm_api_client:
-      return self.gcm_api_client
-    self.gcm_api_client = common.CreateService(
+    return common.CreateService(
         'monitoring', self.CLOUD_MONITORING_API_VERSION)
-    return self.gcm_api_client
 
   def ActiveServices(self, timeframe: int = 30) -> Dict[str, int]:
     """List active services in the project (default: last 30 days).
@@ -72,7 +67,7 @@ class GoogleCloudMonitoring:
     end_time = common.FormatRFC3339(datetime.datetime.utcnow())
     period = timeframe * 24 * 60 * 60
     service = self.GcmApi()
-    gcm_timeseries_client = service.projects().timeSeries()
+    gcm_timeseries_client = service.projects().timeSeries() # pylint: disable=no-member
     responses = common.ExecuteRequest(gcm_timeseries_client, 'list', {
         'name': 'projects/{0:s}'.format(self.project_id),
         'filter':
@@ -95,3 +90,84 @@ class GoogleCloudMonitoring:
             if val:
               ret[service] = int(val)
     return ret
+
+  def _BuildCpuUsageFilter(self, instances: Optional[List[str]]) -> str:
+    """Builds a metrics query filter based on a list of instances.
+
+    Args:
+      instances list[str]: a list of instance names.
+
+    Returns:
+      str: the filter to use in a metrics query.
+    """
+    instances_filter = (
+          ['metric.type = "compute.googleapis.com/instance/cpu/utilization"'])
+    if instances:
+      instances_filter.append(
+          ' AND (metric.label.instance_name = "{0:s}"'.format(instances[0]))
+      if len(instances) > 1:
+        for instance_name in instances[1:]:
+          instances_filter.append(
+              ' OR metric.label.instance_name = "{0:s}"'.format(instance_name))
+      instances_filter.append(')')
+
+    return ''.join(instances_filter)
+
+  def GetCpuUsage(self,
+    instances: Optional[List[str]] = None,
+    days: int = 7,
+    aggregation_minutes: int = 60
+    ) -> Dict[str, List[Tuple[str, float]]]:
+    """Returns CPU usage metrics for compute instances.
+
+    By default returns hourly usage for the last seven days for all instances
+    within a project.
+
+    Args:
+      instances list[str]: Optional. A list of instance names to collect
+        metrics for. When not provided will collect metrics for all instances
+        in the project.
+      days (int): Optional. The number of days to collect metrics for.
+      aggregate_minutes (int): Optional. The minutes to aggregate on.
+
+    Returns:
+      Dict[str, List[Tuple[str, float]]]: the CPU usage for the instances with
+        instancename_instanceid as the key and (timestamp, usage) tuples
+        as values.
+    """
+    service = self.GcmApi()
+    gcm_timeseries_client = service.projects().timeSeries() # pylint: disable=no-member
+
+    start_time = common.FormatRFC3339(
+        datetime.datetime.utcnow() - datetime.timedelta(days=days))
+    end_time = common.FormatRFC3339(datetime.datetime.utcnow())
+    period = aggregation_minutes * 60
+    instance_filter = self._BuildCpuUsageFilter(instances)
+
+    responses = common.ExecuteRequest(gcm_timeseries_client, 'list', {
+        'name': 'projects/{0:s}'.format(self.project_id),
+        'filter': instance_filter,
+        'interval_startTime': start_time,
+        'interval_endTime': end_time,
+        'view': 'FULL',
+        'aggregation_perSeriesAligner': 'ALIGN_MEAN',
+        'aggregation_alignmentPeriod': '{0:d}s'.format(period),
+    })
+
+    cpu_usage_instances = {}
+
+    for response in responses:
+      time_series = response.get('timeSeries', [])
+      for ts in time_series:
+        instance_name = ts['metric']['labels']['instance_name']
+        instance_id = ts['resource']['labels']['instance_id']
+        instance_key = instance_name + '_' + instance_id # type: str
+        points = ts['points']
+        parsed_points = []
+        for point in points:
+          timestamp = point['interval']['startTime'] # type: str
+          cpu_usage = point['value']['doubleValue'] # type: float
+          parsed_points.append((timestamp, cpu_usage))
+        cpu_usage_instances[instance_key] = parsed_points
+
+    return cpu_usage_instances
