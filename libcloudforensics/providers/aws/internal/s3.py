@@ -15,12 +15,13 @@
 """Bucket functionality."""
 
 import os
-from typing import TYPE_CHECKING, List, Dict, Optional, Any, Tuple
+from typing import TYPE_CHECKING, List, Dict, Optional, Any
 
 from libcloudforensics import errors
 from libcloudforensics import logging_utils
 from libcloudforensics.providers.aws.internal import common
 from libcloudforensics.providers.gcp.internal import storage as gcp_storage
+from libcloudforensics.providers.utils.storage_utils import SplitStoragePath
 
 
 logging_utils.SetUpLogger(__name__)
@@ -294,18 +295,3 @@ class S3:
     logger.info('Deleting bucket {0:s}'.format(bucket))
     s3_client = self.aws_account.ClientApi(common.S3_SERVICE)
     s3_client.delete_bucket(Bucket=bucket)
-
-def SplitStoragePath(path: str) -> Tuple[str, str]:
-  """Split a path to bucket name and object URI.
-
-  Args:
-    path (str): File path to a resource in S3.
-        Ex: s3://bucket/folder/obj
-
-  Returns:
-    Tuple[str, str]: Bucket name. Object URI.
-  """
-
-  _, _, full_path = path.partition('//')
-  bucket, _, object_uri = full_path.partition('/')
-  return bucket, object_uri

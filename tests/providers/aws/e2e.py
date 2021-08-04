@@ -25,6 +25,7 @@ from libcloudforensics.providers.aws.internal.common import S3_SERVICE
 from libcloudforensics.providers.aws.internal import account
 from libcloudforensics.providers.aws.internal import s3
 from libcloudforensics.providers.aws import forensics
+from libcloudforensics.providers.utils.storage_utils import SplitStoragePath
 from libcloudforensics import logging_utils
 from tests.scripts import utils
 
@@ -250,7 +251,7 @@ class EndToEndTest(unittest.TestCase):
 
     if not self.s3_destination.startswith('s3://'):
       self.s3_destination = 's3://' + self.s3_destination
-    path_components = s3.SplitStoragePath(self.s3_destination)
+    path_components = SplitStoragePath(self.s3_destination)
     bucket = path_components[0]
     object_path = path_components[1]
 

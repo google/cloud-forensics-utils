@@ -19,7 +19,7 @@ import datetime
 import os
 import shutil
 import tempfile
-from typing import TYPE_CHECKING, List, Dict, Any, Optional, Tuple
+from typing import TYPE_CHECKING, List, Dict, Any, Optional
 
 import googleapiclient.http
 from googleapiclient.errors import HttpError
@@ -30,28 +30,13 @@ from libcloudforensics.providers.gcp.internal import common
 # pylint: disable=line-too-long
 from libcloudforensics.providers.gcp.internal import monitoring as gcp_monitoring
 # pylint: enable=line-too-long
+from libcloudforensics.providers.utils.storage_utils import SplitStoragePath
 
 logging_utils.SetUpLogger(__name__)
 logger = logging_utils.GetLogger(__name__)
 
 if TYPE_CHECKING:
   import googleapiclient  # pylint: disable=ungrouped-imports
-
-
-def SplitStoragePath(path: str) -> Tuple[str, str]:
-  """Split a path to bucket name and object URI.
-
-  Args:
-    path (str): File path to a resource in GCS.
-        Ex: gs://bucket/folder/obj
-
-  Returns:
-    Tuple[str, str]: Bucket name. Object URI.
-  """
-
-  _, _, full_path = path.partition('//')
-  bucket, _, object_uri = full_path.partition('/')
-  return bucket, object_uri
 
 
 class GoogleCloudStorage:
