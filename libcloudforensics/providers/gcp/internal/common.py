@@ -245,20 +245,22 @@ class GoogleCloudComputeClient:
 
     service = self.GceApi()
     while True:
+
+      if 'error' in response:
+        raise RuntimeError(response['error'])
+
+      if response['status'] == 'DONE':
+        return response
+
       if zone:
         request = service.zoneOperations().get(
             project=self.project_id, zone=zone, operation=response['name'])
-        result = request.execute()  # type: Dict[str, Any]
+        response = request.execute()  # type: Dict[str, Any]
       else:
         request = service.globalOperations().get(
             project=self.project_id, operation=response['name'])
-        result = request.execute()
+        response = request.execute()
 
-      if 'error' in result:
-        raise RuntimeError(result['error'])
-
-      if result['status'] == 'DONE':
-        return result
       time.sleep(5)  # Seconds between requests
 
 

@@ -52,6 +52,15 @@ class GoogleCloudComputeTest(unittest.TestCase):
 
   @typing.no_type_check
   @mock.patch('libcloudforensics.providers.gcp.internal.common.GoogleCloudComputeClient.GceApi')
+  def testAbandonInstance(self, mock_gce_api):
+    """Test that instances of project are correctly listed."""
+    mig = mock_gce_api.return_value.instanceGroupManagers.return_value.abandonInstances
+    mig.return_value.execute.return_value = gcp_mocks.MOCK_INSTANCE_ABANDONED
+    # Check that call completes succesfully
+    gcp_mocks.FAKE_INSTANCE.AbandonFromMIG('fake-instance-group')
+
+  @typing.no_type_check
+  @mock.patch('libcloudforensics.providers.gcp.internal.common.GoogleCloudComputeClient.GceApi')
   def testListDisks(self, mock_gce_api):
     """Test that disks of instances are correctly listed."""
     disks = mock_gce_api.return_value.disks.return_value.aggregatedList

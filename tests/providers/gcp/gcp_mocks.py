@@ -96,6 +96,13 @@ MOCK_INSTANCES_AGGREGATED = {
 }
 
 # Mock struct to mimic GCP's API responses
+MOCK_INSTANCE_ABANDONED = {
+    # See https://cloud.google.com/compute/docs/reference/rest/v1/
+    # instanceGroupManagers/abandonInstances for complete structure
+    'status': 'DONE'
+}
+
+# Mock struct to mimic GCP's API responses
 MOCK_LOGS_LIST = {
     # See https://cloud.google.com/logging/docs/reference/v2/rest/v2
     # /ListLogsResponse for complete structure
