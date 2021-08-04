@@ -26,15 +26,17 @@ class GoogleCloudStorageTransferTest(unittest.TestCase):
   # pylint: disable=line-too-long
 
   @typing.no_type_check
+  @mock.patch('boto3.session.Session.get_credentials')
   @mock.patch('boto3.session.Session._setup_loader')
   @mock.patch('libcloudforensics.providers.gcp.internal.storagetransfer.GoogleCloudStorageTransfer.GcstApi')
-  def testS3ToGCS(self, mock_gcst_api, mock_loader):
+  def testS3ToGCS(self, mock_gcst_api, mock_loader, mock_creds):
     """Test S3ToGCS operation."""
     api_job_create = mock_gcst_api.return_value.transferJobs.return_value.create
     api_job_create.return_value.execute.return_value = gcp_mocks.MOCK_STORAGE_TRANSFER_JOB
     api_job_get = mock_gcst_api.return_value.transferOperations.return_value.list
     api_job_get.return_value.execute.return_value = gcp_mocks.MOCK_STORAGE_TRANSFER_OPERATION
     mock_loader.return_value = None
+    mock_creds.return_value = mock.MagicMock()
     transfer_results = gcp_mocks.FAKE_GCST.S3ToGCS(
         's3://s3_source_bucket/file.name',
         'fake-zone-2b',
