@@ -1124,7 +1124,8 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
     """
 
     def RaiseException(exception, details):
-      msg = 'Unable to  {0:s} from managed instance group {1:s}: {2:s}'.format(
+      msg = ('Unable to abandon {0:s} from managed '
+             'instance group {1:s}: {2:s}').format(
         self.name,
         instance_group,
         details,
