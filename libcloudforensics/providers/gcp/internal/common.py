@@ -242,24 +242,24 @@ class GoogleCloudComputeClient:
     Raises:
       RuntimeError: If API call failed.
     """
-
+    result = response
     service = self.GceApi()
     while True:
 
-      if 'error' in response:
-        raise RuntimeError(response['error'])
+      if 'error' in result:
+        raise RuntimeError(result['error'])
 
-      if response['status'] == 'DONE':
-        return response
+      if result['status'] == 'DONE':
+        return result
 
       if zone:
         request = service.zoneOperations().get(
             project=self.project_id, zone=zone, operation=response['name'])
-        response = request.execute()  # type: Dict[str, Any]
+        result = request.execute()  # type: Dict[str, Any]
       else:
         request = service.globalOperations().get(
             project=self.project_id, operation=response['name'])
-        response = request.execute()
+        result = request.execute()
 
       time.sleep(5)  # Seconds between requests
 
