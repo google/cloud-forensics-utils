@@ -1,6 +1,7 @@
 name: Run pylint and mypy on the codebase
 
 on:
+  push
   pull_request:
     types: [opened, synchronize, reopened]
 
