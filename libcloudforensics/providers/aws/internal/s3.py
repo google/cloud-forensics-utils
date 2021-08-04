@@ -161,7 +161,7 @@ class S3:
     if not s3_path.endswith('/'):
       s3_path = s3_path + '/'
     try:
-      (bucket, path) = gcp_storage.SplitStoragePath(s3_path)
+      (bucket, path) = SplitStoragePath(s3_path)
       client.upload_file(
           filepath,
           bucket,
@@ -215,7 +215,7 @@ class S3:
         .format(object_md.get('size', 'Error')))
     localcopy = gcs.GetObject(gcs_path)
     try:
-      self.CreateBucket(gcp_storage.SplitStoragePath(s3_path)[0])
+      self.CreateBucket(SplitStoragePath(s3_path)[0])
     except errors.ResourceCreationError as exception:
       if 'already exists' in exception.message:
         logger.info('Target bucket already exists. Reusing.')
