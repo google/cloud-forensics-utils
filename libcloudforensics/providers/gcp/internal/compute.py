@@ -41,6 +41,8 @@ DEFAULT_MACHINE_TYPE = 'e2-standard'
 # https://cloud.google.com/compute/docs/general-purpose-machines#e2-standard
 E2_STANDARD_CPU_CORES = [2, 4, 8, 16, 32]
 
+# Numerical policy_level value for non-hierarchical FW rules
+NON_HIERARCHICAL_FW_POLICY_LEVEL = 999
 
 class GoogleCloudCompute(common.GoogleCloudComputeClient):
   """Class representing all Google Cloud Compute objects in a project.
@@ -1224,6 +1226,28 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
       raise errors.ServiceAccountRemovalError('Service account detatchment '
           'failure: {0:s}'.format(str(exception)), __name__)
 
+  def _NormaliseFirewallL4Config(self, l4config: List[Any]) -> List[Any]:
+    """Normalise l4config dict key names that differ between policies and
+    firewalls.
+
+    Args:
+      l4config List[Any]: the l4config to be normalised
+
+    Returns:
+      List[Any]: the normalised l4config"""
+    normalised_l4config = []
+    for config in l4config:
+      normalised = {}
+      if 'ipProtocol' in config:
+        normalised['ip_protocol'] = config['ipProtocol']
+      else:
+        normalised['ip_protocol'] = config['IPProtocol']
+      if 'ports' in config:
+        normalised['ports'] = config['ports']
+      normalised_l4config.append(normalised)
+
+    return normalised_l4config
+
   def _NormaliseFirewallRules(self, nic_rules: Dict[str, Any]) -> List[Any]:
     """Normalise firewall policies and firewall rules into a common format.
 
@@ -1240,7 +1264,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
           'direction': 'INGRESS' or 'EGRESS',
           'l4config': [
             {
-              'ipProtocol': 'tcp' or 'udp or 'icmp',
+              'ip_protocol': 'all' or 'tcp' or 'udp or 'icmp',
               'ports': List[str]
             }]
           'ips': List[str],
@@ -1260,7 +1284,8 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
             'policy_level': policy_level,
             'priority': rule['priority'],
             'direction': rule['direction'],
-            'l4config': rule['match']['layer4Configs'],
+            'l4config': self._NormaliseFirewallL4Config(
+                rule['match']['layer4Configs']),
             'ips': (rule['match']['srcIpRanges'] if is_ingress else
                     rule['match']['destIpRanges']),
             'action': rule['action']}
@@ -1271,10 +1296,11 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
       is_allow = 'allowed' in rule
       normalised_rule = {
           'type': 'firewall',
-          'policy_level': None,
+          'policy_level': NON_HIERARCHICAL_FW_POLICY_LEVEL,
           'priority': rule['priority'],
           'direction': rule['direction'],
-          'l4config': rule['allowed'] if is_allow else rule['denied'],
+          'l4config': self._NormaliseFirewallL4Config(
+              rule['allowed'] if is_allow else rule['denied']),
           'ips': (rule['sourceRanges'] if is_ingress else
               rule['destinationRanges']),
           'action': 'allow' if is_allow else 'deny'}
@@ -1294,11 +1320,14 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
 
     for nic in instance_info.get('networkInterfaces', []):
       nic_name = nic['name']
-      request = gce_instance_client.getEffectiveFirewalls(
-          project=self.project_id, instance=self.name, zone=self.zone,
-          networkInterface=nic_name)
-      response = request.execute()
-      fw_rules[nic_name] = self._NormaliseFirewallRules(response)
+      nic_fw_rules = []
+      responses = common.ExecuteRequest(
+          gce_instance_client, 'getEffectiveFirewalls',
+          {'project': self.project_id, 'instance': self.name,
+          'zone': self.zone, 'networkInterface': nic_name})
+      for response in responses:
+        nic_fw_rules.extend(self._NormaliseFirewallRules(response))
+      fw_rules[nic_name] = nic_fw_rules
 
     return fw_rules
 

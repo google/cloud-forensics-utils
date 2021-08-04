@@ -399,7 +399,7 @@ class GoogleComputeInstanceTest(unittest.TestCase):
           'policy_level': 0,
           'priority': 1,
           'direction': 'INGRESS',
-          'l4config': [{'ipProtocol': 'tcp'}],
+          'l4config': [{'ip_protocol': 'tcp'}],
           'ips': ['8.8.8.8/24'],
           'action': 'allow'
         },
@@ -408,16 +408,16 @@ class GoogleComputeInstanceTest(unittest.TestCase):
           'policy_level': 1,
           'priority': 1,
           'direction': 'INGRESS',
-          'l4config': [{'ipProtocol': 'tcp'}],
+          'l4config': [{'ip_protocol': 'tcp'}],
           'ips': ['8.8.4.4/24'],
           'action': 'goto_next'
         },
         {
           'type': 'firewall',
-          'policy_level': None,
+          'policy_level': 999,
           'priority': 1000,
           'direction': 'INGRESS',
-          'l4config': [{'IPProtocol': 'tcp'}],
+          'l4config': [{'ip_protocol': 'tcp'}],
           'ips': ['0.0.0.0/0'],
           'action':
           'allow'

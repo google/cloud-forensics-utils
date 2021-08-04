@@ -574,7 +574,8 @@ MOCK_NETWORK_INTERFACES = [
                 }
         ],
         'fingerprint': 'bm9mcGZwZnA=',
-        'kind': 'compute#networkInterface'}
+        'kind': 'compute#networkInterface'
+    }
 ]
 MOCK_EFFECTIVE_FIREWALLS = {
     "firewallPolicys": [
