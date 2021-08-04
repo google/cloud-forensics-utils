@@ -51,13 +51,17 @@ class GoogleCloudComputeTest(unittest.TestCase):
     self.assertEqual('fake-zone', list_instances['fake-instance'].zone)
 
   @typing.no_type_check
+  @mock.patch('libcloudforensics.providers.gcp.internal.common.GoogleCloudComputeClient.BlockOperation')
   @mock.patch('libcloudforensics.providers.gcp.internal.common.GoogleCloudComputeClient.GceApi')
-  def testAbandonInstance(self, mock_gce_api):
-    """Test that instances of project are correctly listed."""
+  def testAbandonInstance(self, mock_gce_api, mock_block_operation):
+    """Test that instance is correctly abandoned from Managed Instance Group."""
     mig = mock_gce_api.return_value.instanceGroupManagers.return_value.abandonInstances
-    mig.return_value.execute.return_value = gcp_mocks.MOCK_INSTANCE_ABANDONED
+    mig_request = mig.return_value.execute
+    mig_request.return_value = gcp_mocks.MOCK_INSTANCE_ABANDONED
+    mock_block_operation.return_value = gcp_mocks.MOCK_INSTANCE_ABANDONED
     # Check that call completes succesfully
     gcp_mocks.FAKE_INSTANCE.AbandonFromMIG('fake-instance-group')
+    self.assertTrue(mig_request.called)
 
   @typing.no_type_check
   @mock.patch('libcloudforensics.providers.gcp.internal.common.GoogleCloudComputeClient.GceApi')
