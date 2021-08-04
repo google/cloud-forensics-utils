@@ -1240,7 +1240,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
       normalised = {}
       if 'ipProtocol' in config:
         normalised['ip_protocol'] = config['ipProtocol']
-      else:
+      elif 'IPProtocol' in config:
         normalised['ip_protocol'] = config['IPProtocol']
       if 'ports' in config:
         normalised['ports'] = config['ports']
@@ -1264,7 +1264,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
           'direction': 'INGRESS' or 'EGRESS',
           'l4config': [
             {
-              'ip_protocol': 'all' or 'tcp' or 'udp or 'icmp',
+              'ip_protocol': str,
               'ports': List[str]
             }]
           'ips': List[str],
@@ -1321,10 +1321,10 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
     for nic in instance_info.get('networkInterfaces', []):
       nic_name = nic['name']
       nic_fw_rules = []
+      request = {'project': self.project_id, 'instance': self.name,
+          'zone': self.zone, 'networkInterface': nic_name}
       responses = common.ExecuteRequest(
-          gce_instance_client, 'getEffectiveFirewalls',
-          {'project': self.project_id, 'instance': self.name,
-          'zone': self.zone, 'networkInterface': nic_name})
+          gce_instance_client, 'getEffectiveFirewalls', request)
       for response in responses:
         nic_fw_rules.extend(self._NormaliseFirewallRules(response))
       fw_rules[nic_name] = nic_fw_rules
