@@ -1130,7 +1130,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
         instance_group,
         details,
       )
-      raise errors.ResourceDeletionError(msg, __name__) from exception
+      raise errors.ResourceNotFoundError(msg, __name__) from exception
 
     mig_client = self.GceApi().instanceGroupManagers()
     params = {

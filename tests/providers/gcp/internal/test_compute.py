@@ -54,7 +54,7 @@ class GoogleCloudComputeTest(unittest.TestCase):
   @mock.patch('libcloudforensics.providers.gcp.internal.common.GoogleCloudComputeClient.BlockOperation')
   @mock.patch('libcloudforensics.providers.gcp.internal.common.GoogleCloudComputeClient.GceApi')
   def testAbandonInstance(self, mock_gce_api, mock_block_operation):
-    """Test that instance is correctly abandoned from Managed Instance Group."""
+    """Test that instance is abandoned from Managed Instance Group."""
     mig = mock_gce_api.return_value.instanceGroupManagers.return_value.abandonInstances
     mig_request = mig.return_value.execute
     mig_request.return_value = gcp_mocks.MOCK_INSTANCE_ABANDONED
