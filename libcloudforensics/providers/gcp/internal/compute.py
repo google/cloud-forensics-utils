@@ -1139,7 +1139,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
       'instanceGroupManager': instance_group,
       'body': {
         'instances': [
-          f'zones/{self.zone}/instances/{self.name}'
+          'zones/{0:s}/instances/{1:s}'.format(self.zone, self.name)
         ]
       }
     }
