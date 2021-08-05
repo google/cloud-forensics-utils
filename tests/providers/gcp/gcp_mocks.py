@@ -556,3 +556,98 @@ MOCK_GCM_METRICS_CPU = {
 # See: https://cloud.google.com/compute/docs/reference/rest/v1/disks
 REGEX_DISK_NAME = re.compile('^(?=.{1,63}$)[a-z]([-a-z0-9]*[a-z0-9])?$')
 STARTUP_SCRIPT = 'scripts/startup.sh'
+
+# pylint: disable=line-too-long
+MOCK_NETWORK_INTERFACES = [
+    {
+        'network': 'https://www.googleapis.com/compute/v1/projects/fake-project/global/networks/default',
+        'subnetwork': 'https://www.googleapis.com/compute/v1/projects/fake-project/regions/fake-region/subnetworks/default',
+        'networkIP': '10.1.1.1',
+        'name': 'nic0',
+        'accessConfigs': [
+            {
+                'type': 'ONE_TO_ONE_NAT',
+                'name': 'External NAT',
+                'natIP': '0.0.0.0',
+                'networkTier': 'PREMIUM',
+                'kind': 'compute#accessConfig'
+                }
+        ],
+        'fingerprint': 'bm9mcGZwZnA=',
+        'kind': 'compute#networkInterface'
+    }
+]
+MOCK_EFFECTIVE_FIREWALLS = {
+    "firewallPolicys": [
+        {
+            "name": "111111111111",
+            "rules": [
+                {
+                    "action": "allow",
+                    "description": "",
+                    "direction": "INGRESS",
+                    "kind": "compute#firewallPolicyRule",
+                    "match": {
+                        "layer4Configs": [
+                        {
+                            "ipProtocol": "tcp"
+                        }
+                        ],
+                        "srcIpRanges": [
+                            "8.8.8.8/24"
+                        ]
+                    },
+                    "priority": 1
+                }
+            ]
+        },
+        {
+            "name": "222222222222",
+            "rules": [
+                {
+                    "action": "goto_next",
+                    "description": "",
+                    "direction": "INGRESS",
+                    "kind": "compute#firewallPolicyRule",
+                    "match": {
+                        "layer4Configs": [
+                        {
+                            "ipProtocol": "tcp"
+                        }
+                        ],
+                        "srcIpRanges": [
+                        "8.8.4.4/24"
+                        ]
+                    },
+                    "priority": 1
+                }
+            ]
+        }
+    ],
+    "firewalls": [
+        {
+            "allowed": [
+                {
+                    "IPProtocol": "tcp"
+                }
+            ],
+            "creationTimestamp": "2021-01-01T00:00:00.000+00:00",
+            "description": "allow all",
+            "direction": "INGRESS",
+            "disabled": False,
+            "id": "1111111111111111111",
+            "kind": "compute#firewall",
+            "logConfig": {
+                "enable": False
+            },
+            "name": "default-111111111111111111111111",
+            "network": "https://www.googleapis.com/compute/v1/projects/fake-project/global/networks/default",
+            "priority": 1000,
+            "selfLink": "https://www.googleapis.com/compute/v1/projects/fake-project/global/firewalls/default-111111111111111111111111",
+            "sourceRanges": [
+                "0.0.0.0/0"
+            ]
+        }
+    ]
+}
+# pylint: enable=line-too-long
