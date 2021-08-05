@@ -1123,12 +1123,11 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
       errors.OperationFailedError: If the request did not succeed.
     """
 
-    def RaiseException(exception: Exception, details: str) -> None:
-      msg = ('Unable to abandon {0:s} from managed '
-             'instance group {1:s}: {2:s}').format(
+    def RaiseException(exception: Exception) -> None:
+      msg = ('Unable to abandon {0:s} '
+             'from managed instance group {1:s}.').format(
         self.name,
         instance_group,
-        details,
       )
       raise errors.OperationFailedError(msg, __name__) from exception
 
@@ -1147,12 +1146,12 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
     try:
       op = common.ExecuteRequest(mig_client, 'abandonInstances', params)[0]
     except HttpError as exception:
-      RaiseException(exception, exception.error_details)
+      RaiseException(exception)
 
     try:
       self.BlockOperation(op, zone=self.zone)
     except RuntimeError as exception:
-      RaiseException(exception, str(exception))
+      RaiseException(exception)
 
   def SetTags(self, new_tags: List[str]) -> None:
     """Sets tags for the compute instance.
