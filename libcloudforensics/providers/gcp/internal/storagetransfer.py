@@ -84,8 +84,8 @@ class GoogleCloudStorageTransfer:
       TransferExecutionError: If the transfer couldn't be run.
     """
     aws_creds = account.AWSAccount(zone).session.get_credentials()
-    if aws_creds is None or aws_creds.access_key is None or aws_creds.access_key.startswith(
-        'ASIA'):
+    if (aws_creds is None or aws_creds.access_key is None or
+        aws_creds.access_key.startswith('ASIA')):
       raise errors.TransferCreationError(
           'Could not create transfer. No long term AWS credentials available',
           __name__)
