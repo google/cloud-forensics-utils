@@ -396,6 +396,46 @@ class GoogleComputeInstanceTest(unittest.TestCase):
     ]
     mock_disk_delete.assert_has_calls(calls)
 
+  @typing.no_type_check
+  @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleComputeInstance.GetOperation')
+  @mock.patch('libcloudforensics.providers.gcp.internal.common.GoogleCloudComputeClient.GceApi')
+  def testGetEffectiveFirewallRules(self, mock_gce_api, mock_get_operation):
+    """Tests that firewall rules are properly formatted"""
+    mock_get_operation.return_value = {'networkInterfaces': gcp_mocks.MOCK_NETWORK_INTERFACES}
+    mock_gce_api.return_value.instances.return_value.getEffectiveFirewalls.return_value.execute.return_value = gcp_mocks.MOCK_EFFECTIVE_FIREWALLS
+    fw_rules = gcp_mocks.FAKE_INSTANCE.GetEffectiveFirewallRules()
+    self.assertDictEqual(
+      fw_rules,
+      {'nic0': [
+        {
+          'type': 'policy',
+          'policy_level': 0,
+          'priority': 1,
+          'direction': 'INGRESS',
+          'l4config': [{'ip_protocol': 'tcp'}],
+          'ips': ['8.8.8.8/24'],
+          'action': 'allow'
+        },
+        {
+          'type': 'policy',
+          'policy_level': 1,
+          'priority': 1,
+          'direction': 'INGRESS',
+          'l4config': [{'ip_protocol': 'tcp'}],
+          'ips': ['8.8.4.4/24'],
+          'action': 'goto_next'
+        },
+        {
+          'type': 'firewall',
+          'policy_level': 999,
+          'priority': 1000,
+          'direction': 'INGRESS',
+          'l4config': [{'ip_protocol': 'tcp'}],
+          'ips': ['0.0.0.0/0'],
+          'action':
+          'allow'
+        }]})
+
 
 class GoogleComputeDiskTest(unittest.TestCase):
   """Test Google Cloud Compute Disk class."""
