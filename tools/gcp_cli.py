@@ -274,7 +274,7 @@ def ListServices(args: 'argparse.Namespace') -> None:
   logger.info('Found {0:d} APIs:'.format(len(results)))
   sorted_apis = sorted(results.items(), key=lambda x: x[1], reverse=True)
   for apiname, usage in sorted_apis:
-    logger.info('{0:s}: {1:s}'.format(apiname, usage))
+    logger.info('{0:s}: {1:d}'.format(apiname, usage))
 
 
 def GetBucketACLs(args: 'argparse.Namespace') -> None:
