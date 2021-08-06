@@ -84,6 +84,11 @@ class GoogleCloudStorageTransfer:
       TransferExecutionError: If the transfer couldn't be run.
     """
     aws_creds = account.AWSAccount(zone).session.get_credentials()
+    if aws_creds is None or aws_creds.access_key is None or aws_creds.access_key.startswith(
+        'ASIA'):
+      raise errors.TransferCreationError(
+          'Could not create transfer. No long term AWS credentials available',
+          __name__)
     s3_bucket, s3_path = SplitStoragePath(s3_path)
     gcs_bucket, gcs_path = SplitStoragePath(gcs_path)
     if not gcs_path.endswith('/'):
@@ -148,16 +153,21 @@ class GoogleCloudStorageTransfer:
       status = gcst_transfers.list(
           name='transferOperations', filter=filter_string).execute()
       logger.info('Waiting to finish...')
+      logger.info(status)
     error = status['operations'][0].get('error', None)
     if error:
       raise errors.TransferExecutionError(
           'Could not execute transfer. Job output: {0:s}'.format(str(status)),
           __name__)
-    counters = status['operations'][0].get('counters', {})
+    counters = status['operations'][0].get('metadata', {}).get('counters', {})
     logger.info(
-        'Transferred {0:d}/{1:d} files ({2:d}/{3:d} bytes).'.format(
-            counters.get('objectsFoundFromSource', 0),
-            counters.get('objectsCopiedToSink', 0),
-            counters.get('bytesFoundFromSource', 0),
-            counters.get('bytesCopiedToSink', 0)))
+        'Transferred {0:s}/{1:s} files ({2:s}/{3:s} bytes).'.format(
+            counters.get('objectsFoundFromSource', '0'),
+            counters.get('objectsCopiedToSink', '0'),
+            counters.get('bytesFoundFromSource', '0'),
+            counters.get('bytesCopiedToSink', '0')))
+    logger.info(
+        'Skipped {0:s} files ({1:s} bytes).'.format(
+            counters.get('objectsFromSourceSkippedBySync', '0'),
+            counters.get('bytesFromSourceSkippedBySync', '0')))
     return status

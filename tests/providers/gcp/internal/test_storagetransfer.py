@@ -14,10 +14,12 @@
 # limitations under the License.
 """Tests for the gcp module - storagetransfer.py"""
 
+
 import typing
 import unittest
 import mock
 
+from libcloudforensics import errors
 from tests.providers.gcp import gcp_mocks
 
 
@@ -36,7 +38,11 @@ class GoogleCloudStorageTransferTest(unittest.TestCase):
     api_job_get = mock_gcst_api.return_value.transferOperations.return_value.list
     api_job_get.return_value.execute.return_value = gcp_mocks.MOCK_STORAGE_TRANSFER_OPERATION
     mock_loader.return_value = None
-    mock_creds.return_value = mock.MagicMock()
+    creds = mock.MagicMock()
+    creds.access_key = 'ABC'
+    creds.secret_key = 'DEF'
+    mock_creds.return_value = creds
+
     transfer_results = gcp_mocks.FAKE_GCST.S3ToGCS(
         's3://s3_source_bucket/file.name',
         'fake-zone-2b',
@@ -44,3 +50,28 @@ class GoogleCloudStorageTransferTest(unittest.TestCase):
     self.assertEqual(1, len(transfer_results['operations']))
     self.assertEqual('s3_source_bucket', transfer_results['operations'][0]['metadata']['transferSpec']['awsS3DataSource']['bucketName'])
     self.assertEqual('30', transfer_results['operations'][0]['metadata']['counters']['bytesCopiedToSink'])
+
+  @typing.no_type_check
+  @mock.patch('boto3.session.Session.get_credentials')
+  def testS3ToGCSNoCreds(self, mock_creds):
+    """Test S3TOGCS operation when no AWS credentials exist."""
+    with self.assertRaises(errors.TransferCreationError):
+      mock_creds.return_value = mock.MagicMock()
+      gcp_mocks.FAKE_GCST.S3ToGCS(
+          's3://s3_source_bucket/file.name',
+          'fake-zone-2b',
+          'gs://gcs_sink_bucket/test_path')
+
+  @typing.no_type_check
+  @mock.patch('boto3.session.Session.get_credentials')
+  def testS3ToGCSTempCreds(self, mock_creds):
+    """Test S3TOGCS operation when temporary AWS credentials exist."""
+    creds = mock.MagicMock()
+    creds.access_key = 'ASIA'
+    creds.secret_key = 'DEF'
+    mock_creds.return_value = creds
+    with self.assertRaises(errors.TransferCreationError):
+      gcp_mocks.FAKE_GCST.S3ToGCS(
+          's3://s3_source_bucket/file.name',
+          'fake-zone-2b',
+          'gs://gcs_sink_bucket/test_path')
