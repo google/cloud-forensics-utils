@@ -689,17 +689,23 @@ class EC2:
         attachment, and the Arn of the Instance profile attached. Both are None
         if no profile is attached, or the instance cannot be found.
     """
-    client = self.aws_account.ClientApi(common.EC2_SERVICE)
-    response = client.describe_iam_instance_profile_associations(
-      Filters=[{
-            'Name': 'instance-id',
-            'Values': [instance_id]
-      }])
-    if not response['IamInstanceProfileAssociations']:
-      return '', ''
-    return response['IamInstanceProfileAssociations'][0]['AssociationId'],\
-      response['IamInstanceProfileAssociations'][0]['IamInstanceProfile']\
-        ['Arn']
+    try:
+      client = self.aws_account.ClientApi(common.EC2_SERVICE)
+      response = client.describe_iam_instance_profile_associations(
+        Filters=[{
+              'Name': 'instance-id',
+              'Values': [instance_id]
+        }])
+      print(response)
+      if not response['IamInstanceProfileAssociations']:
+        return '', ''
+      return response['IamInstanceProfileAssociations'][0]['AssociationId'],\
+        response['IamInstanceProfileAssociations'][0]['IamInstanceProfile']\
+          ['Arn']
+    except  client.exceptions.ClientError as exception:
+      raise errors.ResourceNotFoundError(
+        'Instance does not exist: {0!s}'.format(
+           exception), __name__) from exception
 
   def DisassociateInstanceProfile(
       self,

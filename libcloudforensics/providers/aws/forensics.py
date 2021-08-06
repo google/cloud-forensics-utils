@@ -503,8 +503,9 @@ def InstanceProfileMitigator(
     instance_id: str,
     revoke_existing: bool = False
     ) -> None:
-  """Remove an instance profile attachment from an instance. Also, optionally
-  revoke existing issued tokens for the profile.
+  """Remove an instance profile attachment from an instance.
+
+  Also, optionally revoke existing issued tokens for the profile.
 
   Args:
     zone (str): AWS Availability Zone the instance is in.
@@ -523,7 +524,7 @@ def InstanceProfileMitigator(
   if not profile or not assoc_id:
     raise errors.ResourceNotFoundError(
         'Instance not found or does not have a profile attachment: {0:s}'.
-        format(instance_id), __name__)
+          format(instance_id), __name__)
 
   logger.info('Removing profile attachment')
   aws_account.ec2.DisassociateInstanceProfile(assoc_id)

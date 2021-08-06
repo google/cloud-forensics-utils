@@ -297,8 +297,10 @@ class IAM:
       # It doesn't matter if this fails.
 
   def RevokeOldSessionsForRole(self, role_name: str) -> None:
-    """Revoke old session tokens for a role. This is acheived by adding an
-    inline policy to the role, Deny *:* on the condition of TokenIssueTime.
+    """Revoke old session tokens for a role.
+
+    This is acheived by adding an inline policy to the role, Deny *:* on the
+    condition of TokenIssueTime.
 
     Args:
       role_name (str): The role name to act on.
