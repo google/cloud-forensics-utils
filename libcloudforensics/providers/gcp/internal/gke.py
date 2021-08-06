@@ -14,7 +14,10 @@
 # limitations under the License.
 """Google Kubernetes Engine functionalities."""
 
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING
+
+from kubernetes import client
+from kubernetes.config import kube_config
 from libcloudforensics.providers.gcp.internal import common
 
 if TYPE_CHECKING:
@@ -28,7 +31,8 @@ class GoogleKubernetesEngine:
   """
   GKE_API_VERSION = 'v1'
 
-  def GkeApi(self) -> 'googleapiclient.discovery.Resource':
+  @staticmethod
+  def GkeApi() -> 'googleapiclient.discovery.Resource':
     """Gets a Google Container service object.
 
     https://container.googleapis.com/$discovery/rest?version=v1
@@ -36,24 +40,84 @@ class GoogleKubernetesEngine:
     Returns:
       googleapiclient.discovery.Resource: A Google Container service object.
     """
-
     return common.CreateService(
-        'container', self.GKE_API_VERSION)
+        'container', GoogleKubernetesEngine.GKE_API_VERSION)
 
-  def GetCluster(self, name: str) -> Dict[str, Any]:
-    """ Gets the details of a specific cluster.
+class GkeCluster(GoogleKubernetesEngine):
+  """Class facilitating GKE API and K8s API functions calls on a cluster."""
 
-    Args:
-      name (str): The name (project, location, cluster) of the cluster to
-          retrieve. Specified in the format `projects/*/locations/*/clusters/*`.
-          For regional cluster: `/locations/[GCP_REGION]`.
-          For zonal cluster: `/locations/[GCP_ZONE]`.
+  def __init__(self, project_id, zone, cluster_id) -> None:
+    super().__init__()
+    self.project_id = project_id
+    self.zone = zone
+    self.cluster_id = cluster_id
 
-    Returns:
-      Dict: A Google Kubernetes Engine cluster object:
-          https://cloud.google.com/kubernetes-engine/docs/reference/rest/v1/projects.locations.clusters#Cluster  # pylint: disable=line-too-long
-    """
-    gke_clusters = self.GkeApi().projects().locations().clusters() # pylint: disable=no-member
-    request = gke_clusters.get(name=name)
-    response = request.execute()  # type: Dict[str, Any]
+  @property
+  def name(self):
+    """Property to retrieve the name of the cluster, for use in API calls."""
+    return 'projects/{0:s}/locations/{1:s}/clusters/{2:s}'.format(
+      self.project_id,
+      self.zone,
+      self.cluster_id,
+    )
+
+  def K8sApi(self):
+    """Creates an authenticated Kubernetes API client."""
+    # Retrieve cluster information via GKE API
+    get = self.GetOperation()
+    # Extract fields for kubeconfig
+    ca_data = get['masterAuth']['clusterCaCertificate']
+    # Context string is built the same way that gcloud does
+    # in get-credentials
+    context = '_'.join(['gke',
+      self.project_id,
+      self.zone,
+      self.name,
+    ])
+    # Build kubeconfig dict and load
+    kubeconfig = client.Configuration()
+    loader = kube_config.KubeConfigLoader({
+      'apiVersion': self.GKE_API_VERSION,
+      'current-context': context,
+      'clusters': [
+        {
+          'name': context,
+          'cluster': {
+            'certificate-authority-data': ca_data,
+            'server': 'https://{0:s}'.format(get['endpoint']),
+          }
+        }
+      ],
+      'contexts': [
+        {
+          'name': context,
+          'context': {
+            'cluster': context,
+            'user': context
+          }
+        }
+      ],
+      'users': [
+        {
+          'name': context,
+          'user': {
+            'auth-provider': {
+              'name': 'gcp'
+            }
+          }
+        }
+      ]
+    })
+    loader.load_and_set(kubeconfig)
+    return client.CoreV1Api(client.ApiClient(kubeconfig))
+
+  def GetOperation(self):
+    """Get GKE API operation object for the GKE cluster."""
+    clusters = self.GkeApi().projects().locations().clusters()  # pylint: disable=no-member
+    request = clusters.get(name=self.name)
+    response = request.execute()
     return response
+
+  def GetNodes(self):
+    """Gets the Kubernetes nodes of the cluster"""
+    print(self.K8sApi().list_pod_for_all_namespaces())
