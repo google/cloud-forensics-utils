@@ -14,6 +14,7 @@
 # limitations under the License.
 """Google Kubernetes Engine functionalities."""
 
+import abc
 from typing import TYPE_CHECKING, Any, Dict, List
 from kubernetes import client
 from kubernetes.config import kube_config
@@ -22,6 +23,41 @@ from libcloudforensics.providers.gcp.internal import common
 
 if TYPE_CHECKING:
   import googleapiclient
+
+
+class K8sSelector:
+  """Class to build K8s API selectors."""
+
+  class Component(abc.ABC):
+    """Component of the selector."""
+
+    @abc.abstractmethod
+    def ToString(self):
+      """Returns the component of the selector."""
+
+  class Node(Component):
+    """Component for running on a particular node."""
+
+    def __init__(self, node) -> None:
+      super().__init__()
+      self.node = node
+
+    def ToString(self):
+      return 'spec.nodeName={0:s}'.format(self.node)
+
+  class Running(Component):
+    """Component for a running pod."""
+
+    def ToString(self):
+      return 'status.phase!=Failed,status.phase!=Succeeded'
+
+
+  def __init__(self, *selectors):
+    self.selectors = selectors
+
+  def ToString(self):
+    """Builds the selector string to be passed to the K8s API."""
+    return ','.join(map(lambda s: s.ToString(), self.selectors))
 
 
 class GoogleKubernetesEngine:
@@ -129,7 +165,7 @@ class GkeCluster(GoogleKubernetesEngine):
     """Gets the GCE instances of the cluster".
 
     Returns:
-      List[GoogleComputeInstance]: GCE instances belonging to
+      List[compute.GoogleComputeInstance]: GCE instances belonging to
         the cluster.
     """
     instances = []
@@ -138,3 +174,15 @@ class GkeCluster(GoogleKubernetesEngine):
           self.project_id, self.zone, node.metadata.name)
       instances.append(instance)
     return instances
+
+  def GetRunningPods(self, node: str):
+    """Returns the pods running for a particular node"""
+    selector = K8sSelector(
+      K8sSelector.Node(node),
+      K8sSelector.Running(),
+    )
+    pods = self._K8sApi().list_pod_for_all_namespaces(
+      field_selector=selector.ToString())
+    for pod in pods.items:
+      print(pod.metadata.name)
+    return pods
