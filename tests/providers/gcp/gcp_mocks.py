@@ -23,6 +23,7 @@ from libcloudforensics.providers.gcp.internal import project as gcp_project
 from libcloudforensics.providers.gcp.internal import log as gcp_log
 from libcloudforensics.providers.gcp.internal import monitoring as gcp_monitoring
 from libcloudforensics.providers.gcp.internal import storage as gcp_storage
+from libcloudforensics.providers.gcp.internal import storagetransfer as gcp_storagetransfer
 from libcloudforensics.providers.gcp.internal import cloudsql as gcp_cloudsql
 # pylint: enable=line-too-long
 
@@ -75,11 +76,14 @@ FAKE_LOG_ENTRIES = [{
     'textPayload': 'insert.compute.create'
 }]
 
+# pylint: disable=line-too-long
 FAKE_NEXT_PAGE_TOKEN = 'abcdefg1234567'
 FAKE_GCS = gcp_storage.GoogleCloudStorage('fake-target-project')
+FAKE_GCST = gcp_storagetransfer.GoogleCloudStorageTransfer('fake-target-project')
 FAKE_GCB = gcp_build.GoogleCloudBuild('fake-target-project')
 FAKE_MONITORING = gcp_monitoring.GoogleCloudMonitoring('fake-target-project')
 FAKE_CLOUDSQLINSTANCE = gcp_cloudsql.GoogleCloudSQL('fake-target-project')
+# pylint: enable=line-too-long
 
 # Mock struct to mimic GCP's API responses
 MOCK_INSTANCES_AGGREGATED = {
@@ -556,6 +560,78 @@ MOCK_GCM_METRICS_CPU = {
 # See: https://cloud.google.com/compute/docs/reference/rest/v1/disks
 REGEX_DISK_NAME = re.compile('^(?=.{1,63}$)[a-z]([-a-z0-9]*[a-z0-9])?$')
 STARTUP_SCRIPT = 'scripts/startup.sh'
+
+MOCK_STORAGE_TRANSFER_JOB = {
+    'name': 'transferJobs/12345',
+    'description': 'created_by_cfu',
+    'projectId': 'fake-project',
+    'transferSpec': {
+        'awsS3DataSource': {
+            'bucketName': 's3_source_bucket'
+        },
+        'gcsDataSink': {
+            'bucketName': 'gcs_sink_bucket', 'path': 'test_path/'
+        },
+        'objectConditions': {
+            'includePrefixes': ['file.name']
+        }
+    },
+    'schedule': {
+        'scheduleStartDate': {
+            'year': 2021, 'month': 1, 'day': 1
+        },
+        'scheduleEndDate': {
+            'year': 2021, 'month': 1, 'day': 1
+        },
+        'endTimeOfDay': {}
+    },
+    'status': 'ENABLED',
+    'creationTime': '2021-01-01T06:47:03.533112128Z',
+    'lastModificationTime': '2021-01-01T06:47:03.533112128Z'
+}
+
+MOCK_STORAGE_TRANSFER_OPERATION = {
+    "operations": [{
+        "name": "transferOperations/transferJobs-12345-6789",
+        "metadata": {
+            "@type":
+                "type.googleapis.com/google.storagetransfer.v1.TransferOperation",  # pylint: disable=line-too-long
+            "name":
+                "transferOperations/transferJobs-12345-6789",
+            "projectId":
+                "fake-project",
+            "transferSpec": {
+                "awsS3DataSource": {
+                    "bucketName": "s3_source_bucket"
+                },
+                "gcsDataSink": {
+                    "bucketName": "gcs_sink_bucket", 'path': 'test_path/'
+                },
+                "objectConditions": {
+                    "includePrefixes": ['file.name']
+                }
+            },
+            "startTime":
+                "2021-01-01T06:00:39.321276602Z",
+            "endTime":
+                "2021-01-01T06:00:59.938282352Z",
+            "status":
+                "SUCCESS",
+            "counters": {
+                "objectsFoundFromSource": "1",
+                "bytesFoundFromSource": "30",
+                "objectsCopiedToSink": "1",
+                "bytesCopiedToSink": "30"
+            },
+            "transferJobName":
+                "transferJobs/12345"
+        },
+        "done": True,
+        "response": {
+            "@type": "type.googleapis.com/google.protobuf.Empty"
+        }
+    }]
+}
 
 # pylint: disable=line-too-long
 MOCK_NETWORK_INTERFACES = [

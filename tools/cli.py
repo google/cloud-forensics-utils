@@ -67,6 +67,7 @@ PROVIDER_TO_FUNC = {
         'quarantinevm': gcp_cli.InstanceNetworkQuarantine,
         'querylogs': gcp_cli.QueryLogs,
         'startvm': gcp_cli.StartAnalysisVm,
+        'S3ToGCS': gcp_cli.S3ToGCS,
         'vmremoveserviceaccount': gcp_cli.VMRemoveServiceAccount
     }
 }
@@ -467,6 +468,13 @@ def Main() -> None:
                 ('--exempted_src_ips', 'Comma separated list of source IPs '
                     'to exempt from ingress firewall rules.', None),
                 ('--enable_logging', 'Enable firewall logging.', False),
+            ])
+  AddParser('gcp', gcp_subparsers, 'S3ToGCS',
+            'Transfer an S3 object to a GCS bucket.',
+            args=[
+                ('s3_path', 'Path to S3 object.', None),
+                ('zone', 'Amazon availability zone.', None),
+                ('gcs_path', 'Target GCS bucket.', None),
             ])
   AddParser('gcp', gcp_subparsers, 'vmremoveserviceaccount',
             'Removes a service account attachment from a VM.',

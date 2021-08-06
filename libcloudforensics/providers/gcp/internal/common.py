@@ -161,7 +161,7 @@ def CreateService(service_name: str,
   except DefaultCredentialsError as exception:
     raise errors.CredentialsConfigurationError(
         'Could not get application default credentials. Have you run $ gcloud '
-        'auth application-default login?: {0!s}'.format_map(exception),
+        'auth application-default login?: {0!s}'.format(exception),
         __name__) from exception
 
   service_built = False

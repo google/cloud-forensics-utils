@@ -21,7 +21,7 @@ from libcloudforensics.providers.aws.internal.common import ALINUX2_BASE_FILTER
 from libcloudforensics.providers.aws.internal.common import UBUNTU_1804_FILTER
 from libcloudforensics.providers.aws.internal import account
 from libcloudforensics.providers.aws.internal import iam
-from libcloudforensics.providers.aws.internal import s3
+from libcloudforensics.providers.utils.storage_utils import SplitStoragePath
 from libcloudforensics.scripts import utils
 from libcloudforensics import logging_utils
 from libcloudforensics import errors
@@ -341,7 +341,7 @@ def CopyEBSSnapshotToS3(
   # Correct destination if necessary
   if not s3_destination.startswith('s3://'):
     s3_destination = 's3://' + s3_destination
-  path_components = s3.SplitStoragePath(s3_destination)
+  path_components = SplitStoragePath(s3_destination)
   bucket = path_components[0]
   object_path = path_components[1]
 

@@ -15,12 +15,13 @@
 """Bucket functionality."""
 
 import os
-from typing import TYPE_CHECKING, List, Dict, Optional, Any, Tuple
+from typing import TYPE_CHECKING, List, Dict, Optional, Any
 
 from libcloudforensics import errors
 from libcloudforensics import logging_utils
 from libcloudforensics.providers.aws.internal import common
 from libcloudforensics.providers.gcp.internal import storage as gcp_storage
+from libcloudforensics.providers.utils.storage_utils import SplitStoragePath
 
 
 logging_utils.SetUpLogger(__name__)
@@ -160,7 +161,7 @@ class S3:
     if not s3_path.endswith('/'):
       s3_path = s3_path + '/'
     try:
-      (bucket, path) = gcp_storage.SplitStoragePath(s3_path)
+      (bucket, path) = SplitStoragePath(s3_path)
       client.upload_file(
           filepath,
           bucket,
@@ -214,7 +215,7 @@ class S3:
         .format(object_md.get('size', 'Error')))
     localcopy = gcs.GetObject(gcs_path)
     try:
-      self.CreateBucket(gcp_storage.SplitStoragePath(s3_path)[0])
+      self.CreateBucket(SplitStoragePath(s3_path)[0])
     except errors.ResourceCreationError as exception:
       if 'already exists' in exception.message:
         logger.info('Target bucket already exists. Reusing.')
@@ -294,18 +295,3 @@ class S3:
     logger.info('Deleting bucket {0:s}'.format(bucket))
     s3_client = self.aws_account.ClientApi(common.S3_SERVICE)
     s3_client.delete_bucket(Bucket=bucket)
-
-def SplitStoragePath(path: str) -> Tuple[str, str]:
-  """Split a path to bucket name and object URI.
-
-  Args:
-    path (str): File path to a resource in S3.
-        Ex: s3://bucket/folder/obj
-
-  Returns:
-    Tuple[str, str]: Bucket name. Object URI.
-  """
-
-  _, _, full_path = path.partition('//')
-  bucket, _, object_uri = full_path.partition('/')
-  return bucket, object_uri
