@@ -676,6 +676,57 @@ class EC2:
         'Could not modify instance attributes: {0!s}'.format(
            exception), __name__) from exception
 
+  def GetInstanceProfileAttachment(
+      self,
+      instance_id: str) -> Tuple[str, str]:
+    """Get the instance profile attached to the instance, if any.
+
+    Args:
+      instance_id (str): The instance ID (i-xxxxxx)
+
+    Returns:
+      Tuple[str, str]: A tuple containing the association id of the profile
+        attachment, and the Arn of the Instance profile attached. Both are None
+        if no profile is attached, or the instance cannot be found.
+    """
+    try:
+      client = self.aws_account.ClientApi(common.EC2_SERVICE)
+      response = client.describe_iam_instance_profile_associations(
+        Filters=[{
+              'Name': 'instance-id',
+              'Values': [instance_id]
+        }])
+      print(response)
+      if not response['IamInstanceProfileAssociations']:
+        return '', ''
+      return response['IamInstanceProfileAssociations'][0]['AssociationId'],\
+        response['IamInstanceProfileAssociations'][0]['IamInstanceProfile']\
+          ['Arn']
+    except  client.exceptions.ClientError as exception:
+      raise errors.ResourceNotFoundError(
+        'Instance does not exist: {0!s}'.format(
+           exception), __name__) from exception
+
+  def DisassociateInstanceProfile(
+      self,
+      assoc_id: str) -> None:
+    """Remove an instance profile attachment from an instance.
+
+    Args:
+      assoc_id (str): The instance profile association ID. Can be retrieved via
+        ec2.GetInstanceProfileAttachment.
+
+    Raises:
+      ResourceNotFoundError: If the assoc_id cannot be found.
+    """
+    try:
+      client = self.aws_account.ClientApi(common.EC2_SERVICE)
+      client.disassociate_iam_instance_profile(AssociationId=assoc_id)
+    except client.exceptions.ClientError as exception:
+      raise errors.ResourceNotFoundError(
+        'AssociationID {0:s} not found: {1!s}'.format(assoc_id,
+           exception), __name__) from exception
+
   def GetSnapshotInfo(
     self,
     snapshot_id: str,
