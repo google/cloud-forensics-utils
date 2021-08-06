@@ -78,6 +78,10 @@ class InstanceProfileCreationError(LCFError):
   """Error when there is an issue creating an instance profile."""
 
 
+class OperationFailedError(LCFError):
+  """Error when an operation did not succeed."""
+
+
 class TransferCreationError(LCFError):
   """Error when an issue with creating a new transfer job is encountered."""
 
