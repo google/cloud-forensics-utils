@@ -23,6 +23,7 @@ from libcloudforensics.providers.gcp.internal import project as gcp_project
 from libcloudforensics.providers.gcp.internal import log as gcp_log
 from libcloudforensics.providers.gcp.internal import monitoring as gcp_monitoring
 from libcloudforensics.providers.gcp.internal import storage as gcp_storage
+from libcloudforensics.providers.gcp.internal import storagetransfer as gcp_storagetransfer
 from libcloudforensics.providers.gcp.internal import cloudsql as gcp_cloudsql
 # pylint: enable=line-too-long
 
@@ -75,11 +76,14 @@ FAKE_LOG_ENTRIES = [{
     'textPayload': 'insert.compute.create'
 }]
 
+# pylint: disable=line-too-long
 FAKE_NEXT_PAGE_TOKEN = 'abcdefg1234567'
 FAKE_GCS = gcp_storage.GoogleCloudStorage('fake-target-project')
+FAKE_GCST = gcp_storagetransfer.GoogleCloudStorageTransfer('fake-target-project')
 FAKE_GCB = gcp_build.GoogleCloudBuild('fake-target-project')
 FAKE_MONITORING = gcp_monitoring.GoogleCloudMonitoring('fake-target-project')
 FAKE_CLOUDSQLINSTANCE = gcp_cloudsql.GoogleCloudSQL('fake-target-project')
+# pylint: enable=line-too-long
 
 # Mock struct to mimic GCP's API responses
 MOCK_INSTANCES_AGGREGATED = {
@@ -93,6 +97,13 @@ MOCK_INSTANCES_AGGREGATED = {
             }]
         }
     }
+}
+
+# Mock struct to mimic GCP's API responses
+MOCK_INSTANCE_ABANDONED = {
+    # See https://cloud.google.com/compute/docs/reference/rest/v1/
+    # instanceGroupManagers/abandonInstances for complete structure
+    'status': 'DONE'
 }
 
 # Mock struct to mimic GCP's API responses
@@ -577,4 +588,171 @@ STARTUP_SCRIPT = 'scripts/startup.sh'
 MOCK_SSH_VERBOSE_STDERR = b"""debug1: SSH2_MSG_SERVICE_ACCEPT received
     debug1: Authentications that can continue: publickey,password,keyboard-interactive
     debug1: Next authentication method: publickey"""
+
+MOCK_STORAGE_TRANSFER_JOB = {
+    'name': 'transferJobs/12345',
+    'description': 'created_by_cfu',
+    'projectId': 'fake-project',
+    'transferSpec': {
+        'awsS3DataSource': {
+            'bucketName': 's3_source_bucket'
+        },
+        'gcsDataSink': {
+            'bucketName': 'gcs_sink_bucket', 'path': 'test_path/'
+        },
+        'objectConditions': {
+            'includePrefixes': ['file.name']
+        }
+    },
+    'schedule': {
+        'scheduleStartDate': {
+            'year': 2021, 'month': 1, 'day': 1
+        },
+        'scheduleEndDate': {
+            'year': 2021, 'month': 1, 'day': 1
+        },
+        'endTimeOfDay': {}
+    },
+    'status': 'ENABLED',
+    'creationTime': '2021-01-01T06:47:03.533112128Z',
+    'lastModificationTime': '2021-01-01T06:47:03.533112128Z'
+}
+
+MOCK_STORAGE_TRANSFER_OPERATION = {
+    "operations": [{
+        "name": "transferOperations/transferJobs-12345-6789",
+        "metadata": {
+            "@type":
+                "type.googleapis.com/google.storagetransfer.v1.TransferOperation",  # pylint: disable=line-too-long
+            "name":
+                "transferOperations/transferJobs-12345-6789",
+            "projectId":
+                "fake-project",
+            "transferSpec": {
+                "awsS3DataSource": {
+                    "bucketName": "s3_source_bucket"
+                },
+                "gcsDataSink": {
+                    "bucketName": "gcs_sink_bucket", 'path': 'test_path/'
+                },
+                "objectConditions": {
+                    "includePrefixes": ['file.name']
+                }
+            },
+            "startTime":
+                "2021-01-01T06:00:39.321276602Z",
+            "endTime":
+                "2021-01-01T06:00:59.938282352Z",
+            "status":
+                "SUCCESS",
+            "counters": {
+                "objectsFoundFromSource": "1",
+                "bytesFoundFromSource": "30",
+                "objectsCopiedToSink": "1",
+                "bytesCopiedToSink": "30"
+            },
+            "transferJobName":
+                "transferJobs/12345"
+        },
+        "done": True,
+        "response": {
+            "@type": "type.googleapis.com/google.protobuf.Empty"
+        }
+    }]
+}
+
+# pylint: disable=line-too-long
+MOCK_NETWORK_INTERFACES = [
+    {
+        'network': 'https://www.googleapis.com/compute/v1/projects/fake-project/global/networks/default',
+        'subnetwork': 'https://www.googleapis.com/compute/v1/projects/fake-project/regions/fake-region/subnetworks/default',
+        'networkIP': '10.1.1.1',
+        'name': 'nic0',
+        'accessConfigs': [
+            {
+                'type': 'ONE_TO_ONE_NAT',
+                'name': 'External NAT',
+                'natIP': '0.0.0.0',
+                'networkTier': 'PREMIUM',
+                'kind': 'compute#accessConfig'
+                }
+        ],
+        'fingerprint': 'bm9mcGZwZnA=',
+        'kind': 'compute#networkInterface'
+    }
+]
+
+MOCK_EFFECTIVE_FIREWALLS = {
+    "firewallPolicys": [
+        {
+            "name": "111111111111",
+            "rules": [
+                {
+                    "action": "allow",
+                    "description": "",
+                    "direction": "INGRESS",
+                    "kind": "compute#firewallPolicyRule",
+                    "match": {
+                        "layer4Configs": [
+                        {
+                            "ipProtocol": "tcp"
+                        }
+                        ],
+                        "srcIpRanges": [
+                            "8.8.8.8/24"
+                        ]
+                    },
+                    "priority": 1
+                }
+            ]
+        },
+        {
+            "name": "222222222222",
+            "rules": [
+                {
+                    "action": "goto_next",
+                    "description": "",
+                    "direction": "INGRESS",
+                    "kind": "compute#firewallPolicyRule",
+                    "match": {
+                        "layer4Configs": [
+                        {
+                            "ipProtocol": "tcp"
+                        }
+                        ],
+                        "srcIpRanges": [
+                        "8.8.4.4/24"
+                        ]
+                    },
+                    "priority": 1
+                }
+            ]
+        }
+    ],
+    "firewalls": [
+        {
+            "allowed": [
+                {
+                    "IPProtocol": "tcp"
+                }
+            ],
+            "creationTimestamp": "2021-01-01T00:00:00.000+00:00",
+            "description": "allow all",
+            "direction": "INGRESS",
+            "disabled": False,
+            "id": "1111111111111111111",
+            "kind": "compute#firewall",
+            "logConfig": {
+                "enable": False
+            },
+            "name": "default-111111111111111111111111",
+            "network": "https://www.googleapis.com/compute/v1/projects/fake-project/global/networks/default",
+            "priority": 1000,
+            "selfLink": "https://www.googleapis.com/compute/v1/projects/fake-project/global/firewalls/default-111111111111111111111111",
+            "sourceRanges": [
+                "0.0.0.0/0"
+            ]
+        }
+    ]
+}
 # pylint: enable=line-too-long

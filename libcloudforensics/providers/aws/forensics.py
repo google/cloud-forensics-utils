@@ -21,7 +21,7 @@ from libcloudforensics.providers.aws.internal.common import ALINUX2_BASE_FILTER
 from libcloudforensics.providers.aws.internal.common import UBUNTU_1804_FILTER
 from libcloudforensics.providers.aws.internal import account
 from libcloudforensics.providers.aws.internal import iam
-from libcloudforensics.providers.aws.internal import s3
+from libcloudforensics.providers.utils.storage_utils import SplitStoragePath
 from libcloudforensics.scripts import utils
 from libcloudforensics import logging_utils
 from libcloudforensics import errors
@@ -341,7 +341,7 @@ def CopyEBSSnapshotToS3(
   # Correct destination if necessary
   if not s3_destination.startswith('s3://'):
     s3_destination = 's3://' + s3_destination
-  path_components = s3.SplitStoragePath(s3_destination)
+  path_components = SplitStoragePath(s3_destination)
   bucket = path_components[0]
   object_path = path_components[1]
 
@@ -469,7 +469,8 @@ def InstanceNetworkQuarantine(
   instance.
 
   Args:
-    instance_id (str): : The id (i-xxxxxx) of the virtual machine.
+    zone (str): AWS Availability Zone the instance is in.
+    instance_id (str): The id (i-xxxxxx) of the virtual machine.
     exempted_src_subnets (List[str]): List of subnets that will be permitted
 
   Raises:
@@ -487,10 +488,48 @@ def InstanceNetworkQuarantine(
   try:
     aws_account = account.AWSAccount(zone)
     vpc = aws_account.ec2.GetInstanceById(instance_id).vpc
+    logger.info('Creating isolation security group')
     sg_id = \
       aws_account.ec2.CreateIsolationSecurityGroup(vpc, exempted_src_subnets)
+    logger.info('Replacing attached security groups with isolation group')
     aws_account.ec2.SetInstanceSecurityGroup(instance_id, sg_id)
   except errors.ResourceNotFoundError as exception:
     raise errors.ResourceNotFoundError(
       'Cannot qurantine non-existent instance {0:s}: {1!s}'.format(instance_id,
         exception), __name__) from exception
+
+def InstanceProfileMitigator(
+    zone: str,
+    instance_id: str,
+    revoke_existing: bool = False
+    ) -> None:
+  """Remove an instance profile attachment from an instance.
+
+  Also, optionally revoke existing issued tokens for the profile.
+
+  Args:
+    zone (str): AWS Availability Zone the instance is in.
+    instance_id (str): The id (i-xxxxxx) of the virtual machine.
+    revoke_existing (bool): True to revoke existing tokens for the profile's
+      role. False otherwise.
+
+  Raises:
+    ResourceNotFoundError: If the instance cannot be found, or does not have a
+      profile attachment.
+  """
+  logger.info('Finding profile attachment')
+  aws_account = account.AWSAccount(zone)
+  assoc_id, profile = aws_account.ec2.GetInstanceProfileAttachment(instance_id)
+
+  if not profile or not assoc_id:
+    raise errors.ResourceNotFoundError(
+        'Instance not found or does not have a profile attachment: {0:s}'.
+          format(instance_id), __name__)
+
+  logger.info('Removing profile attachment')
+  aws_account.ec2.DisassociateInstanceProfile(assoc_id)
+
+  if revoke_existing:
+    logger.info('Invalidating old tokens')
+    role_name = profile.split('/')[1]
+    aws_account.iam.RevokeOldSessionsForRole(role_name)

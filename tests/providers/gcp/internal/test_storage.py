@@ -19,7 +19,7 @@ import unittest
 import mock
 
 from tests.providers.gcp import gcp_mocks
-from libcloudforensics.providers.gcp.internal import storage as gcp_storage
+from libcloudforensics.providers.utils.storage_utils import SplitStoragePath
 
 
 class GoogleCloudStorageTest(unittest.TestCase):
@@ -29,7 +29,7 @@ class GoogleCloudStorageTest(unittest.TestCase):
   @typing.no_type_check
   def testSplitGcsPath(self):
     """Tests that GCS path split is correctly done."""
-    bucket, object_uri = gcp_storage.SplitStoragePath('gs://fake-bucket/fake-folder/fake-object')
+    bucket, object_uri = SplitStoragePath('gs://fake-bucket/fake-folder/fake-object')
     self.assertEqual('fake-folder/fake-object', object_uri)
     self.assertEqual('fake-bucket', bucket)
 

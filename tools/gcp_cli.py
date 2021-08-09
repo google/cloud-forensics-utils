@@ -26,6 +26,7 @@ from libcloudforensics.providers.gcp.internal import log as gcp_log
 from libcloudforensics.providers.gcp.internal import monitoring as gcp_monitoring
 from libcloudforensics.providers.gcp.internal import project as gcp_project
 from libcloudforensics.providers.gcp.internal import storage as gcp_storage
+from libcloudforensics.providers.gcp.internal import storagetransfer as gcp_st
 from libcloudforensics.providers.gcp.internal import cloudsql as gcp_cloudsql
 from libcloudforensics.providers.gcp import forensics
 from libcloudforensics import logging_utils
@@ -274,7 +275,7 @@ def ListServices(args: 'argparse.Namespace') -> None:
   logger.info('Found {0:d} APIs:'.format(len(results)))
   sorted_apis = sorted(results.items(), key=lambda x: x[1], reverse=True)
   for apiname, usage in sorted_apis:
-    logger.info('{0:s}: {1:s}'.format(apiname, usage))
+    logger.info('{0:s}: {1:d}'.format(apiname, usage))
 
 
 def GetBucketACLs(args: 'argparse.Namespace') -> None:
@@ -506,3 +507,15 @@ def AssignProjectID(args: 'argparse.Namespace') -> None:
           "No project_id was found. Either pass a --project=project_id"
           " to the CLI (`cloudforensics gcp --project=project_id`), or set "
           "one in your gcloud SDK: `gcloud config set project project_id`")
+
+
+def S3ToGCS(args: 'argparse.Namespace') -> None:
+  """Transfer a file from S3 to a GCS bucket.
+
+  Args:
+    args (argparse.Namespace): Arguments from ArgumentParser.
+  """
+  gcst = gcp_st.GoogleCloudStorageTransfer(args.project)
+  gcst.S3ToGCS(args.s3_path, args.zone, args.gcs_path)
+
+  logger.info('File successfully transferred.')

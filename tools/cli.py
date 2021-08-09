@@ -31,6 +31,7 @@ PROVIDER_TO_FUNC = {
         'deleteinstance': aws_cli.DeleteInstance,
         'gcstos3': aws_cli.GCSToS3,
         'imageebssnapshottos3': aws_cli.ImageEBSSnapshotToS3,
+        'instanceprofilemitigator': aws_cli.InstanceProfileMitigator,
         'listdisks': aws_cli.ListVolumes,
         'listimages': aws_cli.ListImages,
         'listinstances': aws_cli.ListInstances,
@@ -66,6 +67,7 @@ PROVIDER_TO_FUNC = {
         'quarantinevm': gcp_cli.InstanceNetworkQuarantine,
         'querylogs': gcp_cli.QueryLogs,
         'startvm': gcp_cli.StartAnalysisVm,
+        'S3ToGCS': gcp_cli.S3ToGCS,
         'vmremoveserviceaccount': gcp_cli.VMRemoveServiceAccount
     }
 }
@@ -254,6 +256,15 @@ def Main() -> None:
                     None),
                 ('--exempted_src_subnets', 'Comma separated list of source '
                     'subnets to exempt from ingress firewall rules.', None)
+            ])
+  AddParser('aws', aws_subparsers, 'instanceprofilemitigator',
+            'Remove an instance profile from an instance, and optionally '
+            'revoke all previously issued temporary credentials.',
+            args=[
+                ('instance_id', 'ID (i-xxxxxx) of the instance to quarantine.',
+                    None),
+                ('--revoke', 'Revoke existing temporary creds for the instance'
+                ' profile.', False)
             ])
 
   # Azure parser options
@@ -457,6 +468,13 @@ def Main() -> None:
                 ('--exempted_src_ips', 'Comma separated list of source IPs '
                     'to exempt from ingress firewall rules.', None),
                 ('--enable_logging', 'Enable firewall logging.', False),
+            ])
+  AddParser('gcp', gcp_subparsers, 'S3ToGCS',
+            'Transfer an S3 object to a GCS bucket.',
+            args=[
+                ('s3_path', 'Path to S3 object.', None),
+                ('zone', 'Amazon availability zone.', None),
+                ('gcs_path', 'Target GCS bucket.', None),
             ])
   AddParser('gcp', gcp_subparsers, 'vmremoveserviceaccount',
             'Removes a service account attachment from a VM.',
