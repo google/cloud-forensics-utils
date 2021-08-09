@@ -1114,6 +1114,47 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
     # Return the deleted external IP address for future use
     return external_ip_addresses
 
+  def AbandonFromMIG(self, instance_group: str) -> None:
+    """Abandons the instance from the managed instance group.
+
+    Args:
+      instance_group (str): The instance group that this instance should
+          be abondoned from.
+
+    Raises:
+      errors.OperationFailedError: If the request did not succeed.
+    """
+
+    def RaiseException(exception: Exception) -> None:
+      msg = ('Unable to abandon {0:s} '
+             'from managed instance group {1:s}.').format(
+        self.name,
+        instance_group,
+      )
+      raise errors.OperationFailedError(msg, __name__) from exception
+
+    mig_client = self.GceApi().instanceGroupManagers()
+    params = {
+      'project': self.project_id,
+      'zone': self.zone,
+      'instanceGroupManager': instance_group,
+      'body': {
+        'instances': [
+          'zones/{0:s}/instances/{1:s}'.format(self.zone, self.name)
+        ]
+      }
+    }
+
+    try:
+      op = common.ExecuteRequest(mig_client, 'abandonInstances', params)[0]
+    except HttpError as exception:
+      RaiseException(exception)
+
+    try:
+      self.BlockOperation(op, zone=self.zone)
+    except RuntimeError as exception:
+      RaiseException(exception)
+
   def SetTags(self, new_tags: List[str]) -> None:
     """Sets tags for the compute instance.
 
