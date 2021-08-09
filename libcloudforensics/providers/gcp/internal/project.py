@@ -26,7 +26,8 @@ import libcloudforensics.providers.gcp.internal.gke as gke_module
 import libcloudforensics.providers.gcp.internal.log as log_module
 import libcloudforensics.providers.gcp.internal.monitoring as monitoring_module
 import libcloudforensics.providers.gcp.internal.storage as storage_module
-import libcloudforensics.providers.gcp.internal.storagetransfer as storagetransfer_module
+import libcloudforensics.providers.gcp.internal.storagetransfer\
+  as storagetransfer_module
 import libcloudforensics.providers.gcp.internal.cloudsql as cloudsql_module
 
 
