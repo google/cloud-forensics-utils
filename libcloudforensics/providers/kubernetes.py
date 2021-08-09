@@ -15,6 +15,8 @@
 """Kubernetes functionalities."""
 
 import abc
+from collections import defaultdict
+
 import kubernetes.client
 
 
@@ -41,7 +43,24 @@ class K8sSelector:
     def ToString(self):
       """Returns the component of the selector."""
 
-  class Node(Component):
+    @property
+    @abc.abstractmethod
+    def Keyword(self):
+      """Returns the keyword to which the selector component belongs"""
+
+  class LabelComponent(Component):
+
+    @property
+    def Keyword(self):
+      return 'label_selector'
+
+  class FieldComponent(Component):
+
+    @property
+    def Keyword(self):
+      return 'field_selector'
+
+  class Node(FieldComponent):
     """Selector component for running on a particular node."""
 
     def __init__(self, node) -> None:
@@ -51,26 +70,29 @@ class K8sSelector:
     def ToString(self):
       return 'spec.nodeName={0:s}'.format(self.node)
 
-  class Running(Component):
+  class Running(FieldComponent):
     """Selector component for a running pod."""
 
     def ToString(self):
       return 'status.phase!=Failed,status.phase!=Succeeded'
 
-  class Workload(Component):
+  class Workload(LabelComponent):
     """Selector specifying which workload."""
 
     def __init__(self, workload) -> None:
-        super().__init__()
-        self.workload = workload
+      super().__init__()
+      self.workload = workload
 
     def ToString(self):
-        return 'metadata.labels.app={0:s}'.format(self.workload)
+      return 'app={0:s}'.format(self.workload)
 
 
-  def __init__(self, *selectors):
+  def __init__(self, *selectors: Component):
     self.selectors = selectors
 
-  def ToString(self):
+  def ToKeywords(self):
     """Builds the selector string to be passed to the K8s API."""
-    return ','.join(map(lambda s: s.ToString(), self.selectors))
+    keywords = defaultdict(list)
+    for selector in self.selectors:
+      keywords[selector.Keyword].append(selector.ToString())
+    return {k: ','.join(vs) for k, vs in keywords.items()}

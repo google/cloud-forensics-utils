@@ -16,6 +16,7 @@
 
 from typing import Optional, TYPE_CHECKING, Any, Dict, List
 from kubernetes import client
+import kubernetes
 from kubernetes.config import kube_config
 from libcloudforensics.providers.gcp.internal import compute
 from libcloudforensics.providers.gcp.internal import common
@@ -40,7 +41,7 @@ class GoogleKubernetesEngine:
       googleapiclient.discovery.Resource: A Google Container service object.
     """
     return common.CreateService(
-        'container', GoogleKubernetesEngine.GKE_API_VERSION)
+      'container', GoogleKubernetesEngine.GKE_API_VERSION)
 
 
 class GkeResource(GoogleKubernetesEngine, K8sResource):
@@ -64,9 +65,9 @@ class GkeResource(GoogleKubernetesEngine, K8sResource):
       str: Full name of the cluster resource.
     """
     return 'projects/{0:s}/locations/{1:s}/clusters/{2:s}'.format(
-        self.project_id,
-        self.zone,
-        self.cluster_id,
+      self.project_id,
+      self.zone,
+      self.cluster_id,
     )
 
   def _K8sApi(self) -> 'client.CoreV1Api':
@@ -77,35 +78,35 @@ class GkeResource(GoogleKubernetesEngine, K8sResource):
     # Context string is built the same way that gcloud does
     # in get-credentials
     context = '_'.join([
-        'gke',
-        self.project_id,
-        self.zone,
-        self.name,
+      'gke',
+      self.project_id,
+      self.zone,
+      self.name,
     ])
     # Build kubeconfig dict and load
     kubeconfig = client.Configuration()
     loader = kube_config.KubeConfigLoader({
-        'apiVersion': self.GKE_API_VERSION,
-        'current-context': context,
-        'clusters': [{
-            'name': context,
-            'cluster': {
-                'certificate-authority-data': ca_data,
-                'server': 'https://{0:s}'.format(get['endpoint']),
-            }
-        }],
-        'contexts': [{
-            'name': context, 'context': {
-                'cluster': context, 'user': context
-            }
-        }],
-        'users': [{
-            'name': context, 'user': {
-                'auth-provider': {
-                    'name': 'gcp'
-                }
-            }
-        }]
+      'apiVersion': self.GKE_API_VERSION,
+      'current-context': context,
+      'clusters': [{
+        'name': context,
+        'cluster': {
+          'certificate-authority-data': ca_data,
+          'server': 'https://{0:s}'.format(get['endpoint']),
+        }
+      }],
+      'contexts': [{
+        'name': context, 'context': {
+          'cluster': context, 'user': context
+        }
+      }],
+      'users': [{
+        'name': context, 'user': {
+          'auth-provider': {
+            'name': 'gcp'
+          }
+        }
+      }]
     })
     loader.load_and_set(kubeconfig)
     return client.CoreV1Api(client.ApiClient(kubeconfig))
@@ -154,12 +155,15 @@ class GkeCluster(GkeResource):
       for node in self._K8sApi().list_node().items:
         nodes.append(self._Node(node.metadata.name))
     else:
-      # Retrieve pods that ar running the workload
-      selector = 'app={0:s}'.format(workload)
+      # Retrieve pods that are running the workload
+      selector = K8sSelector(
+        K8sSelector.Workload(workload)
+      )
       pods = self._K8sApi().list_pod_for_all_namespaces(
-        label_selector=selector).items
+        **selector.ToKeywords()
+      )
       # Collect node names
-      node_names = {pod.spec.node_name for pod in pods}
+      node_names = {pod.spec.node_name for pod in pods.items}
       # Convert to node objects
       for name in node_names:
         nodes.append(self._Node(name))
@@ -189,12 +193,12 @@ class GkeNode(GkeResource):
   def GetRunningPods(self):
     """Returns the pods running on the node."""
     selector = K8sSelector(
-        K8sSelector.Node(self.node_name),
-        K8sSelector.Running(),
+      K8sSelector.Node(self.node_name),
+      K8sSelector.Running(),
     )
-    pods = self._K8sApi().list_pod_for_all_namespaces(
-        field_selector=selector.ToString())
+    pods = self._K8sApi().list_pod_for_all_namespaces(**selector.ToKeywords())
     for pod in pods.items:
+      # TODO: Create pod objects
       print(pod.metadata.name)
     return pods
 
