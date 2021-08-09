@@ -91,8 +91,6 @@ class EndToEndTest(unittest.TestCase):
     cls.analysis_vm_name = 'new-vm-for-analysis'
     cls.subnet_id = project_info.get('subnet_id', None)
     cls.security_group_id = project_info.get('security_group_id', None)
-    cls.s3_destination = project_info.get('s3_destination', None)
-    cls.snapshot_id = project_info.get('snapshot_id', None)
     cls.analysis_vm, _ = forensics.StartAnalysisVm(
         cls.analysis_vm_name,
         cls.zone,
@@ -241,46 +239,6 @@ class EndToEndTest(unittest.TestCase):
                   [vol.volume_id for vol in instance.volumes.all()])
 
   @typing.no_type_check
-  @IgnoreWarnings
-  def testCopyEBSSnapshotToS3(self):
-    """End to end test on AWS.
-
-    Test copying an EBS snapshot into S3.
-    """
-
-    if not self.s3_destination.startswith('s3://'):
-      self.s3_destination = 's3://' + self.s3_destination
-    path_components = SplitStoragePath(self.s3_destination)
-    bucket = path_components[0]
-    object_path = path_components[1]
-
-    forensics.CopyEBSSnapshotToS3(
-      self.s3_destination,
-      self.snapshot_id,
-      'ebsCopy',
-      self.zone,
-      subnet_id=self.subnet_id,
-      security_group_id=self.security_group_id,
-      cleanup_iam=True)
-
-    aws_account = account.AWSAccount(self.dst_zone)
-    directory = '{0:s}/{1:s}/'.format(object_path, self.snapshot_id)
-    self.assertEqual(
-      aws_account.s3.CheckForObject(bucket, directory + 'image.bin'), True)
-    self.assertEqual(
-      aws_account.s3.CheckForObject(bucket, directory + 'log.txt'), True)
-    self.assertEqual(
-      aws_account.s3.CheckForObject(bucket, directory + 'hlog.txt'), True)
-    self.assertEqual(
-      aws_account.s3.CheckForObject(bucket, directory + 'mlog.txt'), True)
-
-    # Cleanup
-    aws_account.s3.RmObject(bucket, directory + 'image.bin')
-    aws_account.s3.RmObject(bucket, directory + 'log.txt')
-    aws_account.s3.RmObject(bucket, directory + 'hlog.txt')
-    aws_account.s3.RmObject(bucket, directory + 'mlog.txt')
-
-  @typing.no_type_check
   def _StoreVolumeForCleanup(self, aws_account, volume):
     """Store a volume for cleanup when tests finish.
 
@@ -309,6 +267,81 @@ class EndToEndTest(unittest.TestCase):
         raise RuntimeError('Could not complete cleanup: {0:s}'.format(
             str(exception))) from exception
       logger.info('Volume {0:s} successfully deleted.'.format(volume.volume_id))
+
+class CopyEBSSnapshotToS3E2ETest(unittest.TestCase):
+  """End to end test on AWS.
+
+  To run this tests, add your project information to a project_info.json file:
+  {
+    "zone": "xxx", # required
+    "s3_destination": "xxx", # required
+    "snapshot_id": "xxx", # required
+    "subnet_id": "xxx", # optional
+    "security_group_id": "xxx" # optional
+  }
+
+  Export a PROJECT_INFO environment variable with the absolute path to your
+  file: "user@terminal:~$ export PROJECT_INFO='absolute/path/project_info.json'"
+  You will also need to configure your AWS account credentials as per the
+  guidelines in https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html # pylint: disable=line-too-long
+  """
+
+  @classmethod
+  @typing.no_type_check
+  @IgnoreWarnings
+  def setUpClass(cls):
+    try:
+      project_info = utils.ReadProjectInfo(
+          ['s3_destination', 'zone', 'snapshot_id'])
+    except (OSError, RuntimeError, ValueError) as exception:
+      raise unittest.SkipTest(str(exception))
+    cls.zone = project_info['zone']
+    cls.aws = account.AWSAccount(cls.zone)
+    cls.subnet_id = project_info.get('subnet_id', None)
+    cls.security_group_id = project_info.get('security_group_id', None)
+    cls.s3_destination = project_info.get('s3_destination', None)
+    cls.snapshot_id = project_info.get('snapshot_id', None)
+
+  @typing.no_type_check
+  @IgnoreWarnings
+  def testCopyEBSSnapshotToS3(self):
+    """End to end test on AWS.
+
+    Test copying an EBS snapshot into S3.
+    """
+
+    if not self.s3_destination.startswith('s3://'):
+      self.s3_destination = 's3://' + self.s3_destination
+    path_components = SplitStoragePath(self.s3_destination)
+    bucket = path_components[0]
+    object_path = path_components[1]
+
+    forensics.CopyEBSSnapshotToS3(
+      self.s3_destination,
+      self.snapshot_id,
+      'ebsCopy',
+      self.zone,
+      subnet_id=self.subnet_id,
+      security_group_id=self.security_group_id,
+      cleanup_iam=True)
+
+    aws_account = account.AWSAccount(self.zone)
+    directory = '{0:s}/{1:s}/'.format(object_path, self.snapshot_id)
+    self.assertEqual(
+      aws_account.s3.CheckForObject(bucket, directory + 'image.bin'), True)
+    self.assertEqual(
+      aws_account.s3.CheckForObject(bucket, directory + 'log.txt'), True)
+    self.assertEqual(
+      aws_account.s3.CheckForObject(bucket, directory + 'hlog.txt'), True)
+    self.assertEqual(
+      aws_account.s3.CheckForObject(bucket, directory + 'mlog.txt'), True)
+
+    # Cleanup
+    aws_account.s3.RmObject(bucket, directory + 'image.bin')
+    aws_account.s3.RmObject(bucket, directory + 'log.txt')
+    aws_account.s3.RmObject(bucket, directory + 'hlog.txt')
+    aws_account.s3.RmObject(bucket, directory + 'mlog.txt')
+
 
 class S3EndToEndTest(unittest.TestCase):
   """End to end test on AWS.

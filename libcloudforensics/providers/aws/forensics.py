@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Forensics on AWS."""
-from typing import TYPE_CHECKING, Tuple, List, Optional, Dict
+from typing import TYPE_CHECKING, Tuple, List, Optional, Dict, Any
 
 import random
 from time import sleep
@@ -308,15 +308,63 @@ def StartAnalysisVm(
   return analysis_vm, created
 # pylint: enable=too-many-arguments
 
-def CopyEBSSnapshotToS3(
+def CopyEBSSnapshotToS3SetUp(
+    aws_account: account.AWSAccount,
+    instance_profile_name: str) -> Dict[str, Dict[str, Any]]:
+  """Set up for CopyEBSSnapshotToS3. Creates the IAM components required, or
+  returns the existing if they exist already.
+
+  Args:
+    aws_account (account.AWSAccount): An AWS account object.
+    instance_profile_name (str): name of the instance profile to create.
+
+  Returns: A Dict containing:
+    'profile':
+      'arn': The ARN of the profile.
+      'created': True if the profile was created; False if it existed already.
+    'policy':
+      'arn': The ARN of the policy.
+      'created': True if the policy was created; False if it existed already.
+    'role':
+      'name': The name of the role.
+      'created': True if the role was created; False if it existed already.
+
+  Raises:
+    ResourceCreationError: If any IAM resource could not be created.
+  """
+
+  # Create the IAM pieces
+  ebs_copy_policy_doc = iam.ReadPolicyDoc(iam.EBS_COPY_POLICY_DOC)
+  ec2_assume_role_doc = iam.ReadPolicyDoc(iam.EC2_ASSUME_ROLE_POLICY_DOC)
+
+  policy_name = '{0:s}-policy'.format(instance_profile_name)
+  role_name = '{0:s}-role'.format(instance_profile_name)
+
+  instance_profile_arn, prof_created = aws_account.iam.CreateInstanceProfile(
+    instance_profile_name)
+  policy_arn, pol_created = aws_account.iam.CreatePolicy(
+    policy_name, ebs_copy_policy_doc)
+  _, role_created = aws_account.iam.CreateRole(
+    role_name, ec2_assume_role_doc)
+  aws_account.iam.AttachPolicyToRole(
+    policy_arn, role_name)
+  aws_account.iam.AttachInstanceProfileToRole(
+    instance_profile_name, role_name)
+
+  return {
+    'profile': {'arn': instance_profile_arn, 'created': prof_created},
+    'policy': {'arn': policy_arn, 'created': pol_created},
+    'role': {'name': role_name, 'created': role_created}
+  }
+
+def CopyEBSSnapshotToS3Process(
+    aws_account: account.AWSAccount,
     s3_destination: str,
     snapshot_id: str,
-    instance_profile_name: str,
-    zone: str,
+    instance_profile_arn: str,
     subnet_id: Optional[str] = None,
     security_group_id: Optional[str] = None,
-    cleanup_iam: bool = False
-    ) -> None:
+    ) -> Dict[str, Any]:
   """Copy an EBS snapshot into S3.
 
   Unfortunately, this action is not natively supported in AWS, so it requires
@@ -337,33 +385,12 @@ def CopyEBSSnapshotToS3(
     ResourceCreationError: If any dependent resource could not be created.
     ResourceNotFoundError: If the snapshot ID cannot be found.
   """
-
   # Correct destination if necessary
   if not s3_destination.startswith('s3://'):
     s3_destination = 's3://' + s3_destination
   path_components = SplitStoragePath(s3_destination)
   bucket = path_components[0]
   object_path = path_components[1]
-
-  # Create the IAM pieces
-  aws_account = account.AWSAccount(zone)
-
-  ebs_copy_policy_doc = iam.ReadPolicyDoc(iam.EBS_COPY_POLICY_DOC)
-  ec2_assume_role_doc = iam.ReadPolicyDoc(iam.EC2_ASSUME_ROLE_POLICY_DOC)
-
-  policy_name = '{0:s}-policy'.format(instance_profile_name)
-  role_name = '{0:s}-role'.format(instance_profile_name)
-
-  instance_profile_arn, prof_created = aws_account.iam.CreateInstanceProfile(
-    instance_profile_name)
-  policy_arn, pol_created = aws_account.iam.CreatePolicy(
-    policy_name, ebs_copy_policy_doc)
-  _, role_created = aws_account.iam.CreateRole(
-    role_name, ec2_assume_role_doc)
-  aws_account.iam.AttachPolicyToRole(
-    policy_arn, role_name)
-  aws_account.iam.AttachInstanceProfileToRole(
-    instance_profile_name, role_name)
 
   # read in the instance userdata script, sub in the snap id and S3 dest
   startup_script = utils.ReadStartupScript(
@@ -387,11 +414,6 @@ def CopyEBSSnapshotToS3(
   if not ami_id:
     raise errors.ResourceCreationError(
       'Could not fnd suitable AMI for instance creation', __name__)
-
-  # Instance role creation has a propagation delay between creating in IAM and
-  # being usable in EC2.
-  if prof_created:
-    sleep(20)
 
   # start the VM
   logger.info('Starting copy instance')
@@ -438,25 +460,101 @@ def CopyEBSSnapshotToS3(
       logger.info('Output files found')
       break
 
-  if not cleanup_iam:
-    return
-  if role_created and pol_created:
-    aws_account.iam.DetachInstanceProfileFromRole(
-      role_name, instance_profile_name)
-  if prof_created:
-    aws_account.iam.DetachPolicyFromRole(policy_arn, role_name)
-    aws_account.iam.DeleteInstanceProfile(instance_profile_name)
-  if role_created:
-    aws_account.iam.DeleteRole(role_name)
-  if pol_created:
-    aws_account.iam.DeletePolicy(policy_arn)
-
   if success:
     logger.info('Image and hash copied to {0:s}/{1:s}/'.format(
       s3_destination, snapshot_id))
   else:
     logger.info(
       'Image copy timeout. The process may be ongoing, or might have failed.')
+
+  return {
+      'image': 's3://{0:s}/{1:s}/image.bin'.format(object_path, snapshot_id),
+      'hashes': [
+        's3://{0:s}/{1:s}/log.txt'.format(object_path, snapshot_id),
+        's3://{0:s}/{1:s}/hlog.txt'.format(object_path, snapshot_id),
+        's3://{0:s}/{1:s}/mlog.txt'.format(object_path, snapshot_id)
+      ]
+    }
+
+def CopyEBSSnapshotToS3TearDown(
+    aws_account: account.AWSAccount,
+    instance_profile_name: str,
+    iam_details: Dict[str, Dict[str, Any]]
+    ) -> None:
+  """Removes the IAM components created by CopyEBSSnapshotToS3SetUp, if any
+  were created anew.
+
+  Args:
+    aws_account (account.AWSAccount): An AWS account object.
+    instance_profile_name (str): The name of the instance profile.
+    iam_details (Dict[str, Dict[str, Any]]): The Dict returned by the SetUp
+      method.
+  """
+  if iam_details['role']['created'] and iam_details['policy']['created']:
+    aws_account.iam.DetachInstanceProfileFromRole(
+        iam_details['role']['name'], instance_profile_name)
+  if iam_details['profile']['created']:
+    aws_account.iam.DetachPolicyFromRole(
+        iam_details['policy']['arn'], iam_details['role']['name'])
+    aws_account.iam.DeleteInstanceProfile(instance_profile_name)
+  if iam_details['role']['created']:
+    aws_account.iam.DeleteRole(iam_details['role']['name'])
+  if iam_details['policy']['created']:
+    aws_account.iam.DeletePolicy(iam_details['policy']['arn'])
+
+def CopyEBSSnapshotToS3(
+    s3_destination: str,
+    snapshot_id: str,
+    instance_profile_name: str,
+    zone: str,
+    subnet_id: Optional[str] = None,
+    security_group_id: Optional[str] = None,
+    cleanup_iam: bool = False
+    ) -> Dict[str, Any]:
+  """Copy an EBS snapshot into S3.
+
+  Unfortunately, this action is not natively supported in AWS, so it requires
+  creating a volume and attaching it to an instance. This instance, using a
+  userdata script then performs a `dd` operation to send the disk image to S3.
+
+  Uses the components methods of SetUp, Process and TearDown. If you want to
+  copy multiple snapshots, consider using those methods directly.
+
+  Args:
+    s3_destination (str): S3 directory in the form of s3://bucket/path/folder
+    snapshot_id (str): EBS snapshot ID.
+    instance_profile_name (str): The name of an existing instance profile to
+      attach to the instance, or to create if it does not yet exist.
+    zone (str): AWS Availability Zone the instance will be launched in.
+    subnet_id (str): Optional. The subnet to launch the instance in.
+    security_group_id (str): Optional. Security group ID to attach.
+    cleanup_iam (bool): If we created IAM components, remove them afterwards
+
+  Raises:
+    ResourceCreationError: If any dependent resource could not be created.
+    ResourceNotFoundError: If the snapshot ID cannot be found.
+  """
+  aws_account = account.AWSAccount(zone)
+
+  iam_details = CopyEBSSnapshotToS3SetUp(aws_account, instance_profile_name)
+
+  # Instance role creation has a propagation delay between creating in IAM and
+  # being usable in EC2.
+  if iam_details['profile']['created']:
+    sleep(20)
+
+  outputs = CopyEBSSnapshotToS3Process(aws_account,
+    s3_destination,
+    snapshot_id,
+    iam_details['profile']['arn'],
+    subnet_id,
+    security_group_id)
+
+  if cleanup_iam:
+    CopyEBSSnapshotToS3TearDown(aws_account, instance_profile_name, iam_details)
+
+  return outputs
+
 
 def InstanceNetworkQuarantine(
     zone: str,
