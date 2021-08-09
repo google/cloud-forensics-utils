@@ -24,11 +24,11 @@ class K8sResource(abc.ABC):
   """Abstract class encompassing Kubernetes resources."""
 
   @abc.abstractmethod
-  def _K8sApi(self) -> kubernetes.client.CoreV1Api:
+  def _K8sApi(self) -> kubernetes.client.ApiClient:
     """Creates an authenticated Kubernetes API client.
 
     Returns:
-      kubernetes.client.CoreV1Api: An authenticated client to
+      kubernetes.client.ApiClient: An authenticated client to
         the Kubernetes API server.
     """
 

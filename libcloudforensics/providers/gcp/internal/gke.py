@@ -70,7 +70,7 @@ class GkeResource(GoogleKubernetesEngine, K8sResource):
       self.cluster_id,
     )
 
-  def _K8sApi(self) -> 'client.CoreV1Api':
+  def _K8sApi(self) -> 'client.ApiClient':
     # Retrieve cluster information via GKE API
     get = self.GetOperation()
     # Extract fields for kubeconfig
@@ -109,7 +109,7 @@ class GkeResource(GoogleKubernetesEngine, K8sResource):
       }]
     })
     loader.load_and_set(kubeconfig)
-    return client.CoreV1Api(client.ApiClient(kubeconfig))
+    return client.ApiClient(kubeconfig)
 
   def GetOperation(self) -> Dict[str, Any]:
     """Get GKE API operation object for the GKE resource.
@@ -150,16 +150,17 @@ class GkeCluster(GkeResource):
       List[GkeNode]: GKE nodes belonging to the cluster, potentially
         filtered for specified workload.
     """
+    api = client.CoreV1Api(self._K8sApi())
     nodes = []
     if workload is None:
-      for node in self._K8sApi().list_node().items:
+      for node in api.list_node().items:
         nodes.append(self._Node(node.metadata.name))
     else:
       # Retrieve pods that are running the workload
       selector = K8sSelector(
         K8sSelector.Workload(workload)
       )
-      pods = self._K8sApi().list_pod_for_all_namespaces(
+      pods = api.list_pod_for_all_namespaces(
         **selector.ToKeywords()
       )
       # Collect node names
@@ -192,14 +193,19 @@ class GkeNode(GkeResource):
 
   def GetRunningPods(self):
     """Returns the pods running on the node."""
+    api = client.CoreV1Api(self._K8sApi())
+
     selector = K8sSelector(
       K8sSelector.Node(self.node_name),
       K8sSelector.Running(),
     )
-    pods = self._K8sApi().list_pod_for_all_namespaces(**selector.ToKeywords())
+
+    pods = api.list_pod_for_all_namespaces(**selector.ToKeywords())
+
     for pod in pods.items:
       # TODO: Create pod objects
       print(pod.metadata.name)
+
     return pods
 
   def Cordon(self):
@@ -209,4 +215,5 @@ class GkeNode(GkeResource):
         'unschedulable': True
       }
     }
-    self._K8sApi().patch_node(self.node_name, body)
+    api = client.CoreV1Api(self._K8sApi())
+    api.patch_node(self.node_name, body)
