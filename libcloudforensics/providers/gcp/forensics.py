@@ -438,6 +438,12 @@ def CheckInstanceSSHAuth(project_id: str,
                          instance_name: str) -> Optional[List[str]]:
   """Check enabled SSH authentication methods for an instance.
 
+  Uses SSH with the verbose flag to check enabled SSH authentication methods.
+  Note this Will generate a log line on the target host:
+
+    "Connection closed by authenticating user root <your_ip> port <port>
+    [preauth]"
+
   Args:
     project_id (str): the project id for the instance.
     instance_name (str): the instance name to check.
@@ -454,6 +460,9 @@ def CheckInstanceSSHAuth(project_id: str,
               '-F', '/dev/null',
               '-oIdentitiesOnly=yes',
               '-oIdentityFile=/dev/null',
+              '-oIdentityAgent=none',
+              '-oPKCS11Provider=none',
+              '-oSecurityKeyProvider=none',
               '-oStrictHostKeyChecking=no',
               '-oNumberOfPasswordPrompts=0',
               '-oUserKnownHostsFile=/dev/null']
@@ -471,11 +480,10 @@ def CheckInstanceSSHAuth(project_id: str,
           external_ips.append(config['natIP'])
 
   for ip in external_ips:
-    # Will generate a log line on the target host: "Connection closed by
-    # authenticating user root <your_ip> port <port> [preauth]"
     ssh_command = ssh_args + ['root@{0:s}'.format(ip)]
     # pylint: disable=subprocess-run-check
     ssh_run = subprocess.run(ssh_command, capture_output=True)
+    # pylint: enable=subprocess-run-check
     ssh_stderr = ssh_run.stderr.decode()
 
     pattern_match = ssh_auth_pattern.search(ssh_stderr)
