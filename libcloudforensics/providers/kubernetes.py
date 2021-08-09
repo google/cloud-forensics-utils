@@ -57,6 +57,16 @@ class K8sSelector:
     def ToString(self):
       return 'status.phase!=Failed,status.phase!=Succeeded'
 
+  class Workload(Component):
+    """Selector specifying which workload."""
+
+    def __init__(self, workload) -> None:
+        super().__init__()
+        self.workload = workload
+
+    def ToString(self):
+        return 'metadata.labels.app={0:s}'.format(self.workload)
+
 
   def __init__(self, *selectors):
     self.selectors = selectors

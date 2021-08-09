@@ -14,7 +14,7 @@
 # limitations under the License.
 """Google Kubernetes Engine functionalities."""
 
-from typing import TYPE_CHECKING, Any, Dict, List
+from typing import Optional, TYPE_CHECKING, Any, Dict, List
 from kubernetes import client
 from kubernetes.config import kube_config
 from libcloudforensics.providers.gcp.internal import compute
@@ -126,6 +126,9 @@ class GkeResource(GoogleKubernetesEngine, K8sResource):
 class GkeCluster(GkeResource):
   """Class facilitating GKE API and K8s API functions calls on a cluster."""
 
+  def _Node(self, node_name):
+    return GkeNode(self.project_id, self.zone, self.cluster_id, node_name)
+
   def GetInstances(self) -> List[compute.GoogleComputeInstance]:
     """Gets the GCE instances of the cluster".
 
@@ -133,13 +136,34 @@ class GkeCluster(GkeResource):
       List[compute.GoogleComputeInstance]: GCE instances belonging to
         the cluster.
     """
-    instances = []
-    for node in self._K8sApi().list_node().items:
-      instance = compute.GoogleComputeInstance(
-          self.project_id, self.zone, node.metadata.name)
-      instances.append(instance)
-    return instances
+    return [node.Instance() for node in self.GetNodes()]
 
+  def GetNodes(self, workload: Optional[str] = None) -> List['GkeNode']:
+    """Gets the Kubernetes nodes of the cluster
+
+    Args:
+      workload (str): Optional: The workload identifier whose
+        nodes must be returned.
+
+    Returns:
+      List[GkeNode]: GKE nodes belonging to the cluster, potentially
+        filtered for specified workload.
+    """
+    nodes = []
+    if workload is None:
+      for node in self._K8sApi().list_node().items:
+        nodes.append(self._Node(node.metadata.name))
+    else:
+      # Retrieve pods that ar running the workload
+      selector = 'app={0:s}'.format(workload)
+      pods = self._K8sApi().list_pod_for_all_namespaces(
+        label_selector=selector).items
+      # Collect node names
+      node_names = {pod.spec.node_name for pod in pods}
+      # Convert to node objects
+      for name in node_names:
+        nodes.append(self._Node(name))
+    return nodes
 
 class GkeNode(GkeResource):
   """Class facilitating API functions calls on a GKE cluster's node."""
@@ -150,8 +174,20 @@ class GkeNode(GkeResource):
     super().__init__(project_id, zone, cluster_id)
     self.node_name = node_name
 
+  def Instance(self) -> compute.GoogleComputeInstance:
+    """Returns the GCE instance matching this node.
+
+    Returns:
+      GoogleComputeInstance: The instance matching this node.
+    """
+    return compute.GoogleComputeInstance(
+      self.project_id,
+      self.zone,
+      self.node_name
+    )
+
   def GetRunningPods(self):
-    """Returns the pods running for a particular node"""
+    """Returns the pods running on the node."""
     selector = K8sSelector(
         K8sSelector.Node(self.node_name),
         K8sSelector.Running(),
@@ -161,3 +197,12 @@ class GkeNode(GkeResource):
     for pod in pods.items:
       print(pod.metadata.name)
     return pods
+
+  def Cordon(self):
+    """Cordons the node."""
+    body = {
+      'spec': {
+        'unschedulable': True
+      }
+    }
+    self._K8sApi().patch_node(self.node_name, body)
