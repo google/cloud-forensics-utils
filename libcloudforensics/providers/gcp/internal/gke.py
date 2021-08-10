@@ -15,16 +15,20 @@
 """Google Kubernetes Engine functionalities."""
 
 from typing import Optional, TYPE_CHECKING, Any, Dict, List
+
 from kubernetes import client
-import kubernetes
 from kubernetes.config import kube_config
-from libcloudforensics.providers.gcp.internal import compute
+
+from libcloudforensics import logging_utils, errors
 from libcloudforensics.providers.gcp.internal import common
+from libcloudforensics.providers.gcp.internal import compute
 from libcloudforensics.providers.kubernetes import K8sResource, K8sSelector
 
 if TYPE_CHECKING:
   import googleapiclient
 
+logging_utils.SetUpLogger(__name__)
+logger = logging_utils.GetLogger(__name__)
 
 class GoogleKubernetesEngine:
   """Base class for calling GKE APIs."""
@@ -169,6 +173,24 @@ class GkeCluster(GkeResource):
       for name in node_names:
         nodes.append(self._Node(name))
     return nodes
+
+  def GetWorkload(self, workload: str):
+    api = client.AppsV1Api(self._K8sApi())
+    selector = K8sSelector(
+      K8sSelector.Name(workload)
+    )
+    deploys = api.list_deployment_for_all_namespaces(
+      **selector.ToKeywords()
+    ).items
+    if len(deploys) == 0:
+      raise errors.ResourceNotFoundError(
+        'No deployments found under the name {0:s}'.format(workload),
+        __name__,
+      )
+    if len(deploys) != 1:
+      logger.warning("Multiple deployments found for ")
+    deployment = deploys[0]
+    return deployment
 
 class GkeNode(GkeResource):
   """Class facilitating API functions calls on a GKE cluster's node."""

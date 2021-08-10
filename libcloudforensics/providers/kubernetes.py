@@ -60,6 +60,16 @@ class K8sSelector:
     def Keyword(self):
       return 'field_selector'
 
+  class Name(FieldComponent):
+    """Selector component for having a particular name"""
+
+    def __init__(self, name: str):
+      super().__init__()
+      self.name = name
+
+    def ToString(self):
+      return 'metadata.name={0:s}'.format(self.name)
+
   class Node(FieldComponent):
     """Selector component for running on a particular node."""
 
