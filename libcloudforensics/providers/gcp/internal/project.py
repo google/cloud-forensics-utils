@@ -26,6 +26,8 @@ import libcloudforensics.providers.gcp.internal.gke as gke_module
 import libcloudforensics.providers.gcp.internal.log as log_module
 import libcloudforensics.providers.gcp.internal.monitoring as monitoring_module
 import libcloudforensics.providers.gcp.internal.storage as storage_module
+import libcloudforensics.providers.gcp.internal.storagetransfer\
+  as storagetransfer_module
 import libcloudforensics.providers.gcp.internal.cloudsql as cloudsql_module
 
 
@@ -75,6 +77,7 @@ class GoogleCloudProject:
     self._log = None  # type: Optional[log_module.GoogleCloudLog]
     self._storage = None  # type: Optional[storage_module.GoogleCloudStorage]
     # pylint: disable=line-too-long
+    self._storagetransfer = None  # type: Optional[storagetransfer_module.GoogleCloudStorageTransfer]
     self._monitoring = None  # type: Optional[monitoring_module.GoogleCloudMonitoring]
     # pylint: enable=line-too-long
     self._cloudsql = None  # type: Optional[cloudsql_module.GoogleCloudSQL]
@@ -153,7 +156,7 @@ class GoogleCloudProject:
     """Get a GoogleCloudStorage object for the project.
 
     Returns:
-      GoogleCloudLog: Object that represents Google Cloud Logging.
+      GoogleCloudStorage: Object that represents Google Cloud Storage.
     """
 
     if self._storage:
@@ -161,6 +164,22 @@ class GoogleCloudProject:
     self._storage = storage_module.GoogleCloudStorage(
         self.project_id)
     return self._storage
+
+  @property
+  def storagetransfer(self
+    ) -> storagetransfer_module.GoogleCloudStorageTransfer:
+    """Get a GoogleCloudStorageTransfer object for the project.
+
+    Returns:
+      GoogleCloudStorageTransfer: Object that represents Google Cloud Storage
+      Transfer.
+    """
+
+    if self._storagetransfer:
+      return self._storagetransfer
+    self._storagetransfer = storagetransfer_module.GoogleCloudStorageTransfer(
+        self.project_id)
+    return self._storagetransfer
 
   @property
   def monitoring(self) -> monitoring_module.GoogleCloudMonitoring:
