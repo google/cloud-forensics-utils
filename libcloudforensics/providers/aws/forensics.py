@@ -467,12 +467,15 @@ def CopyEBSSnapshotToS3Process(
     logger.info(
       'Image copy timeout. The process may be ongoing, or might have failed.')
 
+  path_base = 's3://{0:s}{1:s}/{2:s}'.format(bucket,
+      '/' + object_path if object_path else '', snapshot_id)
+
   return {
-      'image': 's3://{0:s}/{1:s}/image.bin'.format(object_path, snapshot_id),
+      'image': path_base + '/image.bin',
       'hashes': [
-        's3://{0:s}/{1:s}/log.txt'.format(object_path, snapshot_id),
-        's3://{0:s}/{1:s}/hlog.txt'.format(object_path, snapshot_id),
-        's3://{0:s}/{1:s}/mlog.txt'.format(object_path, snapshot_id)
+        path_base + '/log.txt',
+        path_base + '/hlog.txt',
+        path_base + '/mlog.txt'
       ]
     }
 
