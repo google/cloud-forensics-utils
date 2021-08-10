@@ -312,7 +312,7 @@ def CopyEBSSnapshotToS3SetUp(
     aws_account: account.AWSAccount,
     instance_profile_name: str) -> Dict[str, Dict[str, Any]]:
   """Set up for CopyEBSSnapshotToS3. Creates the IAM components required, or
-  returns the existing if they exist already.
+  returns the existing ones if they exist already.
 
   Args:
     aws_account (account.AWSAccount): An AWS account object.
