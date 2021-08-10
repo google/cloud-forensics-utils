@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Google Kubernetes Engine functionalities."""
-
+import abc
 from typing import Optional, TYPE_CHECKING, Any, Dict, List
 
 from kubernetes import client
@@ -143,54 +143,57 @@ class GkeCluster(GkeResource):
     """
     return [node.Instance() for node in self.GetNodes()]
 
-  def GetNodes(self, workload: Optional[str] = None) -> List['GkeNode']:
+  def GetNodes(self) -> List['GkeNode']:
     """Gets the Kubernetes nodes of the cluster
-
-    Args:
-      workload (str): Optional: The workload identifier whose
-        nodes must be returned.
 
     Returns:
       List[GkeNode]: GKE nodes belonging to the cluster, potentially
         filtered for specified workload.
     """
     api = client.CoreV1Api(self._K8sApi())
+
+    # Collect nodes
     nodes = []
-    if workload is None:
-      for node in api.list_node().items:
-        nodes.append(self._Node(node.metadata.name))
-    else:
-      # Retrieve pods that are running the workload
-      selector = K8sSelector(
-        K8sSelector.Workload(workload)
-      )
-      pods = api.list_pod_for_all_namespaces(
-        **selector.ToKeywords()
-      )
-      # Collect node names
-      node_names = {pod.spec.node_name for pod in pods.items}
-      # Convert to node objects
-      for name in node_names:
-        nodes.append(self._Node(name))
+    for node in api.list_node().items:
+      nodes.append(self._Node(node.metadata.name))
+
     return nodes
 
-  def GetWorkload(self, workload: str):
+class GkeWorkload(GkeResource):
+
+  def __init__(self, project_id, zone, cluster_id, workload_name):
+    super().__init__(project_id, zone, cluster_id)
+    self.workload_name = workload_name
+
+  def _Labels(self) -> Dict[str, str]:
+    """"""
     api = client.AppsV1Api(self._K8sApi())
+    # Selector to match the name of this workload
     selector = K8sSelector(
-      K8sSelector.Name(workload)
+      K8sSelector.Name(self.workload_name)
     )
-    deploys = api.list_deployment_for_all_namespaces(
+    # Find deployment TODO: This may be something else than a deployment
+    deployment = api.list_deployment_for_all_namespaces(
+      **selector.ToKeywords()
+    ).items[0]
+    # Extract selectors
+    return deployment.spec.selector.match_labels
+
+  def GetCoveredPods(self):
+    """Gets the pods running for this workload."""
+    api = client.CoreV1Api(self._K8sApi())
+
+    # Get the labels for this workload, and create a selector
+    selector = K8sSelector.FromDict(self._Labels())
+
+    # Extract the pods
+    pods = api.list_pod_for_all_namespaces(
       **selector.ToKeywords()
     ).items
-    if len(deploys) == 0:
-      raise errors.ResourceNotFoundError(
-        'No deployments found under the name {0:s}'.format(workload),
-        __name__,
-      )
-    if len(deploys) != 1:
-      logger.warning("Multiple deployments found for ")
-    deployment = deploys[0]
-    return deployment
+
+    # TODO: Change these to pod objects
+    for pod in pods:
+      print(pod.metadata.name)
 
 class GkeNode(GkeResource):
   """Class facilitating API functions calls on a GKE cluster's node."""
@@ -213,29 +216,41 @@ class GkeNode(GkeResource):
       self.node_name
     )
 
-  def GetRunningPods(self):
+  def GetRunningPods(self) -> None:
     """Returns the pods running on the node."""
     api = client.CoreV1Api(self._K8sApi())
 
+    # The pods must be running, and must be on this node,
+    # the selectors here are as per the API calls in `kubectl
+    # describe node NODE_NAME`
     selector = K8sSelector(
       K8sSelector.Node(self.node_name),
       K8sSelector.Running(),
     )
 
-    pods = api.list_pod_for_all_namespaces(**selector.ToKeywords())
+    pods = api.list_pod_for_all_namespaces(
+      **selector.ToKeywords()
+    ).items
 
-    for pod in pods.items:
-      # TODO: Create pod objects
+    # TODO: Create pod objects
+    for pod in pods:
       print(pod.metadata.name)
 
-    return pods
+  def Cordon(self) -> None:
+    """Cordons the node, making the node unschedulable
 
-  def Cordon(self):
-    """Cordons the node."""
+    https://kubernetes.io/docs/concepts/architecture
+    /nodes/#manual-node-administration
+    """
+    api = client.CoreV1Api(self._K8sApi())
+
+    # Create the body as per the API call to PATCH in
+    # `kubectl cordon NODE_NAME`
     body = {
       'spec': {
         'unschedulable': True
       }
     }
-    api = client.CoreV1Api(self._K8sApi())
+
+    # Cordon the node with the PATCH verb
     api.patch_node(self.node_name, body)

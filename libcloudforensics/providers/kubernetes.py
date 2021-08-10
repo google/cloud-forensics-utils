@@ -16,6 +16,7 @@
 
 import abc
 from collections import defaultdict
+from typing import Dict
 
 import kubernetes.client
 
@@ -86,16 +87,14 @@ class K8sSelector:
     def ToString(self):
       return 'status.phase!=Failed,status.phase!=Succeeded'
 
-  class Workload(LabelComponent):
-    """Selector specifying which workload."""
+  class Label(LabelComponent):
 
-    def __init__(self, workload) -> None:
-      super().__init__()
-      self.workload = workload
+    def __init__(self, key: str, value: str):
+      self.key = key
+      self.value = value
 
     def ToString(self):
-      return 'app={0:s}'.format(self.workload)
-
+      return '{0:s}={1:s}'.format(self.key, self.value)
 
   def __init__(self, *selectors: Component):
     self.selectors = selectors
@@ -106,3 +105,8 @@ class K8sSelector:
     for selector in self.selectors:
       keywords[selector.Keyword].append(selector.ToString())
     return {k: ','.join(vs) for k, vs in keywords.items()}
+
+  @classmethod
+  def FromDict(cls, labels: Dict[str, str]):
+    args = map(lambda k: K8sSelector.Label(k, labels[k]), labels)
+    return cls(*args)
