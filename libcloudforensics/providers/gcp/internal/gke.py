@@ -13,16 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Google Kubernetes Engine functionalities."""
-import abc
-from typing import Optional, TYPE_CHECKING, Any, Dict, List
+from typing import TYPE_CHECKING, Any, Dict, List
 
 from kubernetes import client
 from kubernetes.config import kube_config
 
-from libcloudforensics import logging_utils, errors
+from libcloudforensics import logging_utils
 from libcloudforensics.providers.gcp.internal import common
 from libcloudforensics.providers.gcp.internal import compute
-from libcloudforensics.providers.kubernetes import K8sResource, K8sSelector
+from libcloudforensics.providers.kubernetes.selector import K8sResource, K8sSelector
 
 if TYPE_CHECKING:
   import googleapiclient
@@ -127,12 +126,15 @@ class GkeResource(GoogleKubernetesEngine, K8sResource):
     response = request.execute()
     return response
 
+  def _Node(self, node_name):
+    return GkeNode(self.project_id, self.zone, self.cluster_id, node_name)
+
+  def _Pod(self, pod_name):
+    return GkePod(self.project_id, self.zone, self.cluster_id, pod_name)
+
 
 class GkeCluster(GkeResource):
   """Class facilitating GKE API and K8s API functions calls on a cluster."""
-
-  def _Node(self, node_name):
-    return GkeNode(self.project_id, self.zone, self.cluster_id, node_name)
 
   def GetInstances(self) -> List[compute.GoogleComputeInstance]:
     """Gets the GCE instances of the cluster".
@@ -193,7 +195,28 @@ class GkeWorkload(GkeResource):
 
     # TODO: Change these to pod objects
     for pod in pods:
-      print(pod.metadata.name)
+      yield self._Pod(pod.metadata.name)
+
+class GkePod(GkeResource):
+
+  def __init__(self, project_id, zone, cluster_id, pod_name):
+    super(GkePod, self).__init__(project_id, zone, cluster_id)
+    self.pod_name = pod_name
+
+  def GetNode(self):
+    """Get the GKE node that this pod is running on."""
+    api = client.CoreV1Api(self._K8sApi())
+
+    # Find a pod with a name corresponding to this pod
+    selector = K8sSelector(
+      K8sSelector.Name(self.pod_name)
+    )
+
+    pod = api.list_pod_for_all_namespaces(
+      **selector.ToKeywords()
+    ).items[0]
+
+    return self._Node(pod.spec.node_name)
 
 class GkeNode(GkeResource):
   """Class facilitating API functions calls on a GKE cluster's node."""
