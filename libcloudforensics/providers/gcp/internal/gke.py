@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Any, Dict, List
 from kubernetes import client
 from kubernetes.config import kube_config
 
-from libcloudforensics import logging_utils
+from libcloudforensics import logging_utils, errors
 from libcloudforensics.providers.gcp.internal import common
 from libcloudforensics.providers.gcp.internal import compute
 from libcloudforensics.providers.kubernetes.selector import (
@@ -31,6 +31,7 @@ if TYPE_CHECKING:
 
 logging_utils.SetUpLogger(__name__)
 logger = logging_utils.GetLogger(__name__)
+
 
 class GoogleKubernetesEngine:
   """Base class for calling GKE APIs."""
@@ -158,6 +159,7 @@ class GkeResource(GoogleKubernetesEngine, K8sResource):
     """
     return GkePod(self.project_id, self.zone, self.cluster_id, pod_name)
 
+
 class GkeCluster(GkeResource):
   """Class facilitating GKE API and K8s API functions calls on a cluster."""
 
@@ -184,21 +186,29 @@ class GkeCluster(GkeResource):
     # Convert to node objects
     return [self._Node(node.metadata.name) for node in nodes]
 
+
 class GkeWorkload(GkeResource):
   """Class facilitating API calls on a GKE cluster's workload."""
 
-  def __init__(self, project_id: str, zone: str, cluster_id: str, workload_name: str):
+  def __init__(self, project_id: str, zone: str, cluster_id: str,
+               workload_name: str):
     super().__init__(project_id, zone, cluster_id)
     self.workload_name = workload_name
 
   def _Labels(self) -> Dict[str, str]:
-    """Gets the matchLabels that are defined by this workload.
+    """Gets the match labels that are defined by this workload.
 
     https://kubernetes.io/docs/concepts/overview/working-with-objects/
     labels/#resources-that-support-set-based-requirements
 
     Returns:
-      Dict[str, str]: The matchLabels of the workload."""
+      Dict[str, str]: The matchLabels of the workload.
+
+    Raises:
+      NotImplementedError: If matchExpressions exist. Using these labels in this
+        case would be inaccurate, and the logic behind matchExpressions is not
+        implemented at this stage.
+    """
     api = client.AppsV1Api(self._K8sApi())
 
     # Selector to match the name of this workload
@@ -207,11 +217,22 @@ class GkeWorkload(GkeResource):
     )
 
     # Find deployment TODO: This may be something else than a deployment
-    deployment = api.list_deployment_for_all_namespaces(
+    deployments = api.list_deployment_for_all_namespaces(
       **selector.ToKeywords()
-    ).items[0]
+    ).items
+    if len(deployments) == 0:
+      message = "Deployment matching workload {0:s} was not found.".format(
+        self.workload_name
+      )
+      raise errors.ResourceNotFoundError(message)
+    deployment = deployments[0]
 
     # Extract selectors
+    if deployment.spec.selector.match_expressions is not None:
+      # If match expressions exist, using these labels to find the pods
+      # covered by this workload will be inaccurate
+      raise NotImplementedError("matchExpressions exist, meaning "
+                                "pods matching matchLabels will be inaccurate.")
     return deployment.spec.selector.match_labels
 
   def GetCoveredPods(self) -> List['GkePod']:
@@ -232,6 +253,7 @@ class GkeWorkload(GkeResource):
 
     # Convert to pod objects
     return [self._Pod(pod.metadata.name) for pod in pods]
+
 
 class GkePod(GkeResource):
   """Class facilitating API calls for a Pod in a GKE cluster."""
@@ -258,6 +280,7 @@ class GkePod(GkeResource):
     ).items[0]
 
     return self._Node(pod.spec.node_name)
+
 
 class GkeNode(GkeResource):
   """Class facilitating API functions calls on a GKE cluster's node."""
