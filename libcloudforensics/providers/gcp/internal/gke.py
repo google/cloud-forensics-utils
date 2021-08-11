@@ -275,9 +275,13 @@ class GkePod(GkeResource):
       K8sSelector.Name(self.pod_name)
     )
 
-    pod = api.list_pod_for_all_namespaces(
+    pods = api.list_pod_for_all_namespaces(
       **selector.ToKeywords()
-    ).items[0]
+    ).items
+    if len(pods) == 0:
+      raise errors.ResourceNotFoundError(
+        'Pod matching {0:s} was not found'.format(self.pod_name))
+    pod = pods[0]
 
     return self._Node(pod.spec.node_name)
 
@@ -285,10 +289,7 @@ class GkePod(GkeResource):
 class GkeNode(GkeResource):
   """Class facilitating API functions calls on a GKE cluster's node."""
 
-  def __init__(self,
-               project_id: str,
-               zone: str,
-               cluster_id: str,
+  def __init__(self, project_id: str, zone: str, cluster_id: str,
                node_name: str) -> None:
     super().__init__(project_id, zone, cluster_id)
     self.node_name = node_name
@@ -323,6 +324,10 @@ class GkeNode(GkeResource):
     pods = api.list_pod_for_all_namespaces(
       **selector.ToKeywords()
     ).items
+    if len(pods) == 0:
+      logger.warning(
+        "No pods found on node {0:s}, node may be misspelled".format(
+          self.node_name))
 
     return [self._Pod(pod.metadata.name) for pod in pods]
 
