@@ -21,7 +21,10 @@ from kubernetes.config import kube_config
 from libcloudforensics import logging_utils
 from libcloudforensics.providers.gcp.internal import common
 from libcloudforensics.providers.gcp.internal import compute
-from libcloudforensics.providers.kubernetes.selector import K8sResource, K8sSelector
+from libcloudforensics.providers.kubernetes.selector import (
+  K8sResource,
+  K8sSelector,
+)
 
 if TYPE_CHECKING:
   import googleapiclient
@@ -54,14 +57,21 @@ class GkeResource(GoogleKubernetesEngine, K8sResource):
   https://kubernetes.io/docs/reference/
   """
 
-  def __init__(self, project_id, zone, cluster_id) -> None:
+  def __init__(self, project_id: str, zone: str, cluster_id: str) -> None:
+    """Creates a GKE resource.
+
+    Args:
+      project_id (str): The GCP project name.
+      zone (str): The GCP zone for this project.
+      cluster_id (str): The name of the GKE cluster.
+    """
     super().__init__()
     self.project_id = project_id
     self.zone = zone
     self.cluster_id = cluster_id
 
   @property
-  def name(self):
+  def name(self) -> str:
     """Name of the GKE cluster resource, for use in API calls.
 
     Returns:
@@ -73,11 +83,11 @@ class GkeResource(GoogleKubernetesEngine, K8sResource):
       self.cluster_id,
     )
 
-  def _K8sApi(self) -> 'client.ApiClient':
+  def _K8sApi(self) -> client.ApiClient:
     # Retrieve cluster information via GKE API
-    get = self.GetOperation()
+    get_op = self.GetOperation()
     # Extract fields for kubeconfig
-    ca_data = get['masterAuth']['clusterCaCertificate']
+    ca_data = get_op['masterAuth']['clusterCaCertificate']
     # Context string is built the same way that gcloud does
     # in get-credentials
     context = '_'.join([
@@ -95,7 +105,7 @@ class GkeResource(GoogleKubernetesEngine, K8sResource):
         'name': context,
         'cluster': {
           'certificate-authority-data': ca_data,
-          'server': 'https://{0:s}'.format(get['endpoint']),
+          'server': 'https://{0:s}'.format(get_op['endpoint']),
         }
       }],
       'contexts': [{
@@ -126,12 +136,27 @@ class GkeResource(GoogleKubernetesEngine, K8sResource):
     response = request.execute()
     return response
 
-  def _Node(self, node_name):
+  def _Node(self, node_name) -> 'GkeNode':
+    """Creates a GKE Node object from this GKE resource.
+
+    Args:
+      node_name (str): The name of the node.
+
+    Returns:
+      GkeNode: GKE Node object from this resource.
+    """
     return GkeNode(self.project_id, self.zone, self.cluster_id, node_name)
 
-  def _Pod(self, pod_name):
-    return GkePod(self.project_id, self.zone, self.cluster_id, pod_name)
+  def _Pod(self, pod_name) -> 'GkePod':
+    """Creates a GKE Pod object from this GKE resource.
 
+    Args:
+      pod_name (str): The name of the pod.
+
+    Returns:
+      GkePod: GKE Pod object from this resource.
+    """
+    return GkePod(self.project_id, self.zone, self.cluster_id, pod_name)
 
 class GkeCluster(GkeResource):
   """Class facilitating GKE API and K8s API functions calls on a cluster."""
@@ -146,43 +171,55 @@ class GkeCluster(GkeResource):
     return [node.Instance() for node in self.GetNodes()]
 
   def GetNodes(self) -> List['GkeNode']:
-    """Gets the Kubernetes nodes of the cluster
+    """Gets the Kubernetes nodes of the cluster.
 
     Returns:
-      List[GkeNode]: GKE nodes belonging to the cluster, potentially
-        filtered for specified workload.
+      List[GkeNode]: GKE nodes belonging to the cluster.
     """
     api = client.CoreV1Api(self._K8sApi())
 
     # Collect nodes
-    nodes = []
-    for node in api.list_node().items:
-      nodes.append(self._Node(node.metadata.name))
+    nodes = api.list_node().items
 
-    return nodes
+    # Convert to node objects
+    return [self._Node(node.metadata.name) for node in nodes]
 
 class GkeWorkload(GkeResource):
+  """Class facilitating API calls on a GKE cluster's workload."""
 
-  def __init__(self, project_id, zone, cluster_id, workload_name):
+  def __init__(self, project_id: str, zone: str, cluster_id: str, workload_name: str):
     super().__init__(project_id, zone, cluster_id)
     self.workload_name = workload_name
 
   def _Labels(self) -> Dict[str, str]:
-    """"""
+    """Gets the matchLabels that are defined by this workload.
+
+    https://kubernetes.io/docs/concepts/overview/working-with-objects/
+    labels/#resources-that-support-set-based-requirements
+
+    Returns:
+      Dict[str, str]: The matchLabels of the workload."""
     api = client.AppsV1Api(self._K8sApi())
+
     # Selector to match the name of this workload
     selector = K8sSelector(
       K8sSelector.Name(self.workload_name)
     )
+
     # Find deployment TODO: This may be something else than a deployment
     deployment = api.list_deployment_for_all_namespaces(
       **selector.ToKeywords()
     ).items[0]
+
     # Extract selectors
     return deployment.spec.selector.match_labels
 
-  def GetCoveredPods(self):
-    """Gets the pods running for this workload."""
+  def GetCoveredPods(self) -> List['GkePod']:
+    """Gets the pods covered by this workload.
+
+    Returns:
+      List[GkePod]: The pods covered by this workload
+    """
     api = client.CoreV1Api(self._K8sApi())
 
     # Get the labels for this workload, and create a selector
@@ -193,18 +230,22 @@ class GkeWorkload(GkeResource):
       **selector.ToKeywords()
     ).items
 
-    # TODO: Change these to pod objects
-    for pod in pods:
-      yield self._Pod(pod.metadata.name)
+    # Convert to pod objects
+    return [self._Pod(pod.metadata.name) for pod in pods]
 
 class GkePod(GkeResource):
+  """Class facilitating API calls for a Pod in a GKE cluster."""
 
-  def __init__(self, project_id, zone, cluster_id, pod_name):
-    super(GkePod, self).__init__(project_id, zone, cluster_id)
+  def __init__(self, project_id, zone, cluster_id, pod_name) -> None:
+    super().__init__(project_id, zone, cluster_id)
     self.pod_name = pod_name
 
-  def GetNode(self):
-    """Get the GKE node that this pod is running on."""
+  def GetNode(self) -> 'GkeNode':
+    """Get the GKE node that this pod is running on.
+
+    Returns:
+      GkeNode: The GKE node this pod is running on.
+    """
     api = client.CoreV1Api(self._K8sApi())
 
     # Find a pod with a name corresponding to this pod
@@ -221,9 +262,11 @@ class GkePod(GkeResource):
 class GkeNode(GkeResource):
   """Class facilitating API functions calls on a GKE cluster's node."""
 
-  def __init__(
-      self, project_id: str, zone: str, cluster_id: str,
-      node_name: str) -> None:
+  def __init__(self,
+               project_id: str,
+               zone: str,
+               cluster_id: str,
+               node_name: str) -> None:
     super().__init__(project_id, zone, cluster_id)
     self.node_name = node_name
 
@@ -239,8 +282,11 @@ class GkeNode(GkeResource):
       self.node_name
     )
 
-  def GetRunningPods(self) -> None:
-    """Returns the pods running on the node."""
+  def GetRunningPods(self) -> List['GkePod']:
+    """Returns the pods running on the node.
+
+    Returns:
+      List[GkePod]: The pods running on this node."""
     api = client.CoreV1Api(self._K8sApi())
 
     # The pods must be running, and must be on this node,
@@ -255,12 +301,10 @@ class GkeNode(GkeResource):
       **selector.ToKeywords()
     ).items
 
-    # TODO: Create pod objects
-    for pod in pods:
-      print(pod.metadata.name)
+    return [self._Pod(pod.metadata.name) for pod in pods]
 
   def Cordon(self) -> None:
-    """Cordons the node, making the node unschedulable
+    """Cordons the node, making the node unschedulable.
 
     https://kubernetes.io/docs/concepts/architecture
     /nodes/#manual-node-administration
