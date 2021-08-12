@@ -18,22 +18,6 @@ import abc
 from collections import defaultdict
 from typing import Dict
 
-import kubernetes.client
-
-
-class K8sResource(abc.ABC):
-  """Abstract class encompassing Kubernetes resources."""
-
-  @abc.abstractmethod
-  def _K8sApi(self) -> kubernetes.client.ApiClient:
-    """Creates an authenticated Kubernetes API client.
-
-    Returns:
-      kubernetes.client.ApiClient: An authenticated client to
-        the Kubernetes API server.
-    """
-
-
 class K8sSelector:
   """Class to build K8s API selectors."""
 

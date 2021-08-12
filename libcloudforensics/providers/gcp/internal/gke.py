@@ -21,10 +21,8 @@ from kubernetes.config import kube_config
 from libcloudforensics import logging_utils, errors
 from libcloudforensics.providers.gcp.internal import common
 from libcloudforensics.providers.gcp.internal import compute
-from libcloudforensics.providers.kubernetes.selector import (
-  K8sResource,
-  K8sSelector,
-)
+from libcloudforensics.providers.kubernetes.base import K8sResource
+from libcloudforensics.providers.kubernetes.selector import K8sSelector
 
 if TYPE_CHECKING:
   import googleapiclient
@@ -221,7 +219,7 @@ class GkeWorkload(GkeResource):
       **selector.ToKeywords()
     ).items
     if len(deployments) == 0:
-      message = "Deployment matching workload {0:s} was not found.".format(
+      message = 'Deployment matching workload {0:s} was not found.'.format(
         self.workload_name
       )
       raise errors.ResourceNotFoundError(message)
@@ -231,8 +229,8 @@ class GkeWorkload(GkeResource):
     if deployment.spec.selector.match_expressions is not None:
       # If match expressions exist, using these labels to find the pods
       # covered by this workload will be inaccurate
-      raise NotImplementedError("matchExpressions exist, meaning "
-                                "pods matching matchLabels will be inaccurate.")
+      raise NotImplementedError('matchExpressions exist, meaning '
+                                'pods matching matchLabels will be inaccurate.')
     return deployment.spec.selector.match_labels
 
   def GetCoveredPods(self) -> List['GkePod']:
