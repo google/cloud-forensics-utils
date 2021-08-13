@@ -83,4 +83,3 @@ class GoogleServiceUsage:
     name = 'projects/' + project_number + '/services/' + service_name
     request = {'name': name}
     common.ExecuteRequest(services_client, 'disable', request)
- 
