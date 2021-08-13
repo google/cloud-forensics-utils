@@ -102,7 +102,7 @@ class K8sSelector:
     return {k: ','.join(vs) for k, vs in keywords.items()}
 
   @classmethod
-  def FromDict(cls, labels: Dict[str, str]):
+  def FromLabelsDict(cls, labels: Dict[str, str]):
     """Builds a selector from the the given label key-value pairs.
 
     Args:

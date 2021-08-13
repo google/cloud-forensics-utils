@@ -63,7 +63,7 @@ class K8sDeployment(K8sWorkload):
     api = self._Api(CoreV1Api)
 
     # Get the labels for this workload, and create a selector
-    selector = K8sSelector.FromDict(self.MatchLabels())
+    selector = K8sSelector.FromLabelsDict(self.MatchLabels())
 
     # Extract the pods
     pods = api.list_namespaced_pod(
