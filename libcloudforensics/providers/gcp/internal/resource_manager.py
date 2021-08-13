@@ -22,11 +22,7 @@ if TYPE_CHECKING:
 
 
 class GoogleResourceManager:
-  """Class to call the Google Cloud Resource Manager API.
-
-  Attributes:
-    project_id: Google Cloud project ID.
-  """
+  """Class to call the Google Cloud Resource Manager API."""
 
   RESOURCE_MANAGER_API_VERSION = 'v3'
   RESOURCE_TYPES = ['projects', 'folders', 'organizations']
