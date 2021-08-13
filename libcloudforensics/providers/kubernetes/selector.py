@@ -34,7 +34,7 @@ class K8sSelector:
 
     @property
     @abc.abstractmethod
-    def Keyword(self):
+    def keyword(self):
       """Returns the keyword argument to which this selector component belongs.
 
       Returns:
@@ -42,19 +42,21 @@ class K8sSelector:
       """
 
   class LabelComponent(Component, metaclass=abc.ABCMeta):
+    """Selector component on labels."""
 
     @property
-    def Keyword(self):
+    def keyword(self):
       return 'label_selector'
 
   class FieldComponent(Component, metaclass=abc.ABCMeta):
+    """Selector component on fields."""
 
     @property
-    def Keyword(self):
+    def keyword(self):
       return 'field_selector'
 
   class Name(FieldComponent):
-    """Selector component for having a particular name."""
+    """Selector component having a particular name."""
 
     def __init__(self, name: str):
       self.name = name
@@ -63,7 +65,7 @@ class K8sSelector:
       return 'metadata.name={0:s}'.format(self.name)
 
   class Node(FieldComponent):
-    """Selector component for running on a particular node."""
+    """Selector component for being on a particular node."""
 
     def __init__(self, node) -> None:
       self.node = node
@@ -78,6 +80,7 @@ class K8sSelector:
       return 'status.phase!=Failed,status.phase!=Succeeded'
 
   class Label(LabelComponent):
+    """Selector component for a label's key-value pair."""
 
     def __init__(self, key: str, value: str):
       self.key = key

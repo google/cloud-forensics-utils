@@ -47,6 +47,7 @@ class K8sWorkload(K8sNamespacedResource, metaclass=abc.ABCMeta):
 
 
 class K8sDeployment(K8sWorkload):
+  """Class representing a Kubernetes deployment."""
 
   def Read(self) -> V1Deployment:
     api = self._Api(AppsV1Api)
