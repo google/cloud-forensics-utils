@@ -98,7 +98,7 @@ class K8sNamespacedResource(K8sResource, metaclass=abc.ABCMeta):
 
     Args:
       api_client (ApiClient): The authenticated Kubernetes API client to
-       the cluster.
+        the cluster.
       name (str): The name of this resource.
       namespace (str): The Kubernetes namespace in which this resource
         resides
