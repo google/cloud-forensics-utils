@@ -12,7 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Kubernetes functionalities."""
+"""Kubernetes selector class structure."""
 
 import abc
 from collections import defaultdict
@@ -26,30 +26,37 @@ class K8sSelector:
 
     @abc.abstractmethod
     def ToString(self):
-      """Returns the component of the selector."""
+      """Builds the string of this selector component.
+
+      Returns:
+        str: The string of this selector component.
+      """
 
     @property
     @abc.abstractmethod
     def Keyword(self):
-      """Returns the keyword to which the selector component belongs"""
+      """Returns the keyword argument to which this selector component belongs.
 
-  class LabelComponent(Component):
+      Returns:
+        str: The keyword argument to which this component belongs.
+      """
+
+  class LabelComponent(Component, metaclass=abc.ABCMeta):
 
     @property
     def Keyword(self):
       return 'label_selector'
 
-  class FieldComponent(Component):
+  class FieldComponent(Component, metaclass=abc.ABCMeta):
 
     @property
     def Keyword(self):
       return 'field_selector'
 
   class Name(FieldComponent):
-    """Selector component for having a particular name"""
+    """Selector component for having a particular name."""
 
     def __init__(self, name: str):
-      super().__init__()
       self.name = name
 
     def ToString(self):
@@ -59,7 +66,6 @@ class K8sSelector:
     """Selector component for running on a particular node."""
 
     def __init__(self, node) -> None:
-      super().__init__()
       self.node = node
 
     def ToString(self):
@@ -83,8 +89,13 @@ class K8sSelector:
   def __init__(self, *selectors: Component):
     self.selectors = selectors
 
-  def ToKeywords(self):
-    """Builds the selector string to be passed to the K8s API."""
+  def ToKeywords(self) -> Dict[str, str]:
+    """Builds the keyword arguments to be passed to the K8s API.
+
+    Returns:
+      Dict[str, str]: The keyword arguments to be passed to a Kubernetes
+        API call.
+    """
     keywords = defaultdict(list)
     for selector in self.selectors:
       keywords[selector.Keyword].append(selector.ToString())
@@ -92,5 +103,13 @@ class K8sSelector:
 
   @classmethod
   def FromDict(cls, labels: Dict[str, str]):
+    """Builds a selector from the the given label key-value pairs.
+
+    Args:
+      labels (Dict[str, str]): The label key-value pairs.
+
+    Returns:
+      K8sSelector: The resulting selector object.
+    """
     args = map(lambda k: K8sSelector.Label(k, labels[k]), labels)
     return cls(*args)
