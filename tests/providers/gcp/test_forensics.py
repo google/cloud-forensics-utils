@@ -147,6 +147,7 @@ class GCPForensicsTest(unittest.TestCase):
     mock_instance =  mock_project.return_value.compute.GetInstance.return_value
     mock_instance.GetOperation.return_value = (
         gcp_mocks.MOCK_GCE_OPERATION_INSTANCES_GET)
+    mock_instance.GetNatIps.return_value = ['0.0.0.0']
     mock_subprocess.return_value.stderr = gcp_mocks.MOCK_SSH_VERBOSE_STDERR
     ssh_auth = forensics.CheckInstanceSSHAuth(
         'fake_project' , 'fake_instance')

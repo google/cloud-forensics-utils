@@ -469,15 +469,7 @@ def CheckInstanceSSHAuth(project_id: str,
 
   project = gcp_project.GoogleCloudProject(project_id)
   instance = project.compute.GetInstance(instance_name)
-  instance_info = instance.GetOperation()
-  networks = instance_info.get('networkInterfaces', [])
-
-  external_ips = []
-  for network in networks:
-    if 'accessConfigs' in network:
-      for config in network['accessConfigs']:
-        if 'natIP' in config:
-          external_ips.append(config['natIP'])
+  external_ips = instance.GetNatIps()
 
   for ip in external_ips:
     ssh_command = ssh_args + ['root@{0:s}'.format(ip)]
