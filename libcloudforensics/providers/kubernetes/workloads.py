@@ -53,6 +53,11 @@ class K8sDeployment(K8sWorkload):
     return api.read_namespaced_deployment(self.name, self.namespace)
 
   def MatchLabels(self) -> Dict[str, str]:
+    """Gets the labels that will be on the pods of this workload.
+
+    Returns:
+      Dict[str, str]: The labels that will be on the pods of this workload.
+    """
     read = self.Read()
     if read.spec.match_expressions is not None:
       raise NotImplementedError('matchExpressions exist, meaning pods matching '
