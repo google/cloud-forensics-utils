@@ -24,7 +24,7 @@ from libcloudforensics.providers.gcp.internal import gke
 class GoogleKubernetesEngineTest(unittest.TestCase):
   """Test Google Kubernetes Engine class."""
 
-  FAKE_GKE = gke.GkeResource('fake', 'fake', 'still-fake')
+  FAKE_GKE = gke.GkeCluster('fake', 'fake', 'still-fake')
   MOCK_GKE_CLUSTER_OBJECT = {
       "name": "test-cluster",
       "location": "fake-region"
@@ -32,7 +32,7 @@ class GoogleKubernetesEngineTest(unittest.TestCase):
 
   # pylint: disable=line-too-long
   @typing.no_type_check
-  @mock.patch('libcloudforensics.providers.gcp.internal.gke.GkeResource._GkeApi')
+  @mock.patch('libcloudforensics.providers.gcp.internal.gke.GoogleKubernetesEngine.GkeApi')
   def testGetCluster(self, mock_gke_api):
     """Test GKE cluster Get operation."""
     cluster_mock = GoogleKubernetesEngineTest.MOCK_GKE_CLUSTER_OBJECT
