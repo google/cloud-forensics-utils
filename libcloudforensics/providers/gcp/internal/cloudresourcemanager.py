@@ -81,7 +81,8 @@ class GoogleResourceManager:
 
     service = self.GrmApi()
     resource_client = getattr(service, resource_type)()
+    request = {'name': name}
+
     # Safe to unpack
-    response = common.ExecuteRequest(
-      resource_client, 'get', {'name': name})[0]
+    response = common.ExecuteRequest(resource_client, 'get', request)[0]
     return response
