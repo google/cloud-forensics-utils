@@ -58,6 +58,7 @@ class K8sClient(metaclass=abc.ABCMeta):
     """
     return api_class(self._api_client)
 
+
 class K8sResource(K8sClient, metaclass=abc.ABCMeta):
   """Abstract class representing a Kubernetes resource."""
 
@@ -85,6 +86,7 @@ class K8sResource(K8sClient, metaclass=abc.ABCMeta):
       Dict[str, str]: The result of this resource's matching read operation.
     """
 
+
 class K8sCluster(K8sClient):
   """Class representing a Kubernetes cluster."""
 
@@ -109,6 +111,7 @@ class K8sCluster(K8sClient):
     # Convert to node objects
     return [K8sPod(self._api_client, pod.metadata.name, pod.metadata.namespace)
             for pod in pods.items]
+
 
 class K8sNamespacedResource(K8sResource, metaclass=abc.ABCMeta):
   """Class representing a Kubernetes resource, in a certain namespace."""
@@ -162,9 +165,8 @@ class K8sNode(K8sResource):
     """
     api = self._Api(CoreV1Api)
 
-    # The pods must be running, and must be on this node,
-    # the selectors here are as per the API calls in
-    # `kubectl describe node NODE_NAME`
+    # The pods must be running, and must be on this node. The selectors here
+    # are as per the API calls in `kubectl describe node NODE_NAME`.
     selector = K8sSelector(
       K8sSelector.Node(self.name),
       K8sSelector.Running(),
