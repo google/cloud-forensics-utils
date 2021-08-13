@@ -101,7 +101,7 @@ class K8sSelector:
     """
     keywords = defaultdict(list)
     for selector in self.selectors:
-      keywords[selector.Keyword].append(selector.ToString())
+      keywords[selector.keyword].append(selector.ToString())
     return {k: ','.join(vs) for k, vs in keywords.items()}
 
   @classmethod

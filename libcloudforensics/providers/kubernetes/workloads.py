@@ -60,10 +60,10 @@ class K8sDeployment(K8sWorkload):
       Dict[str, str]: The labels that will be on the pods of this workload.
     """
     read = self.Read()
-    if read.spec.match_expressions is not None:
+    if read.spec.selector.match_expressions is not None:
       raise NotImplementedError('matchExpressions exist, meaning pods matching '
                                 'matchLabels will be inaccurate.')
-    return read.spec.match_labels
+    return read.spec.selector.match_labels
 
   def GetCoveredPods(self) -> List[K8sPod]:
     api = self._Api(CoreV1Api)
