@@ -185,6 +185,27 @@ MOCK_GCE_OPERATION_LABELS_FAILED = {
     }
 }
 
+# pylint: disable=line-too-long
+MOCK_NETWORK_INTERFACES = [
+    {
+        'network': 'https://www.googleapis.com/compute/v1/projects/fake-project/global/networks/default',
+        'subnetwork': 'https://www.googleapis.com/compute/v1/projects/fake-project/regions/fake-region/subnetworks/default',
+        'networkIP': '10.1.1.1',
+        'name': 'nic0',
+        'accessConfigs': [
+            {
+                'type': 'ONE_TO_ONE_NAT',
+                'name': 'External NAT',
+                'natIP': '0.0.0.0',
+                'networkTier': 'PREMIUM',
+                'kind': 'compute#accessConfig'
+                }
+        ],
+        'fingerprint': 'bm9mcGZwZnA=',
+        'kind': 'compute#networkInterface'
+    }
+]
+
 MOCK_GCE_OPERATION_INSTANCES_GET = {
     # See https://cloud.google.com/compute/docs/reference/rest/v1/instances/get
     # for complete structure
@@ -199,8 +220,10 @@ MOCK_GCE_OPERATION_INSTANCES_GET = {
         'initializeParams': {
             'diskName': FAKE_DISK.name
         }
-    }]
+    }],
+    'networkInterfaces': MOCK_NETWORK_INTERFACES
 }
+# pylint: enable=line-too-long
 
 MOCK_GCS_BUCKETS = {
     'kind':
@@ -568,6 +591,11 @@ MOCK_GCM_METRICS_CPU = {
 REGEX_DISK_NAME = re.compile('^(?=.{1,63}$)[a-z]([-a-z0-9]*[a-z0-9])?$')
 STARTUP_SCRIPT = 'scripts/startup.sh'
 
+# pylint: disable=line-too-long
+MOCK_SSH_VERBOSE_STDERR = b"""debug1: SSH2_MSG_SERVICE_ACCEPT received
+    debug1: Authentications that can continue: publickey,password,keyboard-interactive
+    debug1: Next authentication method: publickey"""
+
 MOCK_STORAGE_TRANSFER_JOB = {
     'name': 'transferJobs/12345',
     'description': 'created_by_cfu',
@@ -641,25 +669,6 @@ MOCK_STORAGE_TRANSFER_OPERATION = {
 }
 
 # pylint: disable=line-too-long
-MOCK_NETWORK_INTERFACES = [
-    {
-        'network': 'https://www.googleapis.com/compute/v1/projects/fake-project/global/networks/default',
-        'subnetwork': 'https://www.googleapis.com/compute/v1/projects/fake-project/regions/fake-region/subnetworks/default',
-        'networkIP': '10.1.1.1',
-        'name': 'nic0',
-        'accessConfigs': [
-            {
-                'type': 'ONE_TO_ONE_NAT',
-                'name': 'External NAT',
-                'natIP': '0.0.0.0',
-                'networkTier': 'PREMIUM',
-                'kind': 'compute#accessConfig'
-                }
-        ],
-        'fingerprint': 'bm9mcGZwZnA=',
-        'kind': 'compute#networkInterface'
-    }
-]
 MOCK_EFFECTIVE_FIREWALLS = {
     "firewallPolicys": [
         {

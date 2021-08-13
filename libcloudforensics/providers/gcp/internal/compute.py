@@ -1372,6 +1372,23 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
 
     return fw_rules
 
+  def GetNatIps(self) -> List[str]:
+    """Get the NAT external IPv4 addresses attached to an instance.
+
+    Returns:
+      List[str]: a list of IP addresses.
+    """
+    instance_info = self.GetOperation()
+    networks = instance_info.get('networkInterfaces', [])
+
+    nat_ips = []
+    for network in networks:
+      for config in network.get('accessConfigs', []):
+        if 'natIP' in config:
+          nat_ips.append(config['natIP'])
+
+    return nat_ips
+
 
 class GoogleComputeDisk(compute_base_resource.GoogleComputeBaseResource):
   """Class representing a Compute Engine disk."""
