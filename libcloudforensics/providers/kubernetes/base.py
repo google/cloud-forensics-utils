@@ -15,13 +15,12 @@
 """Kubernetes core class structure."""
 
 import abc
-from typing import List, TypeVar, Callable, Optional
+from typing import List, TypeVar, Callable, Optional, Dict
 
 from kubernetes.client import (
   ApiClient,
   # APIs
   CoreV1Api,
-  AppsV1Api,
   # Types
   V1Pod,
 )
@@ -34,31 +33,44 @@ class K8sClient(metaclass=abc.ABCMeta):
 
   T = TypeVar('T')
 
-  def __init__(self, api_client: ApiClient):
+  def __init__(self, api_client: ApiClient) -> None:
     """Creates an object holding Kubernetes API client.
 
     Args:
       api_client (ApiClient): The authenticated Kubernetes API client to
-       the cluster.
+        the cluster.
     """
     self._api_client = api_client
 
-  def _Api(self, api: Callable[[ApiClient], T]) -> T:
-    return api(self._api_client)
+  def _Api(self, api_class: Callable[[ApiClient], T]) -> T:
+    """Given an API class, creates an instance with the authenticated client.
+
+    Example usage:
+    ```
+    nodes = self._Api(CoreV1Api).list_node()
+    ```
+
+    Args:
+      api_class (Callable[[ApiClient], T]): The API class.
+
+    Returns:
+      T: An authenticated instance of the desired API class.
+    """
+    return api_class(self._api_client)
 
 
 class K8sResource(K8sClient, metaclass=abc.ABCMeta):
   """Abstract class representing a Kubernetes resource."""
 
-  def __init__(self, api_client: ApiClient, name: str):
+  def __init__(self, api_client: ApiClient, name: str) -> None:
     """Creates a Kubernetes resource holding Kubernetes API client.
 
     Args:
       api_client (ApiClient): The authenticated Kubernetes API client to
-       the cluster.
+        the cluster.
       name (str): The name of this resource.
     """
-    super(K8sResource, self).__init__(api_client)
+    super().__init__(api_client)
     self.name = name
 
   @abc.abstractmethod
@@ -69,14 +81,25 @@ class K8sResource(K8sClient, metaclass=abc.ABCMeta):
     resource would call CoreV1Api.read_namespaced_pod. The return values
     of these read calls do not share a base class, hence the object return
     type.
+
+    Returns:
+      Dict[str, str]: The result of this resource's matching read operation.
     """
 
 
 class K8sCluster(K8sClient):
   """Class representing a Kubernetes cluster."""
 
-  def ListPods(self, namespace: Optional[str]) -> List['K8sPod']:
-    """"""
+  def ListPods(self, namespace: Optional[str] = None) -> List['K8sPod']:
+    """Lists the pods of this cluster, possibly filtering for a namespace.
+
+    Args:
+      namespace (str): Optional. The namespace in which to list the pods.
+
+    Returns:
+      List[K8sPod]: The list of pods for the namespace, or in all namespaces
+        if none is specified.
+    """
     api = self._Api(CoreV1Api)
 
     # Collect pods
@@ -93,7 +116,7 @@ class K8sCluster(K8sClient):
 class K8sNamespacedResource(K8sResource, metaclass=abc.ABCMeta):
   """Class representing a Kubernetes resource, in a certain namespace."""
 
-  def __init__(self, api_client: ApiClient, name: str, namespace: str):
+  def __init__(self, api_client: ApiClient, name: str, namespace: str) -> None:
     """Creates a Kubernetes resource in the given namespace.
 
     Args:
@@ -110,11 +133,11 @@ class K8sNamespacedResource(K8sResource, metaclass=abc.ABCMeta):
 class K8sNode(K8sResource):
   """Class representing a Kubernetes node."""
 
-  def Read(self):
+  def Read(self) -> Dict[str, str]:
     api = self._Api(CoreV1Api)
     return api.read_node(self.name)
 
-  def Cordon(self):
+  def Cordon(self) -> None:
     """Cordons the node, making the node unschedulable.
 
     https://kubernetes.io/docs/concepts/architecture/nodes/#manual-node-administration  # pylint: disable=line-too-long
@@ -130,12 +153,20 @@ class K8sNode(K8sResource):
     # Cordon the node with the PATCH verb
     api.patch_node(self.name, body)
 
-  def ListPods(self, namespace: Optional[str]):
+  def ListPods(self, namespace: Optional[str] = None) -> List['K8sPod']:
+    """Lists the pods on this node, possibly filtering for a namespace.
+
+    Args:
+      namespace (str): Optional. The namespace in which to list the node's pods.
+
+    Returns:
+      List[K8sPod]: The list of the node's pods for the namespace, or in all
+        namespaces if none is specified.
+    """
     api = self._Api(CoreV1Api)
 
-    # The pods must be running, and must be on this node,
-    # the selectors here are as per the API calls in `kubectl
-    # describe node NODE_NAME`
+    # The pods must be running, and must be on this node. The selectors here
+    # are as per the API calls in `kubectl describe node NODE_NAME`.
     selector = K8sSelector(
       K8sSelector.Node(self.name),
       K8sSelector.Running(),
@@ -156,10 +187,19 @@ class K8sNode(K8sResource):
 
 
 class K8sPod(K8sNamespacedResource):
+  """Class representing a Kubernetes pod.
+
+  https://kubernetes.io/docs/concepts/workloads/pods/
+  """
 
   def Read(self) -> V1Pod:
     api = self._Api(CoreV1Api)
     return api.read_namespaced_pod(self.name, self.namespace)
 
   def GetNode(self) -> K8sNode:
+    """Gets the node on which this pod is running.
+
+    Returns:
+      K8sNode: The node on which this pod is running.
+    """
     return K8sNode(self._api_client, self.Read().spec.node_name)
