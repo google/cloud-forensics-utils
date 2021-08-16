@@ -51,6 +51,16 @@ class GoogleCloudResourceManagerTest(unittest.TestCase):
   @typing.no_type_check
   @mock.patch('libcloudforensics.providers.gcp.internal.common.ExecuteRequest')
   @mock.patch('libcloudforensics.providers.gcp.internal.cloudresourcemanager.GoogleCloudResourceManager.GrmApi')
+  def testGetResourceInvalidName(self, _, __):
+    """Validates the GetResource function raises an exception for an invalid
+    resource name."""
+    with self.assertRaises(TypeError):
+      gcp_mocks.FAKE_CLOUD_RESOURCE_MANAGER.GetResource(
+          'badtype/000000000000')
+
+  @typing.no_type_check
+  @mock.patch('libcloudforensics.providers.gcp.internal.common.ExecuteRequest')
+  @mock.patch('libcloudforensics.providers.gcp.internal.cloudresourcemanager.GoogleCloudResourceManager.GrmApi')
   def testGetProjectAncestry(self, _, mock_execute_request):
     """Validates the GetProjectAncestry function"""
     mock_execute_request.side_effect = [
