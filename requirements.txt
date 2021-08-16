@@ -22,4 +22,5 @@ netaddr
 pycryptodome
 PyJWT<2  # Bad overlap in azure dependencies
 sshpubkeys
+requests
 kubernetes
