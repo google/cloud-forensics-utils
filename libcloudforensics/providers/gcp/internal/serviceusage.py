@@ -48,17 +48,17 @@ class GoogleServiceUsage:
 
     services_client = self.GsuApi().services() # pylint: disable=no-member
     parent = 'projects/' + project_number
-    responses = common.ExecuteRequest(
-      services_client, 'list', {'parent': parent, 'filter': 'state:ENABLED'})
+    request = {'parent': parent, 'filter': 'state:ENABLED'}
+    responses = common.ExecuteRequest(services_client, 'list', request)
 
     services = []
     for response in responses:
-      for service in response.get('services'):
+      for service in response.get('services', []):
         services.append(service['config']['name'])
 
     return services
 
-  def EnableService(self, project_number: str, service_name) -> None:
+  def EnableService(self, project_number: str, service_name: str) -> None:
     """Enable a service/API for a project.
 
     Args:
@@ -71,7 +71,7 @@ class GoogleServiceUsage:
     request = {'name': name}
     common.ExecuteRequest(services_client, 'enable', request)
 
-  def DisableService(self, project_number: str, service_name) -> None:
+  def DisableService(self, project_number: str, service_name: str) -> None:
     """Disable a service/API for a project.
 
     Args:

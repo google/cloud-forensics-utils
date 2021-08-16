@@ -21,7 +21,7 @@ if TYPE_CHECKING:
   import googleapiclient
 
 
-class GoogleResourceManager:
+class GoogleCloudResourceManager:
   """Class to call the Google Cloud Resource Manager API."""
 
   RESOURCE_MANAGER_API_VERSION = 'v3'
@@ -82,7 +82,6 @@ class GoogleResourceManager:
     service = self.GrmApi()
     resource_client = getattr(service, resource_type)()
     request = {'name': name}
-
     # Safe to unpack
     response = common.ExecuteRequest(resource_client, 'get', request)[0]
     return response
