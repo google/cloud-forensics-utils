@@ -23,6 +23,7 @@ from kubernetes.client import (
   CoreV1Api,
   # Types
   V1Pod,
+  V1Node,
 )
 
 from libcloudforensics.providers.kubernetes.selector import K8sSelector
@@ -133,7 +134,7 @@ class K8sNamespacedResource(K8sResource, metaclass=abc.ABCMeta):
 class K8sNode(K8sResource):
   """Class representing a Kubernetes node."""
 
-  def Read(self) -> Dict[str, str]:
+  def Read(self) -> V1Node:
     api = self._Api(CoreV1Api)
     return api.read_node(self.name)
 

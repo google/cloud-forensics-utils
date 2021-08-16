@@ -63,7 +63,8 @@ class K8sDeployment(K8sWorkload):
     if read.spec.selector.match_expressions is not None:
       raise NotImplementedError('matchExpressions exist, meaning pods matching '
                                 'matchLabels will be inaccurate.')
-    return read.spec.selector.match_labels
+    match_labels: Dict[str, str] = read.spec.selector.match_labels
+    return match_labels
 
   def GetCoveredPods(self) -> List[K8sPod]:
     api = self._Api(CoreV1Api)

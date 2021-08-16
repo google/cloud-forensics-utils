@@ -25,7 +25,7 @@ class K8sSelector:
     """Component of the selector."""
 
     @abc.abstractmethod
-    def ToString(self):
+    def ToString(self) -> str:
       """Builds the string of this selector component.
 
       Returns:
@@ -34,7 +34,7 @@ class K8sSelector:
 
     @property
     @abc.abstractmethod
-    def keyword(self):
+    def keyword(self) -> str:
       """Returns the keyword argument to which this selector component belongs.
 
       Returns:
@@ -45,51 +45,51 @@ class K8sSelector:
     """Selector component on labels."""
 
     @property
-    def keyword(self):
+    def keyword(self) -> str:
       return 'label_selector'
 
   class FieldComponent(Component, metaclass=abc.ABCMeta):
     """Selector component on fields."""
 
     @property
-    def keyword(self):
+    def keyword(self) -> str:
       return 'field_selector'
 
   class Name(FieldComponent):
     """Selector component having a particular name."""
 
-    def __init__(self, name: str):
+    def __init__(self, name: str) -> None:
       self.name = name
 
-    def ToString(self):
+    def ToString(self) -> str:
       return 'metadata.name={0:s}'.format(self.name)
 
   class Node(FieldComponent):
     """Selector component for being on a particular node."""
 
-    def __init__(self, node) -> None:
+    def __init__(self, node: str) -> None:
       self.node = node
 
-    def ToString(self):
+    def ToString(self) -> str:
       return 'spec.nodeName={0:s}'.format(self.node)
 
   class Running(FieldComponent):
     """Selector component for a running pod."""
 
-    def ToString(self):
+    def ToString(self) -> str:
       return 'status.phase!=Failed,status.phase!=Succeeded'
 
   class Label(LabelComponent):
     """Selector component for a label's key-value pair."""
 
-    def __init__(self, key: str, value: str):
+    def __init__(self, key: str, value: str) -> None:
       self.key = key
       self.value = value
 
-    def ToString(self):
+    def ToString(self) -> str:
       return '{0:s}={1:s}'.format(self.key, self.value)
 
-  def __init__(self, *selectors: Component):
+  def __init__(self, *selectors: Component) -> None:
     self.selectors = selectors
 
   def ToKeywords(self) -> Dict[str, str]:
@@ -105,7 +105,7 @@ class K8sSelector:
     return {k: ','.join(vs) for k, vs in keywords.items()}
 
   @classmethod
-  def FromLabelsDict(cls, labels: Dict[str, str]):
+  def FromLabelsDict(cls, labels: Dict[str, str]) -> 'K8sSelector':
     """Builds a selector from the the given label key-value pairs.
 
     Args:
