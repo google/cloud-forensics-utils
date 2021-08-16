@@ -16,6 +16,8 @@
 
 import base64
 import random
+import re
+import subprocess
 from typing import TYPE_CHECKING, List, Tuple, Optional, Dict, Any
 
 from google.auth.exceptions import DefaultCredentialsError
@@ -430,3 +432,55 @@ def VMRemoveServiceAccount(project_id: str,
     logger.error('Fatal exception encountered: {0:s}'.format(str(exception)))
 
   return True
+
+
+def CheckInstanceSSHAuth(project_id: str,
+                         instance_name: str) -> Optional[List[str]]:
+  """Check enabled SSH authentication methods for an instance.
+
+  Uses SSH with the verbose flag to check enabled SSH authentication methods.
+  Note this Will generate a log line on the target host:
+
+    "Connection closed by authenticating user root <your_ip> port <port>
+    [preauth]"
+
+  Args:
+    project_id (str): the project id for the instance.
+    instance_name (str): the instance name to check.
+
+  Returns:
+    List[str]: The SSH authentication methods supported by the instance or
+      None if SSH wasn't accessible.
+  """
+  ssh_auth_pattern = re.compile(r'Authentications that can continue: (.*)')
+  # Arguments intended to prevent SSH from picking up any configuration from
+  # the host environment.
+  ssh_args = ['/usr/bin/ssh',
+              '-v',
+              '-F', '/dev/null',
+              '-oIdentitiesOnly=yes',
+              '-oIdentityFile=/dev/null',
+              '-oIdentityAgent=none',
+              '-oPKCS11Provider=none',
+              '-oSecurityKeyProvider=none',
+              '-oStrictHostKeyChecking=no',
+              '-oNumberOfPasswordPrompts=0',
+              '-oUserKnownHostsFile=/dev/null']
+
+  project = gcp_project.GoogleCloudProject(project_id)
+  instance = project.compute.GetInstance(instance_name)
+  external_ips = instance.GetNatIps()
+
+  for ip in external_ips:
+    ssh_command = ssh_args + ['root@{0:s}'.format(ip)]
+    # pylint: disable=subprocess-run-check
+    ssh_run = subprocess.run(ssh_command, capture_output=True)
+    # pylint: enable=subprocess-run-check
+    ssh_stderr = ssh_run.stderr.decode()
+
+    pattern_match = ssh_auth_pattern.search(ssh_stderr)
+    if pattern_match:
+      match_group = pattern_match.group(1)
+      return match_group.replace('\r', '').split(',')
+
+  return None
