@@ -110,7 +110,8 @@ class K8sCluster(K8sClient):
 class K8sNamespacedResource(K8sResource, metaclass=abc.ABCMeta):
   """Class representing a Kubernetes resource, in a certain namespace."""
 
-  def __init__(self, api_client: client.ApiClient, name: str, namespace: str) -> None:
+  def __init__(self, api_client: client.ApiClient, name: str,
+               namespace: str) -> None:
     """Creates a Kubernetes resource in the given namespace.
 
     Args:
