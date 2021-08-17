@@ -136,5 +136,5 @@ class GkeCluster(GoogleKubernetesEngine):
     """
     clusters = self.GkeApi().projects().locations().clusters()  # pylint: disable=no-member
     request = clusters.get(name=self.name)
-    response: Dict[str, Any] = request.execute()
+    response = request.execute()  # type: Dict[str, Any]
     return response

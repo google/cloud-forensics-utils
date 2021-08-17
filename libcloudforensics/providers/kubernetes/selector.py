@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2020 Google Inc.
+# Copyright 2021 Google Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -106,7 +106,7 @@ class K8sSelector:
 
   @classmethod
   def FromLabelsDict(cls, labels: Dict[str, str]) -> 'K8sSelector':
-    """Builds a selector from the the given label key-value pairs.
+    """Builds a selector from the given label key-value pairs.
 
     Args:
       labels (Dict[str, str]): The label key-value pairs.
