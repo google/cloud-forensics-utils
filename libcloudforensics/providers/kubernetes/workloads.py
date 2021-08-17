@@ -50,6 +50,10 @@ class K8sDeployment(K8sWorkload):
 
     Returns:
       Dict[str, str]: The labels that will be on the pods of this workload.
+
+    Raises:
+      NotImplementedError: If matchExpressions exist, in which case using the
+        matchLabels will be inaccurate.
     """
     read = self.Read()
     if read.spec.selector.match_expressions is not None:
