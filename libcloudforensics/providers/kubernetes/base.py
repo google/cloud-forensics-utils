@@ -31,7 +31,7 @@ class K8sClient(metaclass=abc.ABCMeta):
     """Creates an object holding Kubernetes API client.
 
     Args:
-      api_client (ApiClient): The authenticated Kubernetes API client to
+      api_client (client.ApiClient): The authenticated Kubernetes API client to
         the cluster.
     """
     self._api_client = api_client
@@ -54,7 +54,11 @@ class K8sClient(metaclass=abc.ABCMeta):
 
 
 class K8sResource(K8sClient, metaclass=abc.ABCMeta):
-  """Abstract class representing a Kubernetes resource."""
+  """Abstract class representing a Kubernetes resource.
+
+  Attributes:
+    name (str): The name of this resource.
+  """
 
   def __init__(self, api_client: client.ApiClient, name: str) -> None:
     """Creates a Kubernetes resource holding Kubernetes API client.
@@ -123,7 +127,12 @@ class K8sCluster(K8sClient):
 
 
 class K8sNamespacedResource(K8sResource, metaclass=abc.ABCMeta):
-  """Class representing a Kubernetes resource, in a certain namespace."""
+  """Class representing a Kubernetes resource, in a certain namespace.
+
+  Attributes:
+    name (str): The name of this resource.
+    namespace (str): The Kubernetes namespace in which this resource resides.
+  """
 
   def __init__(self, api_client: client.ApiClient, name: str,
                namespace: str) -> None:
@@ -144,6 +153,7 @@ class K8sNode(K8sResource):
   """Class representing a Kubernetes node."""
 
   def Read(self) -> client.V1Node:
+    """Override of abstract method."""
     api = self._Api(client.CoreV1Api)
     return api.read_node(self.name)
 
@@ -203,6 +213,7 @@ class K8sPod(K8sNamespacedResource):
   """
 
   def Read(self) -> client.V1Pod:
+    """Override of abstract method."""
     api = self._Api(client.CoreV1Api)
     return api.read_namespaced_pod(self.name, self.namespace)
 
