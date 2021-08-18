@@ -18,7 +18,6 @@ from unittest import mock
 MOCK_API_CLIENT = mock.Mock()
 
 
-
 def MakeMockNodes(amount: int) -> mock.Mock:
   """Make mock Kubernetes API response node list, see V1NodeList."""
   mock_nodes = mock.Mock()
