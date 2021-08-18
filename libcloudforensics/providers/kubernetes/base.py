@@ -106,6 +106,21 @@ class K8sCluster(K8sClient):
     return [K8sPod(self._api_client, pod.metadata.name, pod.metadata.namespace)
             for pod in pods.items]
 
+  def ListNodes(self) -> List['K8sNode']:
+    """Lists the nodes of this cluster.
+
+    Returns:
+      List[K8sNode]: The list of nodes in this cluster.
+    """
+    api = self._Api(client.CoreV1Api)
+
+    # Collect pods
+    nodes = api.list_node()
+
+    # Convert to node objects
+    return [K8sNode(self._api_client, node.metadata.name)
+            for node in nodes.items]
+
 
 class K8sNamespacedResource(K8sResource, metaclass=abc.ABCMeta):
   """Class representing a Kubernetes resource, in a certain namespace."""
