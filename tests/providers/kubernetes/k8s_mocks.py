@@ -12,15 +12,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import typing
-from typing import List
+"""Kubernetes mock response objects, used for testing."""
 from unittest import mock
-
-from libcloudforensics.providers.kubernetes import base
 
 MOCK_API_CLIENT = mock.Mock()
 
-def MakeMockNodes(amount: int):
+def MakeMockNodes(amount: int) -> mock.Mock:
+  """Make mock Kubernetes API response node list, see V1NodeList."""
   mock_nodes = mock.Mock()
   mock_nodes.items = []
   for i in range(amount):
@@ -28,7 +26,8 @@ def MakeMockNodes(amount: int):
     mock_nodes.items.append(MakeMockNode(name))
   return mock_nodes
 
-def MakeMockNode(name):
+def MakeMockNode(name: str) -> mock.Mock:
+  """Make mock Kubernetes API response node, see V1Node."""
   mock_node = mock.Mock()
   mock_node.metadata.name = name
   return mock_node
