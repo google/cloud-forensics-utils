@@ -17,6 +17,8 @@ from unittest import mock
 
 MOCK_API_CLIENT = mock.Mock()
 
+
+
 def MakeMockNodes(amount: int) -> mock.Mock:
   """Make mock Kubernetes API response node list, see V1NodeList."""
   mock_nodes = mock.Mock()
@@ -31,3 +33,13 @@ def MakeMockNode(name: str) -> mock.Mock:
   mock_node = mock.Mock()
   mock_node.metadata.name = name
   return mock_node
+
+def MakeMockPod(name: str,
+                namespace: str,
+                node_name: str) -> mock.Mock:
+  """Make mock Kubernetes API response pod, see V1Pod."""
+  mock_pod = mock.Mock()
+  mock_pod.metadata.name = name
+  mock_pod.metadata.namespace = namespace
+  mock_pod.spec.node_name = node_name
+  return mock_pod

@@ -111,3 +111,38 @@ class K8sNodeTest(unittest.TestCase):
     # Assert returned pods correspond to provided response
     self.assertEqual(set(pod.name for pod in pods),
                      set(pod.metadata.name for pod in mock_pods.items))
+
+
+class K8sPodTest(unittest.TestCase):
+  """Test K8sPod functionality, mainly checking API calls."""
+
+  @typing.no_type_check
+  @mock.patch('kubernetes.client.CoreV1Api')
+  def testPodGetNode(self, mock_k8s_api):
+    """Test that the returned node of a pod is correct."""
+
+    # Create and assign mocks
+    mock_node_name = 'fake-node-name'
+    mock_pod_name = 'fake-pod-name'
+    mock_namespace = 'fake-namespace'
+    mock_pod = k8s_mocks.MakeMockPod(
+      mock_pod_name,
+      mock_namespace,
+      mock_node_name
+    )
+    mock_k8s_api_func = mock_k8s_api.return_value.read_namespaced_pod
+    mock_k8s_api_func.return_value = mock_pod
+
+    node = base.K8sPod(
+      k8s_mocks.MOCK_API_CLIENT,
+      mock_pod_name,
+      mock_namespace
+    ).GetNode()
+
+    # Assert API and corresponding function was called appropriately
+    self.assertTrue(mock_k8s_api.called_with(k8s_mocks.MOCK_API_CLIENT))
+    self.assertTrue(mock_k8s_api_func.called)
+    args = mock_k8s_api_func.call_args.args
+    self.assertEqual(args, (mock_pod_name, mock_namespace))
+    # Assert returned pods correspond to provided response
+    self.assertEqual(node.name, mock_node_name)
