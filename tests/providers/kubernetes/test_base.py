@@ -39,8 +39,8 @@ class K8sClusterTest(unittest.TestCase):
     nodes = base.K8sCluster(api_client=k8s_mocks.MOCK_API_CLIENT).ListNodes()
 
     # Assert API and corresponding function was called appropriately
-    self.assertTrue(mock_k8s_api.called_with(k8s_mocks.MOCK_API_CLIENT))
-    self.assertTrue(mock_k8s_api_func.called)
+    mock_k8s_api.assert_called_with(k8s_mocks.MOCK_API_CLIENT)
+    mock_k8s_api_func.assert_called()
     # Assert returned nodes correspond to provided response
     self.assertEqual(set(node.name for node in nodes),
                      set(node.metadata.name for node in mock_nodes.items))
@@ -58,8 +58,8 @@ class K8sClusterTest(unittest.TestCase):
     pods = base.K8sCluster(api_client=k8s_mocks.MOCK_API_CLIENT).ListPods()
 
     # Assert API and corresponding function was called appropriately
-    self.assertTrue(mock_k8s_api.called_with(k8s_mocks.MOCK_API_CLIENT))
-    self.assertTrue(mock_k8s_api_func.called)
+    mock_k8s_api.assert_called_with(k8s_mocks.MOCK_API_CLIENT)
+    mock_k8s_api_func.assert_called()
     # Assert returned pods correspond to provided response
     self.assertEqual(set(pod.name for pod in pods),
                      set(pod.metadata.name for pod in mock_pods.items))
@@ -80,8 +80,8 @@ class K8sClusterTest(unittest.TestCase):
     )
 
     # Assert API and corresponding function was called appropriately
-    self.assertTrue(mock_k8s_api.called_with(k8s_mocks.MOCK_API_CLIENT))
-    self.assertTrue(mock_k8s_api_func.called_with(mock_namespace))
+    mock_k8s_api.assert_called_with(k8s_mocks.MOCK_API_CLIENT)
+    mock_k8s_api_func.assert_called_with(mock_namespace)
     # Assert returned pods correspond to provided response
     self.assertTrue(set(pod.name for pod in pods),
                     set(pod.metadata.name for pod in mock_pods.items))
@@ -103,8 +103,8 @@ class K8sNodeTest(unittest.TestCase):
     pods = base.K8sNode(k8s_mocks.MOCK_API_CLIENT, mock_node_name).ListPods()
 
     # Assert API and corresponding function was called appropriately
-    self.assertTrue(mock_k8s_api.called_with(k8s_mocks.MOCK_API_CLIENT))
-    self.assertTrue(mock_k8s_api_func.called)
+    mock_k8s_api.assert_called_with(k8s_mocks.MOCK_API_CLIENT)
+    mock_k8s_api_func.assert_called()
     kwargs = mock_k8s_api_func.call_args.kwargs
     self.assertIn('field_selector', kwargs)
     self.assertIn(mock_node_name, kwargs['field_selector'])
@@ -140,8 +140,8 @@ class K8sPodTest(unittest.TestCase):
     ).GetNode()
 
     # Assert API and corresponding function was called appropriately
-    self.assertTrue(mock_k8s_api.called_with(k8s_mocks.MOCK_API_CLIENT))
-    self.assertTrue(mock_k8s_api_func.called)
+    mock_k8s_api.assert_called_with(k8s_mocks.MOCK_API_CLIENT)
+    mock_k8s_api_func.assert_called()
     args = mock_k8s_api_func.call_args.args
     self.assertEqual(args, (mock_pod_name, mock_namespace))
     # Assert returned pods correspond to provided response
