@@ -23,8 +23,8 @@ from libcloudforensics.providers.kubernetes import base
 from tests.providers.kubernetes import k8s_mocks
 
 
-class K8sBaseTest(unittest.TestCase):
-  """Test functionality on base Kubernetes object, mainly checking API calls."""
+class K8sClusterTest(unittest.TestCase):
+  """Test K8sCluster functionality, mainly checking API calls."""
 
   @typing.no_type_check
   @mock.patch('kubernetes.client.CoreV1Api')
@@ -85,3 +85,29 @@ class K8sBaseTest(unittest.TestCase):
     # Assert returned pods correspond to provided response
     self.assertTrue(set(pod.name for pod in pods),
                     set(pod.metadata.name for pod in mock_pods.items))
+
+class K8sNodeTest(unittest.TestCase):
+  """Test K8sCluster functionality, mainly checking API calls."""
+
+  @typing.no_type_check
+  @mock.patch('kubernetes.client.CoreV1Api')
+  def testNodeListPods(self, mock_k8s_api):
+    """Test that pods on a node are correctly listed."""
+
+    # Create and assign mocks
+    mock_node_name = 'fake-node-name'
+    mock_pods = k8s_mocks.MakeMockNodes(5)
+    mock_k8s_api_func = mock_k8s_api.return_value.list_pod_for_all_namespaces
+    mock_k8s_api_func.return_value = mock_pods
+
+    pods = base.K8sNode(k8s_mocks.MOCK_API_CLIENT, mock_node_name).ListPods()
+
+    # Assert API and corresponding function was called appropriately
+    self.assertTrue(mock_k8s_api.called_with(k8s_mocks.MOCK_API_CLIENT))
+    self.assertTrue(mock_k8s_api_func.called)
+    kwargs = mock_k8s_api_func.call_args.kwargs
+    self.assertIn('field_selector', kwargs)
+    self.assertIn(mock_node_name, kwargs['field_selector'])
+    # Assert returned pods correspond to provided response
+    self.assertEqual(set(pod.name for pod in pods),
+                     set(pod.metadata.name for pod in mock_pods.items))
