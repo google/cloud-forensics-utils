@@ -49,10 +49,15 @@ class GkeCluster(GoogleKubernetesEngine):
 
   https://cloud.google.com/kubernetes-engine/docs/reference/rest
   https://kubernetes.io/docs/reference/
+
+  Attributes:
+    project_id (str): The GCP project name.
+    zone (str): The GCP zone for this project.
+    cluster_id (str): The name of the GKE cluster.
   """
 
   def __init__(self, project_id: str, zone: str, cluster_id: str) -> None:
-    """Creates a GKE resource.
+    """Creates a GKE cluster resource.
 
     Args:
       project_id (str): The GCP project name.
