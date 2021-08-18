@@ -95,19 +95,18 @@ class K8sNodeTest(unittest.TestCase):
     """Test that pods on a node are correctly listed."""
 
     # Create and assign mocks
-    mock_node_name = 'fake-node-name'
     mock_pods = k8s_mocks.MakeMockNodes(5)
     mock_k8s_api_func = mock_k8s_api.return_value.list_pod_for_all_namespaces
     mock_k8s_api_func.return_value = mock_pods
 
-    pods = base.K8sNode(k8s_mocks.MOCK_API_CLIENT, mock_node_name).ListPods()
+    pods = base.K8sNode(k8s_mocks.MOCK_API_CLIENT, 'fake-node-name').ListPods()
 
     # Assert API and corresponding function was called appropriately
     mock_k8s_api.assert_called_with(k8s_mocks.MOCK_API_CLIENT)
     mock_k8s_api_func.assert_called()
     kwargs = mock_k8s_api_func.call_args.kwargs
     self.assertIn('field_selector', kwargs)
-    self.assertIn(mock_node_name, kwargs['field_selector'])
+    self.assertIn('fake-node-name', kwargs['field_selector'])
     # Assert returned pods correspond to provided response
     self.assertEqual(set(pod.name for pod in pods),
                      set(pod.metadata.name for pod in mock_pods.items))
@@ -120,29 +119,22 @@ class K8sPodTest(unittest.TestCase):
   @mock.patch('kubernetes.client.CoreV1Api')
   def testPodGetNode(self, mock_k8s_api):
     """Test that the returned node of a pod is correct."""
-
-    # Create and assign mocks
-    mock_node_name = 'fake-node-name'
-    mock_pod_name = 'fake-pod-name'
-    mock_namespace = 'fake-namespace'
-    mock_pod = k8s_mocks.MakeMockPod(
-      mock_pod_name,
-      mock_namespace,
-      mock_node_name
-    )
+    mock_pod = k8s_mocks.MakeMockPod('fake-pod-name',
+                                     'fake-namespace',
+                                     'fake-node-name')
     mock_k8s_api_func = mock_k8s_api.return_value.read_namespaced_pod
     mock_k8s_api_func.return_value = mock_pod
 
     node = base.K8sPod(
       k8s_mocks.MOCK_API_CLIENT,
-      mock_pod_name,
-      mock_namespace
+      'fake-pod-name',
+      'fake-namespace'
     ).GetNode()
 
     # Assert API and corresponding function was called appropriately
     mock_k8s_api.assert_called_with(k8s_mocks.MOCK_API_CLIENT)
     mock_k8s_api_func.assert_called()
-    args = mock_k8s_api_func.call_args.args
-    self.assertEqual(args, (mock_pod_name, mock_namespace))
+    self.assertEqual(('fake-pod-name', 'fake-namespace'),
+                     mock_k8s_api_func.call_args.args)
     # Assert returned pods correspond to provided response
-    self.assertEqual(node.name, mock_node_name)
+    self.assertEqual('fake-node-name', node.name)
