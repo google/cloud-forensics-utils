@@ -42,6 +42,7 @@ class K8sDeployment(K8sWorkload):
   """Class representing a Kubernetes deployment."""
 
   def Read(self) -> client.V1Deployment:
+    """Override of abstract method."""
     api = self._Api(client.AppsV1Api)
     return api.read_namespaced_deployment(self.name, self.namespace)
 
@@ -63,6 +64,7 @@ class K8sDeployment(K8sWorkload):
     return match_labels
 
   def GetCoveredPods(self) -> List[base.K8sPod]:
+    """Override of abstract method."""
     api = self._Api(client.CoreV1Api)
 
     # Get the labels for this workload, and create a selector
