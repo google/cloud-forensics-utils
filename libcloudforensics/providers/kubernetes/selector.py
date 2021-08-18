@@ -35,11 +35,7 @@ class K8sSelector:
     @property
     @abc.abstractmethod
     def keyword(self) -> str:
-      """Returns the keyword argument to which this selector component belongs.
-
-      Returns:
-        str: The keyword argument to which this component belongs.
-      """
+      """The keyword argument to which this selector component belongs."""
 
   class LabelComponent(Component, metaclass=abc.ABCMeta):
     """Selector component on labels."""
@@ -59,19 +55,19 @@ class K8sSelector:
     """Selector component having a particular name."""
 
     def __init__(self, name: str) -> None:
-      self.name = name
+      self._name = name
 
     def ToString(self) -> str:
-      return 'metadata.name={0:s}'.format(self.name)
+      return 'metadata.name={0:s}'.format(self._name)
 
   class Node(FieldComponent):
     """Selector component for being on a particular node."""
 
     def __init__(self, node: str) -> None:
-      self.node = node
+      self._node = node
 
     def ToString(self) -> str:
-      return 'spec.nodeName={0:s}'.format(self.node)
+      return 'spec.nodeName={0:s}'.format(self._node)
 
   class Running(FieldComponent):
     """Selector component for a running pod."""
@@ -83,14 +79,14 @@ class K8sSelector:
     """Selector component for a label's key-value pair."""
 
     def __init__(self, key: str, value: str) -> None:
-      self.key = key
-      self.value = value
+      self._key = key
+      self._value = value
 
     def ToString(self) -> str:
-      return '{0:s}={1:s}'.format(self.key, self.value)
+      return '{0:s}={1:s}'.format(self._key, self._value)
 
   def __init__(self, *selectors: Component) -> None:
-    self.selectors = selectors
+    self._selectors = selectors
 
   def ToKeywords(self) -> Dict[str, str]:
     """Builds the keyword arguments to be passed to the K8s API.
@@ -100,7 +96,7 @@ class K8sSelector:
         API call.
     """
     keywords = defaultdict(list)
-    for selector in self.selectors:
+    for selector in self._selectors:
       keywords[selector.keyword].append(selector.ToString())
     return {k: ','.join(vs) for k, vs in keywords.items()}
 
