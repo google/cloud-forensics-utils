@@ -1,0 +1,87 @@
+# -*- coding: utf-8 -*-
+# Copyright 2021 Google Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Google Cloud Resource Manager functionality."""
+
+from typing import TYPE_CHECKING, Dict, List, Any
+from libcloudforensics.providers.gcp.internal import common
+
+if TYPE_CHECKING:
+  import googleapiclient
+
+
+class GoogleCloudResourceManager:
+  """Class to call the Google Cloud Resource Manager API."""
+
+  RESOURCE_MANAGER_API_VERSION = 'v3'
+  RESOURCE_TYPES = ['projects', 'folders', 'organizations']
+
+  def GrmApi(self) -> 'googleapiclient.discovery.Resource':
+    """Get a Resource Manager service object.
+
+    Returns:
+      googleapiclient.discovery.Resource: A Resource Manager service
+          object.
+    """
+
+    return common.CreateService(
+        'cloudresourcemanager', self.RESOURCE_MANAGER_API_VERSION)
+
+  def ProjectAncestry(self, project_number: str) -> List[Any]:
+    """List ancestor resources for a project.
+
+    Args:
+      project_number (str): The project number to list ancestry for.
+
+    Returns:
+      List[Any]: the list of ancestor resources.
+    """
+
+    ancestry = []
+    current_resource = self.GetResource('projects/' + project_number)
+    ancestry.append(current_resource)
+
+    while 'parent' in current_resource:
+      parent_name = current_resource['parent']
+      current_resource = self.GetResource(parent_name)
+      ancestry.append(current_resource)
+
+    return ancestry
+
+  def GetResource(self, name: str) -> Dict[str, Any]:
+    """Get a Cloud Resource Manager resource.
+
+    Args:
+      name (str): a resource identifier in the format
+        resource_type/resource_number e.g. projects/123456789012 where
+        project_type is one of projects, folders or organizations.
+
+    Returns:
+      Dict[str, Any]: The resource details.
+
+    Raises:
+      TypeError: if an invalid resource type is provided.
+    """
+    resource_type = name.split('/')[0]
+    if resource_type not in self.RESOURCE_TYPES:
+      raise TypeError('Invalid resource type "{0:s}", resource must be one of '
+          '"projects", "folders" or "organizations" provided in the format '
+          '"resource_type/resource_number".'.format(name))
+
+    service = self.GrmApi()
+    resource_client = getattr(service, resource_type)()
+    request = {'name': name}
+    # Safe to unpack
+    response = common.ExecuteRequest(resource_client, 'get', request)[0]
+    return response

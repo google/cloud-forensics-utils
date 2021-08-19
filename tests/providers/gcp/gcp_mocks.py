@@ -25,6 +25,8 @@ from libcloudforensics.providers.gcp.internal import monitoring as gcp_monitorin
 from libcloudforensics.providers.gcp.internal import storage as gcp_storage
 from libcloudforensics.providers.gcp.internal import storagetransfer as gcp_storagetransfer
 from libcloudforensics.providers.gcp.internal import cloudsql as gcp_cloudsql
+from libcloudforensics.providers.gcp.internal import cloudresourcemanager as gcp_resourcmanager
+from libcloudforensics.providers.gcp.internal import serviceusage as gcp_serviceusage
 # pylint: enable=line-too-long
 
 FAKE_ANALYSIS_PROJECT = gcp_project.GoogleCloudProject(
@@ -83,6 +85,8 @@ FAKE_GCST = gcp_storagetransfer.GoogleCloudStorageTransfer('fake-target-project'
 FAKE_GCB = gcp_build.GoogleCloudBuild('fake-target-project')
 FAKE_MONITORING = gcp_monitoring.GoogleCloudMonitoring('fake-target-project')
 FAKE_CLOUDSQLINSTANCE = gcp_cloudsql.GoogleCloudSQL('fake-target-project')
+FAKE_CLOUD_RESOURCE_MANAGER = gcp_resourcmanager.GoogleCloudResourceManager()
+FAKE_SERVICE_USAGE = gcp_serviceusage.GoogleServiceUsage()
 # pylint: enable=line-too-long
 
 # Mock struct to mimic GCP's API responses
@@ -743,3 +747,66 @@ MOCK_EFFECTIVE_FIREWALLS = {
     ]
 }
 # pylint: enable=line-too-long
+
+MOCK_CLOUD_RESOURCE_PROJECT = {
+    "createTime": "2020-01-01T00:00:00.000Z",
+    "displayName": "fake-project",
+    "etag": "Tm90IGFuIGV0YWd4eHh4eA==",
+    "name": "projects/000000000000",
+    "parent": "folders/111111111111",
+    "projectId": "fake-project",
+    "state": "ACTIVE",
+    "updateTime": "2020-01-01T00:00:00.000Z"
+  }
+
+MOCK_CLOUD_RESOURCE_FOLDER = {
+    "createTime": "2020-01-01T00:00:00.000Z",
+    "displayName": "fake-folder",
+    "etag": "Tm90IGFuIGV0YWd4eHh4eA==",
+    "name": "folders/111111111111",
+    "parent": "organizations/222222222222",
+    "state": "ACTIVE",
+    "updateTime": "2020-01-01T00:00:00.000Z"
+}
+
+MOCK_CLOUD_RESOURCE_ORGANIZATION = {
+    "createTime": "2020-01-01T00:00:00.000Z",
+    "directoryCustomerId": "bm9jdXN0",
+    "displayName": "fake-organization.com",
+    "etag": "Tm90IGFuIGV0YWd4eHh4eA==",
+    "name": "organizations/222222222222",
+    "state": "ACTIVE",
+    "updateTime": "2020-01-01T00:00:00.000Z"
+}
+
+# pylint: disable=line-too-long
+MOCK_ENABLED_SERVICES = [
+    {
+        "services": [
+            {
+                "config": {
+                    "name": "bigquery.googleapis.com",
+                    "title": "BigQuery API"
+                },
+                "name": "projects/000000000000/services/bigquery.googleapis.com",
+                "state": "ENABLED"
+            },
+            {
+                "config": {
+                    "name": "cloudapis.googleapis.com",
+                    "title": "Google Cloud APIs"
+                },
+                "name": "projects/000000000000/services/cloudapis.googleapis.com",
+                "state": "ENABLED"
+            },
+            {
+                "config": {
+                    "name": "compute.googleapis.com",
+                    "title": "Compute Engine API"
+                },
+                "name": "projects/000000000000/services/compute.googleapis.com",
+                "state": "ENABLED"
+            }
+        ]
+    }
+]
