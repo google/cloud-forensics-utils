@@ -20,6 +20,7 @@ from kubernetes.config import kube_config
 
 from libcloudforensics import logging_utils
 from libcloudforensics.providers.gcp.internal import common
+from libcloudforensics.providers.kubernetes import base as k8s_base
 
 if TYPE_CHECKING:
   import googleapiclient
@@ -81,7 +82,7 @@ class GkeCluster(GoogleKubernetesEngine):
       self.cluster_id,
     )
 
-  def GetCredentials(self) -> client.ApiClient:
+  def _GetK8sApiClient(self) -> client.ApiClient:
     """Builds an authenticated Kubernetes API client.
 
     This method builds a kubeconfig file similarly to
@@ -143,3 +144,12 @@ class GkeCluster(GoogleKubernetesEngine):
     request = clusters.get(name=self.name)
     response = request.execute()  # type: Dict[str, Any]
     return response
+
+  def GetK8sCluster(self) -> k8s_base.K8sCluster:
+    """Returns the Kubernetes cluster of this GKE cluster.
+
+    Returns:
+      k8s_base.K8sCluster: The Kubernetes cluster matching this GKE cluster,
+        exposing methods to call the Kubernetes API.
+    """
+    return k8s_base.K8sCluster(self._GetK8sApiClient())
