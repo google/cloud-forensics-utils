@@ -19,6 +19,7 @@ from typing import List, TypeVar, Callable, Optional
 
 from kubernetes import client
 
+from libcloudforensics import errors
 from libcloudforensics.providers.kubernetes import selector
 
 
@@ -31,7 +32,7 @@ class K8sClient(metaclass=abc.ABCMeta):
     """Creates an object holding Kubernetes API client.
 
     Args:
-      api_client (client.ApiClient): The authenticated Kubernetes API client to
+      api_client (client.ApiClient): The Kubernetes API client to
         the cluster.
     """
     self._api_client = api_client
@@ -88,6 +89,24 @@ class K8sResource(K8sClient, metaclass=abc.ABCMeta):
 class K8sCluster(K8sClient):
   """Class representing a Kubernetes cluster."""
 
+  def __init__(self, api_client: client.ApiClient) -> None:
+    """Creates a K8sCluster object, checking the API client's authorization.
+
+    This constructor calls an authorization check on the api_client, to see
+    whether it is authorized to do all operations on the cluster. The equivalent
+    check for kubectl would be ``kubectl auth can-i '*' '*' --all-namespaces``.
+
+    Args:
+      api_client (client.ApiClient): The API client to the Kubernetes cluster.
+
+    Raises:
+      errors.CredentialsConfigurationError: If this cluster's API client is not
+        authorized for all operations on all resources in all namespaces of this
+        cluster.
+    """
+    super().__init__(api_client)
+    self.__AuthorizationCheck()
+
   def ListPods(self, namespace: Optional[str] = None) -> List['K8sPod']:
     """Lists the pods of this cluster, possibly filtering for a namespace.
 
@@ -124,6 +143,34 @@ class K8sCluster(K8sClient):
     # Convert to node objects
     return [K8sNode(self._api_client, node.metadata.name)
             for node in nodes.items]
+
+  def __AuthorizationCheck(self) -> None:
+    """Checks the authorization of this cluster's API client.
+
+    Performs a check as per ``kubectl auth can-i '*' '*' --all-namespaces``.
+
+    Raises:
+      errors.CredentialsConfigurationError: If this cluster's API client is not
+        authorized for all operations on all resources in all namespaces of this
+        cluster.
+    """
+    api = self._Api(client.AuthorizationV1Api)
+    response = api.create_self_subject_access_review(
+      # Body from ``kubectl auth can-i '*' '*' --all-namespaces``
+      {
+        'spec': {
+          'resourceAttributes': {
+            'verb': '*',
+            'resource': '*'
+          }
+        }
+      }
+    )
+    if not response.status.allowed:
+      raise errors.CredentialsConfigurationError(
+        'This object\'s client is not authorized to perform all operations'
+        'on the Kubernetes cluster.', __name__
+      )
 
 
 class K8sNamespacedResource(K8sResource, metaclass=abc.ABCMeta):
