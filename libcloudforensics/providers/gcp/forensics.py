@@ -18,7 +18,7 @@ import base64
 import random
 import re
 import subprocess
-from typing import TYPE_CHECKING, List, Tuple, Optional, Dict, Any
+from typing import List, Tuple, Optional, Dict, Any
 
 from google.auth.exceptions import DefaultCredentialsError
 from google.auth.exceptions import RefreshError
@@ -26,11 +26,11 @@ from googleapiclient.errors import HttpError
 
 from libcloudforensics.providers.gcp.internal import project as gcp_project
 from libcloudforensics.providers.gcp.internal import common
+from libcloudforensics.providers.gcp.internal import compute
+from libcloudforensics.providers.gcp.internal import gke
 from libcloudforensics import logging_utils
 from libcloudforensics import errors
 
-if TYPE_CHECKING:
-  from libcloudforensics.providers.gcp.internal import compute
 
 logging_utils.SetUpLogger(__name__)
 logger = logging_utils.GetLogger(__name__)
@@ -484,3 +484,58 @@ def CheckInstanceSSHAuth(project_id: str,
       return match_group.replace('\r', '').split(',')
 
   return None
+
+
+def QuarantineGKEWorkload(project_id: str,
+                          zone: str,
+                          cluster_id: str,
+                          namespace: str,
+                          workload_id: str) -> None:
+  """Quarantines the GKE workload."""
+  gke_cluster = gke.GkeCluster(project_id, zone, cluster_id)
+  k8s_cluster = gke_cluster.GetK8sCluster()
+
+  k8s_workload = k8s_cluster.GetDeployment(workload_id, namespace)
+
+  # Build a dict to find a managed instance group via an instance name,
+  # so that we can instance.AbandonFromMIG
+  groups = compute.GoogleCloudCompute(project_id).ListMIGS(zone)
+  groups_by_instance = {}
+  for group_id, instances in groups.items():
+    for instance in instances:
+      if instance.name in groups_by_instance:
+        raise RuntimeError('Multiple managed instance groups for instance')
+      groups_by_instance[instance.name] = group_id
+
+  compromised_instances = []
+  pods = k8s_workload.GetCoveredPods()
+  for pod in pods:
+    node = pod.GetNode()
+    # Cordoning makes the node unschedulable, meaning that no new pods will be
+    # placed on the node.
+    logger.info('Cordoning Kubernetes node {0:s} holding {1:s} pod from {2:s} '
+                'deployment...'
+                ''.format(node.name, pod.name, k8s_workload.name))
+    node.Cordon()
+    instance_name = node.name
+    instance = compute.GoogleComputeInstance(project_id, zone, instance_name)
+    # Abandoning from Managed Instance Group prevents the node from being
+    # marked as unhealthy and re-created.
+    logger.info('Abandoning instance {0:s} from cluster\'s managed instance '
+                'group...'
+                ''.format(node.name))
+    instance.AbandonFromMIG(groups_by_instance[instance.name])
+    # Save for later use, as we will be deleting the workload and will no
+    # longer be able to find the workload's covered pods
+    compromised_instances.append(instance)
+
+  # Orphan the pods, deleting the workload, and meaning that pods will now
+  # stay on their respective instances
+  logger.info('Orphaning Kubernetes workload {0:s}\'s pods...'
+              ''.format(workload_id))
+  k8s_workload.OrphanPods()
+
+  for instance in compromised_instances:
+    logger.info('Putting instance {0:s} into network quarantine...'
+                ''.format(workload_id))
+    InstanceNetworkQuarantine(project_id, instance.name)

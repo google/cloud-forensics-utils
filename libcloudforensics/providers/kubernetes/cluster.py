@@ -18,7 +18,7 @@ from typing import Optional, List
 from kubernetes import client
 
 from libcloudforensics import logging_utils
-from libcloudforensics.providers.kubernetes import base
+from libcloudforensics.providers.kubernetes import base, workloads
 
 logging_utils.SetUpLogger(__name__)
 logger = logging_utils.GetLogger(__name__)
@@ -100,3 +100,17 @@ class K8sCluster(base.K8sClient):
         'This object\'s client is not authorized to perform all operations'
         'on the Kubernetes cluster. API calls may fail.'
       )
+
+  def GetDeployment(self,
+                    workload_id: str,
+                    namespace: str) -> workloads.K8sDeployment:
+    """Gets a deployment from the cluster.
+
+    Args:
+      workload_id (str): The name of the deployment.
+      namespace (str): The namespace of the deployment.
+
+    Returns:
+      workloads.K8sDeployment: The matching Kubernetes deployment.
+    """
+    return workloads.K8sDeployment(self._api_client, workload_id, namespace)
