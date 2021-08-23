@@ -436,6 +436,14 @@ class GoogleComputeInstanceTest(unittest.TestCase):
           'allow'
         }]})
 
+  @typing.no_type_check
+  @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleComputeInstance.GetOperation')
+  def testGetNatIps(self, mock_get_operation):
+    """Tests that external IPv4 addresses are properly parsed."""
+    mock_get_operation.return_value = {'networkInterfaces': gcp_mocks.MOCK_NETWORK_INTERFACES}
+    self.assertListEqual(
+        gcp_mocks.FAKE_INSTANCE.GetNatIps(), ['0.0.0.0'])
+
 
 class GoogleComputeDiskTest(unittest.TestCase):
   """Test Google Cloud Compute Disk class."""
