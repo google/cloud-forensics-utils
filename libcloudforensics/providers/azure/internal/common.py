@@ -96,7 +96,7 @@ def _ParseCredentialsFile(profile_name: str) -> Dict[str, Any]:
         '"~/.azure/credentials.json" or specify an absolute path to it in '
         'the AZURE_CREDENTIALS_PATH environment variable.')
 
-  with open(path) as profiles:
+  with open(path, encoding='utf-8') as profiles:
     try:
       account_info: Dict[str, Any] = json.load(profiles).get(profile_name)
     except ValueError as exception:

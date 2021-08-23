@@ -154,7 +154,7 @@ def StartAnalysisVm(args: 'argparse.Namespace') -> None:
     key_name, private_key = aws_account.ec2.GenerateSSHKeyPair(
         args.instance_name)
     path = os.path.join(os.getcwd(), key_name + '.pem')
-    with open(path, 'w') as f:
+    with open(path, 'w', encoding='utf-8') as f:
       f.write(private_key)
     logger.info(
         'Created key pair {0:s} in AWS. Your private key is saved in: '
