@@ -19,7 +19,7 @@ import unittest
 
 import mock
 
-from libcloudforensics.providers.kubernetes import base
+from libcloudforensics.providers.kubernetes import base, cluster
 from tests.providers.kubernetes import k8s_mocks
 
 
@@ -36,7 +36,7 @@ class K8sClusterTest(unittest.TestCase):
     mock_k8s_api_func = mock_k8s_api.return_value.list_node
     mock_k8s_api_func.return_value = mock_nodes
 
-    nodes = base.K8sCluster(api_client=k8s_mocks.MOCK_API_CLIENT).ListNodes()
+    nodes = cluster.K8sCluster(api_client=k8s_mocks.MOCK_API_CLIENT).ListNodes()
 
     # Assert API and corresponding function was called appropriately
     mock_k8s_api.assert_called_with(k8s_mocks.MOCK_API_CLIENT)
@@ -55,7 +55,7 @@ class K8sClusterTest(unittest.TestCase):
     mock_k8s_api_func = mock_k8s_api.return_value.list_pod_for_all_namespaces
     mock_k8s_api_func.return_value = mock_pods
 
-    pods = base.K8sCluster(api_client=k8s_mocks.MOCK_API_CLIENT).ListPods()
+    pods = cluster.K8sCluster(api_client=k8s_mocks.MOCK_API_CLIENT).ListPods()
 
     # Assert API and corresponding function was called appropriately
     mock_k8s_api.assert_called_with(k8s_mocks.MOCK_API_CLIENT)
@@ -75,7 +75,7 @@ class K8sClusterTest(unittest.TestCase):
     mock_k8s_api_func = mock_k8s_api.return_value.list_namespaced_pod
     mock_k8s_api_func.return_value = mock_pods
 
-    pods = base.K8sCluster(api_client=k8s_mocks.MOCK_API_CLIENT).ListPods(
+    pods = cluster.K8sCluster(api_client=k8s_mocks.MOCK_API_CLIENT).ListPods(
       mock_namespace
     )
 

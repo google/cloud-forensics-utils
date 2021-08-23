@@ -19,11 +19,8 @@ from typing import List, TypeVar, Callable, Optional
 
 from kubernetes import client
 
-from libcloudforensics import logging_utils
 from libcloudforensics.providers.kubernetes import selector
 
-logging_utils.SetUpLogger(__name__)
-logger = logging_utils.GetLogger(__name__)
 
 class K8sClient(metaclass=abc.ABCMeta):
   """Abstract class representing objects that use the Kubernetes API."""
@@ -86,84 +83,6 @@ class K8sResource(K8sClient, metaclass=abc.ABCMeta):
     Returns:
       object: The result of this resource's matching read operation.
     """
-
-
-class K8sCluster(K8sClient):
-  """Class representing a Kubernetes cluster."""
-
-  def __init__(self, api_client: client.ApiClient) -> None:
-    """Creates a K8sCluster object, checking the API client's authorization.
-
-    This constructor calls an authorization check on the api_client, to see
-    whether it is authorized to do all operations on the cluster. The equivalent
-    check for kubectl would be `kubectl auth can-i '*' '*' --all-namespaces`.
-
-    Args:
-      api_client (client.ApiClient): The API client to the Kubernetes cluster.
-    """
-    super().__init__(api_client)
-    self.__AuthorizationCheck()
-
-  def ListPods(self, namespace: Optional[str] = None) -> List['K8sPod']:
-    """Lists the pods of this cluster, possibly filtering for a namespace.
-
-    Args:
-      namespace (str): Optional. The namespace in which to list the pods.
-
-    Returns:
-      List[K8sPod]: The list of pods for the namespace, or in all namespaces
-        if none is specified.
-    """
-    api = self._Api(client.CoreV1Api)
-
-    # Collect pods
-    if namespace is not None:
-      pods = api.list_namespaced_pod(namespace)
-    else:
-      pods = api.list_pod_for_all_namespaces()
-
-    # Convert to node objects
-    return [K8sPod(self._api_client, pod.metadata.name, pod.metadata.namespace)
-            for pod in pods.items]
-
-  def ListNodes(self) -> List['K8sNode']:
-    """Lists the nodes of this cluster.
-
-    Returns:
-      List[K8sNode]: The list of nodes in this cluster.
-    """
-    api = self._Api(client.CoreV1Api)
-
-    # Collect pods
-    nodes = api.list_node()
-
-    # Convert to node objects
-    return [K8sNode(self._api_client, node.metadata.name)
-            for node in nodes.items]
-
-  def __AuthorizationCheck(self) -> None:
-    """Checks the authorization of this cluster's API client.
-
-    Performs a check as per `kubectl auth can-i '*' '*' --all-namespaces`,
-    logging a warning if the check did not return 'yes'.
-    """
-    api = self._Api(client.AuthorizationV1Api)
-    response = api.create_self_subject_access_review(
-      # Body from `kubectl auth can-i '*' '*' --all-namespaces`
-      {
-        'spec': {
-          'resourceAttributes': {
-            'verb': '*',
-            'resource': '*'
-          }
-        }
-      }
-    )
-    if not response.status.allowed:
-      logger.warning(
-        'This object\'s client is not authorized to perform all operations'
-        'on the Kubernetes cluster. API calls may fail.'
-      )
 
 
 class K8sNamespacedResource(K8sResource, metaclass=abc.ABCMeta):
