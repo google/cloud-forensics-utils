@@ -81,7 +81,7 @@ class AZNetwork:
           self.az_account.default_resource_group_name, network_interface_name)
       nic_id = nic.id  # type: str
       return nic_id
-    except azure_exceptions.ResourceNotFoundError as exception:
+    except azure_exceptions.ResourceNotFoundError:
       # NIC doesn't exist, ignore the error as we create it later on.
       pass
     except azure_exceptions.AzureError as exception:
