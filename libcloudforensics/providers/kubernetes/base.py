@@ -162,7 +162,7 @@ class K8sCluster(K8sClient):
     if not response.status.allowed:
       logger.warning(
         'This object\'s client is not authorized to perform all operations'
-        'on the Kubernetes cluster. API calls may fail.', __name__
+        'on the Kubernetes cluster. API calls may fail.'
       )
 
 
