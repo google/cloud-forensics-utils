@@ -19,9 +19,11 @@ from typing import List, TypeVar, Callable, Optional
 
 from kubernetes import client
 
-from libcloudforensics import errors
+from libcloudforensics import logging_utils
 from libcloudforensics.providers.kubernetes import selector
 
+logging_utils.SetUpLogger(__name__)
+logger = logging_utils.GetLogger(__name__)
 
 class K8sClient(metaclass=abc.ABCMeta):
   """Abstract class representing objects that use the Kubernetes API."""
@@ -94,15 +96,10 @@ class K8sCluster(K8sClient):
 
     This constructor calls an authorization check on the api_client, to see
     whether it is authorized to do all operations on the cluster. The equivalent
-    check for kubectl would be ``kubectl auth can-i '*' '*' --all-namespaces``.
+    check for kubectl would be `kubectl auth can-i '*' '*' --all-namespaces`.
 
     Args:
       api_client (client.ApiClient): The API client to the Kubernetes cluster.
-
-    Raises:
-      errors.CredentialsConfigurationError: If this cluster's API client is not
-        authorized for all operations on all resources in all namespaces of this
-        cluster.
     """
     super().__init__(api_client)
     self.__AuthorizationCheck()
@@ -147,16 +144,12 @@ class K8sCluster(K8sClient):
   def __AuthorizationCheck(self) -> None:
     """Checks the authorization of this cluster's API client.
 
-    Performs a check as per ``kubectl auth can-i '*' '*' --all-namespaces``.
-
-    Raises:
-      errors.CredentialsConfigurationError: If this cluster's API client is not
-        authorized for all operations on all resources in all namespaces of this
-        cluster.
+    Performs a check as per `kubectl auth can-i '*' '*' --all-namespaces`,
+    logging a warning if the check did not return 'yes'.
     """
     api = self._Api(client.AuthorizationV1Api)
     response = api.create_self_subject_access_review(
-      # Body from ``kubectl auth can-i '*' '*' --all-namespaces``
+      # Body from `kubectl auth can-i '*' '*' --all-namespaces`
       {
         'spec': {
           'resourceAttributes': {
@@ -167,9 +160,9 @@ class K8sCluster(K8sClient):
       }
     )
     if not response.status.allowed:
-      raise errors.CredentialsConfigurationError(
+      logger.warning(
         'This object\'s client is not authorized to perform all operations'
-        'on the Kubernetes cluster.', __name__
+        'on the Kubernetes cluster. API calls may fail.', __name__
       )
 
 
