@@ -144,7 +144,14 @@ class K8sNode(K8sResource):
     # Cordon the node with the PATCH verb
     api.patch_node(self.name, body)
 
-  def Drain(self, pod_filter: Callable[['K8sPod'], bool]):
+  def Drain(self, pod_filter: Callable[['K8sPod'], bool]) -> None:
+    """Drains all pods from this node that satisfy a filter.
+
+    Args:
+      pod_filter (Callable[[K8sPod], bool]): A predicate taking a pod as
+        argument. Pods that are on this node and satisfy this predicate will be
+        deleted.
+    """
     for pod in self.ListPods():
       if pod_filter(pod):
         pod.Delete()
