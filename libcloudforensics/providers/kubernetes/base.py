@@ -203,4 +203,4 @@ class K8sPod(K8sNamespacedResource):
     to any other Kubernetes objects.
     """
     api = self._Api(client.CoreV1Api)
-    return api.delete_namespaced_pod(self.name, self.namespace)
+    api.delete_namespaced_pod(self.name, self.namespace)

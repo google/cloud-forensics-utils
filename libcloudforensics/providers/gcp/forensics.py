@@ -499,13 +499,8 @@ def QuarantineGKEWorkload(project_id: str,
 
   # Build a dict to find a managed instance group via an instance name,
   # so that we can instance.AbandonFromMIG
-  groups = compute.GoogleCloudCompute(project_id).ListMIGS(zone)
-  groups_by_instance = {}
-  for group_id, instances in groups.items():
-    for instance in instances:
-      if instance.name in groups_by_instance:
-        raise RuntimeError('Multiple managed instance groups for instance')
-      groups_by_instance[instance.name] = group_id
+  compute_project = compute.GoogleCloudCompute(project_id)
+  groups_by_instance = compute_project.ListMIGSByInstanceName(zone)
 
   compromised_instances = []
   pods = k8s_workload.GetCoveredPods()
@@ -514,17 +509,19 @@ def QuarantineGKEWorkload(project_id: str,
     # Cordoning makes the node unschedulable, meaning that no new pods will be
     # placed on the node.
     logger.info('Cordoning Kubernetes node {0:s} holding {1:s} pod from {2:s} '
-                'deployment...'
-                ''.format(node.name, pod.name, k8s_workload.name))
+                'deployment...'.format(node.name, pod.name, k8s_workload.name))
     node.Cordon()
     instance_name = node.name
     instance = compute.GoogleComputeInstance(project_id, zone, instance_name)
     # Abandoning from Managed Instance Group prevents the node from being
     # marked as unhealthy and re-created.
-    logger.info('Abandoning instance {0:s} from cluster\'s managed instance '
-                'group...'
-                ''.format(node.name))
-    instance.AbandonFromMIG(groups_by_instance[instance.name])
+    if instance.name in groups_by_instance:
+      logger.info('Abandoning instance {0:s} from respective managed instance '
+                  'group...'.format(node.name))
+      instance.AbandonFromMIG(groups_by_instance[instance.name])
+    else:
+      logger.warning('Could not abandon {0:s} from respective managed instance '
+                     'group, parent managed instance group not found.')
     # Save for later use, as we will be deleting the workload and will no
     # longer be able to find the workload's covered pods
     compromised_instances.append(instance)

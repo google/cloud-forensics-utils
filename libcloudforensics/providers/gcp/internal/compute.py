@@ -134,6 +134,25 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
 
     return instances
 
+  def ListMIGSByInstanceName(self, zone: str) -> Dict[str, str]:
+    """Gets a mapping from instance names to their managed instance group.
+
+    Args:
+      zone (str): The zone in which to list managed instance groups.
+
+    Returns:
+      Dict[str, str]: A mapping from instance names to their managed instance
+        group.
+    """
+    groups = self.ListMIGS(zone)
+    groups_by_instance = {}
+    for group_id, instances in groups.items():
+      for instance in instances:
+        if instance.name in groups_by_instance:
+          raise RuntimeError('Multiple managed instance groups for instance')
+        groups_by_instance[instance.name] = group_id
+    return groups_by_instance
+
   def ListMIGS(self, zone: str) -> Dict[str, List['GoogleComputeInstance']]:
     """Gets the managed instance groups in a particular zone.
 
