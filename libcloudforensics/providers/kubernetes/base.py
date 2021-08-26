@@ -15,7 +15,7 @@
 """Kubernetes core class structure."""
 
 import abc
-from typing import List, TypeVar, Callable, Optional
+from typing import List, TypeVar, Callable, Optional, Dict
 
 from kubernetes import client
 
@@ -144,6 +144,11 @@ class K8sNode(K8sResource):
     # Cordon the node with the PATCH verb
     api.patch_node(self.name, body)
 
+  def Drain(self, pod_filter: Callable[['K8sPod'], bool]):
+    for pod in self.ListPods():
+      if pod_filter(pod):
+        pod.Delete()
+
   def ListPods(self, namespace: Optional[str] = None) -> List['K8sPod']:
     """Lists the pods on this node, possibly filtering for a namespace.
 
@@ -195,6 +200,14 @@ class K8sPod(K8sNamespacedResource):
       K8sNode: The node on which this pod is running.
     """
     return K8sNode(self._api_client, self.Read().spec.node_name)
+
+  def GetLabels(self) -> Dict[str, str]:
+    """Gets the labels in the metadata field of this pod.
+
+    Returns:
+      Dict[str, str]: The labels in the metadata field of this pod.
+    """
+    return self.Read().metadata.labels
 
   def Delete(self, cascade: bool = True) -> None:
     """Override of abstract method.

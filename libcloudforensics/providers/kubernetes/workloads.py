@@ -30,7 +30,7 @@ class K8sWorkload(base.K8sNamespacedResource, metaclass=abc.ABCMeta):
   """
 
   @abc.abstractmethod
-  def PodMatchLabels(self) -> Dict[str, str]:
+  def _PodMatchLabels(self) -> Dict[str, str]:
     """Gets the key-value pairs that pods belonging to this workload would have.
 
     Returns:
@@ -79,7 +79,9 @@ class K8sWorkload(base.K8sNamespacedResource, metaclass=abc.ABCMeta):
     """
     api = self._Api(client.CoreV1Api)
 
-    labels_selector = selector.K8sSelector.FromLabelsDict(self.PodMatchLabels())
+    labels_selector = selector.K8sSelector.FromLabelsDict(
+      self._PodMatchLabels()
+    )
 
     pods = api.list_namespaced_pod(
       self.namespace,
@@ -90,6 +92,25 @@ class K8sWorkload(base.K8sNamespacedResource, metaclass=abc.ABCMeta):
       base.K8sPod(self._api_client, pod.metadata.name, pod.metadata.namespace)
       for pod in pods.items]
 
+  def IsCoveringPod(self, pod: base.K8sPod) -> bool:
+    """Determines whether a pod is covered by this workload.
+
+    This function checks if this workload's pod match labels are a subset of the
+    given pod's labels.
+
+    Args:
+      pod (base.K8sPod): The pod to be checked with the labels of this workload.
+
+    Returns:
+      bool: True if the pod is covered this workload, False otherwise.
+    """
+    pod_labels = pod.GetLabels()
+    for label_key, label_value in self._PodMatchLabels().items():
+      if label_key not in pod_labels:
+        return False
+      if pod_labels[label_key] != label_value:
+        return False
+    return True
 
 class K8sDeployment(K8sWorkload):
   """Class representing a Kubernetes deployment."""
@@ -149,7 +170,7 @@ class K8sDeployment(K8sWorkload):
       replica_sets[0].metadata.namespace,
     )
 
-  def PodMatchLabels(self) -> Dict[str, str]:
+  def _PodMatchLabels(self) -> Dict[str, str]:
     """Override of abstract method."""
     return self._ReplicaSet().MatchLabels()
 
@@ -171,7 +192,7 @@ class K8sReplicaSet(K8sWorkload):
         'propagationPolicy': 'Orphan'
       })
 
-  def PodMatchLabels(self) -> Dict[str, str]:
+  def _PodMatchLabels(self) -> Dict[str, str]:
     """Override of abstract method."""
     return self.MatchLabels()
 
