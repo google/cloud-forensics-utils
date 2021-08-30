@@ -16,13 +16,15 @@
 import abc
 import random
 import string
-from typing import Dict, Optional
-
-from libcloudforensics.providers.kubernetes import base
+from typing import Dict
 
 from kubernetes import client
 
+from libcloudforensics.providers.kubernetes import base
+
+
 class K8sNetworkPolicy(base.K8sNamespacedResource):
+  """Class representing a Kubernetes NetworkPolicy, enabling API calls."""
 
   def Delete(self, cascade: bool = True) -> None:
     """Override of abstract method. The cascade parameter is ignored."""
@@ -35,6 +37,11 @@ class K8sNetworkPolicy(base.K8sNamespacedResource):
     return api.read_namespaced_network_policy(self.name, self.namespace)
 
 class K8sNetworkPolicyWithSpec(K8sNetworkPolicy, metaclass=abc.ABCMeta):
+  """Class representing a Kubernetes NetworkPolicy with an underlying spec.
+
+  This class additionally exposes creation API calls, as specification
+  arguments can now be provided.
+  """
 
   @property
   @abc.abstractmethod
@@ -57,27 +64,38 @@ class K8sNetworkPolicyWithSpec(K8sNetworkPolicy, metaclass=abc.ABCMeta):
     api.create_namespaced_network_policy(self.namespace, self._policy)
 
 class K8sDenyAllNetworkPolicy(K8sNetworkPolicyWithSpec):
+  """Class representing a deny-all NetworkPolicy.
+
+  https://kubernetes.io/docs/concepts/services-networking/network-policies/#default-deny-all-ingress-and-all-egress-traffic  # pylint: disable=line-too-long
+
+  Attributes:
+    labels (Dict[str, str]): The matchLabels used by this NetworkPolicy.
+  """
 
   def __init__(self, api_client: client.ApiClient, namespace: str) -> None:
+    """Returns a deny-all Kubernetes NetworkPolicy.
+
+    Args:
+      api_client (ApiClient): The Kubernetes API client to the cluster.
+      namespace (str): The namespace for this NetworkPolicy.
+    """
     self._GenerateTag()
     name = 'cfu-netpol-{0:s}'.format(self._tag)
     super().__init__(api_client, name, namespace)
 
   def _GenerateTag(self) -> None:
-    """Generates a tag that this deny all network policy will use."""
+    """Generates a random tag for this deny-all NetworkPolicy."""
     chars = random.choices(string.ascii_lowercase + string.digits, k=16)
     self._tag = ''.join(chars)
 
   @property
-  def labels(self):
-    """The pod selector labels of this policy."""
+  def labels(self) -> Dict[str, str]:
+    """The pod selector labels (matchLabels) of this policy."""
     return {'quarantineId': self._tag}
 
   @property
-  def _spec(self):
-    """Override of abstract property. A deny all spec object is created.
-    https://kubernetes.io/docs/concepts/services-networking/network-policies/#default-deny-all-ingress-and-all-egress-traffic  # pylint: disable=line-too-long
-    """
+  def _spec(self) -> client.V1NetworkPolicySpec:
+    """Override of abstract property."""
     return client.V1NetworkPolicySpec(
       pod_selector=client.V1LabelSelector(match_labels=self.labels),
       policy_types=[

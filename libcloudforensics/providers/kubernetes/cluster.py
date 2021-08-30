@@ -78,6 +78,16 @@ class K8sCluster(base.K8sClient):
             for node in nodes.items]
 
   def ListNetworkPolicies(self, namespace: Optional[str] = None):
+    """List the network policies in a namespace of this cluster.
+
+    Args:
+      namespace (str): Optional. The namespace in which to list network
+        policies. If unspecified, it returns network policies in all namespaces
+        of this cluster.
+
+    Returns:
+      List[netpol.K8sNetworkPolicy]: The list of network policies.
+    """
     api = self._Api(client.NetworkingV1Api)
     if namespace is not None:
       policies = api.list_namespaced_network_policy(namespace)
@@ -126,5 +136,18 @@ class K8sCluster(base.K8sClient):
     """
     return workloads.K8sDeployment(self._api_client, workload_id, namespace)
 
-  def DenyAllNetworkPolicy(self, namespace: str):
+  def DenyAllNetworkPolicy(self,
+                           namespace: str) -> netpol.K8sDenyAllNetworkPolicy:
+    """Gets a deny-all network policy for the cluster.
+
+    Note that the returned policy is not created when using this method. It can
+    be created by calling the creation method on the object.
+
+    Args:
+      namespace (str): The namespace for the returned network policy.
+
+    Returns:
+      netpol.K8sDenyAllNetworkPolicy: The matching network policy object. Call
+        the creation method on the object to create the policy.
+    """
     return netpol.K8sDenyAllNetworkPolicy(self._api_client, namespace)
