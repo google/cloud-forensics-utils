@@ -52,6 +52,14 @@ class K8sWorkload(base.K8sNamespacedResource, metaclass=abc.ABCMeta):
     upon which this method was called.
     """
 
+  @abc.abstractmethod
+  def AddTemplateLabels(self, labels: Dict[str, str]):
+    """Adds labels to the pod template spec of this deployment.
+
+    Args:
+      labels (Dict[str, str]): The labels to be added to the pod template spec.
+    """
+
   def MatchLabels(self) -> Dict[str, str]:
     """Gets the label key-value pairs in the matchLabels field.
 
@@ -115,6 +123,19 @@ class K8sWorkload(base.K8sNamespacedResource, metaclass=abc.ABCMeta):
 class K8sDeployment(K8sWorkload):
   """Class representing a Kubernetes deployment."""
 
+  def AddTemplateLabels(self, labels: Dict[str, str]):
+    """Override of abstract method."""
+    api = self._Api(client.AppsV1Api)
+    api.patch_namespaced_deployment(self.name, self.namespace, body={
+      'spec': {
+        'template': {
+          'metadata': {
+            'labels': labels
+          }
+        }
+      }
+    })
+
   def OrphanPods(self) -> None:
     """Override of abstract method.
 
@@ -177,6 +198,19 @@ class K8sDeployment(K8sWorkload):
 
 class K8sReplicaSet(K8sWorkload):
   """Class representing a Kubernetes deployment."""
+
+  def AddTemplateLabels(self, labels: Dict[str, str]):
+    """Override of abstract method."""
+    api = self._Api(client.AppsV1Api)
+    api.patch_namespaced_replica_set(self.name, self.namespace, body={
+      'spec': {
+        'template': {
+          'metadata': {
+            'labels': labels
+          }
+        }
+      }
+    })
 
   def OrphanPods(self) -> None:
     """Override of abstract method."""

@@ -48,7 +48,7 @@ def CreateDenyAllNetworkPolicyForWorkload(
     deny_all_policy.Create()
     # Tag the pods covered by the workload with the selecting label of the
     # deny all NetworkPolicy
-    # TODO: Add a label to the pod's template
+    workload.AddTemplateLabels(deny_all_policy.labels)
     # For all other policies, specify that they are not selecting the pods
     # that are selected by the deny all policy
     # TODO: Patch other policies (in same namespace?)
