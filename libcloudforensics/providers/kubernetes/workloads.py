@@ -19,6 +19,7 @@ from typing import List, Dict, Union
 
 from kubernetes import client
 
+from libcloudforensics import errors
 from libcloudforensics.providers.kubernetes import base
 from libcloudforensics.providers.kubernetes import selector
 
@@ -178,18 +179,21 @@ class K8sDeployment(K8sWorkload):
       **replica_sets_selector.ToKeywords()
     ).items
 
-    # Check number of returned ReplicaSets
-    if len(replica_sets) != 1:
-      raise NotImplementedError(
-        'Unexpected number of matching replica sets: '
-        '{0:d} matching, expected 1.'.format(
-          len(replica_sets)))
+    this_template_spec = self.Read().spec.template
+    for replica_set in replica_sets:
+      rs_template_spec = replica_set.spec.template
+      # Delete the hash appended to the labels of this replicaset, so that
+      # the following comparison does not factor in the hash label
+      del rs_template_spec.metadata.labels['pod-template-hash']
+      if rs_template_spec == this_template_spec:
+        return K8sReplicaSet(
+          self._api_client,
+          replica_set.metadata.name,
+          replica_set.metadata.namespace,
+        )
 
-    return K8sReplicaSet(
-      self._api_client,
-      replica_sets[0].metadata.name,
-      replica_sets[0].metadata.namespace,
-    )
+    raise errors.ResourceNotFoundError(
+      'Matching ReplicaSet for deployment {0:s} not found.'.format(self.name))
 
   def _PodMatchLabels(self) -> Dict[str, str]:
     """Override of abstract method."""
