@@ -28,9 +28,9 @@ from libcloudforensics.providers.gcp.internal import project as gcp_project
 from libcloudforensics.providers.gcp.internal import common
 from libcloudforensics.providers.gcp.internal import compute
 from libcloudforensics.providers.gcp.internal import gke
-from libcloudforensics import logging_utils
+from libcloudforensics import logging_utils, prompts
 from libcloudforensics import errors
-
+from libcloudforensics.providers.kubernetes import mitigation
 
 logging_utils.SetUpLogger(__name__)
 logger = logging_utils.GetLogger(__name__)
@@ -502,37 +502,76 @@ def QuarantineGKEWorkload(project_id: str,
   compute_project = compute.GoogleCloudCompute(project_id)
   groups_by_instance = compute_project.ListMIGSByInstanceName(zone)
 
-  compromised_instances = []
-  pods = k8s_workload.GetCoveredPods()
-  for pod in pods:
-    node = pod.GetNode()
-    # Cordoning makes the node unschedulable, meaning that no new pods will be
-    # placed on the node.
-    logger.info('Cordoning Kubernetes node {0:s} holding {1:s} pod from {2:s} '
-                'deployment...'.format(node.name, pod.name, k8s_workload.name))
-    node.Cordon()
-    instance_name = node.name
-    instance = compute.GoogleComputeInstance(project_id, zone, instance_name)
-    # Abandoning from Managed Instance Group prevents the node from being
-    # marked as unhealthy and re-created.
-    if instance.name in groups_by_instance:
-      logger.info('Abandoning instance {0:s} from respective managed instance '
-                  'group...'.format(node.name))
-      instance.AbandonFromMIG(groups_by_instance[instance.name])
-    else:
-      logger.warning('Could not abandon {0:s} from respective managed instance '
-                     'group, parent managed instance group not found.')
-    # Save for later use, as we will be deleting the workload and will no
-    # longer be able to find the workload's covered pods
-    compromised_instances.append(instance)
+  compromised_nodes = {pod.GetNode() for pod in k8s_workload.GetCoveredPods()}
 
-  # Orphan the pods, deleting the workload, and meaning that pods will now
-  # stay on their respective instances
-  logger.info('Orphaning Kubernetes workload {0:s}\'s pods...'
-              ''.format(workload_id))
-  k8s_workload.OrphanPods()
+  def CordonNodes():
+    for node in compromised_nodes:
+      logger.info(
+        'Cordoning Kubernetes node {0:s} from {1:s} '
+        'deployment...'.format(node, k8s_workload.name))
+      node.Cordon()
 
-  for instance in compromised_instances:
-    logger.info('Putting instance {0:s} into network quarantine...'
-                ''.format(workload_id))
-    InstanceNetworkQuarantine(project_id, instance.name)
+  def AbandonNodes():
+    for node in compromised_nodes:
+      if node.name in groups_by_instance:
+        logger.info(
+          'Abandoning instance {0:s} from respective managed instance '
+          'group...'.format(node.name))
+        instance = compute_project.GetInstance(node.name)
+        instance.AbandonFromMIG(groups_by_instance[instance.name])
+      else:
+        logger.warning(
+          'Could not abandon {0:s} from respective managed instance '
+          'group, parent managed instance group not found.'.format(node.name))
+
+  def IsolatePods():
+    logger.info(
+      'Creating deny-all NetworkPolicy for {0:s} '
+      'workload...'.format(workload_id))
+    mitigation.CreateDenyAllNetworkPolicyForWorkload(k8s_cluster, k8s_workload)
+
+  def DrainNodes():
+    logger.info('Draining workload nodes from other pods...')
+    mitigation.DrainWorkloadNodesFromOtherPods(k8s_workload)
+
+  def OrphanPods():
+    logger.info(
+      'Orphaning Kubernetes workload {0:s}\'s pods...'.format(workload_id))
+    k8s_workload.OrphanPods()
+
+  def FirewallNodes():
+    for node in compromised_nodes:
+      logger.info(
+        'Putting instance {0:s} into network quarantine...'.format(workload_id))
+      InstanceNetworkQuarantine(project_id, node.name)
+
+  prompt_sequence = prompts.PromptSequence(
+    # First prompt, ask about workload deletion
+    prompts.MultiPrompt(
+      options=[
+        prompts.PromptOption(
+          'Preserve evidence and delete workload?',
+          OrphanPods),
+        prompts.PromptOption(
+          'Preserve evidence and preserve workload?',
+          # Pass an empty function
+          lambda: None)
+      ]
+    ),
+    # Second prompt, ask about isolation strategy
+    prompts.MultiPrompt(
+      options=[
+        prompts.PromptOption(
+          'Isolate nodes?',
+          FirewallNodes),
+        prompts.PromptOption(
+          'Isolate pods?',
+          IsolatePods),
+        prompts.PromptOption(
+          'Isolate nodes and pods?',
+          DrainNodes),
+      ]
+    ),
+  )
+
+  prompt_sequence.Run()
