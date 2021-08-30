@@ -214,7 +214,8 @@ class K8sPod(K8sNamespacedResource):
     Returns:
       Dict[str, str]: The labels in the metadata field of this pod.
     """
-    return self.Read().metadata.labels
+    labels = self.Read().metadata.labels  # type: Dict[str, str]
+    return labels
 
   def Delete(self, cascade: bool = True) -> None:
     """Override of abstract method.

@@ -18,7 +18,7 @@ from typing import Optional, List
 from kubernetes import client
 
 from libcloudforensics import logging_utils
-from libcloudforensics.providers.kubernetes import base, workloads
+from libcloudforensics.providers.kubernetes import base, workloads, netpol
 
 logging_utils.SetUpLogger(__name__)
 logger = logging_utils.GetLogger(__name__)
@@ -77,6 +77,17 @@ class K8sCluster(base.K8sClient):
     return [base.K8sNode(self._api_client, node.metadata.name)
             for node in nodes.items]
 
+  def ListNetworkPolicies(self, namespace: Optional[str] = None):
+    api = self._Api(client.NetworkingV1Api)
+    if namespace is not None:
+      policies = api.list_namespaced_network_policy(namespace)
+    else:
+      policies = api.list_network_policy_for_all_namespaces()
+    return [
+      netpol.K8sNetworkPolicy(self._api_client, policy.name, policy.namespace)
+      for policy in policies
+    ]
+
   def __AuthorizationCheck(self) -> None:
     """Checks the authorization of this cluster's API client.
 
@@ -114,3 +125,6 @@ class K8sCluster(base.K8sClient):
       workloads.K8sDeployment: The matching Kubernetes deployment.
     """
     return workloads.K8sDeployment(self._api_client, workload_id, namespace)
+
+  def DenyAllNetworkPolicy(self, namespace: str):
+    return netpol.K8sDenyAllNetworkPolicy(self._api_client, namespace)
