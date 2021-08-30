@@ -193,7 +193,8 @@ class K8sDeployment(K8sWorkload):
         )
 
     raise errors.ResourceNotFoundError(
-      'Matching ReplicaSet for deployment {0:s} not found.'.format(self.name))
+      'Matching ReplicaSet for deployment {0:s} not found.'.format(self.name),
+      __name__)
 
   def _PodMatchLabels(self) -> Dict[str, str]:
     """Override of abstract method."""
