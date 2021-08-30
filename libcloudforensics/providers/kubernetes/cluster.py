@@ -77,7 +77,8 @@ class K8sCluster(base.K8sClient):
     return [base.K8sNode(self._api_client, node.metadata.name)
             for node in nodes.items]
 
-  def ListNetworkPolicies(self, namespace: Optional[str] = None):
+  def ListNetworkPolicies(
+      self, namespace: Optional[str] = None) -> List[netpol.K8sNetworkPolicy]:
     """List the network policies in a namespace of this cluster.
 
     Args:
