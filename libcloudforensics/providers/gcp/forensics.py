@@ -532,7 +532,7 @@ def QuarantineGKEWorkload(project_id: str,
 
   def DrainNodes():
     logger.info('Draining workload nodes from other pods...')
-    mitigation.DrainWorkloadNodesFromOtherPods(k8s_workload)
+    mitigation.DrainWorkloadNodesFromOtherPods(k8s_workload, cordon=False)
 
   def OrphanPods():
     logger.info(
@@ -546,30 +546,49 @@ def QuarantineGKEWorkload(project_id: str,
       InstanceNetworkQuarantine(project_id, node.name)
 
   prompt_sequence = prompts.PromptSequence(
+
+    prompts.YesNoPrompt(
+      prompts.PromptOption(
+        'Abandon nodes from managed instance group?',
+        AbandonNodes)
+    ),
+
+    prompts.YesNoPrompt(
+      prompts.PromptOption(
+        'Cordon nodes?',
+        CordonNodes)
+    ),
+
     # First prompt, ask about workload deletion
     prompts.MultiPrompt(
       options=[
         prompts.PromptOption(
           'Preserve evidence and delete workload?',
-          OrphanPods),
+          OrphanPods
+        ),
         prompts.PromptOption(
           'Preserve evidence and preserve workload?',
           # Pass an empty function
-          lambda: None)
+        )
       ]
     ),
+
     # Second prompt, ask about isolation strategy
     prompts.MultiPrompt(
       options=[
         prompts.PromptOption(
           'Isolate nodes?',
-          FirewallNodes),
+          FirewallNodes
+        ),
         prompts.PromptOption(
           'Isolate pods?',
-          IsolatePods),
+          IsolatePods
+        ),
         prompts.PromptOption(
           'Isolate nodes and pods?',
-          DrainNodes),
+          DrainNodes,
+          FirewallNodes
+        ),
       ]
     ),
   )

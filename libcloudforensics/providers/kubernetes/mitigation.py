@@ -17,16 +17,22 @@
 from libcloudforensics.providers.kubernetes import workloads, cluster
 
 
-def DrainWorkloadNodesFromOtherPods(workload: workloads.K8sWorkload) -> None:
-  """Drains a workload's nodes from pods that are not covered.
+def DrainWorkloadNodesFromOtherPods(workload: workloads.K8sWorkload,
+                                    cordon: bool = True) -> None:
+  """Drains a workload's nodes from non-workload pods.
 
   Args:
     workload (workloads.K8sWorkload): The workload for which nodes
       must be drained from pods that are not covered by the workload.
+    cordon (bool): Whether or not to cordon the nodes before draining, to
+      prevent pods from appearing on the nodes again as it will be marked as
+      unschedulable.
   """
   nodes = set(pod.GetNode() for pod in workload.GetCoveredPods())
+  if cordon:
+    for node in nodes:
+      node.Cordon()
   for node in nodes:
-    node.Cordon()
     node.Drain(lambda p: not workload.IsCoveringPod(p))
 
 def CreateDenyAllNetworkPolicyForWorkload(
