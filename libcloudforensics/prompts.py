@@ -161,7 +161,7 @@ class PromptSequence:
     """
     self._prompts = prompts
 
-  def Run(self):
+  def Run(self) -> None:
     """Presents the prompts of this sequence, and then executes them."""
     for prompt in self._prompts:
       prompt.Prompt()
