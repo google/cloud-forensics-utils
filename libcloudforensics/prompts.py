@@ -12,9 +12,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-""""""
+"""Classes for displaying prompts to a user and running their choices."""
 import abc
-from typing import List, Optional, Any, Callable
+from typing import List, Optional, Callable
 
 
 class PromptOption:
@@ -117,10 +117,7 @@ class MultiPrompt(Prompt):
 
   def SelectedOption(self) -> Optional[PromptOption]:
     """Override of abstract method."""
-    if self._selection == 0:
-      return None
-    else:
-      return self._options[self._selection - 1]
+    return None if self._selection == 0 else self._options[self._selection - 1]
 
 class YesNoPrompt(Prompt):
   """Class representing a prompt expecting a yes or no answer."""
