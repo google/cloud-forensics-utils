@@ -60,8 +60,29 @@ class GoogleCloudMonitoringTest(unittest.TestCase):
     services = mock_gcm_api.return_value.projects.return_value.timeSeries.return_value.list
     services.return_value.execute.return_value = gcp_mocks.MOCK_GCM_METRICS_CPU
     cpu_usage = gcp_mocks.FAKE_MONITORING.GetCpuUsage()
-    self.assertEqual(len(cpu_usage), 2)
-    self.assertIn('instance-a_0000000000000000000', cpu_usage)
-    self.assertEqual(
-        cpu_usage['instance-a_0000000000000000000'],
-        [('2021-01-01T00:00:00.000000Z', 0.100000000000000000)] * 24*7)
+    self.assertEqual(2, len(cpu_usage))
+    self.assertListEqual(cpu_usage,
+        [
+          {
+            'instance_name': 'instance-a',
+            'instance_id': '0000000000000000000',
+            'cpu_usage':
+              [
+                {
+                  'timestamp': '2021-01-01T00:00:00.000000Z',
+                  'cpu_usage': 0.1
+                }
+              ] * 24 * 7
+          },
+          {
+            'instance_name': 'instance-b',
+            'instance_id': '0000000000000000000',
+            'cpu_usage':
+              [
+                {
+                  'timestamp': '2021-01-01T00:00:00.000000Z',
+                  'cpu_usage': 0.1
+                }
+              ] * 24 * 7
+          }
+        ])
