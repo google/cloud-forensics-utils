@@ -399,16 +399,15 @@ class GoogleComputeInstanceTest(unittest.TestCase):
   @typing.no_type_check
   @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleComputeInstance.GetOperation')
   @mock.patch('libcloudforensics.providers.gcp.internal.common.GoogleCloudComputeClient.GceApi')
-  def testGetEffectiveFirewalls(self, mock_gce_api, mock_get_operation):
+  def testGetNormalisedFirewalls(self, mock_gce_api, mock_get_operation):
     """Tests that firewall rules are properly formatted"""
     mock_get_operation.return_value = {'networkInterfaces': gcp_mocks.MOCK_NETWORK_INTERFACES}
     mock_gce_api.return_value.instances.return_value.getEffectiveFirewalls.return_value.execute.return_value = gcp_mocks.MOCK_EFFECTIVE_FIREWALLS
-    effective_firewalls = gcp_mocks.FAKE_INSTANCE.GetEffectiveFirewalls()
+    normalised_firewalls = gcp_mocks.FAKE_INSTANCE.GetNormalisedFirewalls()
     self.assertListEqual(
-      effective_firewalls,
+      normalised_firewalls,
       [
         {
-          'instance_name': 'fake-instance',
           'interface_name': 'nic0',
           'firewalls': [
             {
