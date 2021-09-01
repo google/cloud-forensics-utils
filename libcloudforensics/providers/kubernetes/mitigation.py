@@ -17,8 +17,8 @@
 from libcloudforensics.providers.kubernetes import workloads, cluster
 
 
-def DrainWorkloadNodesFromOtherPods(workload: workloads.K8sWorkload,
-                                    cordon: bool = True) -> None:
+def DrainWorkloadNodesFromOtherPods(
+    workload: workloads.K8sWorkload, cordon: bool = True) -> None:
   """Drains a workload's nodes from non-workload pods.
 
   Args:
@@ -35,10 +35,9 @@ def DrainWorkloadNodesFromOtherPods(workload: workloads.K8sWorkload,
   for node in nodes:
     node.Drain(lambda p: not workload.IsCoveringPod(p))
 
+
 def CreateDenyAllNetworkPolicyForWorkload(
-    k8s_cluster: cluster.K8sCluster,
-    workload: workloads.K8sWorkload
-  ) -> None:
+    k8s_cluster: cluster.K8sCluster, workload: workloads.K8sWorkload) -> None:
   """Isolates a workload's pods via a deny all network policy.
 
   Args:

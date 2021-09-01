@@ -18,6 +18,7 @@ import abc
 from collections import defaultdict
 from typing import Dict
 
+
 class K8sSelector:
   """Class to build K8s API selectors."""
 

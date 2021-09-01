@@ -23,6 +23,7 @@ from libcloudforensics.providers.kubernetes import base, workloads, netpol
 logging_utils.SetUpLogger(__name__)
 logger = logging_utils.GetLogger(__name__)
 
+
 class K8sCluster(base.K8sClient):
   """Class representing a Kubernetes cluster."""
 
@@ -59,8 +60,10 @@ class K8sCluster(base.K8sClient):
 
     # Convert to node objects
     return [
-      base.K8sPod(self._api_client, pod.metadata.name, pod.metadata.namespace)
-      for pod in pods.items]
+        base.K8sPod(
+            self._api_client, pod.metadata.name, pod.metadata.namespace)
+        for pod in pods.items
+    ]
 
   def ListNodes(self) -> List[base.K8sNode]:
     """Lists the nodes of this cluster.
@@ -74,8 +77,10 @@ class K8sCluster(base.K8sClient):
     nodes = api.list_node()
 
     # Convert to node objects
-    return [base.K8sNode(self._api_client, node.metadata.name)
-            for node in nodes.items]
+    return [
+        base.K8sNode(self._api_client, node.metadata.name)
+        for node in nodes.items
+    ]
 
   def ListNetworkPolicies(
       self, namespace: Optional[str] = None) -> List[netpol.K8sNetworkPolicy]:
@@ -95,8 +100,9 @@ class K8sCluster(base.K8sClient):
     else:
       policies = api.list_network_policy_for_all_namespaces()
     return [
-      netpol.K8sNetworkPolicy(self._api_client, policy.name, policy.namespace)
-      for policy in policies
+        netpol.K8sNetworkPolicy(
+            self._api_client, policy.name, policy.namespace)
+        for policy in policies
     ]
 
   def __AuthorizationCheck(self) -> None:
@@ -107,25 +113,19 @@ class K8sCluster(base.K8sClient):
     """
     api = self._Api(client.AuthorizationV1Api)
     response = api.create_self_subject_access_review(
-      # Body from `kubectl auth can-i '*' '*' --all-namespaces`
-      {
-        'spec': {
-          'resourceAttributes': {
-            'verb': '*',
-            'resource': '*'
-          }
-        }
-      }
-    )
+        # Body from `kubectl auth can-i '*' '*' --all-namespaces`
+        {'spec': {
+            'resourceAttributes': {
+                'verb': '*', 'resource': '*'
+            }
+        }})
     if not response.status.allowed:
       logger.warning(
-        'This object\'s client is not authorized to perform all operations'
-        'on the Kubernetes cluster. API calls may fail.'
-      )
+          'This object\'s client is not authorized to perform all operations'
+          'on the Kubernetes cluster. API calls may fail.')
 
-  def GetDeployment(self,
-                    workload_id: str,
-                    namespace: str) -> workloads.K8sDeployment:
+  def GetDeployment(
+      self, workload_id: str, namespace: str) -> workloads.K8sDeployment:
     """Gets a deployment from the cluster.
 
     Args:
@@ -137,8 +137,8 @@ class K8sCluster(base.K8sClient):
     """
     return workloads.K8sDeployment(self._api_client, workload_id, namespace)
 
-  def DenyAllNetworkPolicy(self,
-                           namespace: str) -> netpol.K8sDenyAllNetworkPolicy:
+  def DenyAllNetworkPolicy(
+      self, namespace: str) -> netpol.K8sDenyAllNetworkPolicy:
     """Gets a deny-all network policy for the cluster.
 
     Note that the returned policy is not created when using this method. It can

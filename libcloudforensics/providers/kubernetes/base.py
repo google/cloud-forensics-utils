@@ -93,8 +93,8 @@ class K8sNamespacedResource(K8sResource, metaclass=abc.ABCMeta):
     namespace (str): The Kubernetes namespace in which this resource resides.
   """
 
-  def __init__(self, api_client: client.ApiClient, name: str,
-               namespace: str) -> None:
+  def __init__(
+      self, api_client: client.ApiClient, name: str, namespace: str) -> None:
     """Creates a Kubernetes resource in the given namespace.
 
     Args:
@@ -136,11 +136,7 @@ class K8sNode(K8sResource):
     api = self._Api(client.CoreV1Api)
     # Create the body as per the API call to PATCH in
     # `kubectl cordon NODE_NAME`
-    body = {
-      'spec': {
-        'unschedulable': True
-      }
-    }
+    body = {'spec': {'unschedulable': True}}
     # Cordon the node with the PATCH verb
     api.patch_node(self.name, body)
 
@@ -171,22 +167,21 @@ class K8sNode(K8sResource):
     # The pods must be running, and must be on this node. The selectors here
     # are as per the API calls in `kubectl describe node NODE_NAME`.
     running_on_node_selector = selector.K8sSelector(
-      selector.K8sSelector.Node(self.name),
-      selector.K8sSelector.Running(),
+        selector.K8sSelector.Node(self.name),
+        selector.K8sSelector.Running(),
     )
 
     if namespace is not None:
       pods = api.list_namespaced_pod(
-        namespace,
-        **running_on_node_selector.ToKeywords()
-      )
+          namespace, **running_on_node_selector.ToKeywords())
     else:
       pods = api.list_pod_for_all_namespaces(
-        **running_on_node_selector.ToKeywords()
-      )
+          **running_on_node_selector.ToKeywords())
 
-    return [K8sPod(self._api_client, pod.metadata.name, pod.metadata.namespace)
-            for pod in pods.items]
+    return [
+        K8sPod(self._api_client, pod.metadata.name, pod.metadata.namespace)
+        for pod in pods.items
+    ]
 
 
 class K8sPod(K8sNamespacedResource):

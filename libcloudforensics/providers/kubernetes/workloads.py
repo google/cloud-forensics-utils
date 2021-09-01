@@ -39,10 +39,7 @@ class K8sWorkload(base.K8sNamespacedResource, metaclass=abc.ABCMeta):
     """
 
   @abc.abstractmethod
-  def Read(self) -> Union[
-    client.V1Deployment,
-    client.V1ReplicaSet,
-  ]:
+  def Read(self) -> Union[client.V1Deployment, client.V1ReplicaSet,]:
     """Override of abstract method."""  # Narrows down type hint
 
   @abc.abstractmethod
@@ -74,8 +71,9 @@ class K8sWorkload(base.K8sNamespacedResource, metaclass=abc.ABCMeta):
     read = self.Read()
 
     if read.spec.selector.match_expressions is not None:
-      raise NotImplementedError('matchExpressions exist, meaning using '
-                                'matchLabels will be inaccurate.')
+      raise NotImplementedError(
+          'matchExpressions exist, meaning using '
+          'matchLabels will be inaccurate.')
 
     match_labels = read.spec.selector.match_labels  # type: Dict[str, str]
     return match_labels
@@ -89,17 +87,16 @@ class K8sWorkload(base.K8sNamespacedResource, metaclass=abc.ABCMeta):
     api = self._Api(client.CoreV1Api)
 
     labels_selector = selector.K8sSelector.FromLabelsDict(
-      self._PodMatchLabels()
-    )
+        self._PodMatchLabels())
 
     pods = api.list_namespaced_pod(
-      self.namespace,
-      **labels_selector.ToKeywords()
-    )
+        self.namespace, **labels_selector.ToKeywords())
 
     return [
-      base.K8sPod(self._api_client, pod.metadata.name, pod.metadata.namespace)
-      for pod in pods.items]
+        base.K8sPod(
+            self._api_client, pod.metadata.name, pod.metadata.namespace)
+        for pod in pods.items
+    ]
 
   def IsCoveringPod(self, pod: base.K8sPod) -> bool:
     """Determines whether a pod is covered by this workload.
@@ -121,21 +118,23 @@ class K8sWorkload(base.K8sNamespacedResource, metaclass=abc.ABCMeta):
         return False
     return True
 
+
 class K8sDeployment(K8sWorkload):
   """Class representing a Kubernetes deployment."""
 
   def AddTemplateLabels(self, labels: Dict[str, str]) -> None:
     """Override of abstract method."""
     api = self._Api(client.AppsV1Api)
-    api.patch_namespaced_deployment(self.name, self.namespace, body={
-      'spec': {
-        'template': {
-          'metadata': {
-            'labels': labels
-          }
-        }
-      }
-    })
+    api.patch_namespaced_deployment(
+        self.name,
+        self.namespace,
+        body={'spec': {
+            'template': {
+                'metadata': {
+                    'labels': labels
+                }
+            }
+        }})
 
   def OrphanPods(self) -> None:
     """Override of abstract method.
@@ -152,9 +151,8 @@ class K8sDeployment(K8sWorkload):
     if cascade:
       api.delete_namespaced_deployment(self.name, self.namespace)
     else:
-      api.delete_namespaced_deployment(self.name, self.namespace, body={
-        'propagationPolicy': 'Orphan'
-      })
+      api.delete_namespaced_deployment(
+          self.name, self.namespace, body={'propagationPolicy': 'Orphan'})
 
   def Read(self) -> client.V1Deployment:
     """Override of abstract method."""
@@ -171,13 +169,10 @@ class K8sDeployment(K8sWorkload):
     # The matching ReplicaSet will have labels corresponding to this
     # deployment's matchLabels.
     replica_sets_selector = selector.K8sSelector.FromLabelsDict(
-      self.MatchLabels()
-    )
+        self.MatchLabels())
 
     replica_sets = self._Api(client.AppsV1Api).list_namespaced_replica_set(
-      self.namespace,
-      **replica_sets_selector.ToKeywords()
-    ).items
+        self.namespace, **replica_sets_selector.ToKeywords()).items
 
     this_template_spec = self.Read().spec.template
     for replica_set in replica_sets:
@@ -187,14 +182,14 @@ class K8sDeployment(K8sWorkload):
       del rs_template_spec.metadata.labels['pod-template-hash']
       if rs_template_spec == this_template_spec:
         return K8sReplicaSet(
-          self._api_client,
-          replica_set.metadata.name,
-          replica_set.metadata.namespace,
+            self._api_client,
+            replica_set.metadata.name,
+            replica_set.metadata.namespace,
         )
 
     raise errors.ResourceNotFoundError(
-      'Matching ReplicaSet for deployment {0:s} not found.'.format(self.name),
-      __name__)
+        'Matching ReplicaSet for deployment {0:s} not found.'.format(self.name),
+        __name__)
 
   def _PodMatchLabels(self) -> Dict[str, str]:
     """Override of abstract method."""
@@ -207,15 +202,16 @@ class K8sReplicaSet(K8sWorkload):
   def AddTemplateLabels(self, labels: Dict[str, str]) -> None:
     """Override of abstract method."""
     api = self._Api(client.AppsV1Api)
-    api.patch_namespaced_replica_set(self.name, self.namespace, body={
-      'spec': {
-        'template': {
-          'metadata': {
-            'labels': labels
-          }
-        }
-      }
-    })
+    api.patch_namespaced_replica_set(
+        self.name,
+        self.namespace,
+        body={'spec': {
+            'template': {
+                'metadata': {
+                    'labels': labels
+                }
+            }
+        }})
 
   def OrphanPods(self) -> None:
     """Override of abstract method."""
@@ -227,9 +223,8 @@ class K8sReplicaSet(K8sWorkload):
     if cascade:
       api.delete_namespaced_replica_set(self.name, self.namespace)
     else:
-      api.delete_namespaced_replica_set(self.name, self.namespace, body={
-        'propagationPolicy': 'Orphan'
-      })
+      api.delete_namespaced_replica_set(
+          self.name, self.namespace, body={'propagationPolicy': 'Orphan'})
 
   def _PodMatchLabels(self) -> Dict[str, str]:
     """Override of abstract method."""

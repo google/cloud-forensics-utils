@@ -36,6 +36,7 @@ class K8sNetworkPolicy(base.K8sNamespacedResource):
     api = self._Api(client.NetworkingV1Api)
     return api.read_namespaced_network_policy(self.name, self.namespace)
 
+
 class K8sNetworkPolicyWithSpec(K8sNetworkPolicy, metaclass=abc.ABCMeta):
   """Class representing a Kubernetes NetworkPolicy with an underlying spec.
 
@@ -62,6 +63,7 @@ class K8sNetworkPolicyWithSpec(K8sNetworkPolicy, metaclass=abc.ABCMeta):
     """Creates this network policy via the Kubernetes API."""
     api = self._Api(client.NetworkingV1Api)
     api.create_namespaced_network_policy(self.namespace, self._policy)
+
 
 class K8sDenyAllNetworkPolicy(K8sNetworkPolicyWithSpec):
   """Class representing a deny-all NetworkPolicy.
@@ -97,9 +99,8 @@ class K8sDenyAllNetworkPolicy(K8sNetworkPolicyWithSpec):
   def _spec(self) -> client.V1NetworkPolicySpec:
     """Override of abstract property."""
     return client.V1NetworkPolicySpec(
-      pod_selector=client.V1LabelSelector(match_labels=self.labels),
-      policy_types=[
-        'Ingress',
-        'Egress',
-      ]
-    )
+        pod_selector=client.V1LabelSelector(match_labels=self.labels),
+        policy_types=[
+            'Ingress',
+            'Egress',
+        ])
