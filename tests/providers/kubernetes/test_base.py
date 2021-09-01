@@ -19,7 +19,8 @@ import unittest
 
 import mock
 
-from libcloudforensics.providers.kubernetes import base, cluster
+from libcloudforensics.providers.kubernetes import base
+from libcloudforensics.providers.kubernetes import cluster
 from tests.providers.kubernetes import k8s_mocks
 
 

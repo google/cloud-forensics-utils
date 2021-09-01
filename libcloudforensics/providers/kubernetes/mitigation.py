@@ -14,7 +14,8 @@
 # limitations under the License.
 """Mitigation functions to be used in end-to-end functionality."""
 
-from libcloudforensics.providers.kubernetes import workloads, cluster
+from libcloudforensics.providers.kubernetes import cluster
+from libcloudforensics.providers.kubernetes import workloads
 
 
 def DrainWorkloadNodesFromOtherPods(

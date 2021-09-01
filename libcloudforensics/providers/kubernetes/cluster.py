@@ -18,7 +18,9 @@ from typing import Optional, List
 from kubernetes import client
 
 from libcloudforensics import logging_utils
-from libcloudforensics.providers.kubernetes import base, workloads, netpol
+from libcloudforensics.providers.kubernetes import base
+from libcloudforensics.providers.kubernetes import netpol
+from libcloudforensics.providers.kubernetes import workloads
 
 logging_utils.SetUpLogger(__name__)
 logger = logging_utils.GetLogger(__name__)
