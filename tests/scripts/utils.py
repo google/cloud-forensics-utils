@@ -40,7 +40,7 @@ def ReadProjectInfo(keys: List[str]) -> Dict[str, str]:
         '"PROJECT_INFO" environment variable pointing '
         'to your project settings.')
   try:
-    with open(project_info_path) as json_file:
+    with open(project_info_path, encoding='utf-8') as json_file:
       try:
         project_info = json.load(json_file)  # type: Dict[str, str]
       except ValueError as exception:

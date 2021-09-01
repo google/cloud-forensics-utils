@@ -857,7 +857,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
   def _SshConnection(self) -> None:
     """Create an SSH connection to the virtual machine."""
 
-    with open(os.devnull, 'w') as devnull:
+    with open(os.devnull, 'w', encoding='utf-8') as devnull:
       cmd_list = ['gcloud',
                   'compute',
                   '--project',

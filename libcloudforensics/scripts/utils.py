@@ -50,7 +50,7 @@ def ReadStartupScript(filename: Optional[str] = '') -> str:
       script_path = os.path.join(
           os.path.dirname(os.path.realpath(__file__)),
           filename or FORENSICS_STARTUP_SCRIPT)
-    with open(script_path) as startup_script:
+    with open(script_path, encoding='utf-8') as startup_script:
       return startup_script.read()
   except OSError as exception:
     raise OSError(

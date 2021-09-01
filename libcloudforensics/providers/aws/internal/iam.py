@@ -338,7 +338,7 @@ def ReadPolicyDoc(filename: str) -> str:
   try:
     policy_path = os.path.join(
         os.path.dirname(os.path.realpath(__file__)), IAM_POLICY_DIR, filename)
-    with open(policy_path) as policy_doc:
+    with open(policy_path, encoding='utf-8') as policy_doc:
       return policy_doc.read()
   except OSError as exception:
     raise OSError(
