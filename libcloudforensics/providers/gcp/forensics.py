@@ -508,27 +508,27 @@ def QuarantineGKEWorkload(project_id: str,
   def CordonNodes() -> None:
     for node in compromised_nodes:
       logger.info(
-        'Cordoning Kubernetes node {0:s} from {1:s} '
-        'deployment...'.format(node, k8s_workload.name))
+          'Cordoning Kubernetes node {0:s} from {1:s} '
+          'deployment...'.format(node, k8s_workload.name))
       node.Cordon()
 
   def AbandonNodes() -> None:
     for node in compromised_nodes:
       if node.name in groups_by_instance:
         logger.info(
-          'Abandoning instance {0:s} from respective managed instance '
-          'group...'.format(node.name))
+            'Abandoning instance {0:s} from respective managed instance '
+            'group...'.format(node.name))
         instance = compute_project.GetInstance(node.name)
         instance.AbandonFromMIG(groups_by_instance[instance.name])
       else:
         logger.warning(
-          'Could not abandon {0:s} from respective managed instance '
-          'group, parent managed instance group not found.'.format(node.name))
+            'Could not abandon {0:s} from respective managed instance '
+            'group, parent managed instance group not found.'.format(node.name))
 
   def IsolatePods() -> None:
     logger.info(
-      'Creating deny-all NetworkPolicy for {0:s} '
-      'workload...'.format(workload_id))
+        'Creating deny-all NetworkPolicy for {0:s} '
+        'workload...'.format(workload_id))
     mitigation.CreateDenyAllNetworkPolicyForWorkload(k8s_cluster, k8s_workload)
 
   def DrainNodes() -> None:
@@ -537,61 +537,45 @@ def QuarantineGKEWorkload(project_id: str,
 
   def OrphanPods() -> None:
     logger.info(
-      'Orphaning Kubernetes workload {0:s}\'s pods...'.format(workload_id))
+        'Orphaning Kubernetes workload {0:s}\'s pods...'.format(workload_id))
     k8s_workload.OrphanPods()
 
   def FirewallNodes() -> None:
     for node in compromised_nodes:
       logger.info(
-        'Putting instance {0:s} into network quarantine...'.format(workload_id))
+          'Putting instance {0:s} into network quarantine...'.format(
+              workload_id))
       InstanceNetworkQuarantine(project_id, node.name)
 
   prompt_sequence = prompts.PromptSequence(
 
-    prompts.YesNoPrompt(
-      prompts.PromptOption(
-        'Abandon nodes from managed instance group?',
-        AbandonNodes)
-    ),
+      # Preparation prompt, ask about MIG abandonment
+      prompts.YesNoPrompt(
+          prompts.PromptOption(
+              'Abandon nodes from managed instance group?', AbandonNodes)),
 
-    prompts.YesNoPrompt(
-      prompts.PromptOption(
-        'Cordon nodes?',
-        CordonNodes)
-    ),
+      # Preparation prompt, ask about marking nodes as unschedulable
+      prompts.YesNoPrompt(prompts.PromptOption('Cordon nodes?', CordonNodes)),
 
-    # First prompt, ask about workload deletion
-    prompts.MultiPrompt(
-      options=[
-        prompts.PromptOption(
-          'Preserve evidence and delete workload?',
-          OrphanPods
-        ),
-        prompts.PromptOption(
-          'Preserve evidence and preserve workload?',
-          # Pass an empty function
-        )
-      ]
-    ),
+      # First prompt, ask about workload deletion
+      prompts.MultiPrompt(
+          options=[
+              prompts.PromptOption(
+                  'Preserve evidence and delete workload?', OrphanPods),
+              prompts.PromptOption(
+                  'Preserve evidence and preserve workload?',
+                  # Pass an empty function
+              )
+          ]),
 
-    # Second prompt, ask about isolation strategy
-    prompts.MultiPrompt(
-      options=[
-        prompts.PromptOption(
-          'Isolate nodes?',
-          FirewallNodes
-        ),
-        prompts.PromptOption(
-          'Isolate pods?',
-          IsolatePods
-        ),
-        prompts.PromptOption(
-          'Isolate nodes and pods?',
-          DrainNodes,
-          FirewallNodes
-        ),
-      ]
-    ),
+      # Second prompt, ask about isolation strategy
+      prompts.MultiPrompt(
+          options=[
+              prompts.PromptOption('Isolate nodes?', FirewallNodes),
+              prompts.PromptOption('Isolate pods?', IsolatePods),
+              prompts.PromptOption(
+                  'Isolate nodes and pods?', DrainNodes, FirewallNodes),
+          ]),
   )
 
   prompt_sequence.Run()
