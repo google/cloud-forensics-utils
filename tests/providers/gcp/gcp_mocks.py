@@ -578,7 +578,7 @@ MOCK_GCM_METRICS_CPU = {
             'resource': {
                 'type': 'gce_instance',
                 'labels': {
-                'instance_id': '0000000000000000002',
+                    'instance_id': '0000000000000000002',
                     'zone': 'us-central1-a',
                     'project_id': 'fake-project'
                 }
