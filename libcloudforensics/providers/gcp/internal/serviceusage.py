@@ -14,7 +14,7 @@
 # limitations under the License.
 """Google Service Usage functionality."""
 
-from typing import TYPE_CHECKING, Optional, List, Any
+from typing import TYPE_CHECKING, List, Any
 from libcloudforensics.providers.gcp.internal import common
 
 if TYPE_CHECKING:
@@ -30,11 +30,11 @@ class GoogleServiceUsage:
 
   SERVICE_USAGE_API_VERSION = 'v1'
 
-  def __init__(self, project_id: Optional[str] = None) -> None:
+  def __init__(self, project_id: str) -> None:
     """Initialize the GoogleServiceUsage object.
 
     Args:
-      project_id (str): Optional. Google Cloud project ID.
+      project_id (str): Google Cloud project ID.
     """
 
     self.project_id = project_id

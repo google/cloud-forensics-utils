@@ -14,7 +14,7 @@
 # limitations under the License.
 """Google Cloud Resource Manager functionality."""
 
-from typing import TYPE_CHECKING, Optional, Dict, List, Any
+from typing import TYPE_CHECKING, Dict, List, Any
 from libcloudforensics.providers.gcp.internal import common
 
 if TYPE_CHECKING:
@@ -31,11 +31,11 @@ class GoogleCloudResourceManager:
   RESOURCE_MANAGER_API_VERSION = 'v3'
   RESOURCE_TYPES = ['projects', 'folders', 'organizations']
 
-  def __init__(self, project_id: Optional[str] = None) -> None:
+  def __init__(self, project_id: str) -> None:
     """Initialize the GoogleCloudResourceManager object.
 
     Args:
-      project_id (str): Optional. Google Cloud project ID.
+      project_id (str): Google Cloud project ID.
     """
 
     self.project_id = project_id
