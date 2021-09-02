@@ -68,8 +68,7 @@ class GoogleCloudResourceManagerTest(unittest.TestCase):
         [gcp_mocks.MOCK_CLOUD_RESOURCE_FOLDER],
         [gcp_mocks.MOCK_CLOUD_RESOURCE_ORGANIZATION]
     ]
-    response = gcp_mocks.FAKE_CLOUD_RESOURCE_MANAGER.ProjectAncestry(
-        '000000000000')
+    response = gcp_mocks.FAKE_CLOUD_RESOURCE_MANAGER.ProjectAncestry()
     self.assertListEqual(response,
         [
           {

@@ -25,7 +25,7 @@ from libcloudforensics.providers.gcp.internal import monitoring as gcp_monitorin
 from libcloudforensics.providers.gcp.internal import storage as gcp_storage
 from libcloudforensics.providers.gcp.internal import storagetransfer as gcp_storagetransfer
 from libcloudforensics.providers.gcp.internal import cloudsql as gcp_cloudsql
-from libcloudforensics.providers.gcp.internal import cloudresourcemanager as gcp_resourcmanager
+from libcloudforensics.providers.gcp.internal import cloudresourcemanager as gcp_resourcemanager
 from libcloudforensics.providers.gcp.internal import serviceusage as gcp_serviceusage
 # pylint: enable=line-too-long
 
@@ -85,8 +85,8 @@ FAKE_GCST = gcp_storagetransfer.GoogleCloudStorageTransfer('fake-target-project'
 FAKE_GCB = gcp_build.GoogleCloudBuild('fake-target-project')
 FAKE_MONITORING = gcp_monitoring.GoogleCloudMonitoring('fake-target-project')
 FAKE_CLOUDSQLINSTANCE = gcp_cloudsql.GoogleCloudSQL('fake-target-project')
-FAKE_CLOUD_RESOURCE_MANAGER = gcp_resourcmanager.GoogleCloudResourceManager()
-FAKE_SERVICE_USAGE = gcp_serviceusage.GoogleServiceUsage()
+FAKE_CLOUD_RESOURCE_MANAGER = gcp_resourcemanager.GoogleCloudResourceManager('fake-project')
+FAKE_SERVICE_USAGE = gcp_serviceusage.GoogleServiceUsage('fake-project')
 # pylint: enable=line-too-long
 
 # Mock struct to mimic GCP's API responses

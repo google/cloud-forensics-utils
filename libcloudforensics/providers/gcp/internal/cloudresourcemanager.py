@@ -14,7 +14,7 @@
 # limitations under the License.
 """Google Cloud Resource Manager functionality."""
 
-from typing import TYPE_CHECKING, Dict, List, Any
+from typing import TYPE_CHECKING, Optional, Dict, List, Any
 from libcloudforensics.providers.gcp.internal import common
 
 if TYPE_CHECKING:
@@ -22,10 +22,23 @@ if TYPE_CHECKING:
 
 
 class GoogleCloudResourceManager:
-  """Class to call the Google Cloud Resource Manager API."""
+  """Class to call the Google Cloud Resource Manager API.
+
+  Attributes:
+    project_id: Google Cloud project ID.
+  """
 
   RESOURCE_MANAGER_API_VERSION = 'v3'
   RESOURCE_TYPES = ['projects', 'folders', 'organizations']
+
+  def __init__(self, project_id: Optional[str] = None) -> None:
+    """Initialize the GoogleCloudResourceManager object.
+
+    Args:
+      project_id (str): Optional. Google Cloud project ID.
+    """
+
+    self.project_id = project_id
 
   def GrmApi(self) -> 'googleapiclient.discovery.Resource':
     """Get a Resource Manager service object.
@@ -38,18 +51,15 @@ class GoogleCloudResourceManager:
     return common.CreateService(
         'cloudresourcemanager', self.RESOURCE_MANAGER_API_VERSION)
 
-  def ProjectAncestry(self, project_number: str) -> List[Any]:
+  def ProjectAncestry(self) -> List[Any]:
     """List ancestor resources for a project.
-
-    Args:
-      project_number (str): The project number to list ancestry for.
 
     Returns:
       List[Any]: the list of ancestor resources.
     """
 
     ancestry = []
-    current_resource = self.GetResource('projects/' + project_number)
+    current_resource = self.GetResource('projects/' + self.project_id)
     ancestry.append(current_resource)
 
     while 'parent' in current_resource:
