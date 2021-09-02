@@ -22,9 +22,22 @@ if TYPE_CHECKING:
 
 
 class GoogleServiceUsage:
-  """Class to call the Google Cloud Service Usage API."""
+  """Class to call the Google Cloud Service Usage API.
+
+  Attributes:
+    project_id: Google Cloud project ID.
+  """
 
   SERVICE_USAGE_API_VERSION = 'v1'
+
+  def __init__(self, project_id: str) -> None:
+    """Initialize the GoogleServiceUsage object.
+
+    Args:
+      project_id (str): Google Cloud project ID.
+    """
+
+    self.project_id = project_id
 
   def GsuApi(self) -> 'googleapiclient.discovery.Resource':
     """Get a Service Usage service object.
@@ -36,18 +49,15 @@ class GoogleServiceUsage:
     return common.CreateService(
         'serviceusage', self.SERVICE_USAGE_API_VERSION)
 
-  def GetEnabled(self, project_number: str) -> List[Any]:
+  def GetEnabled(self) -> List[Any]:
     """Get enabled services/APIs for a project.
-
-    Args:
-      project_number (str): The project_number to fetch enabled APIs for.
 
     Returns:
       List[Any]: A list of enabled services/APIs.
     """
 
     services_client = self.GsuApi().services() # pylint: disable=no-member
-    parent = 'projects/' + project_number
+    parent = 'projects/' + self.project_id
     request = {'parent': parent, 'filter': 'state:ENABLED'}
     responses = common.ExecuteRequest(services_client, 'list', request)
 
@@ -58,28 +68,26 @@ class GoogleServiceUsage:
 
     return services
 
-  def EnableService(self, project_number: str, service_name: str) -> None:
+  def EnableService(self, service_name: str) -> None:
     """Enable a service/API for a project.
 
     Args:
-      project_number (str): The project_number to enable the service for.
       service_name (str): The service to enable.
     """
 
     services_client = self.GsuApi().services() # pylint: disable=no-member
-    name = 'projects/' + project_number + '/services/' + service_name
+    name = 'projects/' + self.project_id + '/services/' + service_name
     request = {'name': name}
     common.ExecuteRequest(services_client, 'enable', request)
 
-  def DisableService(self, project_number: str, service_name: str) -> None:
+  def DisableService(self, service_name: str) -> None:
     """Disable a service/API for a project.
 
     Args:
-      project_number (str): The project_number to disable the service for.
       service_name (str): The service to disable.
     """
 
     services_client = self.GsuApi().services() # pylint: disable=no-member
-    name = 'projects/' + project_number + '/services/' + service_name
+    name = 'projects/' + self.project_id + '/services/' + service_name
     request = {'name': name}
     common.ExecuteRequest(services_client, 'disable', request)

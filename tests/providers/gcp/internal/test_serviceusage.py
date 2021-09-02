@@ -32,10 +32,10 @@ class GoogleServiceUsageTest(unittest.TestCase):
     """Validates the GetEnabled function"""
     mock_execute_request.return_value = gcp_mocks.MOCK_ENABLED_SERVICES
     mock_service_usage = mock_gsu_api.return_value.services.return_value
-    response = gcp_mocks.FAKE_SERVICE_USAGE.GetEnabled('000000000000')
+    response = gcp_mocks.FAKE_SERVICE_USAGE.GetEnabled()
 
     mock_execute_request.assert_called_with(mock_service_usage,
-        'list', {'parent': 'projects/000000000000', 'filter': 'state:ENABLED'})
+        'list', {'parent': 'projects/fake-project', 'filter': 'state:ENABLED'})
 
     self.assertListEqual(response, [
         'bigquery.googleapis.com',
@@ -50,11 +50,10 @@ class GoogleServiceUsageTest(unittest.TestCase):
     """Validates that EnableService calls ExecuteRequest with the correct
     arguments."""
     mock_service_usage = mock_gsu_api.return_value.services.return_value
-    gcp_mocks.FAKE_SERVICE_USAGE.EnableService(
-        '000000000000','container.googleapis.com')
+    gcp_mocks.FAKE_SERVICE_USAGE.EnableService('container.googleapis.com')
 
     mock_execute_request.assert_called_with(mock_service_usage, 'enable',
-        {'name': 'projects/000000000000/services/container.googleapis.com'})
+        {'name': 'projects/fake-project/services/container.googleapis.com'})
 
   @typing.no_type_check
   @mock.patch('libcloudforensics.providers.gcp.internal.common.ExecuteRequest')
@@ -63,8 +62,7 @@ class GoogleServiceUsageTest(unittest.TestCase):
     """Validates that DisableService calls ExecuteRequest with the correct
     arguments."""
     mock_service_usage = mock_gsu_api.return_value.services.return_value
-    gcp_mocks.FAKE_SERVICE_USAGE.DisableService(
-        '000000000000','container.googleapis.com')
+    gcp_mocks.FAKE_SERVICE_USAGE.DisableService('container.googleapis.com')
 
     mock_execute_request.assert_called_with(mock_service_usage, 'disable',
-        {'name': 'projects/000000000000/services/container.googleapis.com'})
+        {'name': 'projects/fake-project/services/container.googleapis.com'})
