@@ -137,8 +137,7 @@ class GkeCluster(GoogleKubernetesEngine):
     """Get GKE API operation object for the GKE resource.
 
     Returns:
-      Dict[str, Any]: GKE API response to 'get' operation for this
-        cluster.
+      Dict[str, Any]: GKE API response to 'get' operation for this cluster.
     """
     clusters = self.GkeApi().projects().locations().clusters()  # pylint: disable=no-member
     request = clusters.get(name=self.name)
@@ -150,6 +149,6 @@ class GkeCluster(GoogleKubernetesEngine):
 
     Returns:
       cluster.K8sCluster: The Kubernetes cluster matching this GKE cluster,
-        exposing methods to call the Kubernetes API.
+          exposing methods to call the Kubernetes API.
     """
     return cluster.K8sCluster(self._GetK8sApiClient())

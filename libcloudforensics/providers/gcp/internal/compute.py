@@ -142,7 +142,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
 
     Returns:
       Dict[str, str]: A mapping from instance names to their managed instance
-        group.
+          group.
     """
     groups = self.ListMIGS(zone)
     groups_by_instance = {}
@@ -164,7 +164,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
 
     Returns:
       Dict[str, List[GoogleComputeInstance]]: A mapping from managed instance
-        groups to their managed GCE instances.
+          groups to their managed GCE instances.
     """
     groups_client = self.GceApi().instanceGroupManagers()
     responses = common.ExecuteRequest(groups_client, 'list', {
@@ -191,7 +191,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
 
     Returns:
       List[GoogleComputeInstance]: List of GCE instances managed by the
-        managed instance group.
+          managed instance group.
     """
     groups_client = self.GceApi().instanceGroupManagers()
     responses = common.ExecuteRequest(groups_client, 'listManagedInstances', {

@@ -24,10 +24,10 @@ def DrainWorkloadNodesFromOtherPods(
 
   Args:
     workload (workloads.K8sWorkload): The workload for which nodes
-      must be drained from pods that are not covered by the workload.
+        must be drained from pods that are not covered by the workload.
     cordon (bool): Whether or not to cordon the nodes before draining, to
-      prevent pods from appearing on the nodes again as it will be marked as
-      unschedulable.
+        prevent pods from appearing on the nodes again as it will be marked as
+        unschedulable.
   """
   nodes = set(pod.GetNode() for pod in workload.GetCoveredPods())
   if cordon:
@@ -43,10 +43,10 @@ def CreateDenyAllNetworkPolicyForWorkload(
 
   Args:
     k8s_cluster (cluster.K8sCluster): The cluster in which to create the deny
-      all policy, and subsequently patch existing policies
+        all policy, and subsequently patch existing policies
     workload (workloads.K8sWorkload): The workload in whose namespace the
-      deny all network policy will be created, and whose pods will be tagged
-      to be selected by the deny all network policy.
+        deny all network policy will be created, and whose pods will be tagged
+        to be selected by the deny all network policy.
   """
   # TODO: Check that network policies are enabled
   # First create the NetworkPolicy in the workload's namespace

@@ -30,7 +30,7 @@ class PromptOption:
     Args:
       text (str): The text to be displayed for this prompt option.
       functions (Callable[[], Any]): The underlying functions of this prompt
-        option to called upon execution
+          option to called upon execution
     """
     self._text = text
     self._functions = functions
@@ -50,7 +50,7 @@ class Prompt(abc.ABC):
 
   Attributes:
     execution_order (int): A number allowing to specify the priority of this
-      prompt, for use in other classes (see PromptSequence).
+        prompt, for use in other classes (see PromptSequence).
   """
 
   def __init__(self, execution_order: int) -> None:
@@ -58,7 +58,7 @@ class Prompt(abc.ABC):
 
     Args:
       execution_order (int): A number allowing to specify the priority for this
-        prompt's execution, for use in other classes.
+          prompt's execution, for use in other classes.
     """
     self._execution_order = execution_order
 
@@ -77,9 +77,9 @@ class Prompt(abc.ABC):
 
     Returns:
       PromptOption: Optional. The PromptOption that the user selected. This may
-        be None if this user has not yet been prompted, or if the user the user
-        did not pick an option when prompted.
-      """
+          be None if this user has not yet been prompted, or if the user the
+          user did not pick an option when prompted.
+    """
 
 
 class MultiPrompt(Prompt):
@@ -92,9 +92,9 @@ class MultiPrompt(Prompt):
 
     Args:
       options (List[PromptOption]): The list of prompt options to be displayed
-        to the user when this prompt is called.
+          to the user when this prompt is called.
       execution_order (int): The execution priority of this prompt.
-      """
+    """
     if not options:
       raise ValueError('Expected a non-empty list for options.')
     super().__init__(execution_order)
@@ -127,7 +127,7 @@ class YesNoPrompt(Prompt):
 
     Args:
       option (PromptOption): The option to display to the user, to which they
-        will respond either yes or no.
+          will respond either yes or no.
       execution_order (int): The execution priority of this prompt.
     """
     super().__init__(execution_order)
@@ -156,8 +156,8 @@ class PromptSequence:
 
     Args:
       prompts (Prompt): The list of prompts to present to the user. The
-        prompting order is specified by the order of these arguments, the
-        execution order is determined by the execution_order attribute.
+          prompting order is specified by the order of these arguments, the
+          execution order is determined by the execution_order attribute.
     """
     self._prompts = prompts
 

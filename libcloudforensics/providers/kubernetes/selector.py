@@ -94,7 +94,7 @@ class K8sSelector:
 
     Returns:
       Dict[str, str]: The keyword arguments to be passed to a Kubernetes
-        API call.
+          API call.
     """
     keywords = defaultdict(list)
     for selector in self._selectors:

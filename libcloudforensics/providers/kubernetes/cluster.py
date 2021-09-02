@@ -50,7 +50,7 @@ class K8sCluster(base.K8sClient):
 
     Returns:
       List[base.K8sPod]: The list of pods for the namespace, or in all
-        namespaces if none is specified.
+          namespaces if none is specified.
     """
     api = self._Api(client.CoreV1Api)
 
@@ -90,8 +90,8 @@ class K8sCluster(base.K8sClient):
 
     Args:
       namespace (str): Optional. The namespace in which to list network
-        policies. If unspecified, it returns network policies in all namespaces
-        of this cluster.
+          policies. If unspecified, it returns network policies in all
+          namespaces of this cluster.
 
     Returns:
       List[netpol.K8sNetworkPolicy]: The list of network policies.
@@ -151,6 +151,6 @@ class K8sCluster(base.K8sClient):
 
     Returns:
       netpol.K8sDenyAllNetworkPolicy: The matching network policy object. Call
-        the creation method on the object to create the policy.
+          the creation method on the object to create the policy.
     """
     return netpol.K8sDenyAllNetworkPolicy(self._api_client, namespace)

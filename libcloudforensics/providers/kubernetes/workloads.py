@@ -66,7 +66,7 @@ class K8sWorkload(base.K8sNamespacedResource, metaclass=abc.ABCMeta):
 
     Raises:
       NotImplementedError: If matchExpressions exist, in which case using the
-        matchLabels will be inaccurate.
+          matchLabels will be inaccurate.
     """
     read = self.Read()
 

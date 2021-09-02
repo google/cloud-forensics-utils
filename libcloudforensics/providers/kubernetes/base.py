@@ -32,7 +32,7 @@ class K8sClient(metaclass=abc.ABCMeta):
 
     Args:
       api_client (client.ApiClient): The Kubernetes API client to
-        the cluster.
+          the cluster.
     """
     self._api_client = api_client
 
@@ -65,7 +65,7 @@ class K8sResource(K8sClient, metaclass=abc.ABCMeta):
 
     Args:
       api_client (ApiClient): The authenticated Kubernetes API client to
-        the cluster.
+          the cluster.
       name (str): The name of this resource.
     """
     super().__init__(api_client)
@@ -99,7 +99,7 @@ class K8sNamespacedResource(K8sResource, metaclass=abc.ABCMeta):
 
     Args:
       api_client (ApiClient): The authenticated Kubernetes API client to
-        the cluster.
+          the cluster.
       name (str): The name of this resource.
       namespace (str): The Kubernetes namespace in which this resource
         resides
@@ -110,13 +110,16 @@ class K8sNamespacedResource(K8sResource, metaclass=abc.ABCMeta):
   @abc.abstractmethod
   def Delete(self, cascade: bool = True) -> None:
     """Deletes this resource from the Kubernetes cluster.
+
     For determining how the deletion will cascade, the propagationPolicy
-    parameter is used.
+    parameter for Kubernetes API is used.
+
     https://kubernetes.io/docs/tasks/administer-cluster/use-cascading-deletion/#set-orphan-deletion-policy  # pylint: disable=line-too-long
+
     Args:
       cascade (bool): If true, deletion will be propagated to child objects.
-        If false, only this resource will be deleted and the child objects will
-        be orphaned.
+          If false, only this resource will be deleted and the child objects
+          will be orphaned.
     """
 
 
@@ -145,8 +148,8 @@ class K8sNode(K8sResource):
 
     Args:
       pod_filter (Callable[[K8sPod], bool]): A predicate taking a pod as
-        argument. Pods that are on this node and satisfy this predicate will be
-        deleted.
+          argument. Pods that are on this node and satisfy this predicate will
+          be deleted.
     """
     for pod in self.ListPods():
       if pod_filter(pod):
@@ -160,7 +163,7 @@ class K8sNode(K8sResource):
 
     Returns:
       List[K8sPod]: The list of the node's pods for the namespace, or in all
-        namespaces if none is specified.
+          namespaces if none is specified.
     """
     api = self._Api(client.CoreV1Api)
 
