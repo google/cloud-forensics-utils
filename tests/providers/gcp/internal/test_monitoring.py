@@ -47,11 +47,12 @@ class GoogleCloudMonitoringTest(unittest.TestCase):
     """Validates the query filter builder functionality"""
     # pylint: disable=protected-access
     instances_filter = gcp_mocks.FAKE_MONITORING._BuildCpuUsageFilter(
-        ['instance-a', 'instance-b'])
+        ['0000000000000000001', '0000000000000000002'])
     self.assertEqual(
         instances_filter, ('metric.type = "compute.googleapis.com/instance/'
-        'cpu/utilization" AND (metric.label.instance_name = "instance-a" OR '
-        'metric.label.instance_name = "instance-b")'))
+        'cpu/utilization" AND (resource.label.instance_id = '
+        '"0000000000000000001" OR resource.label.instance_id = '
+        '"0000000000000000002")'))
 
   @typing.no_type_check
   @mock.patch('libcloudforensics.providers.gcp.internal.monitoring.GoogleCloudMonitoring.GcmApi')
@@ -65,7 +66,7 @@ class GoogleCloudMonitoringTest(unittest.TestCase):
         [
           {
             'instance_name': 'instance-a',
-            'instance_id': '0000000000000000000',
+            'instance_id': '0000000000000000001',
             'cpu_usage':
               [
                 {
@@ -76,7 +77,7 @@ class GoogleCloudMonitoringTest(unittest.TestCase):
           },
           {
             'instance_name': 'instance-b',
-            'instance_id': '0000000000000000000',
+            'instance_id': '0000000000000000002',
             'cpu_usage':
               [
                 {
