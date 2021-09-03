@@ -556,24 +556,17 @@ def QuarantineGKEWorkload(project_id: str,
       InstanceNetworkQuarantine(project_id, node.name)
 
   # Third prompt options
-  isolate_nodes = prompts.PromptOption(
-      'Isolate nodes',
-      FirewallNodes)
-  isolate_pods = prompts.PromptOption(
-      'Isolate pods',
-      IsolatePods)
+  isolate_nodes = prompts.PromptOption('Isolate nodes', FirewallNodes)
+  isolate_pods = prompts.PromptOption('Isolate pods', IsolatePods)
   isolate_nodes_and_pods = prompts.PromptOption(
-      'Isolate nodes and pods',
-      DrainNodes,
-      FirewallNodes)
+      'Isolate nodes and pods', DrainNodes, FirewallNodes)
 
   # Second prompt options, defined afterwards so that we can link disables
   preserve_delete = prompts.PromptOption(
-    'Preserve evidence and delete workload',
-    OrphanPods)
+      'Preserve evidence and delete workload', OrphanPods)
   preserve_preserve = prompts.PromptOption(
-    'Preserve evidence and preserve workload',
-    disables=[isolate_nodes, isolate_nodes_and_pods])
+      'Preserve evidence and preserve workload',
+      disables=[isolate_nodes, isolate_nodes_and_pods])
 
   prompt_sequence = prompts.PromptSequence(
 
@@ -584,17 +577,11 @@ def QuarantineGKEWorkload(project_id: str,
 
       # Preparation prompt, ask about marking nodes as unschedulable
       prompts.YesNoPrompt(prompts.PromptOption('Cordon nodes', CordonNodes)),
-
       prompts.MultiPrompt(
           preserve_delete,
           preserve_preserve,
       ),
-
-      prompts.MultiPrompt(
-          isolate_nodes,
-          isolate_pods,
-          isolate_nodes_and_pods
-      ),
+      prompts.MultiPrompt(isolate_nodes, isolate_pods, isolate_nodes_and_pods),
   )
 
   prompt_sequence.Run(summarize=True)
