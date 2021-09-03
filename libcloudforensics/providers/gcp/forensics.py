@@ -492,7 +492,15 @@ def QuarantineGKEWorkload(project_id: str,
                           cluster_id: str,
                           namespace: str,
                           workload_id: str) -> None:
-  """Quarantines the GKE workload."""
+  """Guides the analyst through quarantining a GKE workload.
+
+  Args:
+    project_id (str): The GCP project ID.
+    zone (str): The zone in which the cluster resides.
+    cluster_id (str): The cluster ID holding the workload.
+    namespace (str): The namespace of the workload (e.g. 'default').
+    workload_id (str): The name of the workload.
+  """
   gke_cluster = gke.GkeCluster(project_id, zone, cluster_id)
   k8s_cluster = gke_cluster.GetK8sCluster()
 
