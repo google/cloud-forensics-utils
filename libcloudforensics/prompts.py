@@ -98,6 +98,9 @@ class MultiPrompt(Prompt):
       options (List[PromptOption]): The list of prompt options to be displayed
           to the user when this prompt is called.
       execution_order (int): The execution priority of this prompt.
+
+    Raises:
+      ValueError: If options is not a non-empty list.
     """
     if not options:
       raise ValueError('Expected a non-empty list for options.')
@@ -173,5 +176,5 @@ class PromptSequence:
       prompt.Prompt()
     for prompt in sorted(self._prompts, key=lambda p: p.execution_order):
       option = prompt.SelectedOption()
-      if option is not None:
+      if option:
         option.Execute()

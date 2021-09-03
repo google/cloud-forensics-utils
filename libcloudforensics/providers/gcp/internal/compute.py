@@ -143,6 +143,10 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     Returns:
       Dict[str, str]: A mapping from instance names to their managed instance
           group.
+
+    Raises:
+      RuntimeError: If multiple managed instance groups are found for a single
+          instance.
     """
     groups = self.ListMIGS(zone)
     groups_by_instance = {}

@@ -164,6 +164,9 @@ class K8sDeployment(K8sWorkload):
 
     Returns:
       K8sReplicaSet: The matching ReplicaSet of this deployment.
+
+    Raises:
+      errors.ResourceNotFoundError: If the matching ReplicaSet was not found.
     """
 
     # The matching ReplicaSet will have labels corresponding to this
