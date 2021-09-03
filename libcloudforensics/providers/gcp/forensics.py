@@ -511,17 +511,17 @@ def QuarantineGKEWorkload(project_id: str,
   compute_project = compute.GoogleCloudCompute(project_id)
   groups_by_instance = compute_project.ListMIGSByInstanceName(zone)
 
-  compromised_nodes = {pod.GetNode() for pod in k8s_workload.GetCoveredPods()}
+  workload_nodes = {pod.GetNode() for pod in k8s_workload.GetCoveredPods()}
 
   def CordonNodes() -> None:
-    for node in compromised_nodes:
+    for node in workload_nodes:
       logger.info(
           'Cordoning Kubernetes node {0:s} from {1:s} '
           'deployment...'.format(node, k8s_workload.name))
       node.Cordon()
 
   def AbandonNodes() -> None:
-    for node in compromised_nodes:
+    for node in workload_nodes:
       if node.name in groups_by_instance:
         logger.info(
             'Abandoning instance {0:s} from respective managed instance '
@@ -549,41 +549,52 @@ def QuarantineGKEWorkload(project_id: str,
     k8s_workload.OrphanPods()
 
   def FirewallNodes() -> None:
-    for node in compromised_nodes:
+    for node in workload_nodes:
       logger.info(
           'Putting instance {0:s} into network quarantine...'.format(
               workload_id))
       InstanceNetworkQuarantine(project_id, node.name)
+
+  # Third prompt options
+  isolate_nodes = prompts.PromptOption(
+      'Isolate nodes',
+      FirewallNodes)
+  isolate_pods = prompts.PromptOption(
+      'Isolate pods',
+      IsolatePods)
+  isolate_nodes_and_pods = prompts.PromptOption(
+      'Isolate nodes and pods',
+      DrainNodes,
+      FirewallNodes)
+
+  # Second prompt options, defined afterwards so that we can link disables
+  preserve_delete = prompts.PromptOption(
+    'Preserve evidence and delete workload',
+    OrphanPods)
+  preserve_preserve = prompts.PromptOption(
+    'Preserve evidence and preserve workload',
+    disables=[isolate_nodes, isolate_nodes_and_pods])
 
   prompt_sequence = prompts.PromptSequence(
 
       # Preparation prompt, ask about MIG abandonment
       prompts.YesNoPrompt(
           prompts.PromptOption(
-              'Abandon nodes from managed instance group?', AbandonNodes)),
+              'Abandon nodes from managed instance group', AbandonNodes)),
 
       # Preparation prompt, ask about marking nodes as unschedulable
-      prompts.YesNoPrompt(prompts.PromptOption('Cordon nodes?', CordonNodes)),
+      prompts.YesNoPrompt(prompts.PromptOption('Cordon nodes', CordonNodes)),
 
-      # First prompt, ask about workload deletion
       prompts.MultiPrompt(
-          options=[
-              prompts.PromptOption(
-                  'Preserve evidence and delete workload?', OrphanPods),
-              prompts.PromptOption(
-                  'Preserve evidence and preserve workload?',
-                  # Pass an empty function
-              )
-          ]),
+          preserve_delete,
+          preserve_preserve,
+      ),
 
-      # Second prompt, ask about isolation strategy
       prompts.MultiPrompt(
-          options=[
-              prompts.PromptOption('Isolate nodes?', FirewallNodes),
-              prompts.PromptOption('Isolate pods?', IsolatePods),
-              prompts.PromptOption(
-                  'Isolate nodes and pods?', DrainNodes, FirewallNodes),
-          ]),
+          isolate_nodes,
+          isolate_pods,
+          isolate_nodes_and_pods
+      ),
   )
 
-  prompt_sequence.Run()
+  prompt_sequence.Run(summarize=True)
