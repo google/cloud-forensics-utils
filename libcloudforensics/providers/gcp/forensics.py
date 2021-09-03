@@ -497,8 +497,8 @@ def QuarantineGKEWorkload(project_id: str,
   Args:
     project_id (str): The GCP project ID.
     zone (str): The zone in which the cluster resides.
-    cluster_id (str): The cluster ID holding the workload.
-    namespace (str): The namespace of the workload (e.g. 'default').
+    cluster_id (str): The name of the Kubernetes cluster holding the workload.
+    namespace (str): The Kubernetes namespace of the workload (e.g. 'default').
     workload_id (str): The name of the workload.
   """
   gke_cluster = gke.GkeCluster(project_id, zone, cluster_id)
