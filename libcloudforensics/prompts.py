@@ -21,8 +21,10 @@ from libcloudforensics import logging_utils
 logging_utils.SetUpLogger(__name__, no_newline=True)
 logger = logging_utils.GetLogger(__name__)
 
+
 def _Strikethrough(text):
   return ''.join('{0:s}\u0336'.format(char) for char in text)
+
 
 class PromptOption:
   """Class representing an available option in a prompt.
@@ -31,10 +33,11 @@ class PromptOption:
     text (str): The text description of the prompt option.
   """
 
-  def __init__(self,
-               text: str,
-               *functions: Callable[[], None],
-               disables: Optional[List['PromptOption']] = None) -> None:
+  def __init__(
+      self,
+      text: str,
+      *functions: Callable[[], None],
+      disables: Optional[List['PromptOption']] = None) -> None:
     """Builds a PromptOption.
 
     Args:
@@ -90,6 +93,7 @@ class PromptOption:
     """Executes the underlying functions of this prompt option."""
     for function in self._functions:
       function()
+
 
 class Prompt(abc.ABC):
   """Class representing a prompt to the user.
@@ -147,9 +151,7 @@ class MultiPrompt(Prompt):
     """Override of abstract property"""
     return self._options
 
-  def __init__(self,
-               *options: PromptOption,
-               execution_order: int = 0) -> None:
+  def __init__(self, *options: PromptOption, execution_order: int = 0) -> None:
     """Builds a MultiPrompt.
 
     Args:
@@ -184,7 +186,11 @@ class MultiPrompt(Prompt):
 class YesNoPrompt(Prompt):
   """Class representing a prompt expecting a yes or no answer."""
 
-  def __init__(self, option: PromptOption, execution_order: int = 0, default_yes: Optional[bool] = None):
+  def __init__(
+      self,
+      option: PromptOption,
+      execution_order: int = 0,
+      default_yes: Optional[bool] = None):
     """Build a YesNoPrompt.
 
     Args:
