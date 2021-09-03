@@ -102,11 +102,13 @@ class Formatter(logging.Formatter):
     return super().format(record)
 
 
-def SetUpLogger(name: str) -> None:
+def SetUpLogger(name: str, no_newline: bool = False) -> None:
   """Setup a logger.
 
   Args:
     name (str): The name for the logger.
+    no_newline (bool): Optional. Whether or not to disable new lines in the
+        logger's output. Defaults to False.
   """
   # We can ignore the mypy warning below since the manager is created at runtime
   #pylint: disable=no-member
@@ -116,6 +118,8 @@ def SetUpLogger(name: str) -> None:
   logger.setLevel(logging.INFO)
   if add_handler:
     console_handler = logging.StreamHandler(sys.stdout)
+    if no_newline:
+      console_handler.terminator = ''
     formatter = Formatter(random_color=True)
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)

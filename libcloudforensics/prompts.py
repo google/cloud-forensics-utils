@@ -16,6 +16,10 @@
 import abc
 from typing import List, Optional, Callable
 
+from libcloudforensics import logging_utils
+
+logging_utils.SetUpLogger(__name__, no_newline=True)
+logger = logging_utils.GetLogger(__name__)
 
 class PromptOption:
   """Class representing an available option in a prompt.
@@ -110,8 +114,9 @@ class MultiPrompt(Prompt):
     self._selection = 0
     while not 0 < self._selection <= len(self._options):
       for i, option in enumerate(self._options):
-        print(i + 1, option.text)
-      selection_raw = input('Choose one: ')
+        logger.info('{0:d}: {1:s}\n'.format(i + 1, option.text))
+      logger.info('Choose one: ')
+      selection_raw = input()
       if selection_raw.isdecimal():
         self._selection = int(selection_raw)
 
@@ -141,8 +146,9 @@ class YesNoPrompt(Prompt):
     """
     self._selection = ''
     while self._selection not in ['y', 'n']:
-      print(self._option.text)
-      self._selection = input('Choose one [y/n]:').lower()
+      logger.info('{0:s}\n'.format(self._option.text))
+      logger.info('Choose one [y/n]: ')
+      self._selection = input().lower()
 
   def SelectedOption(self) -> Optional[PromptOption]:
     """Override of abstract method."""
