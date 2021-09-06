@@ -20,9 +20,11 @@ import mock
 
 from azure.mgmt.compute.v2020_05_01 import models  # pylint: disable=import-error
 
+
 from libcloudforensics import errors
 from libcloudforensics.providers.azure.internal import compute
 from tests.providers.azure import azure_mocks
+
 
 class AZComputeTest(unittest.TestCase):
   """Test Azure compute class."""
