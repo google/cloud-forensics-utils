@@ -20,11 +20,9 @@ import mock
 
 from azure.mgmt.compute.v2020_05_01 import models  # pylint: disable=import-error
 
-
 from libcloudforensics import errors
 from libcloudforensics.providers.azure.internal import compute
 from tests.providers.azure import azure_mocks
-
 
 class AZComputeTest(unittest.TestCase):
   """Test Azure compute class."""
@@ -225,7 +223,7 @@ class AZComputeTest(unittest.TestCase):
   @mock.patch('libcloudforensics.providers.azure.internal.compute.AZCompute.GetInstance')
   @mock.patch('libcloudforensics.providers.azure.internal.compute.AZCompute._GetInstanceType')
   @mock.patch('libcloudforensics.providers.azure.internal.network.AZNetwork.CreateNetworkInterface')
-  @mock.patch('azure.mgmt.compute.v2021_04_01.operations._virtual_machines_operations.VirtualMachinesOperations.begin_create_or_update')
+  @mock.patch('azure.mgmt.compute.v2021_07_01.operations._virtual_machines_operations.VirtualMachinesOperations.begin_create_or_update')
   @typing.no_type_check
   def testGetOrCreateAnalysisVm(self,
                                 mock_vm,
@@ -262,7 +260,7 @@ class AZComputeTest(unittest.TestCase):
     self.assertEqual('fake-analysis-vm-name', vm.name)
     self.assertTrue(created)
 
-  @mock.patch('azure.mgmt.compute.v2021_04_01.operations._virtual_machine_sizes_operations.VirtualMachineSizesOperations.list')
+  @mock.patch('azure.mgmt.compute.v2021_07_01.operations._virtual_machine_sizes_operations.VirtualMachineSizesOperations.list')
   @typing.no_type_check
   def testListVMSizes(self, mock_list):
     """Test that instance types are correctly listed."""
@@ -292,7 +290,7 @@ class AZVirtualMachineTest(unittest.TestCase):
   # pylint: disable=line-too-long
 
   @mock.patch('libcloudforensics.providers.azure.internal.compute.AZCompute.ListDisks')
-  @mock.patch('azure.mgmt.compute.v2021_04_01.operations._virtual_machines_operations.VirtualMachinesOperations.get')
+  @mock.patch('azure.mgmt.compute.v2021_07_01.operations._virtual_machines_operations.VirtualMachinesOperations.get')
   @typing.no_type_check
   def testGetBootDisk(self, mock_get_vm, mock_list_disk):
     """Test that the boot disk from an instance is retrieved."""
@@ -321,7 +319,7 @@ class AZVirtualMachineTest(unittest.TestCase):
         'Microsoft.Compute/type/fake-vm-name', str(error.exception))
 
   @mock.patch('libcloudforensics.providers.azure.internal.compute.AZCompute.ListDisks')
-  @mock.patch('azure.mgmt.compute.v2021_04_01.operations._virtual_machines_operations.VirtualMachinesOperations.get')
+  @mock.patch('azure.mgmt.compute.v2021_07_01.operations._virtual_machines_operations.VirtualMachinesOperations.get')
   @typing.no_type_check
   def testListDisks(self, mock_get_vm, mock_list_disk):
     """Test that disks from an instance are correctly listed."""

@@ -25,7 +25,7 @@ class AZResourceTest(unittest.TestCase):
   """Test Azure monitoring class."""
   # pylint: disable=line-too-long
 
-  @mock.patch('azure.mgmt.resource.subscriptions.v2019_11_01.operations._subscriptions_operations.SubscriptionsOperations.list')
+  @mock.patch('azure.mgmt.resource.subscriptions.v2021_01_01.operations._subscriptions_operations.SubscriptionsOperations.list')
   @typing.no_type_check
   def testListSubscriptionIDs(self, mock_list):
     """Test that subscription IDs are correctly listed"""
