@@ -115,7 +115,7 @@ class Prompt(abc.ABC):
   @property
   @abc.abstractmethod
   def options(self) -> List[PromptOption]:
-    """"""
+    """The list of options owned by this prompt."""
 
   @property
   def execution_order(self) -> int:
@@ -130,14 +130,19 @@ class Prompt(abc.ABC):
 
   @abc.abstractmethod
   def GetOptionFromUser(self) -> Optional[PromptOption]:
-    """Displays the prompt option questions to the user for them to select."""
+    """Displays the prompt option questions to the user for them to select.
+
+    Returns:
+      Optional[PromptOption]: Returns the prompt options that the user selected.
+          If no option was selected, None is returned.
+    """
 
   def SelectedOptions(self) -> List[PromptOption]:
     """Returns the optional selected option of this prompt.
 
     Returns:
-      List[PromptOption]: The PromptOptions that the user selected. This may
-          be empty if this user has not yet been prompted, or if the user the
+      List[PromptOption]: The PromptOptions that have been marked as selected.
+          This may be empty if this user has not yet been prompted, or if the
           user did not pick an option when prompted.
     """
     return [option for option in self.options if option.IsSelected()]
@@ -168,10 +173,7 @@ class MultiPrompt(Prompt):
     self._options = options
 
   def GetOptionFromUser(self) -> Optional[PromptOption]:
-    """Override of abstract method.
-
-    Prompts the user with options to choose from.
-    """
+    """Override of abstract method. Forces a choice among options."""
     selection = 0
     while not 0 < selection <= len(self._options):
       for i, option in enumerate(self._options):
@@ -195,8 +197,12 @@ class YesNoPrompt(Prompt):
 
     Args:
       option (PromptOption): The option to display to the user, to which they
-          will respond either yes or no.
+          will respond either yes or no. The option's functions will be executed
+          if the user responds with yes.
       execution_order (int): The execution priority of this prompt.
+      default_yes (bool): Optional. If unspecified, no default is set. If True,
+          the prompt will default to yes when the user does not provide an
+          answer. If False, the prompt will default to no.
     """
     super().__init__(execution_order)
     self._option = option
@@ -220,10 +226,7 @@ class YesNoPrompt(Prompt):
       return '[y/n]'
 
   def GetOptionFromUser(self) -> Optional[PromptOption]:
-    """Override of abstract method.
-
-    Prompts the user with the option, expecting a yes or no response.
-    """
+    """Override of abstract method. Prompts the user with yes/no question."""
     choices = ['y', 'n']
     if self._default_yes is not None:
       # A default has been set, user may skip the prompt
@@ -254,7 +257,12 @@ class PromptSequence:
     self._prompts = prompts
 
   def Run(self, summarize: bool = False) -> None:
-    """Presents the prompts of this sequence, and then executes them."""
+    """Presents the prompts of this sequence, and then executes them.
+
+    Args:
+      summarize: Optional. If True, prints a summary before running the
+          selected options of the prompts in this sequence. Defaults to False.
+    """
     for prompt in self._prompts:
       prompt.Prompt()
     prompts_sorted = sorted(self._prompts, key=lambda p: p.execution_order)
