@@ -563,19 +563,19 @@ def QuarantineGKEWorkload(project_id: str,
 
   # Second prompt options, defined afterwards so that we can link disables
   preserve_delete = prompts.PromptOption(
-      'Preserve evidence and delete workload', OrphanPods)
+      'Preserve evidence and delete workload',
+      OrphanPods,
+      disables=[isolate_pods])
   preserve_preserve = prompts.PromptOption(
       'Preserve evidence and preserve workload',
+      # No functions are called when this option is selected, a multi prompt
+      # was favored over a yes/no prompt for clarity
       disables=[isolate_nodes, isolate_nodes_and_pods])
 
   prompt_sequence = prompts.PromptSequence(
-
-      # Preparation prompt, ask about MIG abandonment
       prompts.YesNoPrompt(
           prompts.PromptOption(
               'Abandon nodes from managed instance group', AbandonNodes)),
-
-      # Preparation prompt, ask about marking nodes as unschedulable
       prompts.YesNoPrompt(prompts.PromptOption('Cordon nodes', CordonNodes)),
       prompts.MultiPrompt(
           preserve_delete,
