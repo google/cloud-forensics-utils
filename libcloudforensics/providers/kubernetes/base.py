@@ -218,8 +218,9 @@ class K8sPod(K8sNamespacedResource):
   def Delete(self, cascade: bool = True) -> None:
     """Override of abstract method.
 
-    The cascade argument is ignored here, as a pod's deletion will not cascade
-    to any other Kubernetes objects.
+    Args:
+      cascade (bool): Ignored here, as a pod's deletion will not cascade
+          to any other Kubernetes objects.
     """
     api = self._Api(client.CoreV1Api)
     api.delete_namespaced_pod(self.name, self.namespace)
