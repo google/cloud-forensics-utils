@@ -221,9 +221,10 @@ class YesNoPrompt(Prompt):
           default was specified.
     """
     if self._default_yes is not None:
-      return '[Y/n]' if self._default_yes else '[y/N]'
+      choices_str = '[Y/n]' if self._default_yes else '[y/N]'
     else:
-      return '[y/n]'
+      choices_str = '[y/n]'
+    return choices_str
 
   def GetOptionFromUser(self) -> Optional[PromptOption]:
     """Override of abstract method. Prompts the user with yes/no question."""
