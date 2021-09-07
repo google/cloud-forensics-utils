@@ -14,7 +14,8 @@
 # limitations under the License.
 """Mitigation functions to be used in end-to-end functionality."""
 
-from libcloudforensics.providers.kubernetes import cluster
+from libcloudforensics.providers.kubernetes import cluster as k8s
+from libcloudforensics.providers.kubernetes import netpol
 from libcloudforensics.providers.kubernetes import workloads
 
 
@@ -38,23 +39,31 @@ def DrainWorkloadNodesFromOtherPods(
 
 
 def CreateDenyAllNetworkPolicyForWorkload(
-    k8s_cluster: cluster.K8sCluster, workload: workloads.K8sWorkload) -> None:
+    cluster: k8s.K8sCluster,
+    workload: workloads.K8sWorkload) -> netpol.K8sDenyAllNetworkPolicy:
   """Isolates a workload's pods via a deny all network policy.
 
   Args:
-    k8s_cluster (cluster.K8sCluster): The cluster in which to create the deny
+    cluster (cluster.K8sCluster): The cluster in which to create the deny
         all policy, and subsequently patch existing policies
     workload (workloads.K8sWorkload): The workload in whose namespace the
         deny all network policy will be created, and whose pods will be tagged
         to be selected by the deny all network policy.
+
+  Returns:
+    netpol.K8sDenyAllNetworkPolicy: The deny all network policy that was
+        created to isolate the workload's pods.
   """
   # TODO: Check that network policies are enabled
   # First create the NetworkPolicy in the workload's namespace
-  deny_all_policy = k8s_cluster.DenyAllNetworkPolicy(workload.namespace)
+  deny_all_policy = cluster.DenyAllNetworkPolicy(workload.namespace)
   deny_all_policy.Create()
   # Tag the pods covered by the workload with the selecting label of the
   # deny all NetworkPolicy
-  workload.AddTemplateLabels(deny_all_policy.labels)
+  for pod in workload.GetCoveredPods():
+    pod.AddLabels(deny_all_policy.labels)
   # For all other policies, specify that they are not selecting the pods
   # that are selected by the deny all policy
   # TODO: Patch other policies (in same namespace?)
+
+  return deny_all_policy
