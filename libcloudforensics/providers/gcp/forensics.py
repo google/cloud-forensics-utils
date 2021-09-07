@@ -514,6 +514,7 @@ def QuarantineGKEWorkload(project_id: str,
   workload_nodes = {pod.GetNode() for pod in k8s_workload.GetCoveredPods()}
 
   def CordonNodes() -> None:
+    """Cordons the compromised nodes."""
     for node in workload_nodes:
       logger.info(
           'Cordoning Kubernetes node {0:s} from {1:s} '
@@ -521,6 +522,7 @@ def QuarantineGKEWorkload(project_id: str,
       node.Cordon()
 
   def AbandonNodes() -> None:
+    """Abandons the nodes from their respective managed instance groups."""
     for node in workload_nodes:
       if node.name in groups_by_instance:
         logger.info(
@@ -534,21 +536,25 @@ def QuarantineGKEWorkload(project_id: str,
             'group, parent managed instance group not found.'.format(node.name))
 
   def IsolatePods() -> None:
+    """Isolates the pods via Kubernetes NetworkPolicy."""
     logger.info(
         'Creating deny-all NetworkPolicy for {0:s} '
         'workload...'.format(workload_id))
     mitigation.CreateDenyAllNetworkPolicyForWorkload(k8s_cluster, k8s_workload)
 
   def DrainNodes() -> None:
+    """Drains the workload nodes from other pods."""
     logger.info('Draining workload nodes from other pods...')
     mitigation.DrainWorkloadNodesFromOtherPods(k8s_workload, cordon=False)
 
   def OrphanPods() -> None:
+    """Orphans the pods of the workload."""
     logger.info(
         'Orphaning Kubernetes workload {0:s}\'s pods...'.format(workload_id))
     k8s_workload.OrphanPods()
 
   def FirewallNodes() -> None:
+    """Puts each node from the workload into network quarantine."""
     for node in workload_nodes:
       logger.info(
           'Putting instance {0:s} into network quarantine...'.format(
