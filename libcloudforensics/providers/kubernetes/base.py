@@ -117,9 +117,9 @@ class K8sNamespacedResource(K8sResource, metaclass=abc.ABCMeta):
     https://kubernetes.io/docs/tasks/administer-cluster/use-cascading-deletion/#set-orphan-deletion-policy  # pylint: disable=line-too-long
 
     Args:
-      cascade (bool): If true, deletion will be propagated to child objects.
-          If false, only this resource will be deleted and the child objects
-          will be orphaned.
+      cascade (bool): Optional. If true, deletion will be propagated to child
+          objects. If false, only this resource will be deleted and the child
+          objects will be orphaned. Defaults to True.
     """
 
 
