@@ -29,7 +29,10 @@ import libcloudforensics.providers.gcp.internal.storage as storage_module
 import libcloudforensics.providers.gcp.internal.storagetransfer\
   as storagetransfer_module
 import libcloudforensics.providers.gcp.internal.cloudsql as cloudsql_module
-
+import libcloudforensics.providers.gcp.internal.cloudresourcemanager\
+  as cloudresourcemanager_module
+import libcloudforensics.providers.gcp.internal.serviceusage\
+  as serviceusage_module
 
 class GoogleCloudProject:
   """Class representing a Google Cloud Project.
@@ -79,8 +82,10 @@ class GoogleCloudProject:
     # pylint: disable=line-too-long
     self._storagetransfer = None  # type: Optional[storagetransfer_module.GoogleCloudStorageTransfer]
     self._monitoring = None  # type: Optional[monitoring_module.GoogleCloudMonitoring]
-    # pylint: enable=line-too-long
     self._cloudsql = None  # type: Optional[cloudsql_module.GoogleCloudSQL]
+    self._cloudresourcemanager = None  # type: Optional[cloudresourcemanager_module.GoogleCloudResourceManager]
+    self._serviceusage = None  # type: Optional[serviceusage_module.GoogleServiceUsage]
+    # pylint: enable=line-too-long
 
   @property
   def compute(self) -> compute_module.GoogleCloudCompute:
@@ -208,3 +213,34 @@ class GoogleCloudProject:
     self._cloudsql = cloudsql_module.GoogleCloudSQL(
         self.project_id)
     return self._cloudsql
+
+  @property
+  def cloudresourcemanager(
+      self) -> cloudresourcemanager_module.GoogleCloudResourceManager:
+    """Get a GoogleCloudResourceManager object for the project.
+
+    Returns:
+      GoogleCloudResourceManager: Object that represents Google cloud resource
+        manager.
+    """
+
+    if self._cloudresourcemanager:
+      return self._cloudresourcemanager
+    self._cloudresourcemanager = (
+        cloudresourcemanager_module.GoogleCloudResourceManager(
+            self.project_id))
+    return self._cloudresourcemanager
+
+  @property
+  def serviceusage(self) -> serviceusage_module.GoogleServiceUsage:
+    """Get a GoogleServiceUsage object for the project.
+
+    Returns:
+      GoogleServiceUsage: Object that represents Google service usage.
+    """
+
+    if self._serviceusage:
+      return self._serviceusage
+    self._serviceusage = serviceusage_module.GoogleServiceUsage(
+        self.project_id)
+    return self._serviceusage

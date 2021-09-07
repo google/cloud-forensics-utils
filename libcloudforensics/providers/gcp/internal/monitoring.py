@@ -15,7 +15,7 @@
 """Google Cloud Monitoring functionality."""
 
 import datetime
-from typing import TYPE_CHECKING, Dict, List, Tuple, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional, Any
 
 from libcloudforensics.providers.gcp.internal import common
 
@@ -91,49 +91,60 @@ class GoogleCloudMonitoring:
               ret[service] = int(val)
     return ret
 
-  def _BuildCpuUsageFilter(self, instances: Optional[List[str]]) -> str:
-    """Builds a metrics query filter based on a list of instances.
+  def _BuildCpuUsageFilter(self, instance_ids: Optional[List[str]]) -> str:
+    """Builds a metrics query filter based on a list of instance IDs.
 
     Args:
-      instances list[str]: a list of instance names.
+      instance_ids list[str]: a list of instance ids.
 
     Returns:
       str: the filter to use in a metrics query.
     """
     instances_filter = (
           ['metric.type = "compute.googleapis.com/instance/cpu/utilization"'])
-    if instances:
+    if instance_ids:
       instances_filter.append(
-          ' AND (metric.label.instance_name = "{0:s}"'.format(instances[0]))
-      if len(instances) > 1:
-        for instance_name in instances[1:]:
+          ' AND (resource.label.instance_id = "{0:s}"'.format(instance_ids[0]))
+      if len(instance_ids) > 1:
+        for instance_name in instance_ids[1:]:
           instances_filter.append(
-              ' OR metric.label.instance_name = "{0:s}"'.format(instance_name))
+              ' OR resource.label.instance_id = "{0:s}"'.format(instance_name))
       instances_filter.append(')')
 
     return ''.join(instances_filter)
 
   def GetCpuUsage(self,
-    instances: Optional[List[str]] = None,
+    instance_ids: Optional[List[str]] = None,
     days: int = 7,
     aggregation_minutes: int = 60
-    ) -> Dict[str, List[Tuple[str, float]]]:
+    ) -> List[Dict[str, Any]]:
     """Returns CPU usage metrics for compute instances.
 
     By default returns hourly usage for the last seven days for all instances
     within a project.
 
     Args:
-      instances list[str]: Optional. A list of instance names to collect
+      instance_ids list[str]: Optional. A list of instance IDs to collect
         metrics for. When not provided will collect metrics for all instances
         in the project.
       days (int): Optional. The number of days to collect metrics for.
       aggregate_minutes (int): Optional. The minutes to aggregate on.
 
     Returns:
-      Dict[str, List[Tuple[str, float]]]: the CPU usage for the instances with
-        instancename_instanceid as the key and (timestamp, usage) tuples
-        as values.
+      List[Dict[str, Any]]: a list of CPU usage for each instance in the format
+        [
+          {
+            'instance_name': str,
+            'instance_id': str,
+            'cpu_usage':
+            [
+              {
+                'timestamp': str,
+                'cpu_usage': float
+              },
+            ]
+          },
+        ]
     """
     service = self.GcmApi()
     gcm_timeseries_client = service.projects().timeSeries() # pylint: disable=no-member
@@ -142,7 +153,7 @@ class GoogleCloudMonitoring:
         datetime.datetime.utcnow() - datetime.timedelta(days=days))
     end_time = common.FormatRFC3339(datetime.datetime.utcnow())
     period = aggregation_minutes * 60
-    instance_filter = self._BuildCpuUsageFilter(instances)
+    instance_filter = self._BuildCpuUsageFilter(instance_ids)
 
     responses = common.ExecuteRequest(gcm_timeseries_client, 'list', {
         'name': 'projects/{0:s}'.format(self.project_id),
@@ -154,20 +165,23 @@ class GoogleCloudMonitoring:
         'aggregation_alignmentPeriod': '{0:d}s'.format(period),
     })
 
-    cpu_usage_instances = {}
+    cpu_usage_instances = []
 
     for response in responses:
       time_series = response.get('timeSeries', [])
       for ts in time_series:
         instance_name = ts['metric']['labels']['instance_name']
         instance_id = ts['resource']['labels']['instance_id']
-        instance_key = instance_name + '_' + instance_id # type: str
         points = ts['points']
-        parsed_points = []
+        cpu_usage = []
         for point in points:
-          timestamp = point['interval']['startTime'] # type: str
-          cpu_usage = point['value']['doubleValue'] # type: float
-          parsed_points.append((timestamp, cpu_usage))
-        cpu_usage_instances[instance_key] = parsed_points
+          cpu_usage.append({
+              'timestamp': point['interval']['startTime'],
+              'cpu_usage': point['value']['doubleValue']})
+
+        cpu_usage_instances.append({
+            'instance_name': instance_name,
+            'instance_id': instance_id,
+            'cpu_usage': cpu_usage})
 
     return cpu_usage_instances

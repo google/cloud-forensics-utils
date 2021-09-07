@@ -1346,6 +1346,30 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
       raise errors.ServiceAccountRemovalError('Service account detatchment '
           'failure: {0:s}'.format(str(exception)), __name__)
 
+  def GetEffectiveFirewalls(self) -> List[Dict[str, Any]]:
+    """Get the raw effective firewalls for every interface:
+    https://cloud.google.com/compute/docs/reference/rest/v1/instances/getEffectiveFirewalls
+
+    Returns:
+      List[Dict[str, Any]]: The effective firewall rules per interface.
+    """
+    gce_instance_client = self.GceApi().instances()
+    instance_info = self.GetOperation()
+    effective_firewalls = []
+
+    for interface in instance_info.get('networkInterfaces', []):
+      interface_name = interface['name']
+      request = {'project': self.project_id, 'instance': self.name,
+          'zone': self.zone, 'networkInterface': interface_name}
+      # Safe to unpack, response not paginated.
+      response = common.ExecuteRequest(
+          gce_instance_client, 'getEffectiveFirewalls', request)[0]
+      effective_firewalls.append({
+          'interface_name': interface_name,
+          'firewalls': response})
+
+    return effective_firewalls
+
   def _NormaliseFirewallL4Config(self, l4config: List[Any]) -> List[Any]:
     """Normalise l4config dict key names that differ between policies and
     firewalls.
@@ -1368,14 +1392,14 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
 
     return normalised_l4config
 
-  def _NormaliseFirewallRules(self, nic_rules: Dict[str, Any]) -> List[Any]:
-    """Normalise firewall policies and firewall rules into a common format.
+  def _NormaliseFirewalls(self, interface_rules: Dict[str, Any]) -> List[Any]:
+    """Normalise firewall policies and VPC firewalls into a common format.
 
     Args:
-      nic_rules: the effective firewall rules for an individual NIC.
+      interface_rules: the effective firewalls for an interface.
 
     Returns:
-      List[Dict[str, Any]]: The normalised firewall rules for a NIC with
+      List[Dict[str, Any]]: The normalised firewall rules for an interface with
         individual rules in the following format:
         {
           'type': 'policy' or 'firewall',
@@ -1393,8 +1417,8 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
     """
 
     normalised_rules = []
-    firewall_policies = nic_rules['firewallPolicys']
-    firewalls = nic_rules['firewalls']
+    firewall_policies = interface_rules.get('firewallPolicys', [])
+    firewalls = interface_rules.get('firewalls', [])
 
     for policy_level, policy in enumerate(firewall_policies):
       for rule in policy['rules']:
@@ -1428,28 +1452,22 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
 
     return normalised_rules
 
-  def GetEffectiveFirewallRules(self) -> Dict[str, List[Any]]:
-    """Get the effective firewall rules for an instance.
+  def GetNormalisedFirewalls(self) -> List[Dict[str, Any]]:
+    """Get normalised effective firewalls for every interface with firewall
+    policies and normal VPC firewalls collapsed into a single list.
 
     Returns:
-      Dict[str, List[Any]]: The effective firewall rules per NIC.
+      List[Dict[str, Any]]: The normalised firewalls per interface.
     """
-    gce_instance_client = self.GceApi().instances()
-    instance_info = self.GetOperation()
-    fw_rules = {}
+    effective_firewalls = self.GetEffectiveFirewalls()
+    normalised_firewalls = []
 
-    for nic in instance_info.get('networkInterfaces', []):
-      nic_name = nic['name']
-      nic_fw_rules = []
-      request = {'project': self.project_id, 'instance': self.name,
-          'zone': self.zone, 'networkInterface': nic_name}
-      responses = common.ExecuteRequest(
-          gce_instance_client, 'getEffectiveFirewalls', request)
-      for response in responses:
-        nic_fw_rules.extend(self._NormaliseFirewallRules(response))
-      fw_rules[nic_name] = nic_fw_rules
+    for interface in effective_firewalls:
+      normalised_firewalls.append({
+          'interface_name': interface['interface_name'],
+          'firewalls': self._NormaliseFirewalls(interface['firewalls'])})
 
-    return fw_rules
+    return normalised_firewalls
 
   def GetNatIps(self) -> List[str]:
     """Get the NAT external IPv4 addresses attached to an instance.
