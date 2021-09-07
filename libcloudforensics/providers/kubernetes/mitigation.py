@@ -44,7 +44,7 @@ def CreateDenyAllNetworkPolicyForWorkload(
   """Isolates a workload's pods via a deny all network policy.
 
   Args:
-    cluster (cluster.K8sCluster): The cluster in which to create the deny
+    cluster (k8s.K8sCluster): The cluster in which to create the deny
         all policy, and subsequently patch existing policies
     workload (workloads.K8sWorkload): The workload in whose namespace the
         deny all network policy will be created, and whose pods will be tagged
