@@ -22,7 +22,15 @@ logging_utils.SetUpLogger(__name__, no_newline=True)
 logger = logging_utils.GetLogger(__name__)
 
 
-def _Strikethrough(text):
+def _Strikethrough(text: str) -> str:
+  """Returns given text with strikethrough codes after each character.
+
+  Args:
+    text: The text to strikethrough.
+
+  Returns:
+    str: The given text with strikethrough codes.
+  """
   return ''.join('{0:s}\u0336'.format(char) for char in text)
 
 
@@ -152,7 +160,7 @@ class MultiPrompt(Prompt):
   """Class representing a prompt with options to choose from."""
 
   @property
-  def options(self):
+  def options(self) -> List[PromptOption]:
     """Override of abstract property"""
     return self._options
 
@@ -170,7 +178,7 @@ class MultiPrompt(Prompt):
     if not options:
       raise ValueError('Expected a non-empty list for options.')
     super().__init__(execution_order)
-    self._options = options
+    self._options = list(options)
 
   def GetOptionFromUser(self) -> Optional[PromptOption]:
     """Override of abstract method. Forces a choice among options."""
