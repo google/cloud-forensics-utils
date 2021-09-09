@@ -15,7 +15,6 @@
 """Forensics on GCP."""
 
 import base64
-from posixpath import join
 import random
 import re
 import subprocess
