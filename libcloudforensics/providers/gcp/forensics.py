@@ -15,6 +15,7 @@
 """Forensics on GCP."""
 
 import base64
+from posixpath import join
 import random
 import re
 import subprocess
@@ -500,13 +501,21 @@ def TriageInstance(project_id: str,
 
   project = gcp_project.GoogleCloudProject(project_id)
   instance = project.compute.GetInstance(instance_name)
-  monitoring_client = project.monitoring
   instance_info = instance.GetOperation()
+
+  ancestry = project.cloudresourcemanager.ProjectAncestry()
+  parsed_ancestry = []
+  for resource in ancestry:
+    name = resource['displayName']
+    resource_id = resource['name']
+    parsed_ancestry.append('{0:s} ({1:s})'.format(name, resource_id))
+  parsed_ancestry = ' -> '.join(parsed_ancestry)
 
   instance_triage = {
     'instance_info': {
       'instance_name': instance_info['name'],
       'instance_id': instance_info['id'],
+      'ancestry': parsed_ancestry,
       'external_ipv4': instance.GetNatIps()[0],
       'zone': instance_info['zone'].rsplit('/', 1)[1],
       'creation_timestamp': instance_info['creationTimestamp'],
@@ -523,12 +532,16 @@ def TriageInstance(project_id: str,
       },
       {
         'data_type': 'cpu_usage',
-        'values': monitoring_client.GetCpuUsage(
+        'values': project.monitoring.GetCpuUsage(
             instance_ids=[instance_info['id']])
       },
       {
         'data_type': 'ssh_auth',
         'values': CheckInstanceSSHAuth(project_id, instance_info['name'])
+      },
+      {
+        'data_type': 'enabled_services',
+        'values': project.serviceusage.GetEnabled()
       }
     ]
   }
