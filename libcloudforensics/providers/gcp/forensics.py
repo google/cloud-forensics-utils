@@ -484,3 +484,53 @@ def CheckInstanceSSHAuth(project_id: str,
       return match_group.replace('\r', '').split(',')
 
   return None
+
+
+def TriageInstance(project_id: str,
+                   instance_name: str) -> Dict[str, Any]:
+  """Gather triage information for an instance.
+
+  Args:
+    project_id (str): the project id for the instance.
+    instance_name (str): the instance name to check.
+
+  Returns:
+    Dict[str, Any]: The instance triage information.
+  """
+
+  project = gcp_project.GoogleCloudProject(project_id)
+  instance = project.compute.GetInstance(instance_name)
+  monitoring_client = project.monitoring
+  instance_info = instance.GetOperation()
+
+  instance_triage = {
+    'instance_info': {
+      'instance_name': instance_info['name'],
+      'instance_id': instance_info['id'],
+      'external_ipv4': instance.GetNatIps()[0],
+      'zone': instance_info['zone'].rsplit('/', 1)[1],
+      'creation_timestamp': instance_info['creationTimestamp'],
+      'laststart_timestamp': instance_info['lastStartTimestamp'],
+    },
+    'triage_data': [
+      {
+        'data_type': 'service_accounts',
+        'values': instance_info['serviceAccounts']
+      },
+      {
+        'data_type': 'firewalls',
+        'values': instance.GetNormalisedFirewalls()
+      },
+      {
+        'data_type': 'cpu_usage',
+        'values': monitoring_client.GetCpuUsage(
+            instance_ids=[instance_info['id']])
+      },
+      {
+        'data_type': 'ssh_auth',
+        'values': CheckInstanceSSHAuth(project_id, instance_info['name'])
+      }
+    ]
+  }
+
+  return instance_triage
