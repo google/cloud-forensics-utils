@@ -508,14 +508,14 @@ def TriageInstance(project_id: str,
     name = resource['displayName']
     resource_id = resource['name']
     parsed_ancestry.append('{0:s} ({1:s})'.format(name, resource_id))
-  parsed_ancestry = ' -> '.join(parsed_ancestry)
+  ancestry_string = ' -> '.join(parsed_ancestry)
 
   instance_triage = {
     'instance_info': {
       'instance_name': instance_info['name'],
       'instance_id': instance_info['id'],
-      'ancestry': parsed_ancestry,
-      'external_ipv4': instance.GetNatIps()[0],
+      'ancestry': ancestry_string,
+      'external_ipv4': instance.GetNatIps(),
       'zone': instance_info['zone'].rsplit('/', 1)[1],
       'creation_timestamp': instance_info['creationTimestamp'],
       'laststart_timestamp': instance_info['lastStartTimestamp'],
