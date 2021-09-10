@@ -20,7 +20,7 @@ from kubernetes.config import kube_config
 
 from libcloudforensics import logging_utils
 from libcloudforensics.providers.gcp.internal import common
-from libcloudforensics.providers.kubernetes import base as k8s_base
+from libcloudforensics.providers.kubernetes import cluster
 
 if TYPE_CHECKING:
   import googleapiclient
@@ -137,19 +137,18 @@ class GkeCluster(GoogleKubernetesEngine):
     """Get GKE API operation object for the GKE resource.
 
     Returns:
-      Dict[str, Any]: GKE API response to 'get' operation for this
-        cluster.
+      Dict[str, Any]: GKE API response to 'get' operation for this cluster.
     """
     clusters = self.GkeApi().projects().locations().clusters()  # pylint: disable=no-member
     request = clusters.get(name=self.name)
     response = request.execute()  # type: Dict[str, Any]
     return response
 
-  def GetK8sCluster(self) -> k8s_base.K8sCluster:
+  def GetK8sCluster(self) -> cluster.K8sCluster:
     """Returns the Kubernetes cluster of this GKE cluster.
 
     Returns:
-      k8s_base.K8sCluster: The Kubernetes cluster matching this GKE cluster,
-        exposing methods to call the Kubernetes API.
+      cluster.K8sCluster: The Kubernetes cluster matching this GKE cluster,
+          exposing methods to call the Kubernetes API.
     """
-    return k8s_base.K8sCluster(self._GetK8sApiClient())
+    return cluster.K8sCluster(self._GetK8sApiClient())

@@ -27,15 +27,15 @@ def MakeMockNodes(amount: int) -> mock.Mock:
     mock_nodes.items.append(MakeMockNode(name))
   return mock_nodes
 
+
 def MakeMockNode(name: str) -> mock.Mock:
   """Make mock Kubernetes API response node, see V1Node."""
   mock_node = mock.Mock()
   mock_node.metadata.name = name
   return mock_node
 
-def MakeMockPod(name: str,
-                namespace: str,
-                node_name: str) -> mock.Mock:
+
+def MakeMockPod(name: str, namespace: str, node_name: str) -> mock.Mock:
   """Make mock Kubernetes API response pod, see V1Pod."""
   mock_pod = mock.Mock()
   mock_pod.metadata.name = name

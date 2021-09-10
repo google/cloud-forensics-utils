@@ -18,6 +18,7 @@ import abc
 from collections import defaultdict
 from typing import Dict
 
+
 class K8sSelector:
   """Class to build K8s API selectors."""
 
@@ -93,7 +94,7 @@ class K8sSelector:
 
     Returns:
       Dict[str, str]: The keyword arguments to be passed to a Kubernetes
-        API call.
+          API call.
     """
     keywords = defaultdict(list)
     for selector in self._selectors:

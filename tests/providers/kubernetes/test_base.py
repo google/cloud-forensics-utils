@@ -20,6 +20,7 @@ import unittest
 import mock
 
 from libcloudforensics.providers.kubernetes import base
+from libcloudforensics.providers.kubernetes import cluster
 from tests.providers.kubernetes import k8s_mocks
 
 
@@ -36,14 +37,15 @@ class K8sClusterTest(unittest.TestCase):
     mock_k8s_api_func = mock_k8s_api.return_value.list_node
     mock_k8s_api_func.return_value = mock_nodes
 
-    nodes = base.K8sCluster(api_client=k8s_mocks.MOCK_API_CLIENT).ListNodes()
+    nodes = cluster.K8sCluster(api_client=k8s_mocks.MOCK_API_CLIENT).ListNodes()
 
     # Assert API and corresponding function was called appropriately
     mock_k8s_api.assert_called_with(k8s_mocks.MOCK_API_CLIENT)
     mock_k8s_api_func.assert_called()
     # Assert returned nodes correspond to provided response
-    self.assertEqual(set(node.name for node in nodes),
-                     set(node.metadata.name for node in mock_nodes.items))
+    self.assertEqual(
+        set(node.name for node in nodes),
+        set(node.metadata.name for node in mock_nodes.items))
 
   @typing.no_type_check
   @mock.patch('kubernetes.client.CoreV1Api')
@@ -55,14 +57,15 @@ class K8sClusterTest(unittest.TestCase):
     mock_k8s_api_func = mock_k8s_api.return_value.list_pod_for_all_namespaces
     mock_k8s_api_func.return_value = mock_pods
 
-    pods = base.K8sCluster(api_client=k8s_mocks.MOCK_API_CLIENT).ListPods()
+    pods = cluster.K8sCluster(api_client=k8s_mocks.MOCK_API_CLIENT).ListPods()
 
     # Assert API and corresponding function was called appropriately
     mock_k8s_api.assert_called_with(k8s_mocks.MOCK_API_CLIENT)
     mock_k8s_api_func.assert_called()
     # Assert returned pods correspond to provided response
-    self.assertEqual(set(pod.name for pod in pods),
-                     set(pod.metadata.name for pod in mock_pods.items))
+    self.assertEqual(
+        set(pod.name for pod in pods),
+        set(pod.metadata.name for pod in mock_pods.items))
 
   @typing.no_type_check
   @mock.patch('kubernetes.client.CoreV1Api')
@@ -75,16 +78,17 @@ class K8sClusterTest(unittest.TestCase):
     mock_k8s_api_func = mock_k8s_api.return_value.list_namespaced_pod
     mock_k8s_api_func.return_value = mock_pods
 
-    pods = base.K8sCluster(api_client=k8s_mocks.MOCK_API_CLIENT).ListPods(
-      mock_namespace
-    )
+    pods = cluster.K8sCluster(
+        api_client=k8s_mocks.MOCK_API_CLIENT).ListPods(mock_namespace)
 
     # Assert API and corresponding function was called appropriately
     mock_k8s_api.assert_called_with(k8s_mocks.MOCK_API_CLIENT)
     mock_k8s_api_func.assert_called_with(mock_namespace)
     # Assert returned pods correspond to provided response
-    self.assertTrue(set(pod.name for pod in pods),
-                    set(pod.metadata.name for pod in mock_pods.items))
+    self.assertEqual(
+        set(pod.name for pod in pods),
+        set(pod.metadata.name for pod in mock_pods.items))
+
 
 class K8sNodeTest(unittest.TestCase):
   """Test K8sCluster functionality, mainly checking API calls."""
@@ -108,8 +112,9 @@ class K8sNodeTest(unittest.TestCase):
     self.assertIn('field_selector', kwargs)
     self.assertIn('fake-node-name', kwargs['field_selector'])
     # Assert returned pods correspond to provided response
-    self.assertEqual(set(pod.name for pod in pods),
-                     set(pod.metadata.name for pod in mock_pods.items))
+    self.assertEqual(
+        set(pod.name for pod in pods),
+        set(pod.metadata.name for pod in mock_pods.items))
 
 
 class K8sPodTest(unittest.TestCase):
@@ -119,17 +124,13 @@ class K8sPodTest(unittest.TestCase):
   @mock.patch('kubernetes.client.CoreV1Api')
   def testPodGetNode(self, mock_k8s_api):
     """Test that the returned node of a pod is correct."""
-    mock_pod = k8s_mocks.MakeMockPod('fake-pod-name',
-                                     'fake-namespace',
-                                     'fake-node-name')
+    mock_pod = k8s_mocks.MakeMockPod(
+        'fake-pod-name', 'fake-namespace', 'fake-node-name')
     mock_k8s_api_func = mock_k8s_api.return_value.read_namespaced_pod
     mock_k8s_api_func.return_value = mock_pod
 
     node = base.K8sPod(
-      k8s_mocks.MOCK_API_CLIENT,
-      'fake-pod-name',
-      'fake-namespace'
-    ).GetNode()
+        k8s_mocks.MOCK_API_CLIENT, 'fake-pod-name', 'fake-namespace').GetNode()
 
     # Assert API and corresponding function was called appropriately
     mock_k8s_api.assert_called_with(k8s_mocks.MOCK_API_CLIENT)

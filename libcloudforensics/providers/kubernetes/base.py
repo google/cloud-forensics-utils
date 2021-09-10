@@ -15,15 +15,12 @@
 """Kubernetes core class structure."""
 
 import abc
-from typing import List, TypeVar, Callable, Optional
+from typing import List, TypeVar, Callable, Optional, Dict
 
 from kubernetes import client
 
-from libcloudforensics import logging_utils
 from libcloudforensics.providers.kubernetes import selector
 
-logging_utils.SetUpLogger(__name__)
-logger = logging_utils.GetLogger(__name__)
 
 class K8sClient(metaclass=abc.ABCMeta):
   """Abstract class representing objects that use the Kubernetes API."""
@@ -35,7 +32,7 @@ class K8sClient(metaclass=abc.ABCMeta):
 
     Args:
       api_client (client.ApiClient): The Kubernetes API client to
-        the cluster.
+          the cluster.
     """
     self._api_client = api_client
 
@@ -68,7 +65,7 @@ class K8sResource(K8sClient, metaclass=abc.ABCMeta):
 
     Args:
       api_client (ApiClient): The authenticated Kubernetes API client to
-        the cluster.
+          the cluster.
       name (str): The name of this resource.
     """
     super().__init__(api_client)
@@ -88,84 +85,6 @@ class K8sResource(K8sClient, metaclass=abc.ABCMeta):
     """
 
 
-class K8sCluster(K8sClient):
-  """Class representing a Kubernetes cluster."""
-
-  def __init__(self, api_client: client.ApiClient) -> None:
-    """Creates a K8sCluster object, checking the API client's authorization.
-
-    This constructor calls an authorization check on the api_client, to see
-    whether it is authorized to do all operations on the cluster. The equivalent
-    check for kubectl would be `kubectl auth can-i '*' '*' --all-namespaces`.
-
-    Args:
-      api_client (client.ApiClient): The API client to the Kubernetes cluster.
-    """
-    super().__init__(api_client)
-    self.__AuthorizationCheck()
-
-  def ListPods(self, namespace: Optional[str] = None) -> List['K8sPod']:
-    """Lists the pods of this cluster, possibly filtering for a namespace.
-
-    Args:
-      namespace (str): Optional. The namespace in which to list the pods.
-
-    Returns:
-      List[K8sPod]: The list of pods for the namespace, or in all namespaces
-        if none is specified.
-    """
-    api = self._Api(client.CoreV1Api)
-
-    # Collect pods
-    if namespace is not None:
-      pods = api.list_namespaced_pod(namespace)
-    else:
-      pods = api.list_pod_for_all_namespaces()
-
-    # Convert to node objects
-    return [K8sPod(self._api_client, pod.metadata.name, pod.metadata.namespace)
-            for pod in pods.items]
-
-  def ListNodes(self) -> List['K8sNode']:
-    """Lists the nodes of this cluster.
-
-    Returns:
-      List[K8sNode]: The list of nodes in this cluster.
-    """
-    api = self._Api(client.CoreV1Api)
-
-    # Collect pods
-    nodes = api.list_node()
-
-    # Convert to node objects
-    return [K8sNode(self._api_client, node.metadata.name)
-            for node in nodes.items]
-
-  def __AuthorizationCheck(self) -> None:
-    """Checks the authorization of this cluster's API client.
-
-    Performs a check as per `kubectl auth can-i '*' '*' --all-namespaces`,
-    logging a warning if the check did not return 'yes'.
-    """
-    api = self._Api(client.AuthorizationV1Api)
-    response = api.create_self_subject_access_review(
-      # Body from `kubectl auth can-i '*' '*' --all-namespaces`
-      {
-        'spec': {
-          'resourceAttributes': {
-            'verb': '*',
-            'resource': '*'
-          }
-        }
-      }
-    )
-    if not response.status.allowed:
-      logger.warning(
-        'This object\'s client is not authorized to perform all operations'
-        'on the Kubernetes cluster. API calls may fail.'
-      )
-
-
 class K8sNamespacedResource(K8sResource, metaclass=abc.ABCMeta):
   """Class representing a Kubernetes resource, in a certain namespace.
 
@@ -174,19 +93,34 @@ class K8sNamespacedResource(K8sResource, metaclass=abc.ABCMeta):
     namespace (str): The Kubernetes namespace in which this resource resides.
   """
 
-  def __init__(self, api_client: client.ApiClient, name: str,
-               namespace: str) -> None:
+  def __init__(
+      self, api_client: client.ApiClient, name: str, namespace: str) -> None:
     """Creates a Kubernetes resource in the given namespace.
 
     Args:
       api_client (ApiClient): The authenticated Kubernetes API client to
-        the cluster.
+          the cluster.
       name (str): The name of this resource.
       namespace (str): The Kubernetes namespace in which this resource
         resides
     """
     super().__init__(api_client, name)
     self.namespace = namespace
+
+  @abc.abstractmethod
+  def Delete(self, cascade: bool = True) -> None:
+    """Deletes this resource from the Kubernetes cluster.
+
+    For determining how the deletion will cascade, the propagationPolicy
+    parameter for Kubernetes API is used.
+
+    https://kubernetes.io/docs/tasks/administer-cluster/use-cascading-deletion/#set-orphan-deletion-policy  # pylint: disable=line-too-long
+
+    Args:
+      cascade (bool): Optional. If true, deletion will be propagated to child
+          objects. If false, only this resource will be deleted and the child
+          objects will be orphaned. Defaults to True.
+    """
 
 
 class K8sNode(K8sResource):
@@ -205,13 +139,21 @@ class K8sNode(K8sResource):
     api = self._Api(client.CoreV1Api)
     # Create the body as per the API call to PATCH in
     # `kubectl cordon NODE_NAME`
-    body = {
-      'spec': {
-        'unschedulable': True
-      }
-    }
+    body = {'spec': {'unschedulable': True}}
     # Cordon the node with the PATCH verb
     api.patch_node(self.name, body)
+
+  def Drain(self, pod_filter: Callable[['K8sPod'], bool]) -> None:
+    """Drains all pods from this node that satisfy a filter.
+
+    Args:
+      pod_filter (Callable[[K8sPod], bool]): A predicate taking a pod as
+          argument. Pods that are on this node and satisfy this predicate will
+          be deleted.
+    """
+    for pod in self.ListPods():
+      if pod_filter(pod):
+        pod.Delete()
 
   def ListPods(self, namespace: Optional[str] = None) -> List['K8sPod']:
     """Lists the pods on this node, possibly filtering for a namespace.
@@ -221,29 +163,28 @@ class K8sNode(K8sResource):
 
     Returns:
       List[K8sPod]: The list of the node's pods for the namespace, or in all
-        namespaces if none is specified.
+          namespaces if none is specified.
     """
     api = self._Api(client.CoreV1Api)
 
     # The pods must be running, and must be on this node. The selectors here
     # are as per the API calls in `kubectl describe node NODE_NAME`.
     running_on_node_selector = selector.K8sSelector(
-      selector.K8sSelector.Node(self.name),
-      selector.K8sSelector.Running(),
+        selector.K8sSelector.Node(self.name),
+        selector.K8sSelector.Running(),
     )
 
     if namespace is not None:
       pods = api.list_namespaced_pod(
-        namespace,
-        **running_on_node_selector.ToKeywords()
-      )
+          namespace, **running_on_node_selector.ToKeywords())
     else:
       pods = api.list_pod_for_all_namespaces(
-        **running_on_node_selector.ToKeywords()
-      )
+          **running_on_node_selector.ToKeywords())
 
-    return [K8sPod(self._api_client, pod.metadata.name, pod.metadata.namespace)
-            for pod in pods.items]
+    return [
+        K8sPod(self._api_client, pod.metadata.name, pod.metadata.namespace)
+        for pod in pods.items
+    ]
 
 
 class K8sPod(K8sNamespacedResource):
@@ -264,3 +205,34 @@ class K8sPod(K8sNamespacedResource):
       K8sNode: The node on which this pod is running.
     """
     return K8sNode(self._api_client, self.Read().spec.node_name)
+
+  def GetLabels(self) -> Dict[str, str]:
+    """Gets the labels in the metadata field of this pod.
+
+    Returns:
+      Dict[str, str]: The labels in the metadata field of this pod.
+    """
+    labels = self.Read().metadata.labels  # type: Dict[str, str]
+    return labels
+
+  def Delete(self, cascade: bool = True) -> None:
+    """Override of abstract method.
+
+    Args:
+      cascade (bool): Ignored here, as a pod's deletion will not cascade
+          to any other Kubernetes objects.
+    """
+    api = self._Api(client.CoreV1Api)
+    api.delete_namespaced_pod(self.name, self.namespace)
+
+  def AddLabels(self, labels: Dict[str, str]) -> None:
+    """Adds labels to this pod.
+
+    Args:
+      labels (Dict[str, str]): The labels to be added to this pod.
+    """
+    api = self._Api(client.CoreV1Api)
+    api.patch_namespaced_pod(
+        self.name, self.namespace, body={'metadata': {
+            'labels': labels
+        }})

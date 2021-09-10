@@ -18,19 +18,20 @@ import base64
 import random
 import re
 import subprocess
-from typing import TYPE_CHECKING, List, Tuple, Optional, Dict, Any
+from typing import List, Tuple, Optional, Dict, Any
 
 from google.auth.exceptions import DefaultCredentialsError
 from google.auth.exceptions import RefreshError
 from googleapiclient.errors import HttpError
 
-from libcloudforensics.providers.gcp.internal import project as gcp_project
-from libcloudforensics.providers.gcp.internal import common
-from libcloudforensics import logging_utils
 from libcloudforensics import errors
-
-if TYPE_CHECKING:
-  from libcloudforensics.providers.gcp.internal import compute
+from libcloudforensics import logging_utils
+from libcloudforensics import prompts
+from libcloudforensics.providers.gcp.internal import common
+from libcloudforensics.providers.gcp.internal import compute
+from libcloudforensics.providers.gcp.internal import gke
+from libcloudforensics.providers.gcp.internal import project as gcp_project
+from libcloudforensics.providers.kubernetes import mitigation
 
 logging_utils.SetUpLogger(__name__)
 logger = logging_utils.GetLogger(__name__)
@@ -484,6 +485,116 @@ def CheckInstanceSSHAuth(project_id: str,
       return match_group.replace('\r', '').split(',')
 
   return None
+
+
+def QuarantineGKEWorkload(project_id: str,
+                          zone: str,
+                          cluster_id: str,
+                          namespace: str,
+                          workload_id: str) -> None:
+  """Guides the analyst through quarantining a GKE workload.
+
+  Args:
+    project_id (str): The GCP project ID.
+    zone (str): The zone in which the cluster resides.
+    cluster_id (str): The name of the Kubernetes cluster holding the workload.
+    namespace (str): The Kubernetes namespace of the workload (e.g. 'default').
+    workload_id (str): The name of the workload.
+  """
+  gke_cluster = gke.GkeCluster(project_id, zone, cluster_id)
+  k8s_cluster = gke_cluster.GetK8sCluster()
+
+  k8s_workload = k8s_cluster.GetDeployment(workload_id, namespace)
+
+  # Build a dict to find a managed instance group via an instance name,
+  # so that we can instance.AbandonFromMIG
+  compute_project = compute.GoogleCloudCompute(project_id)
+  groups_by_instance = compute_project.ListMIGSByInstanceName(zone)
+
+  workload_nodes = {pod.GetNode() for pod in k8s_workload.GetCoveredPods()}
+
+  def CordonNodes() -> None:
+    """Cordons the compromised nodes."""
+    for node in workload_nodes:
+      logger.info(
+          'Cordoning Kubernetes node {0:s} from {1:s} '
+          'deployment...'.format(node, k8s_workload.name))
+      node.Cordon()
+
+  def AbandonNodes() -> None:
+    """Abandons the nodes from their respective managed instance groups."""
+    for node in workload_nodes:
+      if node.name in groups_by_instance:
+        logger.info(
+            'Abandoning instance {0:s} from respective managed instance '
+            'group...'.format(node.name))
+        instance = compute_project.GetInstance(node.name)
+        instance.AbandonFromMIG(groups_by_instance[instance.name])
+      else:
+        logger.warning(
+            'Could not abandon {0:s} from respective managed instance '
+            'group, parent managed instance group not found.'.format(node.name))
+
+  def IsolatePods() -> None:
+    """Isolates the pods via Kubernetes NetworkPolicy."""
+    logger.info(
+        'Creating deny-all NetworkPolicy for {0:s} '
+        'workload...'.format(workload_id))
+    mitigation.CreateDenyAllNetworkPolicyForWorkload(k8s_cluster, k8s_workload)
+
+  def DrainNodes() -> None:
+    """Drains the workload nodes from other pods."""
+    logger.info('Draining workload nodes from other pods...')
+    mitigation.DrainWorkloadNodesFromOtherPods(k8s_workload, cordon=False)
+
+  def OrphanPods() -> None:
+    """Orphans the pods of the workload."""
+    logger.info(
+        'Orphaning Kubernetes workload {0:s}\'s pods...'.format(workload_id))
+    k8s_workload.OrphanPods()
+
+  def FirewallNodes() -> None:
+    """Puts each node from the workload into network quarantine."""
+    for node in workload_nodes:
+      logger.info(
+          'Putting instance {0:s} into network quarantine...'.format(
+              workload_id))
+      InstanceNetworkQuarantine(project_id, node.name)
+
+  # Third prompt options
+  isolate_nodes = prompts.PromptOption('Isolate nodes', FirewallNodes)
+  isolate_pods = prompts.PromptOption('Isolate pods', IsolatePods)
+  isolate_nodes_and_pods = prompts.PromptOption(
+      'Isolate nodes and pods', DrainNodes, FirewallNodes)
+
+  # Second prompt options, defined afterwards so that we can link disables
+  preserve_delete = prompts.PromptOption(
+      'Preserve evidence and delete workload',
+      OrphanPods,
+      disable_options=[isolate_pods])
+  preserve_preserve = prompts.PromptOption(
+      'Preserve evidence and preserve workload',
+      # No functions are called when this option is selected, a multi prompt
+      # was favored over a yes/no prompt for clarity
+      disable_options=[isolate_nodes, isolate_nodes_and_pods])
+
+  prompt_sequence = prompts.PromptSequence(
+      prompts.YesNoPrompt(
+          prompts.PromptOption(
+              'Abandon nodes from managed instance group', AbandonNodes)),
+      prompts.YesNoPrompt(prompts.PromptOption('Cordon nodes', CordonNodes)),
+      prompts.MultiPrompt([
+          preserve_delete,
+          preserve_preserve,
+      ]),
+      prompts.MultiPrompt([
+          isolate_nodes,
+          isolate_pods,
+          isolate_nodes_and_pods
+      ]),
+  )
+
+  prompt_sequence.Run(summarize=True)
 
 
 def TriageInstance(project_id: str,

@@ -17,6 +17,7 @@
 import os
 import subprocess
 import time
+from collections import defaultdict
 from typing import Dict, Tuple, List, TYPE_CHECKING, Union, Optional, Any
 
 from googleapiclient.errors import HttpError
@@ -132,6 +133,84 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
           pass
 
     return instances
+
+  def ListMIGSByInstanceName(self, zone: str) -> Dict[str, str]:
+    """Gets a mapping from instance names to their managed instance group.
+
+    Args:
+      zone (str): The zone in which to list managed instance groups.
+
+    Returns:
+      Dict[str, str]: A mapping from instance names to their managed instance
+          group.
+
+    Raises:
+      RuntimeError: If multiple managed instance groups are found for a single
+          instance.
+    """
+    groups = self.ListMIGS(zone)
+    groups_by_instance = {}
+    for group_id, instances in groups.items():
+      for instance in instances:
+        if instance.name in groups_by_instance:
+          raise RuntimeError('Multiple managed instance groups for instance')
+        groups_by_instance[instance.name] = group_id
+    return groups_by_instance
+
+  def ListMIGS(self, zone: str) -> Dict[str, List['GoogleComputeInstance']]:
+    """Gets the managed instance groups in a particular zone.
+
+    Returns a dictionary, with as keys the managed instance groups, and as
+    values a list of instances belonging to the group.
+
+    Args:
+      zone (str): The zone in which to list managed instance groups.
+
+    Returns:
+      Dict[str, List[GoogleComputeInstance]]: A mapping from managed instance
+          groups to their managed GCE instances.
+    """
+    groups_client = self.GceApi().instanceGroupManagers()
+    responses = common.ExecuteRequest(groups_client, 'list', {
+      'project': self.project_id,
+      'zone': zone,
+    })
+
+    groups = defaultdict(list)
+    for response in responses:
+      for group in response.get('items', []):
+        instances = self._ListInstancesForMIG(zone, group['name'])
+        groups[group['name']].extend(instances)
+
+    return groups
+
+  def _ListInstancesForMIG(self,
+                           zone: str,
+                           group_id: str) -> List['GoogleComputeInstance']:
+    """Gets the list of instances managed by a managed instance group.
+
+    Args:
+      zone (str): The zone in which the managed instance group resides.
+      group_id (str): The identifier of the managed instance group.
+
+    Returns:
+      List[GoogleComputeInstance]: List of GCE instances managed by the
+          managed instance group.
+    """
+    groups_client = self.GceApi().instanceGroupManagers()
+    responses = common.ExecuteRequest(groups_client, 'listManagedInstances', {
+      'project' : self.project_id,
+      'zone' : zone,
+      'instanceGroupManager' : group_id,
+    })
+    managed_instances = []
+    for response in responses:
+      for instance in response.get('managedInstances', []):
+        # The returned name is a URL, with the instance name at the end
+        name = instance['instance'].split('/')[-1]
+        instance = GoogleComputeInstance(self.project_id, zone, name)
+        managed_instances.append(instance)
+    return managed_instances
 
   def ListDisks(self) -> Dict[str, 'GoogleComputeDisk']:
     """List disks in project.
