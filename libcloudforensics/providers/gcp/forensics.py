@@ -583,11 +583,15 @@ def QuarantineGKEWorkload(project_id: str,
           prompts.PromptOption(
               'Abandon nodes from managed instance group', AbandonNodes)),
       prompts.YesNoPrompt(prompts.PromptOption('Cordon nodes', CordonNodes)),
-      prompts.MultiPrompt(
+      prompts.MultiPrompt([
           preserve_delete,
           preserve_preserve,
-      ),
-      prompts.MultiPrompt(isolate_nodes, isolate_pods, isolate_nodes_and_pods),
+      ]),
+      prompts.MultiPrompt([
+          isolate_nodes,
+          isolate_pods,
+          isolate_nodes_and_pods
+      ]),
   )
 
   prompt_sequence.Run(summarize=True)

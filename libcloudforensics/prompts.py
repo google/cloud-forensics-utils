@@ -159,7 +159,8 @@ class Prompt(abc.ABC):
 class MultiPrompt(Prompt):
   """Class representing a prompt with options to choose from."""
 
-  def __init__(self, *options: PromptOption, execution_order: int = 0) -> None:
+  def __init__(
+      self, options: List[PromptOption], execution_order: int = 0) -> None:
     """Builds a MultiPrompt.
 
     Args:
@@ -173,7 +174,7 @@ class MultiPrompt(Prompt):
     if not options:
       raise ValueError('Expected a non-empty list for options.')
     super().__init__(execution_order)
-    self._options = list(options)
+    self._options = options
 
   @property
   def options(self) -> List[PromptOption]:
