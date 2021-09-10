@@ -70,7 +70,7 @@ class K8sWorkload(base.K8sNamespacedResource, metaclass=abc.ABCMeta):
     """
     read = self.Read()
 
-    if read.spec.selector.match_expressions is not None:
+    if read.spec.selector.match_expressions:
       raise NotImplementedError(
           'matchExpressions exist, meaning using '
           'matchLabels will be inaccurate.')
