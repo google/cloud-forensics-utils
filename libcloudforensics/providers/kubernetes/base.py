@@ -19,7 +19,9 @@ from typing import List, TypeVar, Callable, Optional, Dict
 
 from kubernetes import client
 
+from libcloudforensics.providers.kubernetes import container
 from libcloudforensics.providers.kubernetes import selector
+from libcloudforensics.providers.kubernetes import volume
 
 
 class K8sClient(metaclass=abc.ABCMeta):
@@ -186,6 +188,18 @@ class K8sNode(K8sResource):
         for pod in pods.items
     ]
 
+  def ExternalIP(self) -> Optional[str]:
+    for address in self.Read().status.addresses:
+      if address.type == 'ExternalIP':
+        return address.address
+    return None
+
+  def InternalIP(self) -> Optional[str]:
+    for address in self.Read().status.addresses:
+      if address.type == 'InternalIP':
+        return address.address
+    return None
+
 
 class K8sPod(K8sNamespacedResource):
   """Class representing a Kubernetes pod.
@@ -205,6 +219,17 @@ class K8sPod(K8sNamespacedResource):
       K8sNode: The node on which this pod is running.
     """
     return K8sNode(self._api_client, self.Read().spec.node_name)
+
+  def ListContainers(self) -> List[container.K8sContainer]:
+    """Lists the containers on this pod.
+
+    Returns:
+      K8sNode: The node on which this pod is running.
+    """
+    return list(map(container.K8sContainer, self.Read().spec.containers))
+
+  def ListVolumes(self) -> List[volume.K8sVolume]:
+    return list(map(volume.K8sVolume, self.Read().spec.volumes))
 
   def GetLabels(self) -> Dict[str, str]:
     """Gets the labels in the metadata field of this pod.
