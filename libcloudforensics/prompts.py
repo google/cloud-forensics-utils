@@ -50,8 +50,10 @@ class PromptOption:
 
     Args:
       text (str): The text description this prompt option.
-      functions (Callable[[], Any]): The underlying functions of this prompt
-          option to called upon execution
+      functions (Callable[[], None]): The underlying functions of this prompt
+          option to be called upon execution.
+      disable_options (List[PromptOption]): Optional. List of prompt options
+          to disable upon selection of this prompt option.
     """
     self._text = text
     self._functions = functions
