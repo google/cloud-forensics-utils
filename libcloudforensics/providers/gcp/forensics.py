@@ -516,7 +516,7 @@ def TriageInstance(project_id: str,
     parsed_services.append({'service': service, 'count': count})
 
   cpu_usage = project.monitoring.GetCpuUsage(
-      instance_ids=[instance_info['id']])
+      instance_ids=[instance_info['id']], aggregation_minutes=1)
   if cpu_usage:
     parsed_cpu = cpu_usage[0].get('cpu_usage', [])
 
