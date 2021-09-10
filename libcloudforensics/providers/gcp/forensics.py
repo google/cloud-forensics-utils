@@ -484,3 +484,74 @@ def CheckInstanceSSHAuth(project_id: str,
       return match_group.replace('\r', '').split(',')
 
   return None
+
+
+def TriageInstance(project_id: str,
+                   instance_name: str) -> Dict[str, Any]:
+  """Gather triage information for an instance.
+
+  Args:
+    project_id (str): the project id for the instance.
+    instance_name (str): the instance name to check.
+
+  Returns:
+    Dict[str, Any]: The instance triage information.
+  """
+
+  project = gcp_project.GoogleCloudProject(project_id)
+  instance = project.compute.GetInstance(instance_name)
+  instance_info = instance.GetOperation()
+
+  ancestry = project.cloudresourcemanager.ProjectAncestry()
+  parsed_ancestry = []
+  for resource in ancestry:
+    name = resource['displayName']
+    resource_id = resource['name']
+    parsed_ancestry.append('{0:s} ({1:s})'.format(name, resource_id))
+  ancestry_string = ' -> '.join(parsed_ancestry)
+
+  active_services = project.monitoring.ActiveServices()
+  parsed_services = []
+  for service, count in active_services.items():
+    parsed_services.append({'service': service, 'count': count})
+
+  cpu_usage = project.monitoring.GetCpuUsage(
+      instance_ids=[instance_info['id']], aggregation_minutes=1)
+  if cpu_usage:
+    parsed_cpu = cpu_usage[0].get('cpu_usage', [])
+
+  instance_triage = {
+    'instance_info': {
+      'instance_name': instance_info['name'],
+      'instance_id': instance_info['id'],
+      'ancestry': ancestry_string,
+      'external_ipv4': ', '.join(instance.GetNatIps()),
+      'zone': instance_info['zone'].rsplit('/', 1)[1],
+      'creation_timestamp': instance_info['creationTimestamp'],
+      'laststart_timestamp': instance_info['lastStartTimestamp'],
+    },
+    'triage_data': [
+      {
+        'data_type': 'service_accounts',
+        'values': instance_info['serviceAccounts']
+      },
+      {
+        'data_type': 'firewalls',
+        'values': instance.GetNormalisedFirewalls()
+      },
+      {
+        'data_type': 'cpu_usage',
+        'values': parsed_cpu
+      },
+      {
+        'data_type': 'ssh_auth',
+        'values': CheckInstanceSSHAuth(project_id, instance_info['name'])
+      },
+      {
+        'data_type': 'active_services',
+        'values': parsed_services
+      }
+    ]
+  }
+
+  return instance_triage
