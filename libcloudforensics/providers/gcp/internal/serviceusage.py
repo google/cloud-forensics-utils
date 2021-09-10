@@ -14,7 +14,8 @@
 # limitations under the License.
 """Google Service Usage functionality."""
 
-from typing import TYPE_CHECKING, List, Any
+import time
+from typing import TYPE_CHECKING, Dict, List, Any
 from libcloudforensics.providers.gcp.internal import common
 
 if TYPE_CHECKING:
@@ -29,6 +30,7 @@ class GoogleServiceUsage:
   """
 
   SERVICE_USAGE_API_VERSION = 'v1'
+  NOOP_API_RESPONSE = 'operations/noop.DONE_OPERATION'
 
   def __init__(self, project_id: str) -> None:
     """Initialize the GoogleServiceUsage object.
@@ -68,6 +70,29 @@ class GoogleServiceUsage:
 
     return services
 
+  def _BlockOperation(self, response: Dict[str, Any]) -> Dict[str, Any]:
+    """Block until API operation is finished.
+
+    Args:
+      response (Dict): Service Usage API response.
+
+    Returns:
+      Dict: Holding the response of a get operation on an API object of type
+          Operation.
+    """
+
+    operations_api = self.GsuApi().operations() # pylint: disable=no-member
+
+    if response['name'] == self.NOOP_API_RESPONSE:
+      return response
+
+    while True:
+      request = {'name': response['name']}
+      result = common.ExecuteRequest(operations_api, 'get', request)[0]
+      if 'done' in result:
+        return result
+      time.sleep(5)  # Seconds between requests
+
   def EnableService(self, service_name: str) -> None:
     """Enable a service/API for a project.
 
@@ -78,7 +103,8 @@ class GoogleServiceUsage:
     services_client = self.GsuApi().services() # pylint: disable=no-member
     name = 'projects/' + self.project_id + '/services/' + service_name
     request = {'name': name}
-    common.ExecuteRequest(services_client, 'enable', request)
+    response = common.ExecuteRequest(services_client, 'enable', request)[0]
+    self._BlockOperation(response)
 
   def DisableService(self, service_name: str) -> None:
     """Disable a service/API for a project.
@@ -90,4 +116,5 @@ class GoogleServiceUsage:
     services_client = self.GsuApi().services() # pylint: disable=no-member
     name = 'projects/' + self.project_id + '/services/' + service_name
     request = {'name': name}
-    common.ExecuteRequest(services_client, 'disable', request)
+    response = common.ExecuteRequest(services_client, 'disable', request)[0]
+    self._BlockOperation(response)
