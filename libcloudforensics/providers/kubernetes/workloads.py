@@ -110,13 +110,9 @@ class K8sWorkload(base.K8sNamespacedResource, metaclass=abc.ABCMeta):
     Returns:
       bool: True if the pod is covered this workload, False otherwise.
     """
-    pod_labels = pod.GetLabels()
-    for label_key, label_value in self._PodMatchLabels().items():
-      if label_key not in pod_labels:
-        return False
-      if pod_labels[label_key] != label_value:
-        return False
-    return True
+    # Since labels are type Dict[str, str], we can use set-like operations
+    # on the items of the dict
+    return self._PodMatchLabels().items() <= pod.GetLabels().items()
 
 
 class K8sDeployment(K8sWorkload):
