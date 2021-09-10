@@ -50,6 +50,7 @@ class GoogleServiceUsageTest(unittest.TestCase):
     """Validates that EnableService calls ExecuteRequest with the correct
     arguments."""
     mock_service_usage = mock_gsu_api.return_value.services.return_value
+    mock_execute_request.return_value = [{'name': 'operations/noop.DONE_OPERATION'}]
     gcp_mocks.FAKE_SERVICE_USAGE.EnableService('container.googleapis.com')
 
     mock_execute_request.assert_called_with(mock_service_usage, 'enable',
@@ -62,6 +63,7 @@ class GoogleServiceUsageTest(unittest.TestCase):
     """Validates that DisableService calls ExecuteRequest with the correct
     arguments."""
     mock_service_usage = mock_gsu_api.return_value.services.return_value
+    mock_execute_request.return_value = [{'name': 'operations/noop.DONE_OPERATION'}]
     gcp_mocks.FAKE_SERVICE_USAGE.DisableService('container.googleapis.com')
 
     mock_execute_request.assert_called_with(mock_service_usage, 'disable',
