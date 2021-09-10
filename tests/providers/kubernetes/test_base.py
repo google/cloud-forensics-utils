@@ -85,7 +85,7 @@ class K8sClusterTest(unittest.TestCase):
     mock_k8s_api.assert_called_with(k8s_mocks.MOCK_API_CLIENT)
     mock_k8s_api_func.assert_called_with(mock_namespace)
     # Assert returned pods correspond to provided response
-    self.assertTrue(
+    self.assertEqual(
         set(pod.name for pod in pods),
         set(pod.metadata.name for pod in mock_pods.items))
 

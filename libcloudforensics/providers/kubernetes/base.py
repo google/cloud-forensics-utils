@@ -226,7 +226,11 @@ class K8sPod(K8sNamespacedResource):
     api.delete_namespaced_pod(self.name, self.namespace)
 
   def AddLabels(self, labels: Dict[str, str]) -> None:
-    """pass"""
+    """Adds labels to this pod.
+
+    Args:
+      labels (Dict[str, str]): The labels to be added to this pod.
+    """
     api = self._Api(client.CoreV1Api)
     api.patch_namespaced_pod(
         self.name, self.namespace, body={'metadata': {

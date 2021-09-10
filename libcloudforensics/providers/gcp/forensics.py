@@ -571,12 +571,12 @@ def QuarantineGKEWorkload(project_id: str,
   preserve_delete = prompts.PromptOption(
       'Preserve evidence and delete workload',
       OrphanPods,
-      disables=[isolate_pods])
+      disable_options=[isolate_pods])
   preserve_preserve = prompts.PromptOption(
       'Preserve evidence and preserve workload',
       # No functions are called when this option is selected, a multi prompt
       # was favored over a yes/no prompt for clarity
-      disables=[isolate_nodes, isolate_nodes_and_pods])
+      disable_options=[isolate_nodes, isolate_nodes_and_pods])
 
   prompt_sequence = prompts.PromptSequence(
       prompts.YesNoPrompt(

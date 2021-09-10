@@ -45,7 +45,7 @@ class PromptOption:
       self,
       text: str,
       *functions: Callable[[], None],
-      disables: Optional[List['PromptOption']] = None) -> None:
+      disable_options: Optional[List['PromptOption']] = None) -> None:
     """Builds a PromptOption.
 
     Args:
@@ -57,7 +57,7 @@ class PromptOption:
     self._functions = functions
     self._disabled = False
     self._selected = False
-    self._to_disable = disables or []
+    self._disable_options = disable_options or []
 
   @property
   def text(self) -> str:
@@ -78,7 +78,7 @@ class PromptOption:
 
   def Select(self) -> None:
     """Selects this prompt, disabling dependent prompts."""
-    for option in self._to_disable:
+    for option in self._disable_options:
       option.Disable()
     self._selected = True
 
@@ -159,11 +159,6 @@ class Prompt(abc.ABC):
 class MultiPrompt(Prompt):
   """Class representing a prompt with options to choose from."""
 
-  @property
-  def options(self) -> List[PromptOption]:
-    """Override of abstract property"""
-    return self._options
-
   def __init__(self, *options: PromptOption, execution_order: int = 0) -> None:
     """Builds a MultiPrompt.
 
@@ -179,6 +174,11 @@ class MultiPrompt(Prompt):
       raise ValueError('Expected a non-empty list for options.')
     super().__init__(execution_order)
     self._options = list(options)
+
+  @property
+  def options(self) -> List[PromptOption]:
+    """Override of abstract property"""
+    return self._options
 
   def GetOptionFromUser(self) -> Optional[PromptOption]:
     """Override of abstract method. Forces a choice among options."""
