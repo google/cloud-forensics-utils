@@ -510,6 +510,11 @@ def TriageInstance(project_id: str,
     parsed_ancestry.append('{0:s} ({1:s})'.format(name, resource_id))
   ancestry_string = ' -> '.join(parsed_ancestry)
 
+  active_services = project.monitoring.ActiveServices()
+  parsed_services = []
+  for service, count in active_services.items():
+    parsed_services.append({'service': service, 'count': count})
+
   instance_triage = {
     'instance_info': {
       'instance_name': instance_info['name'],
@@ -539,8 +544,8 @@ def TriageInstance(project_id: str,
         'values': CheckInstanceSSHAuth(project_id, instance_info['name'])
       },
       {
-        'data_type': 'enabled_services',
-        'values': project.serviceusage.GetEnabled()
+        'data_type': 'active_services',
+        'values': parsed_services
       }
     ]
   }
