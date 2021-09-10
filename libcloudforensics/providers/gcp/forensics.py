@@ -515,6 +515,11 @@ def TriageInstance(project_id: str,
   for service, count in active_services.items():
     parsed_services.append({'service': service, 'count': count})
 
+  cpu_usage = project.monitoring.GetCpuUsage(
+      instance_ids=[instance_info['id']])
+  if cpu_usage:
+    parsed_cpu = cpu_usage[0].get('cpu_usage', [])
+
   instance_triage = {
     'instance_info': {
       'instance_name': instance_info['name'],
@@ -536,8 +541,7 @@ def TriageInstance(project_id: str,
       },
       {
         'data_type': 'cpu_usage',
-        'values': project.monitoring.GetCpuUsage(
-            instance_ids=[instance_info['id']])
+        'values': parsed_cpu
       },
       {
         'data_type': 'ssh_auth',
