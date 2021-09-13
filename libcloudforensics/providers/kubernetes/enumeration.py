@@ -28,7 +28,7 @@ from libcloudforensics.providers.kubernetes import volume
 logging_utils.SetUpLogger(__name__)
 logger = logging_utils.GetLogger(__name__)
 
-T = TypeVar('T')
+ObjT = TypeVar('ObjT')
 
 KeyT = TypeVar('KeyT')
 ValT = TypeVar('ValT')
@@ -67,7 +67,7 @@ def _FilterEmptyValues(dictionary: Dict[KeyT, ValT]) -> Dict[KeyT, ValT]:
   return {k: v for k, v in dictionary.items() if v}
 
 
-class Enumeration(Generic[T], metaclass=abc.ABCMeta):
+class Enumeration(Generic[ObjT], metaclass=abc.ABCMeta):
   """Abstract base class for enumerations.
 
   Attributes:
@@ -77,7 +77,7 @@ class Enumeration(Generic[T], metaclass=abc.ABCMeta):
 
   _INDENT_STRING = '  '
 
-  def __init__(self, underlying_object: T) -> None:
+  def __init__(self, underlying_object: ObjT) -> None:
     """Builds an Enumeration object.
 
     Args:
@@ -255,7 +255,7 @@ class NodeEnumeration(Enumeration[base.K8sNode]):
   """Enumeration for a Kubernetes node."""
 
   def __init__(
-      self, underlying_object: T, namespace: Optional[str] = None) -> None:
+      self, underlying_object: ObjT, namespace: Optional[str] = None) -> None:
     """Builds a NodeEnumeration.
 
     Args:
@@ -288,7 +288,7 @@ class ClusterEnumeration(Enumeration[cluster.K8sCluster]):
   """Enumeration for a Kubernetes cluster."""
 
   def __init__(
-      self, underlying_object: T, namespace: Optional[str] = None) -> None:
+      self, underlying_object: ObjT, namespace: Optional[str] = None) -> None:
     """Builds a ClusterEnumeration.
 
     Args:
