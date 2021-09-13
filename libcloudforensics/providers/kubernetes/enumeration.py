@@ -87,7 +87,7 @@ class Enumeration(Generic[ObjT], metaclass=abc.ABCMeta):
     """
     self._object = underlying_object
 
-  def Children(self) -> Iterable['Enumeration']:
+  def Children(self) -> Iterable['Enumeration[Any]']:
     """Returns the child enumerations of this enumeration.
 
     Returns:
@@ -110,12 +110,10 @@ class Enumeration(Generic[ObjT], metaclass=abc.ABCMeta):
     # Minimize what's displayed. These aren't merged into one same dictionary
     # to enable different formatting for warnings and information.
     info = {
-      k: v for k, v in self.Information().items()
-      if not filter_empty or v
+        k: v for k, v in self.Information().items() if not filter_empty or v
     }
     warnings = {
-      k: v for k, v in self.Warnings().items()
-      if not filter_empty or v
+        k: v for k, v in self.Warnings().items() if not filter_empty or v
     }
 
     key_len = max(map(len, info.keys() | warnings.keys()), default=-1)
@@ -249,7 +247,7 @@ class PodsEnumeration(Enumeration[base.K8sPod]):
     """Override of abstract property."""
     return 'Pod'
 
-  def Children(self) -> Iterable[Enumeration]:
+  def Children(self) -> Iterable[Enumeration[Any]]:
     """Method override."""
     return itertools.chain(
         map(ContainerEnumeration, self._object.ListContainers()),
@@ -268,7 +266,8 @@ class NodeEnumeration(Enumeration[base.K8sNode]):
   """Enumeration for a Kubernetes node."""
 
   def __init__(
-      self, underlying_object: ObjT, namespace: Optional[str] = None) -> None:
+      self, underlying_object: base.K8sNode,
+      namespace: Optional[str] = None) -> None:
     """Builds a NodeEnumeration.
 
     Args:
@@ -284,7 +283,7 @@ class NodeEnumeration(Enumeration[base.K8sNode]):
     """Override of abstract property"""
     return 'Node'
 
-  def Children(self) -> Iterable[Enumeration]:
+  def Children(self) -> Iterable[Enumeration[Any]]:
     """Method override."""
     return map(PodsEnumeration, self._object.ListPods(namespace=self.namespace))
 
@@ -301,7 +300,9 @@ class ClusterEnumeration(Enumeration[cluster.K8sCluster]):
   """Enumeration for a Kubernetes cluster."""
 
   def __init__(
-      self, underlying_object: ObjT, namespace: Optional[str] = None) -> None:
+      self,
+      underlying_object: cluster.K8sCluster,
+      namespace: Optional[str] = None) -> None:
     """Builds a ClusterEnumeration.
 
     Args:
@@ -317,7 +318,7 @@ class ClusterEnumeration(Enumeration[cluster.K8sCluster]):
     """Override of abstract property."""
     return 'KubernetesCluster'
 
-  def Children(self) -> Iterable[Enumeration]:
+  def Children(self) -> Iterable[Enumeration[Any]]:
     """Method override."""
     for node in self._object.ListNodes():
       yield NodeEnumeration(node, namespace=self.namespace)
@@ -331,7 +332,7 @@ class WorkloadEnumeration(Enumeration[workloads.K8sWorkload]):
     """Override of abstract property."""
     return 'Workload'
 
-  def Children(self) -> Iterable[Enumeration]:
+  def Children(self) -> Iterable[Enumeration[Any]]:
     """Method override."""
     return map(PodsEnumeration, self._object.GetCoveredPods())
 

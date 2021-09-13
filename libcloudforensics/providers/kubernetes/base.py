@@ -188,27 +188,33 @@ class K8sNode(K8sResource):
         for pod in pods.items
     ]
 
-  def ExternalIP(self) -> Optional[str]:
+  def ExternalIP(self) -> str:
     """Returns the external IP of this node.
 
     Returns:
       str: The external IP of this node.
+
+    Raises:
+      RuntimeError: If the external IP was not found.
     """
     for address in self.Read().status.addresses:
       if address.type == 'ExternalIP':
-        return address.address
-    return None
+        return str(address.address)
+    raise RuntimeError('External IP not found.')
 
   def InternalIP(self) -> Optional[str]:
     """Returns the internal IP of this node.
 
     Returns:
       str: The internal IP of this node.
+
+    Raises:
+      RuntimeError: If the internal IP was not found.
     """
     for address in self.Read().status.addresses:
       if address.type == 'InternalIP':
-        return address.address
-    return None
+        return str(address.address)
+    raise RuntimeError('Internal IP not found.')
 
 
 class K8sPod(K8sNamespacedResource):

@@ -37,7 +37,8 @@ class K8sContainer:
       bool: True if this container is privileged, False otherwise.
     """
     security_context = self._response.security_context
-    return security_context and security_context.privileged
+    # Conversion to bool for mypy
+    return bool(security_context and security_context.privileged)
 
   def Name(self) -> str:
     """Returns the name of this container.
@@ -45,7 +46,8 @@ class K8sContainer:
     Returns:
       str: The name if this container.
     """
-    return self._response.name  # type: str
+    name = self._response.name  # type: str
+    return name
 
   def Image(self) -> str:
     """Returns the image of this container.
@@ -53,7 +55,8 @@ class K8sContainer:
     Returns:
       str: The image of this container.
     """
-    return self._response.image  # type: str
+    image = self._response.image  # type: str
+    return image
 
   def ContainerPorts(self) -> List[int]:
     """Returns the ports listed for this container.
@@ -61,7 +64,10 @@ class K8sContainer:
     Returns:
       List[int]: The ports listed for this container.
     """
-    return [port.container_port for port in (self._response.ports or [])]
+    ports = [
+        port.container_port for port in (self._response.ports or [])
+    ]  # type: List[int]
+    return ports
 
   def VolumeMounts(self) -> List[str]:
     """Returns the volumes mounted in this container.
@@ -69,4 +75,7 @@ class K8sContainer:
     Returns:
       List[str]: The volumes mounted in this container.
     """
-    return [volume.name for volume in (self._response.volume_mounts or [])]
+    volumes = [
+        volume.name for volume in (self._response.volume_mounts or [])
+    ]  # type: List[str]
+    return volumes
