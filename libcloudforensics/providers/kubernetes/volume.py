@@ -35,21 +35,24 @@ class K8sVolume:
     Returns:
       str: The name of this volume.
     """
-    return self._response.name
+    return self._response.name  # type: str
 
-  def Type(self) -> Optional[str]:
+  def Type(self) -> str:
     """Returns the type of this volume.
 
     Returns:
       str: The type of this volume.
+
+    Raises:
+      RuntimeError: If the type of this volume is not found.
     """
     # There is no attribute for a type, but rather the corresponding type
     # attribute is non-null.
     # https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1Volume.md  # pylint: disable=line-too-long
     for k, v in self._response.to_dict().items():
-      if k != 'name' and v is not None:
+      if k != 'name' and v:
         return k
-    return None
+    raise RuntimeError('Volume type not found.')
 
   def HostPath(self) -> Optional[str]:
     """Returns the host path of this volume.

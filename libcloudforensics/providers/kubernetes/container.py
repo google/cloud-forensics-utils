@@ -45,7 +45,7 @@ class K8sContainer:
     Returns:
       str: The name if this container.
     """
-    return self._response.name
+    return self._response.name  # type: str
 
   def Image(self) -> str:
     """Returns the image of this container.
@@ -53,7 +53,7 @@ class K8sContainer:
     Returns:
       str: The image of this container.
     """
-    return self._response.image
+    return self._response.image  # type: str
 
   def ContainerPorts(self) -> List[int]:
     """Returns the ports listed for this container.

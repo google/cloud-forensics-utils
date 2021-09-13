@@ -18,7 +18,7 @@ import abc
 import itertools
 from collections import defaultdict
 from typing import Any, Callable, Dict, Generic, Iterable, Optional, TypeVar, \
-  Tuple
+  Tuple, List
 
 from libcloudforensics import logging_utils
 from libcloudforensics.providers.kubernetes import base
@@ -48,7 +48,7 @@ def _SafeMerge(*dictionaries: Dict[KeyT, ValT]) -> Dict[KeyT, ValT]:
   Raises:
     ValueError: If keys are overlapping.
   """
-  merged = {}
+  merged = {}  # type: Dict[KeyT, ValT]
   for d in dictionaries:
     if merged.keys() & d.keys():
       raise ValueError('Overlapping keys.')
@@ -124,14 +124,14 @@ class Enumeration(Generic[ObjT], metaclass=abc.ABCMeta):
       print_func('-')
       return
 
-    def MakeRow(kv: Tuple[str, str]):
+    def MakeRow(kv: Tuple[str, str]) -> str:
       k, v = kv
       key_str = str(k).ljust(key_len)
       val_str = str(v)
       return '{0:s} : {1:s}'.format(key_str, val_str)
 
     # TODO: Differentiate warnings and info
-    rows = []
+    rows = []  # type: List[str]
     rows.extend(MakeRow(item) for item in info.items())
     rows.extend(MakeRow(item) for item in warnings.items())
 
@@ -175,16 +175,16 @@ class Enumeration(Generic[ObjT], metaclass=abc.ABCMeta):
       children_by_keyword[child.keyword].append(child.ToJson())
     return _SafeMerge(self.Information(), self.Warnings(), children_by_keyword)
 
-  def Information(self) -> Dict[str, str]:
+  def Information(self) -> Dict[str, Any]:
     """Returns information about the underlying object in a key-value format.
 
     Returns:
-      Dict[str, str]: Information about the underlying object in a key-value
+      Dict[str, Any]: Information about the underlying object in a key-value
           format.
     """
     return {}
 
-  def Warnings(self) -> Dict[str, str]:
+  def Warnings(self) -> Dict[str, Any]:
     """Returns warnings about the underlying object in a key-value format.
 
     Returns:
@@ -207,7 +207,7 @@ class ContainerEnumeration(Enumeration[container.K8sContainer]):
     """Override of abstract property."""
     return 'Container'
 
-  def Information(self) -> Dict[str, str]:
+  def Information(self) -> Dict[str, Any]:
     """Method override."""
     return {
         'Name': self._object.Name(),
@@ -216,7 +216,7 @@ class ContainerEnumeration(Enumeration[container.K8sContainer]):
         'DeclaredPorts': self._object.ContainerPorts(),
     }
 
-  def Warnings(self) -> Dict[str, str]:
+  def Warnings(self) -> Dict[str, Any]:
     """Method override."""
     warnings = {}
     if self._object.IsPrivileged():
@@ -232,7 +232,7 @@ class VolumeEnumeration(Enumeration[volume.K8sVolume]):
     """Override of abstract property."""
     return 'Volume'
 
-  def Information(self) -> Dict[str, str]:
+  def Information(self) -> Dict[str, Any]:
     """Method override."""
     return {
         'Name': self._object.Name(),
@@ -255,7 +255,7 @@ class PodsEnumeration(Enumeration[base.K8sPod]):
         map(ContainerEnumeration, self._object.ListContainers()),
         map(VolumeEnumeration, self._object.ListVolumes()))
 
-  def Information(self) -> Dict[str, str]:
+  def Information(self) -> Dict[str, Any]:
     """Method override."""
     return {
         'Name': self._object.name,
@@ -288,7 +288,7 @@ class NodeEnumeration(Enumeration[base.K8sNode]):
     """Method override."""
     return map(PodsEnumeration, self._object.ListPods(namespace=self.namespace))
 
-  def Information(self) -> Dict[str, str]:
+  def Information(self) -> Dict[str, Any]:
     """Method override."""
     return {
         'Name': self._object.name,
@@ -335,7 +335,7 @@ class WorkloadEnumeration(Enumeration[workloads.K8sWorkload]):
     """Method override."""
     return map(PodsEnumeration, self._object.GetCoveredPods())
 
-  def Information(self) -> Dict[str, str]:
+  def Information(self) -> Dict[str, Any]:
     """Method override."""
     return {
         'Name': self._object.name,
