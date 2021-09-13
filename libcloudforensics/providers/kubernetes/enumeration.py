@@ -17,13 +17,15 @@
 import abc
 import itertools
 from collections import defaultdict
-from typing import Any, Callable, Dict, Generic, Iterable, Optional, TypeVar
+from typing import Any, Callable, Dict, Generic, Iterable, Optional, TypeVar, \
+  Tuple
 
 from libcloudforensics import logging_utils
 from libcloudforensics.providers.kubernetes import base
 from libcloudforensics.providers.kubernetes import cluster
 from libcloudforensics.providers.kubernetes import container
 from libcloudforensics.providers.kubernetes import volume
+from libcloudforensics.providers.kubernetes import workloads
 
 logging_utils.SetUpLogger(__name__)
 logger = logging_utils.GetLogger(__name__)
@@ -75,7 +77,7 @@ class Enumeration(Generic[ObjT], metaclass=abc.ABCMeta):
         enumeration.
   """
 
-  _INDENT_STRING = '  '
+  _INDENT_STRING = '    '
 
   def __init__(self, underlying_object: ObjT) -> None:
     """Builds an Enumeration object.
@@ -102,22 +104,36 @@ class Enumeration(Generic[ObjT], metaclass=abc.ABCMeta):
     Args:
       print_func (Callable[[str], None]): A printing function, typically
           already with the required indent.
+      filter_empty (bool): Filter for information/warning entries that have a
+          non-empty value.
     """
-    # TODO: Display warnings
-    # Minimize what's displayed.
-    info = _FilterEmptyValues(
-        self.Information()) if filter_empty else self.Information()
-    if not info:
+    # Minimize what's displayed. These aren't merged into one same dictionary
+    # to enable different formatting for warnings and information.
+    info = {
+      k: v for k, v in self.Information().items()
+      if not filter_empty or v
+    }
+    warnings = {
+      k: v for k, v in self.Warnings().items()
+      if not filter_empty or v
+    }
+
+    key_len = max(map(len, info.keys() | warnings.keys()), default=-1)
+    if key_len == -1:
+      # Nothing to display, info and warnings were both empty
       print_func('-')
       return
 
-    key_len = max(map(len, info))
-
-    rows = []
-    for k, v in info.items():
+    def MakeRow(kv: Tuple[str, str]):
+      k, v = kv
       key_str = str(k).ljust(key_len)
       val_str = str(v)
-      rows.append('{0:s} : {1:s}'.format(key_str, val_str))
+      return '{0:s} : {1:s}'.format(key_str, val_str)
+
+    # TODO: Differentiate warnings and info
+    rows = []
+    rows.extend(MakeRow(item) for item in info.items())
+    rows.extend(MakeRow(item) for item in warnings.items())
 
     sep = '-' * max(map(len, rows))
     print_func(sep)
@@ -146,7 +162,7 @@ class Enumeration(Generic[ObjT], metaclass=abc.ABCMeta):
     PrintFunc(self.keyword)
     self.__PrintTable(PrintFunc, filter_empty)
     for child in self.Children():
-      child.Enumerate(depth + 1, filter_empty=filter_empty)
+      child.Enumerate(depth=depth + 1, filter_empty=filter_empty)
 
   def ToJson(self) -> Dict[str, Any]:
     """Converts the enumeration to a JSON object.
@@ -194,14 +210,10 @@ class ContainerEnumeration(Enumeration[container.K8sContainer]):
   def Information(self) -> Dict[str, str]:
     """Method override."""
     return {
-        'Name':
-            self._object.Name(),
-        'Image':
-            self._object.Image(),
-        'Mounts':
-            ', '.join(self._object.VolumeMounts()),
-        'DeclaredPorts':
-            ', '.join(str(port) for port in self._object.ContainerPorts())
+        'Name': self._object.Name(),
+        'Image': self._object.Image(),
+        'Mounts': self._object.VolumeMounts(),
+        'DeclaredPorts': self._object.ContainerPorts(),
     }
 
   def Warnings(self) -> Dict[str, str]:
@@ -237,7 +249,7 @@ class PodsEnumeration(Enumeration[base.K8sPod]):
     """Override of abstract property."""
     return 'Pod'
 
-  def Children(self) -> Iterable['Enumeration']:
+  def Children(self) -> Iterable[Enumeration]:
     """Method override."""
     return itertools.chain(
         map(ContainerEnumeration, self._object.ListContainers()),
@@ -248,6 +260,7 @@ class PodsEnumeration(Enumeration[base.K8sPod]):
     return {
         'Name': self._object.name,
         'Namespace': self._object.namespace,
+        'Node': self._object.GetNode().name,
     }
 
 
@@ -271,7 +284,7 @@ class NodeEnumeration(Enumeration[base.K8sNode]):
     """Override of abstract property"""
     return 'Node'
 
-  def Children(self) -> Iterable['PodsEnumeration']:
+  def Children(self) -> Iterable[Enumeration]:
     """Method override."""
     return map(PodsEnumeration, self._object.ListPods(namespace=self.namespace))
 
@@ -302,9 +315,29 @@ class ClusterEnumeration(Enumeration[cluster.K8sCluster]):
   @property
   def keyword(self) -> str:
     """Override of abstract property."""
-    return 'Cluster'
+    return 'KubernetesCluster'
 
-  def Children(self) -> 'Iterable[NodeEnumeration]':
+  def Children(self) -> Iterable[Enumeration]:
     """Method override."""
     for node in self._object.ListNodes():
       yield NodeEnumeration(node, namespace=self.namespace)
+
+
+class WorkloadEnumeration(Enumeration[workloads.K8sWorkload]):
+  """Enumeration of a Kubernetes workload."""
+
+  @property
+  def keyword(self) -> str:
+    """Override of abstract property."""
+    return 'Workload'
+
+  def Children(self) -> Iterable[Enumeration]:
+    """Method override."""
+    return map(PodsEnumeration, self._object.GetCoveredPods())
+
+  def Information(self) -> Dict[str, str]:
+    """Method override."""
+    return {
+        'Name': self._object.name,
+        'Namespace': self._object.namespace,
+    }
