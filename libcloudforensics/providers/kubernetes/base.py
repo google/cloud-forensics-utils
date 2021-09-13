@@ -189,12 +189,22 @@ class K8sNode(K8sResource):
     ]
 
   def ExternalIP(self) -> Optional[str]:
+    """Returns the external IP of this node.
+
+    Returns:
+      str: The external IP of this node.
+    """
     for address in self.Read().status.addresses:
       if address.type == 'ExternalIP':
         return address.address
     return None
 
   def InternalIP(self) -> Optional[str]:
+    """Returns the internal IP of this node.
+
+    Returns:
+      str: The internal IP of this node.
+    """
     for address in self.Read().status.addresses:
       if address.type == 'InternalIP':
         return address.address
@@ -224,11 +234,16 @@ class K8sPod(K8sNamespacedResource):
     """Lists the containers on this pod.
 
     Returns:
-      K8sNode: The node on which this pod is running.
+      List[container.K8sContainer]: The list of containers on this pod.
     """
     return list(map(container.K8sContainer, self.Read().spec.containers))
 
   def ListVolumes(self) -> List[volume.K8sVolume]:
+    """Lists the volumes on this pod.
+
+    Returns:
+      List[volume.K8sVolume]: The list of volumes on this pod.
+    """
     return list(map(volume.K8sVolume, self.Read().spec.volumes))
 
   def GetLabels(self) -> Dict[str, str]:

@@ -19,29 +19,54 @@ from kubernetes import client
 
 
 class K8sVolume:
+  """Class wrapping a Kubernetes volume response."""
 
   def __init__(self, response: client.V1Volume):
+    """Builds a K8sVolume object.
+
+    Args:
+      response (client.V1Volume): The Kubernetes Volume response object to wrap.
+    """
     self._response = response
 
-  def Name(self):
+  def Name(self) -> str:
+    """Returns the name of this volume.
+
+    Returns:
+      str: The name of this volume.
+    """
     return self._response.name
 
   def Type(self) -> Optional[str]:
+    """Returns the type of this volume.
+
+    Returns:
+      str: The type of this volume.
+    """
     # There is no attribute for a type, but rather the corresponding type
-    # attribute is non-null. See:
+    # attribute is non-null.
     # https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1Volume.md  # pylint: disable=line-too-long
     for k, v in self._response.to_dict().items():
-      if v is not None and k is not 'name':
+      if k != 'name' and v is not None:
         return k
     return None
 
   def HostPath(self) -> Optional[str]:
-    host_path = self._response.host_path
-    return host_path.path if host_path is not None else None
+    """Returns the host path of this volume.
 
-  def IsRootMountedFilesystem(self):
-    if self._response.host_path is not None:
-      host_path = self._response.host_path
-      return host_path.path == '/'
-    else:
-      return False
+    Will return None if this volume is not hostPath type.
+
+    Returns:
+      Optional[str]: Returns the path if this is a hostPath volume, None
+          otherwise
+    """
+    host_path = self._response.host_path
+    return host_path.path if host_path else None
+
+  def IsHostRootFilesystem(self) -> bool:
+    """Returns True if this volume is the host's root filesystem.
+
+    Returns:
+      bool: True if this volume is the host's root filesystem, False otherwise.
+    """
+    return self.HostPath() == '/'

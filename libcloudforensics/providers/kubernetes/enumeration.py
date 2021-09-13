@@ -1,102 +1,211 @@
+# -*- coding: utf-8 -*-
+# Copyright 2021 Google Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Module for enumeration objects."""
+
 import abc
 import itertools
 from collections import defaultdict
-from typing import Generic, TypeVar, Iterable, Dict, Optional, Callable, Any
+from typing import Any, Callable, Dict, Generic, Iterable, Optional, TypeVar
 
-from libcloudforensics.providers.kubernetes import (
-    base, cluster, container, volume)
+from libcloudforensics import logging_utils
+from libcloudforensics.providers.kubernetes import base
+from libcloudforensics.providers.kubernetes import cluster
+from libcloudforensics.providers.kubernetes import container
+from libcloudforensics.providers.kubernetes import volume
+
+logging_utils.SetUpLogger(__name__)
+logger = logging_utils.GetLogger(__name__)
 
 T = TypeVar('T')
 
+KeyT = TypeVar('KeyT')
+ValT = TypeVar('ValT')
 
-def _SafeMerge(*dicts: Dict):
+
+def _SafeMerge(*dictionaries: Dict[KeyT, ValT]) -> Dict[KeyT, ValT]:
+  """Merges given dictionaries, checking if there are overlapping keys.
+
+  Args:
+    *dictionaries (Dict[KeyT, ValT]): The dictionaries to be merged.
+
+  Returns:
+    Dict[KeyT, ValT]: The resulting merged dictionary.
+
+  Raises:
+    ValueError: If keys are overlapping.
+  """
   merged = {}
-  for d in dicts:
+  for d in dictionaries:
     if merged.keys() & d.keys():
       raise ValueError('Overlapping keys.')
     merged.update(d)
   return merged
 
 
+def _FilterEmptyValues(dictionary: Dict[KeyT, ValT]) -> Dict[KeyT, ValT]:
+  """Returns a dictionary with only the pairs whose value evaluated to True.
+
+  Args:
+    dictionary (Dict[KeyT, ValT]): The dictionary to be filtered.
+
+  Returns:
+    Dict[KeyT, ValT]: A resulting dictionary containing only entries whose
+        values evaluated to True.
+  """
+  return {k: v for k, v in dictionary.items() if v}
+
+
 class Enumeration(Generic[T], metaclass=abc.ABCMeta):
-  INDENT_STRING = '  '
+  """Abstract base class for enumerations.
 
-  def __init__(self, starting_object: T):
-    self._object = starting_object
+  Attributes:
+    keyword (str): The keyword describing the underlying of object of this
+        enumeration.
+  """
 
-  def Children(self) -> 'Iterable[Enumeration]':
+  _INDENT_STRING = '  '
+
+  def __init__(self, underlying_object: T) -> None:
+    """Builds an Enumeration object.
+
+    Args:
+      underlying_object (T): The underlying object of this enumeration.
+    """
+    self._object = underlying_object
+
+  def Children(self) -> Iterable['Enumeration']:
+    """Returns the child enumerations of this enumeration.
+
+    Returns:
+      Iterable[Enumeration]: An iterable of child enumerations of this
+          enumeration.
+    """
+    # Default is no children. To be overridden in subclasses.
     return []
 
-  def __PrintTable(self, print_func: Callable[[str], Any]) -> None:
-    # Filter out information for which the value is false
-    info = {k: v for k, v in self.Information().items() if v}
+  def __PrintTable(
+      self, print_func: Callable[[str], None], filter_empty: bool) -> None:
+    """Displays the table of information and warnings to the user.
 
-    keylen = max(map(lambda k: len(str(k)), info), default=0)
+    Args:
+      print_func (Callable[[str], None]): A printing function, typically
+          already with the required indent.
+    """
+    # TODO: Display warnings
+    # Minimize what's displayed.
+    info = _FilterEmptyValues(
+        self.Information()) if filter_empty else self.Information()
+    if not info:
+      print_func('-')
+      return
+
+    key_len = max(map(len, info))
+
     rows = []
     for k, v in info.items():
-      key_str = str(k).ljust(keylen)
+      key_str = str(k).ljust(key_len)
       val_str = str(v)
       rows.append('{0:s} : {1:s}'.format(key_str, val_str))
-    sep = '-' * max(map(len, rows), default=5)
+
+    sep = '-' * max(map(len, rows))
     print_func(sep)
     for row in rows:
       print_func(row)
     print_func(sep)
 
-  def Enumerate(self, depth: int = 0):
+  def Enumerate(self, depth: int = 0, filter_empty: bool = True) -> None:
+    """Enumerates the object and its children to the user.
 
-    def output(t):
-      return print(depth * self.INDENT_STRING + t)
+    Args:
+      depth (int): The current depth of the enumeration, determining how to
+          indent the enumeration output.
+      filter_empty (bool): Optional. Whether or not to filter out information
+          lines for which the value is empty. Defaults to True.
+    """
 
-    # Title
-    output(self.keyword)
-    self.__PrintTable(output)
-    # Enumerate children
-    children = list(self.Children())
-    for i, child in enumerate(children):
-      child.Enumerate(depth + 1)
+    def PrintFunc(text: str) -> None:
+      """Displays the text to the user with the appropriate indent.
 
-  def ToJson(self):
-    children_json = defaultdict(list)
+      Args:
+        text (str): The text to be displayed.
+      """
+      logger.info(depth * self._INDENT_STRING + text)
+
+    PrintFunc(self.keyword)
+    self.__PrintTable(PrintFunc, filter_empty)
     for child in self.Children():
-      children_json[child.keyword].append(child.ToJson())
-    return _SafeMerge(
-        self.Information(),
-        self.Warnings(),
-        children_json,
-    )
+      child.Enumerate(depth + 1, filter_empty=filter_empty)
+
+  def ToJson(self) -> Dict[str, Any]:
+    """Converts the enumeration to a JSON object.
+
+    Returns:
+      Dict[str, Any]: This enumeration as a JSON object.
+    """
+    children_by_keyword = defaultdict(list)
+    for child in self.Children():
+      children_by_keyword[child.keyword].append(child.ToJson())
+    return _SafeMerge(self.Information(), self.Warnings(), children_by_keyword)
 
   def Information(self) -> Dict[str, str]:
+    """Returns information about the underlying object in a key-value format.
+
+    Returns:
+      Dict[str, str]: Information about the underlying object in a key-value
+          format.
+    """
     return {}
 
   def Warnings(self) -> Dict[str, str]:
+    """Returns warnings about the underlying object in a key-value format.
+
+    Returns:
+      Dict[str, str]: Warnings about the underlying object, in a key-value
+          format.
+    """
     return {}
 
   @property
   @abc.abstractmethod
   def keyword(self) -> str:
-    """"""
+    """The keyword describing the underlying object."""
 
 
 class ContainerEnumeration(Enumeration[container.K8sContainer]):
+  """Enumeration for a Kubernetes container."""
 
   @property
   def keyword(self) -> str:
+    """Override of abstract property."""
     return 'Container'
 
   def Information(self) -> Dict[str, str]:
+    """Method override."""
     return {
         'Name':
             self._object.Name(),
         'Image':
             self._object.Image(),
         'Mounts':
-            ','.join(self._object.VolumeMounts()),
+            ', '.join(self._object.VolumeMounts()),
         'DeclaredPorts':
-            ','.join(str(port) for port in self._object.ContainerPorts())
+            ', '.join(str(port) for port in self._object.ContainerPorts())
     }
 
   def Warnings(self) -> Dict[str, str]:
+    """Method override."""
     warnings = {}
     if self._object.IsPrivileged():
       warnings['Privileged'] = 'Yes'
@@ -104,12 +213,15 @@ class ContainerEnumeration(Enumeration[container.K8sContainer]):
 
 
 class VolumeEnumeration(Enumeration[volume.K8sVolume]):
+  """Enumeration for a Kubernetes volume."""
 
   @property
   def keyword(self) -> str:
+    """Override of abstract property."""
     return 'Volume'
 
   def Information(self) -> Dict[str, str]:
+    """Method override."""
     return {
         'Name': self._object.Name(),
         'Type': self._object.Type(),
@@ -118,17 +230,21 @@ class VolumeEnumeration(Enumeration[volume.K8sVolume]):
 
 
 class PodsEnumeration(Enumeration[base.K8sPod]):
+  """Enumeration for a Kubernetes pod."""
 
   @property
   def keyword(self) -> str:
+    """Override of abstract property."""
     return 'Pod'
 
-  def Children(self) -> 'Iterable[Enumeration]':
+  def Children(self) -> Iterable['Enumeration']:
+    """Method override."""
     return itertools.chain(
         map(ContainerEnumeration, self._object.ListContainers()),
         map(VolumeEnumeration, self._object.ListVolumes()))
 
   def Information(self) -> Dict[str, str]:
+    """Method override."""
     return {
         'Name': self._object.name,
         'Namespace': self._object.namespace,
@@ -136,19 +252,31 @@ class PodsEnumeration(Enumeration[base.K8sPod]):
 
 
 class NodeEnumeration(Enumeration[base.K8sNode]):
+  """Enumeration for a Kubernetes node."""
 
-  def __init__(self, starting_object: T, namespace: Optional[str] = None):
-    super().__init__(starting_object)
+  def __init__(
+      self, underlying_object: T, namespace: Optional[str] = None) -> None:
+    """Builds a NodeEnumeration.
+
+    Args:
+      underlying_object (T): The underlying object of this enumeration.
+      namespace (str): Optional. The namespace in which to list the child
+          pods of this enumeration.
+    """
+    super().__init__(underlying_object)
     self.namespace = namespace
 
   @property
   def keyword(self) -> str:
+    """Override of abstract property"""
     return 'Node'
 
-  def Children(self) -> 'Iterable[PodsEnumeration]':
+  def Children(self) -> Iterable['PodsEnumeration']:
+    """Method override."""
     return map(PodsEnumeration, self._object.ListPods(namespace=self.namespace))
 
   def Information(self) -> Dict[str, str]:
+    """Method override."""
     return {
         'Name': self._object.name,
         'ExtIP': self._object.ExternalIP(),
@@ -157,15 +285,26 @@ class NodeEnumeration(Enumeration[base.K8sNode]):
 
 
 class ClusterEnumeration(Enumeration[cluster.K8sCluster]):
+  """Enumeration for a Kubernetes cluster."""
 
-  def __init__(self, starting_object: T, namespace: Optional[str] = None):
-    super().__init__(starting_object)
+  def __init__(
+      self, underlying_object: T, namespace: Optional[str] = None) -> None:
+    """Builds a ClusterEnumeration.
+
+    Args:
+        underlying_object (T): The underlying object of this enumeration.
+        namespace (str): Optional. The namespace in which to list the child
+            nodes of this enumeration.
+    """
+    super().__init__(underlying_object)
     self.namespace = namespace
 
   @property
   def keyword(self) -> str:
+    """Override of abstract property."""
     return 'Cluster'
 
   def Children(self) -> 'Iterable[NodeEnumeration]':
+    """Method override."""
     for node in self._object.ListNodes():
       yield NodeEnumeration(node, namespace=self.namespace)

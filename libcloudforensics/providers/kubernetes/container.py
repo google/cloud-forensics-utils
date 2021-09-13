@@ -13,28 +13,60 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Kubernetes container class."""
+from typing import List
 
 from kubernetes import client
 
+
 class K8sContainer:
+  """Class wrapping a Kubernetes container response"""
 
   def __init__(self, response: client.V1Container):
+    """Builds a K8sContainer object.
+
+    Args:
+      response (client.V1Container): The Kubernetes Container response object
+          to be wrapped.
+    """
     self._response = response
 
-  def IsPrivileged(self):
-    security_context = self._response.security_context
-    return security_context is not None and security_context.privileged
+  def IsPrivileged(self) -> bool:
+    """Returns True if this container is privileged, False otherwise.
 
-  def Name(self):
+    Returns:
+      bool: True if this container is privileged, False otherwise.
+    """
+    security_context = self._response.security_context
+    return security_context and security_context.privileged
+
+  def Name(self) -> str:
+    """Returns the name of this container.
+
+    Returns:
+      str: The name if this container.
+    """
     return self._response.name
 
-  def Image(self):
+  def Image(self) -> str:
+    """Returns the image of this container.
+
+    Returns:
+      str: The image of this container.
+    """
     return self._response.image
 
-  def ContainerPorts(self):
-    return [port.container_port
-            for port in (self._response.ports or [])]
+  def ContainerPorts(self) -> List[int]:
+    """Returns the ports listed for this container.
 
-  def VolumeMounts(self):
-    return [volume.name
-            for volume in (self._response.volume_mounts or [])]
+    Returns:
+      List[int]: The ports listed for this container.
+    """
+    return [port.container_port for port in (self._response.ports or [])]
+
+  def VolumeMounts(self) -> List[str]:
+    """Returns the volumes mounted in this container.
+
+    Returns:
+      List[str]: The volumes mounted in this container.
+    """
+    return [volume.name for volume in (self._response.volume_mounts or [])]
