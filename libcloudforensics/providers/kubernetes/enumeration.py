@@ -24,6 +24,7 @@ from libcloudforensics import logging_utils
 from libcloudforensics.providers.kubernetes import base
 from libcloudforensics.providers.kubernetes import cluster
 from libcloudforensics.providers.kubernetes import container
+from libcloudforensics.providers.kubernetes import services
 from libcloudforensics.providers.kubernetes import volume
 from libcloudforensics.providers.kubernetes import workloads
 
@@ -35,6 +36,7 @@ ObjT = TypeVar('ObjT')
 KeyT = TypeVar('KeyT')
 ValT = TypeVar('ValT')
 
+
 def _Underline(text: str) -> str:
   """Underlines given text.
 
@@ -45,6 +47,7 @@ def _Underline(text: str) -> str:
     str: The underlined text.
   """
   return ''.join('\u0332{0:s}'.format(char) for char in text)
+
 
 def _Bold(text: str) -> str:
   """Adds ANSI escape codes to text so that it is displayed in bold.
@@ -375,4 +378,25 @@ class WorkloadEnumeration(Enumeration[workloads.K8sWorkload]):
     return {
         'Name': self._object.name,
         'Namespace': self._object.namespace,
+    }
+
+
+class ServiceEnumeration(Enumeration[services.K8sService]):
+  """Enumeration for a Kubernetes service."""
+
+  @property
+  def keyword(self) -> str:
+    """Override of abstract property."""
+    return 'Service'
+
+  def Children(self) -> Iterable['Enumeration[Any]']:
+    """Method override."""
+    return map(PodsEnumeration, self._object.GetCoveredPods())
+
+  def Information(self) -> Dict[str, Any]:
+    """Method override."""
+    return {
+        'Name': self._object.name,
+        'Namespace': self._object.namespace,
+        'Type': self._object.Type(),
     }
