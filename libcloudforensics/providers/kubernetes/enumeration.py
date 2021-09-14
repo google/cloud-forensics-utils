@@ -35,6 +35,28 @@ ObjT = TypeVar('ObjT')
 KeyT = TypeVar('KeyT')
 ValT = TypeVar('ValT')
 
+def _Underline(text: str) -> str:
+  """Underlines given text.
+
+  Args:
+    text (str): The text to be underlined.
+
+  Returns:
+    str: The underlined text.
+  """
+  return ''.join('\u0332{0:s}'.format(char) for char in text)
+
+def _Bold(text: str) -> str:
+  """Adds ANSI escape codes to text so that it is displayed in bold.
+
+  Args:
+    text (str): The text to be put in bold.
+
+  Returns:
+    str: The text with bold escape codes.
+  """
+  return '\033[1m{0:s}\033[0m'.format(text)
+
 
 def _SafeMerge(*dictionaries: Dict[KeyT, ValT]) -> Dict[KeyT, ValT]:
   """Merges given dictionaries, checking if there are overlapping keys.
@@ -91,7 +113,7 @@ class Enumeration(Generic[ObjT], metaclass=abc.ABCMeta):
     """Returns the child enumerations of this enumeration.
 
     Returns:
-      Iterable[Enumeration]: An iterable of child enumerations of this
+      Iterable[Enumeration[Any]]: An iterable of child enumerations of this
           enumeration.
     """
     # Default is no children. To be overridden in subclasses.
@@ -122,18 +144,30 @@ class Enumeration(Generic[ObjT], metaclass=abc.ABCMeta):
       print_func('-')
       return
 
+    row_max_len = 0
+
     def MakeRow(kv: Tuple[str, str]) -> str:
+      """Creates a row from a key-value pair and updates row_max_len.
+
+      Args:
+        kv (Tuple[str, str]): The key-value pair.
+
+      Returns:
+        str: The created row.
+      """
+      nonlocal row_max_len
       k, v = kv
       key_str = str(k).ljust(key_len)
       val_str = str(v)
-      return '{0:s} : {1:s}'.format(key_str, val_str)
+      row_str = '{0:s} : {1:s}'.format(key_str, val_str)
+      row_max_len = max(row_max_len, len(row_str))
+      return row_str
 
-    # TODO: Differentiate warnings and info
     rows = []  # type: List[str]
     rows.extend(MakeRow(item) for item in info.items())
-    rows.extend(MakeRow(item) for item in warnings.items())
+    rows.extend(_Underline(MakeRow(item)) for item in warnings.items())
 
-    sep = '-' * max(map(len, rows))
+    sep = '-' * row_max_len
     print_func(sep)
     for row in rows:
       print_func(row)
@@ -157,7 +191,7 @@ class Enumeration(Generic[ObjT], metaclass=abc.ABCMeta):
       """
       logger.info(depth * self._INDENT_STRING + text)
 
-    PrintFunc(self.keyword)
+    PrintFunc(_Bold(self.keyword))
     self.__PrintTable(PrintFunc, filter_empty)
     for child in self.Children():
       child.Enumerate(depth=depth + 1, filter_empty=filter_empty)
@@ -186,7 +220,7 @@ class Enumeration(Generic[ObjT], metaclass=abc.ABCMeta):
     """Returns warnings about the underlying object in a key-value format.
 
     Returns:
-      Dict[str, str]: Warnings about the underlying object, in a key-value
+      Dict[str, Any]: Warnings about the underlying object, in a key-value
           format.
     """
     return {}
