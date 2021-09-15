@@ -217,7 +217,9 @@ class Enumeration(Generic[ObjT], metaclass=abc.ABCMeta):
     info, warnings = self._GetInformationAndWarnings()
     return _SafeMerge(info, warnings, children_by_keyword)
 
-  def _GetInformationAndWarnings(self, filter_empty: bool = False) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+  def _GetInformationAndWarnings(
+      self,
+      filter_empty: bool = False) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     """Gets the populated information and warning dictionaries.
 
     Args:
@@ -228,7 +230,8 @@ class Enumeration(Generic[ObjT], metaclass=abc.ABCMeta):
       Tuple[Dict[str, Any], Dict[str, Any]]: The populated information and
           warnings pair.
     """
-    info, warnings = {}, {}
+    info = {}  # type: Dict[str, Any]
+    warnings = {}  # type: Dict[str, Any]
     self._Populate(info, warnings)
     if filter_empty:
       return _FilterEmptyValues(info), _FilterEmptyValues(warnings)
