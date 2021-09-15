@@ -234,9 +234,9 @@ class Enumeration(Generic[ObjT], metaclass=abc.ABCMeta):
     warnings = {}  # type: Dict[str, Any]
     self._Populate(info, warnings)
     if filter_empty:
-      return _FilterEmptyValues(info), _FilterEmptyValues(warnings)
-    else:
-      return info, warnings
+      info = _FilterEmptyValues(info)
+      warnings = _FilterEmptyValues(warnings)
+    return info, warnings
 
   @property
   @abc.abstractmethod
