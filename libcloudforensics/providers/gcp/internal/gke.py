@@ -145,6 +145,20 @@ class GkeCluster(GoogleKubernetesEngine):
     return response
 
   def _GetValue(self, *keys: str, default: Any = None) -> Any:
+    """Gets a nested from this cluster's 'GET' using a list of keys.
+
+    Args:
+      *keys (str): The key path to the nested value.
+      default (Any): Optional. If a key from the key path is not present,
+          this value will be returned. Defaults to None.
+
+    Returns:
+      Any: The value at the end of the key path, or the default value if
+          a key was not present
+
+    Raises:
+      KeyError: If an object along the key path was not a dict.
+    """
     current = self.GetOperation()
     for key in keys:
       if isinstance(current, dict):
@@ -174,9 +188,8 @@ class GkeCluster(GoogleKubernetesEngine):
     return bool(
         self._GetValue(
             'nodeConfig',
-            'workloadMetadata',
-            'mode',
-            default='MODE_UNSPECIFIED') == 'GKE_METADATA')
+            'workloadMetadataConfig',
+            'mode') == 'GKE_METADATA')
 
   def IsLegacyEndpointsDisabled(self) -> bool:
     """Returns whether legacy endpoints are enabled.
@@ -188,8 +201,7 @@ class GkeCluster(GoogleKubernetesEngine):
         self._GetValue(
             'nodeConfig',
             'metadata',
-            'disable-legacy-endpoints',
-            default='false') == 'true')
+            'disable-legacy-endpoints') == 'true')
 
   def IsNetworkPolicyEnabled(self) -> bool:
     """Returns whether network policies are enabled.
