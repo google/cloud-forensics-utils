@@ -166,14 +166,35 @@ class GkeCluster(GoogleKubernetesEngine):
     return cluster.K8sCluster(self._GetK8sApiClient())
 
   def IsWorkloadIdentityEnabled(self) -> bool:
-    return self._GetValue(
-        'nodeConfig', 'workloadMetadata', 'mode',
-        default='MODE_UNSPECIFIED') == 'GKE_METADATA'
+    """Returns whether the workload identity is enabled.
+
+    Returns:
+      bool: True if workload identity is enabled, False otherwise.
+    """
+    return bool(
+        self._GetValue(
+            'nodeConfig',
+            'workloadMetadata',
+            'mode',
+            default='MODE_UNSPECIFIED') == 'GKE_METADATA')
 
   def IsLegacyEndpointsDisabled(self) -> bool:
-    return self._GetValue(
-        'nodeConfig', 'metadata', 'disable-legacy-endpoints',
-        default='false') == 'true'
+    """Returns whether legacy endpoints are enabled.
+
+    Returns:
+      bool: True if legacy endpoints are enabled, False otherwise.
+    """
+    return bool(
+        self._GetValue(
+            'nodeConfig',
+            'metadata',
+            'disable-legacy-endpoints',
+            default='false') == 'true')
 
   def IsNetworkPolicyEnabled(self) -> bool:
-    return self._GetValue('networkPolicy', 'enabled', default=False)
+    """Returns whether network policies are enabled.
+
+    Returns:
+      bool: True if network policies are enabled, False otherwise.
+    """
+    return bool(self._GetValue('networkPolicy', 'enabled', default=False))
