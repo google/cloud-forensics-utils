@@ -17,8 +17,8 @@
 import abc
 import itertools
 from collections import defaultdict
-from typing import Any, Callable, Dict, Generic, Iterable, Optional, TypeVar, \
-  Tuple, List
+from typing import Any, Callable, Dict, Generic, Iterable, List, Optional, \
+  Tuple, TypeVar
 
 from libcloudforensics import logging_utils
 from libcloudforensics.providers.kubernetes import base
@@ -122,6 +122,19 @@ class Enumeration(Generic[ObjT], metaclass=abc.ABCMeta):
     # Default is no children. To be overridden in subclasses.
     return []
 
+  def _Populate(self, info: Dict[str, Any], warnings: Dict[str, Any]) -> None:
+    """Populates the information and warning dictionaries.
+
+    Abstract method to be overridden in subclasses.
+
+    Args:
+      info (Dict[str, Any]): The (empty) information dictionary to be populated
+          with information about the underlying object's details.
+      warnings (Dict[str, Any]): The (emtpy) warning dictionary to be populated
+          with warnings about the underlying object. These warnings will be
+          highlighted in the enumeration.
+    """
+
   def __PrintTable(
       self, print_func: Callable[[str], None], filter_empty: bool) -> None:
     """Displays the table of information and warnings to the user.
@@ -132,14 +145,7 @@ class Enumeration(Generic[ObjT], metaclass=abc.ABCMeta):
       filter_empty (bool): Filter for information/warning entries that have a
           non-empty value.
     """
-    # Minimize what's displayed. These aren't merged into one same dictionary
-    # to enable different formatting for warnings and information.
-    info = {
-        k: v for k, v in self.Information().items() if not filter_empty or v
-    }
-    warnings = {
-        k: v for k, v in self.Warnings().items() if not filter_empty or v
-    }
+    info, warnings = self._GetInformationAndWarnings(filter_empty=filter_empty)
 
     key_len = max(map(len, info.keys() | warnings.keys()), default=-1)
     if key_len == -1:
@@ -208,25 +214,26 @@ class Enumeration(Generic[ObjT], metaclass=abc.ABCMeta):
     children_by_keyword = defaultdict(list)
     for child in self.Children():
       children_by_keyword[child.keyword].append(child.ToJson())
-    return _SafeMerge(self.Information(), self.Warnings(), children_by_keyword)
+    info, warnings = self._GetInformationAndWarnings()
+    return _SafeMerge(info, warnings, children_by_keyword)
 
-  def Information(self) -> Dict[str, Any]:
-    """Returns information about the underlying object in a key-value format.
+  def _GetInformationAndWarnings(self, filter_empty: bool = False) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+    """Gets the populated information and warning dictionaries.
 
-    Returns:
-      Dict[str, Any]: Information about the underlying object in a key-value
-          format.
-    """
-    return {}
-
-  def Warnings(self) -> Dict[str, Any]:
-    """Returns warnings about the underlying object in a key-value format.
+    Args:
+      filter_empty (bool): Optional. If True, filters out the entries in the
+          dictionaries that have an empty value.
 
     Returns:
-      Dict[str, Any]: Warnings about the underlying object, in a key-value
-          format.
+      Tuple[Dict[str, Any], Dict[str, Any]]: The populated information and
+          warnings pair.
     """
-    return {}
+    info, warnings = {}, {}
+    self._Populate(info, warnings)
+    if filter_empty:
+      return _FilterEmptyValues(info), _FilterEmptyValues(warnings)
+    else:
+      return info, warnings
 
   @property
   @abc.abstractmethod
@@ -242,21 +249,16 @@ class ContainerEnumeration(Enumeration[container.K8sContainer]):
     """Override of abstract property."""
     return 'Container'
 
-  def Information(self) -> Dict[str, Any]:
+  def _Populate(self, info: Dict[str, Any], warnings: Dict[str, Any]) -> None:
     """Method override."""
-    return {
+    info.update({
         'Name': self._object.Name(),
         'Image': self._object.Image(),
         'Mounts': self._object.VolumeMounts(),
         'DeclaredPorts': self._object.ContainerPorts(),
-    }
-
-  def Warnings(self) -> Dict[str, Any]:
-    """Method override."""
-    warnings = {}
+    })
     if self._object.IsPrivileged():
       warnings['Privileged'] = 'Yes'
-    return warnings
 
 
 class VolumeEnumeration(Enumeration[volume.K8sVolume]):
@@ -267,13 +269,13 @@ class VolumeEnumeration(Enumeration[volume.K8sVolume]):
     """Override of abstract property."""
     return 'Volume'
 
-  def Information(self) -> Dict[str, Any]:
+  def _Populate(self, info: Dict[str, Any], warnings: Dict[str, Any]) -> None:
     """Method override."""
-    return {
+    info.update({
         'Name': self._object.Name(),
         'Type': self._object.Type(),
         'HostPath': self._object.HostPath()
-    }
+    })
 
 
 class PodsEnumeration(Enumeration[base.K8sPod]):
@@ -290,13 +292,13 @@ class PodsEnumeration(Enumeration[base.K8sPod]):
         map(ContainerEnumeration, self._object.ListContainers()),
         map(VolumeEnumeration, self._object.ListVolumes()))
 
-  def Information(self) -> Dict[str, Any]:
+  def _Populate(self, info: Dict[str, Any], warnings: Dict[str, Any]) -> None:
     """Method override."""
-    return {
+    info.update({
         'Name': self._object.name,
         'Namespace': self._object.namespace,
         'Node': self._object.GetNode().name,
-    }
+    })
 
 
 class NodeEnumeration(Enumeration[base.K8sNode]):
@@ -324,13 +326,13 @@ class NodeEnumeration(Enumeration[base.K8sNode]):
     """Method override."""
     return map(PodsEnumeration, self._object.ListPods(namespace=self.namespace))
 
-  def Information(self) -> Dict[str, Any]:
+  def _Populate(self, info: Dict[str, Any], warnings: Dict[str, Any]) -> None:
     """Method override."""
-    return {
+    info.update({
         'Name': self._object.name,
         'ExtIP': self._object.ExternalIP(),
         'IntIP': self._object.InternalIP(),
-    }
+    })
 
 
 class ClusterEnumeration(Enumeration[cluster.K8sCluster]):
@@ -373,12 +375,12 @@ class WorkloadEnumeration(Enumeration[workloads.K8sWorkload]):
     """Method override."""
     return map(PodsEnumeration, self._object.GetCoveredPods())
 
-  def Information(self) -> Dict[str, Any]:
+  def _Populate(self, info: Dict[str, Any], warnings: Dict[str, Any]) -> None:
     """Method override."""
-    return {
+    info.update({
         'Name': self._object.name,
         'Namespace': self._object.namespace,
-    }
+    })
 
 
 class ServiceEnumeration(Enumeration[services.K8sService]):
@@ -393,10 +395,10 @@ class ServiceEnumeration(Enumeration[services.K8sService]):
     """Method override."""
     return map(PodsEnumeration, self._object.GetCoveredPods())
 
-  def Information(self) -> Dict[str, Any]:
+  def _Populate(self, info: Dict[str, Any], warnings: Dict[str, Any]) -> None:
     """Method override."""
-    return {
+    info.update({
         'Name': self._object.name,
         'Namespace': self._object.namespace,
         'Type': self._object.Type(),
-    }
+    })
