@@ -113,8 +113,9 @@ class Enumeration(Generic[ObjT], metaclass=abc.ABCMeta):
     self._object = underlying_object
 
   def _Children(
-      self, namespace: Optional[str] = None
-  ) -> Iterable['Enumeration[Any]']:  # pylint: disable=unused-argument
+      self,
+      namespace: Optional[str] = None  # pylint: disable=unused-argument
+  ) -> Iterable['Enumeration[Any]']:
     """Returns the child enumerations of this enumeration.
 
     Args:
