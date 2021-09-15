@@ -108,12 +108,18 @@ class Enumeration(Generic[ObjT], metaclass=abc.ABCMeta):
     """Builds an Enumeration object.
 
     Args:
-      underlying_object (T): The underlying object of this enumeration.
+      underlying_object (ObjT): The underlying object of this enumeration.
     """
     self._object = underlying_object
 
-  def Children(self) -> Iterable['Enumeration[Any]']:
+  def _Children(
+      self, namespace: Optional[str] = None
+  ) -> Iterable['Enumeration[Any]']:  # pylint: disable=unused-argument
     """Returns the child enumerations of this enumeration.
+
+    Args:
+      namespace (str): Optional. The namespace in which to generate child
+          enumerations.
 
     Returns:
       Iterable[Enumeration[Any]]: An iterable of child enumerations of this
@@ -134,6 +140,8 @@ class Enumeration(Generic[ObjT], metaclass=abc.ABCMeta):
           with warnings about the underlying object. These warnings will be
           highlighted in the enumeration.
     """
+    # Default is not populating the info/warning dicts. To be overridden in
+    # subclasses.
 
   def __PrintTable(
       self, print_func: Callable[[str], None], filter_empty: bool) -> None:
@@ -182,10 +190,16 @@ class Enumeration(Generic[ObjT], metaclass=abc.ABCMeta):
       print_func(row)
     print_func(sep)
 
-  def Enumerate(self, depth: int = 0, filter_empty: bool = True) -> None:
+  def Enumerate(
+      self,
+      namespace: Optional[str] = None,
+      depth: int = 0,
+      filter_empty: bool = True) -> None:
     """Enumerates the object and its children to the user.
 
     Args:
+      namespace (str): Optional. The namespace in which to enumerate. If
+          unspecified (None), enumerates in all namespaces.
       depth (int): The current depth of the enumeration, determining how to
           indent the enumeration output.
       filter_empty (bool): Optional. Whether or not to filter out information
@@ -202,8 +216,9 @@ class Enumeration(Generic[ObjT], metaclass=abc.ABCMeta):
 
     PrintFunc(_Bold(self.keyword))
     self.__PrintTable(PrintFunc, filter_empty)
-    for child in self.Children():
-      child.Enumerate(depth=depth + 1, filter_empty=filter_empty)
+    for child in self._Children(namespace=namespace):
+      child.Enumerate(
+          namespace=namespace, depth=depth + 1, filter_empty=filter_empty)
 
   def ToJson(self) -> Dict[str, Any]:
     """Converts the enumeration to a JSON object.
@@ -212,7 +227,7 @@ class Enumeration(Generic[ObjT], metaclass=abc.ABCMeta):
       Dict[str, Any]: This enumeration as a JSON object.
     """
     children_by_keyword = defaultdict(list)
-    for child in self.Children():
+    for child in self._Children():
       children_by_keyword[child.keyword].append(child.ToJson())
     info, warnings = self._GetInformationAndWarnings()
     return _SafeMerge(info, warnings, children_by_keyword)
@@ -262,6 +277,8 @@ class ContainerEnumeration(Enumeration[container.K8sContainer]):
     })
     if self._object.IsPrivileged():
       warnings['Privileged'] = 'Yes'
+    else:
+      info['Privileged'] = 'No'
 
 
 class VolumeEnumeration(Enumeration[volume.K8sVolume]):
@@ -289,7 +306,8 @@ class PodsEnumeration(Enumeration[base.K8sPod]):
     """Override of abstract property."""
     return 'Pod'
 
-  def Children(self) -> Iterable[Enumeration[Any]]:
+  def _Children(self,
+                namespace: Optional[str] = None) -> Iterable[Enumeration[Any]]:
     """Method override."""
     return itertools.chain(
         map(ContainerEnumeration, self._object.ListContainers()),
@@ -307,27 +325,15 @@ class PodsEnumeration(Enumeration[base.K8sPod]):
 class NodeEnumeration(Enumeration[base.K8sNode]):
   """Enumeration for a Kubernetes node."""
 
-  def __init__(
-      self, underlying_object: base.K8sNode,
-      namespace: Optional[str] = None) -> None:
-    """Builds a NodeEnumeration.
-
-    Args:
-      underlying_object (T): The underlying object of this enumeration.
-      namespace (str): Optional. The namespace in which to list the child
-          pods of this enumeration.
-    """
-    super().__init__(underlying_object)
-    self.namespace = namespace
-
   @property
   def keyword(self) -> str:
     """Override of abstract property"""
     return 'Node'
 
-  def Children(self) -> Iterable[Enumeration[Any]]:
+  def _Children(self,
+                namespace: Optional[str] = None) -> Iterable[Enumeration[Any]]:
     """Method override."""
-    return map(PodsEnumeration, self._object.ListPods(namespace=self.namespace))
+    return map(PodsEnumeration, self._object.ListPods(namespace=namespace))
 
   def _Populate(self, info: Dict[str, Any], warnings: Dict[str, Any]) -> None:
     """Method override."""
@@ -341,29 +347,16 @@ class NodeEnumeration(Enumeration[base.K8sNode]):
 class ClusterEnumeration(Enumeration[cluster.K8sCluster]):
   """Enumeration for a Kubernetes cluster."""
 
-  def __init__(
-      self,
-      underlying_object: cluster.K8sCluster,
-      namespace: Optional[str] = None) -> None:
-    """Builds a ClusterEnumeration.
-
-    Args:
-        underlying_object (T): The underlying object of this enumeration.
-        namespace (str): Optional. The namespace in which to list the child
-            nodes of this enumeration.
-    """
-    super().__init__(underlying_object)
-    self.namespace = namespace
-
   @property
   def keyword(self) -> str:
     """Override of abstract property."""
     return 'KubernetesCluster'
 
-  def Children(self) -> Iterable[Enumeration[Any]]:
+  def _Children(self,
+                namespace: Optional[str] = None) -> Iterable[Enumeration[Any]]:
     """Method override."""
     for node in self._object.ListNodes():
-      yield NodeEnumeration(node, namespace=self.namespace)
+      yield NodeEnumeration(node)
 
 
 class WorkloadEnumeration(Enumeration[workloads.K8sWorkload]):
@@ -374,7 +367,8 @@ class WorkloadEnumeration(Enumeration[workloads.K8sWorkload]):
     """Override of abstract property."""
     return 'Workload'
 
-  def Children(self) -> Iterable[Enumeration[Any]]:
+  def _Children(self,
+                namespace: Optional[str] = None) -> Iterable[Enumeration[Any]]:
     """Method override."""
     return map(PodsEnumeration, self._object.GetCoveredPods())
 
@@ -394,7 +388,8 @@ class ServiceEnumeration(Enumeration[services.K8sService]):
     """Override of abstract property."""
     return 'Service'
 
-  def Children(self) -> Iterable['Enumeration[Any]']:
+  def _Children(self,
+                namespace: Optional[str] = None) -> Iterable[Enumeration[Any]]:
     """Method override."""
     return map(PodsEnumeration, self._object.GetCoveredPods())
 
