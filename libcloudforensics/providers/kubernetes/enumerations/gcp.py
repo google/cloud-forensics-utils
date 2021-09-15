@@ -12,7 +12,7 @@ class GkeClusterEnumeration(base.Enumeration[gke.GkeCluster]):
     """Builds a GkeClusterEnumeration.
 
     Args:
-        underlying_object (T): The underlying object.
+        underlying_object (gke.GkeCluster): The underlying cluster.
         namespace (str): Optional. The cluster namespace.
     """
     super().__init__(underlying_object)
