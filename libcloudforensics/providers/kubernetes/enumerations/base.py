@@ -250,15 +250,20 @@ class Enumeration(Generic[ObjT], metaclass=abc.ABCMeta):
 
     return '\n'.join(rows)
 
-  def ToJson(self) -> Dict[str, Any]:
+  def ToJson(self, namespace: Optional[str] = None) -> Dict[str, Any]:
     """Converts the enumeration to a JSON object.
+
+    Args:
+      namespace (str): Optional. The namespace in which to enumerate a JSON
+          object.
 
     Returns:
       Dict[str, Any]: This enumeration as a JSON object.
     """
     children_by_keyword = defaultdict(list)
-    for child in self._Children():
-      children_by_keyword[child.keyword].append(child.ToJson())
+    for child in self._Children(namespace=namespace):
+      children_by_keyword[child.keyword].append(
+          child.ToJson(namespace=namespace))
     info, warnings = self._GetInformationAndWarnings()
     return _SafeMerge(info, warnings, children_by_keyword)
 
