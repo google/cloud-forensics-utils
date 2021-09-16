@@ -194,32 +194,58 @@ class Enumeration(Generic[ObjT], metaclass=abc.ABCMeta):
   def Enumerate(
       self,
       namespace: Optional[str] = None,
-      depth: int = 0,
-      filter_empty: bool = True) -> None:
+      filter_empty: bool = True,
+      silent: bool = False,
+      _print_func: Callable[[str], None] = None) -> str:
     """Enumerates the object and its children to the user.
 
     Args:
       namespace (str): Optional. The namespace in which to enumerate. If
           unspecified (None), enumerates in all namespaces.
-      depth (int): The current depth of the enumeration, determining how to
-          indent the enumeration output.
       filter_empty (bool): Optional. Whether or not to filter out information
           lines for which the value is empty. Defaults to True.
+      silent (bool): Optional. If True, the output from the enumeration is not
+          logged to stdout.
+      _print_func (Callable[[str], None]): Optional. The function to use for
+          displaying and registering the enumeration text. Only to be used
+          internally.
+
+    Returns:
+      str: The intercepted enumeration text.
     """
 
+    rows = []
+
     def PrintFunc(text: str) -> None:
-      """Displays the text to the user with the appropriate indent.
+      """Displays and registers the given text.
 
       Args:
-        text (str): The text to be displayed.
+        text (str): The text to be displayed and registered.
       """
-      logger.info(depth * self._INDENT_STRING + text)
+      rows.append(text)
+      if not silent:
+        logger.info(text)
 
-    PrintFunc(_Bold(self.keyword))
-    self.__PrintTable(PrintFunc, filter_empty)
+    if _print_func is None:
+      _print_func = PrintFunc
+
+    def ChildPrintFunc(text: str) -> None:
+      """Wraps the current _print_func with an indent.
+
+      Args:
+        text (str): The text to be displayed and registered.
+      """
+      _print_func(self._INDENT_STRING + text)
+
+    _print_func(_Bold(self.keyword))
+    self.__PrintTable(_print_func, filter_empty)
     for child in self._Children(namespace=namespace):
       child.Enumerate(
-          namespace=namespace, depth=depth + 1, filter_empty=filter_empty)
+          namespace=namespace,
+          filter_empty=filter_empty,
+          _print_func=ChildPrintFunc)
+
+    return '\n'.join(rows)
 
   def ToJson(self) -> Dict[str, Any]:
     """Converts the enumeration to a JSON object.
