@@ -196,7 +196,7 @@ class Enumeration(Generic[ObjT], metaclass=abc.ABCMeta):
       namespace: Optional[str] = None,
       filter_empty: bool = True,
       silent: bool = False,
-      _print_func: Callable[[str], None] = None) -> str:
+      _print_func: Optional[Callable[[str], None]] = None) -> str:
     """Enumerates the object and its children to the user.
 
     Args:
