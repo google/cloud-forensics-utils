@@ -226,8 +226,11 @@ class Enumeration(Generic[ObjT], metaclass=abc.ABCMeta):
       if not silent:
         logger.info(text)
 
+    print_func: Callable[[str], None]
     if _print_func is None:
-      _print_func = PrintFunc
+      print_func = PrintFunc
+    else:
+      print_func = _print_func
 
     def ChildPrintFunc(text: str) -> None:
       """Wraps the current _print_func with an indent.
@@ -235,10 +238,10 @@ class Enumeration(Generic[ObjT], metaclass=abc.ABCMeta):
       Args:
         text (str): The text to be displayed and registered.
       """
-      _print_func(self._INDENT_STRING + text)
+      print_func(self._INDENT_STRING + text)
 
-    _print_func(_Bold(self.keyword))
-    self.__PrintTable(_print_func, filter_empty)
+    print_func(_Bold(self.keyword))
+    self.__PrintTable(print_func, filter_empty)
     for child in self._Children(namespace=namespace):
       child.Enumerate(
           namespace=namespace,
