@@ -20,6 +20,7 @@ from unittest import mock
 from libcloudforensics.providers.kubernetes import workloads
 from tests.providers.kubernetes import k8s_mocks
 
+from kubernetes import client
 
 class K8sWorkloadTest(unittest.TestCase):
   """Test Kubernetes NetworkPolicy API calls."""
@@ -30,10 +31,10 @@ class K8sWorkloadTest(unittest.TestCase):
 
   @mock.patch.object(workloads.K8sWorkload, '__abstractmethods__', set())
   @mock.patch.object(workloads.K8sWorkload, '_PodMatchLabels')
-  def testPodIsCoveredByWorkloadSameLabels(self, mock_pod_match_lables):
+  def testPodIsCoveredByWorkloadSameLabels(self, mock_pod_match_labels):
     """Tests that a pod is indeed covered by a workload."""
     # Override abstract method
-    mock_pod_match_lables.return_value = self.mock_match_labels
+    mock_pod_match_labels.return_value = self.mock_match_labels
 
     mock_pod_response = k8s_mocks.MakeMockPod(labels=self.mock_match_labels)
     mock_pod = k8s_mocks.MakeMockK8sPod('name', 'namespace', mock_pod_response)
@@ -44,10 +45,10 @@ class K8sWorkloadTest(unittest.TestCase):
 
   @mock.patch.object(workloads.K8sWorkload, '__abstractmethods__', set())
   @mock.patch.object(workloads.K8sWorkload, '_PodMatchLabels')
-  def testPodIsCoveredByWorkloadDifferentLabels(self, mock_pod_match_lables):
+  def testPodIsCoveredByWorkloadDifferentLabels(self, mock_pod_match_labels):
     """Tests that a pod is not covered by a workload with different labels."""
     # Override abstract method
-    mock_pod_match_lables.return_value = self.mock_match_labels
+    mock_pod_match_labels.return_value = self.mock_match_labels
 
     mock_pod_response = k8s_mocks.MakeMockPod(labels={})
     mock_pod = k8s_mocks.MakeMockK8sPod('name', 'namespace', mock_pod_response)
@@ -58,10 +59,10 @@ class K8sWorkloadTest(unittest.TestCase):
 
   @mock.patch.object(workloads.K8sWorkload, '__abstractmethods__', set())
   @mock.patch.object(workloads.K8sWorkload, '_PodMatchLabels')
-  def testPodIsCoveredByWorkloadDifferentNamespace(self, mock_pod_match_lables):
-    """Tests that a pod is not covered by a workload with different namespace."""
+  def testPodIsCoveredByWorkloadDifferentNamespace(self, mock_pod_match_labels):
+    """Tests that a pod is not covered by a workload with a different namespace."""
     # Override abstract method
-    mock_pod_match_lables.return_value = self.mock_match_labels
+    mock_pod_match_labels.return_value = self.mock_match_labels
 
     mock_pod_response = k8s_mocks.MakeMockPod(labels=self.mock_match_labels)
     mock_pod = k8s_mocks.MakeMockK8sPod('name', 'production', mock_pod_response)
@@ -69,3 +70,30 @@ class K8sWorkloadTest(unittest.TestCase):
     workload = workloads.K8sWorkload(k8s_mocks.MOCK_API_CLIENT, 'name', 'namespace')
 
     self.assertFalse(workload.IsCoveringPod(mock_pod))
+
+  @mock.patch.object(workloads.K8sWorkload, '__abstractmethods__', set())
+  @mock.patch.object(workloads.K8sWorkload, '_PodMatchLabels')
+  @mock.patch('kubernetes.client.CoreV1Api.list_namespaced_pod')
+  def testListPodInSameNamespace(self, mock_list_pod, mock_pod_match_labels):
+    """Tests that workload pods are listed in the same namespace."""
+    # Override abstract method
+    mock_pod_match_labels.return_value = self.mock_match_labels
+
+    mock_namespace = 'namespace-xdwvkhrj'
+    workload = workloads.K8sWorkload(k8s_mocks.MOCK_API_CLIENT, 'name', mock_namespace)
+    workload.GetCoveredPods()
+
+    self.assertEqual(mock_list_pod.call_args.args[0], mock_namespace)
+
+  @mock.patch.object(workloads.K8sWorkload, '__abstractmethods__', set())
+  @mock.patch.object(workloads.K8sWorkload, '_PodMatchLabels')
+  @mock.patch('kubernetes.client.CoreV1Api.list_namespaced_pod')
+  def testListPodWithWorkloadLabels(self, mock_list_pod, mock_pod_match_labels):
+    """Tests that workload pods are listed in the same namespace."""
+    # Override abstract method
+    mock_pod_match_labels.return_value = self.mock_match_labels
+
+    workload = workloads.K8sWorkload(k8s_mocks.MOCK_API_CLIENT, 'name', 'namespace')
+    workload.GetCoveredPods()
+
+    self.assertEqual(mock_list_pod.call_args.kwargs['label_selector'], 'app=nginx-klzkdoho')
