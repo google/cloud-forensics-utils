@@ -12,17 +12,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Test on base Kubernetes objects."""
+"""Test on netpol Kubernetes objects."""
 
 import typing
 import unittest
 
 import mock
+from kubernetes import client
 
 from libcloudforensics.providers.kubernetes import netpol
 from tests.providers.kubernetes import k8s_mocks
-
-from kubernetes import client
 
 
 class K8sNetworkPolicyTest(unittest.TestCase):

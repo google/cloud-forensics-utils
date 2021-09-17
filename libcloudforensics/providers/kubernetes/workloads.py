@@ -112,7 +112,7 @@ class K8sWorkload(base.K8sNamespacedResource, metaclass=abc.ABCMeta):
     """
     # Since labels are type Dict[str, str], we can use set-like operations
     # on the items of the dict
-    return self._PodMatchLabels().items() <= pod.GetLabels().items()
+    return self.namespace == pod.namespace and self._PodMatchLabels().items() <= pod.GetLabels().items()
 
 
 class K8sDeployment(K8sWorkload):
