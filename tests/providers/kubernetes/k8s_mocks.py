@@ -104,9 +104,23 @@ def MakeMockK8sPod(
 
 def MakeMockK8sDeployment(
     name: str, namespace: str,
-    read_response: client.V1Deployment) -> workloads.K8sDeployment:
+    read_response: Optional[client.V1Deployment]) -> workloads.K8sDeployment:
   """Make mock Kubernetes Deployment by patching Read method."""
   mock_deploy = workloads.K8sDeployment(MOCK_API_CLIENT, name, namespace)
-  mock_deploy.Read = mock.Mock()
-  mock_deploy.Read.return_value = read_response
+  if read_response:
+    mock_deploy.Read = mock.Mock()
+    mock_deploy.Read.return_value = read_response
   return mock_deploy
+
+def MakeMockK8sWorkload(name: str, namespace: str):
+  """Make mock Kubernetes workload.
+
+  Needs to be called in an appropriate mock.patch context since K8sWorkload is
+  an abstract class
+  """
+  return workloads.K8sWorkload(MOCK_API_CLIENT, name, namespace)
+
+
+def MakeMockK8sReplicaSet(name: str, namespace: str):
+  """Make mock Kubernetes ReplicaSet."""
+  return workloads.K8sReplicaSet(MOCK_API_CLIENT, name, namespace)
