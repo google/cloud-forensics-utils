@@ -33,7 +33,7 @@ class K8sWorkloadTest(unittest.TestCase):
   mock_match_labels = {'app': 'nginx-klzkdoho'}
 
   @typing.no_type_check
-  def testPodIsCoveredByWorkloadSameLabels(self, workload_pod_match_labels):
+  def testIsCoveringPodSameLabels(self, workload_pod_match_labels):
     """Test that a pod is indeed covered by a workload."""
     # Patch abstract method
     workload_pod_match_labels.return_value = self.mock_match_labels
@@ -48,8 +48,7 @@ class K8sWorkloadTest(unittest.TestCase):
       self.assertTrue(workload.IsCoveringPod(mock_pod))
 
   @typing.no_type_check
-  def testPodIsCoveredByWorkloadDifferentLabels(
-      self, workload_pod_match_labels):
+  def testIsCoveringPodDifferentLabels(self, workload_pod_match_labels):
     """Test that a pod is not covered by a workload with different labels."""
     # Patch abstract method
     workload_pod_match_labels.return_value = self.mock_match_labels
@@ -64,8 +63,7 @@ class K8sWorkloadTest(unittest.TestCase):
       self.assertFalse(workload.IsCoveringPod(mock_pod))
 
   @typing.no_type_check
-  def testPodIsCoveredByWorkloadDifferentNamespace(
-      self, workload_pod_match_labels):
+  def testIsCoveringPodDifferentNamespace(self, workload_pod_match_labels):
     """Test that pod is not covered by workload with different namespace."""
     # Patch abstract method
     workload_pod_match_labels.return_value = self.mock_match_labels
@@ -81,30 +79,17 @@ class K8sWorkloadTest(unittest.TestCase):
 
   @typing.no_type_check
   @mock.patch('kubernetes.client.CoreV1Api.list_namespaced_pod')
-  def testListPodInSameNamespace(
+  def testListPodWithCorrectArgs(
       self, mock_list_pod, workload_pod_match_labels):
-    """Test that workload pods are listed in the same namespace."""
+    """Test that workload pods are listed with correct arguments."""
     # Override abstract method
     workload_pod_match_labels.return_value = self.mock_match_labels
     workload = workloads.K8sWorkload(
         k8s_mocks.MOCK_API_CLIENT, 'name', 'namespace-xdwvkhrj')
     workload.GetCoveredPods()
 
-    self.assertEqual('namespace-xdwvkhrj', mock_list_pod.call_args.args[0])
-
-  @typing.no_type_check
-  @mock.patch('kubernetes.client.CoreV1Api.list_namespaced_pod')
-  def testListPodWithWorkloadLabels(
-      self, mock_list_pod, workload_pod_match_labels):
-    """Test that workload pods are listed with the correct labels."""
-    # Override abstract method
-    workload_pod_match_labels.return_value = self.mock_match_labels
-    workload = workloads.K8sWorkload(
-        k8s_mocks.MOCK_API_CLIENT, 'name', 'namespace')
-    workload.GetCoveredPods()
-
-    self.assertEqual(
-        'app=nginx-klzkdoho', mock_list_pod.call_args.kwargs['label_selector'])
+    mock_list_pod.assert_called_with(
+        'namespace-xdwvkhrj', label_selector='app=nginx-klzkdoho')
 
 
 class K8sDeploymentTest(unittest.TestCase):
