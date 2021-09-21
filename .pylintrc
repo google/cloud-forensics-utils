@@ -53,7 +53,6 @@ confidence=
 disable=
     assignment-from-none,
     bad-inline-option,
-    consider-using-f-string,
     deprecated-pragma,
     duplicate-code,
     eq-without-hash,
