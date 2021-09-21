@@ -26,7 +26,9 @@ from tests.providers.kubernetes import k8s_mocks
 @mock.patch.object(workloads.K8sWorkload, '__abstractmethods__', set())
 @mock.patch.object(workloads.K8sWorkload, '_PodMatchLabels')
 class K8sWorkloadTest(unittest.TestCase):
-  """Test Kubernetes NetworkPolicy API calls."""
+  """Test K8sWorkload API calls."""
+
+  # pylint: disable=abstract-class-instantiated
 
   mock_match_labels = {'app': 'nginx-klzkdoho'}
 
@@ -64,7 +66,7 @@ class K8sWorkloadTest(unittest.TestCase):
   @typing.no_type_check
   def testPodIsCoveredByWorkloadDifferentNamespace(
       self, workload_pod_match_labels):
-    """Test that a pod is not covered by a workload with a different namespace."""
+    """Test that pod is not covered by workload with different namespace."""
     # Patch abstract method
     workload_pod_match_labels.return_value = self.mock_match_labels
     workload = workloads.K8sWorkload(
@@ -102,9 +104,11 @@ class K8sWorkloadTest(unittest.TestCase):
     workload.GetCoveredPods()
 
     self.assertEqual(
-        mock_list_pod.call_args.kwargs['label_selector'], 'app=nginx-klzkdoho')
+        'app=nginx-klzkdoho', mock_list_pod.call_args.kwargs['label_selector'])
+
 
 class K8sDeploymentTest(unittest.TestCase):
+  """Test K8sDeployment API calls and necessary supporting functions."""
 
   @typing.no_type_check
   @mock.patch('kubernetes.client.AppsV1Api.delete_namespaced_replica_set')
@@ -157,8 +161,11 @@ class K8sDeploymentTest(unittest.TestCase):
         k8s_mocks.MOCK_API_CLIENT, 'deployment', 'default')
     with mock.patch.object(deployment, 'Read') as mock_read:
       mock_read.return_value = k8s_mocks.V1Deployment(
-          template_spec_labels={'app': 'nginx'}, match_labels={})
-      self.assertEqual('replicaset-4', deployment._ReplicaSet().name)
+          template_spec_labels={'app': 'nginx'},
+          # Match labels are not important here since API return value is
+          # predefined
+          match_labels={})
+      self.assertEqual('replicaset-4', deployment._ReplicaSet().name)  # pylint: disable=protected-access
 
   @typing.no_type_check
   @mock.patch('kubernetes.client.AppsV1Api.list_namespaced_replica_set')
@@ -172,5 +179,8 @@ class K8sDeploymentTest(unittest.TestCase):
         k8s_mocks.MOCK_API_CLIENT, 'deployment', 'default')
     with mock.patch.object(deployment, 'Read') as mock_deployment_read:
       mock_deployment_read.return_value = k8s_mocks.V1Deployment(
-          template_spec_labels={'app': 'nginx'}, match_labels={'app': 'nginx'})
-      self.assertRaises(errors.ResourceNotFoundError, deployment._ReplicaSet)
+          template_spec_labels={'app': 'nginx'},
+          # Match labels are not important here since API return value is
+          # predefined
+          match_labels={})
+      self.assertRaises(errors.ResourceNotFoundError, deployment._ReplicaSet)  # pylint: disable=protected-access

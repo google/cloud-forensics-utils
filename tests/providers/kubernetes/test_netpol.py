@@ -27,6 +27,9 @@ from tests.providers.kubernetes import k8s_mocks
 @mock.patch.object(netpol.K8sNetworkPolicyWithSpec, '__abstractmethods__', ())
 @mock.patch.object(client.NetworkingV1Api, 'create_namespaced_network_policy')
 class K8sNetworkPolicyWithSpecCreationTest(unittest.TestCase):
+  """Test the K8sNetworkPolicyWithSpec's creation API call."""
+
+  # pylint: disable=abstract-class-instantiated
 
   mock_spec = mock.Mock()
 
@@ -35,9 +38,7 @@ class K8sNetworkPolicyWithSpecCreationTest(unittest.TestCase):
   def testNetworkPolicyCreationNamespace(self, mock_create_func):
     """Test that creating a network policy provides the correct namespace."""
     network_policy = netpol.K8sNetworkPolicyWithSpec(
-        k8s_mocks.MOCK_API_CLIENT,
-        'name',
-        'namespace-iwlgvtpb')
+        k8s_mocks.MOCK_API_CLIENT, 'name', 'namespace-iwlgvtpb')
     network_policy.Create()
     self.assertEqual('namespace-iwlgvtpb', mock_create_func.call_args.args[0])
 
@@ -46,9 +47,7 @@ class K8sNetworkPolicyWithSpecCreationTest(unittest.TestCase):
   def testNetworkPolicyCreationSpec(self, mock_create_func):
     """Test that creating a network policy provides the correct spec."""
     network_policy = netpol.K8sNetworkPolicyWithSpec(
-        k8s_mocks.MOCK_API_CLIENT,
-        'name',
-        'namespace')
+        k8s_mocks.MOCK_API_CLIENT, 'name', 'namespace')
     network_policy.Create()
     self.assertEqual(self.mock_spec, mock_create_func.call_args.args[1].spec)
 
@@ -57,25 +56,23 @@ class K8sNetworkPolicyWithSpecCreationTest(unittest.TestCase):
   def testNetworkPolicyCreationMetadata(self, mock_create_func):
     """Test that creating a network policy provides the correct metadata."""
     network_policy = netpol.K8sNetworkPolicyWithSpec(
-        k8s_mocks.MOCK_API_CLIENT,
-        'name-jsdukbvx',
-        'namespace-jsdukbvx')
+        k8s_mocks.MOCK_API_CLIENT, 'name-jsdukbvx', 'namespace-jsdukbvx')
     network_policy.Create()
     self.assertEqual(
-        client.V1ObjectMeta(name='name-jsdukbvx', namespace='namespace-jsdukbvx'),
+        client.V1ObjectMeta(
+            name='name-jsdukbvx', namespace='namespace-jsdukbvx'),
         mock_create_func.call_args.args[1].metadata)
 
 
 @mock.patch.object(client.NetworkingV1Api, 'create_namespaced_network_policy')
 class K8sDenyAllNetworkPolicyCreationTest(unittest.TestCase):
-  """Test Kubernetes NetworkPolicy API calls."""
+  """Test K8sDenyAllNetworkPolicy creation API call."""
 
   @typing.no_type_check
   def testIsDenyAllNetworkPolicyCreationSpec(self, mock_create_func):
     """Test that a deny-all network policy creation has deny-all spec."""
     network_policy = netpol.K8sDenyAllNetworkPolicy(
-        k8s_mocks.MOCK_API_CLIENT,
-        'default')
+        k8s_mocks.MOCK_API_CLIENT, 'default')
     network_policy.Create()
     # Check that given network policy is a deny-all policy
     provided_spec = mock_create_func.call_args.args[1].spec
@@ -85,18 +82,17 @@ class K8sDenyAllNetworkPolicyCreationTest(unittest.TestCase):
 
 
 class K8sNetworkPolicyTest(unittest.TestCase):
+  """Test that K8sNetworkPolicy calls Kubernetes API correctly."""
 
   @typing.no_type_check
   @mock.patch.object(client.NetworkingV1Api, 'read_namespaced_network_policy')
   def testNetworkPolicyReadArgs(self, mock_read_func):
     """Test that a NetworkPolicy read is called with the correct args."""
     network_policy = netpol.K8sNetworkPolicy(
-        k8s_mocks.MOCK_API_CLIENT,
-        'name-arvvbdxl',
-        'namespace-arvvbdxl')
+        k8s_mocks.MOCK_API_CLIENT, 'name-arvvbdxl', 'namespace-arvvbdxl')
     network_policy.Read()
-    mock_read_func.assert_called_once_with('name-arvvbdxl',
-                                           'namespace-arvvbdxl')
+    mock_read_func.assert_called_once_with(
+        'name-arvvbdxl', 'namespace-arvvbdxl')
 
   @typing.no_type_check
   @mock.patch.object(client.NetworkingV1Api, 'delete_namespaced_network_policy')
@@ -105,4 +101,5 @@ class K8sNetworkPolicyTest(unittest.TestCase):
     network_policy = netpol.K8sNetworkPolicy(
         k8s_mocks.MOCK_API_CLIENT, 'name-iyykyqbc', 'namespace-iyykyqbc')
     network_policy.Delete()
-    mock_delete_func.assert_called_once_with('name-iyykyqbc', 'namespace-iyykyqbc')
+    mock_delete_func.assert_called_once_with(
+        'name-iyykyqbc', 'namespace-iyykyqbc')

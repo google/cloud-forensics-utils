@@ -13,12 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Kubernetes mock response objects, used for testing."""
-from typing import Dict
-from typing import Optional
+from typing import Dict, Optional
 from unittest import mock
-
-from libcloudforensics.providers.kubernetes import base
-from libcloudforensics.providers.kubernetes import workloads
 
 from kubernetes import client
 
