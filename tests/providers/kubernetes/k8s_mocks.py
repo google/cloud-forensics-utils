@@ -27,7 +27,7 @@ MOCK_API_CLIENT = mock.Mock()
 Labels = Dict[str, str]
 
 
-def MakeV1ObjectMeta(
+def V1ObjectMeta(
     name: Optional[str] = None,
     namespace: Optional[str] = None,
     labels: Optional[Labels] = None) -> client.V1ObjectMeta:
@@ -35,92 +35,59 @@ def MakeV1ObjectMeta(
   return client.V1ObjectMeta(name=name, namespace=namespace, labels=labels)
 
 
-def MakeV1NodeList(amount: int) -> client.V1NodeList:
+def V1NodeList(amount: int) -> client.V1NodeList:
   """Make Kubernetes API Node list response, see V1NodeList."""
-  items = [MakeV1Node('node-{0:d}'.format(i)) for i in range(amount)]
+  items = [V1Node('node-{0:d}'.format(i)) for i in range(amount)]
   return client.V1NodeList(items=items)
 
 
-def MakeV1PodList(amount: int) -> client.V1PodList:
+def V1PodList(amount: int) -> client.V1PodList:
   """Make Kubernetes API Pod list response, see V1PodList."""
-  items = [MakeV1Pod(name='pod-{0:d}'.format(i)) for i in range(amount)]
+  items = [V1Pod(name='pod-{0:d}'.format(i)) for i in range(amount)]
   return client.V1PodList(items=items)
 
 
-def MakeV1Node(name: str) -> client.V1Node:
+def V1Node(name: str) -> client.V1Node:
   """Make Kubernetes API Node response, see V1Node."""
-  return client.V1Node(metadata=MakeV1ObjectMeta(name=name))
+  return client.V1Node(metadata=V1ObjectMeta(name=name))
 
 
-def MakeV1Pod(
+def V1Pod(
     name: Optional[str] = None,
     namespace: Optional[str] = None,
     node_name: Optional[str] = None,
     labels: Optional[Labels] = None) -> client.V1Pod:
   """Make Kubernetes API Pod response, see V1Pod."""
   return client.V1Pod(
-      metadata=MakeV1ObjectMeta(name=name, namespace=namespace, labels=labels),
+      metadata=V1ObjectMeta(name=name, namespace=namespace, labels=labels),
       spec=client.V1PodSpec(node_name=node_name, containers=[]))
 
 
-def MakeV1PodTemplateSpec(labels: Labels) -> client.V1PodTemplateSpec:
+def V1PodTemplateSpec(labels: Labels) -> client.V1PodTemplateSpec:
   """Make Kubernetes API template spec response, see V1PodTemplateSpec."""
-  return client.V1PodTemplateSpec(metadata=MakeV1ObjectMeta(labels=labels))
+  return client.V1PodTemplateSpec(metadata=V1ObjectMeta(labels=labels))
 
 
-def MakeV1ReplicaSet(
+def V1ReplicaSet(
     name: Optional[str] = None,
     namespace: Optional[str] = None,
     template_spec_labels: Optional[Labels] = None) -> client.V1ReplicaSet:
   """Make Kubernetes API ReplicaSet response, V1ReplicaSet."""
   return client.V1ReplicaSet(
-      metadata=MakeV1ObjectMeta(name=name, namespace=namespace),
+      metadata=V1ObjectMeta(name=name, namespace=namespace),
       spec=client.V1ReplicaSetSpec(
           selector=client.V1LabelSelector(),
-          template=MakeV1PodTemplateSpec(template_spec_labels)))
+          template=V1PodTemplateSpec(template_spec_labels or {})))
 
 
-def MakeV1Deployment(
+def V1Deployment(
     name: Optional[str] = None,
     namespace: Optional[str] = None,
     template_spec_labels: Optional[Labels] = None,
     match_labels: Optional[Labels] = None) -> client.V1Deployment:
   """Make Kubernetes API response deployment, see V1Deployment."""
   return client.V1Deployment(
-      metadata=MakeV1ObjectMeta(name=name, namespace=namespace),
+      metadata=V1ObjectMeta(name=name, namespace=namespace),
       spec=client.V1DeploymentSpec(
           selector=client.V1LabelSelector(match_labels=match_labels),
-          template=MakeV1PodTemplateSpec(template_spec_labels)))
-
-
-def MakeMockK8sPod(
-    name: str, namespace: str, read_response: client.V1Pod) -> base.K8sPod:
-  """Make mock Kubernetes Pod by patching Read method."""
-  mock_pod = base.K8sPod(MOCK_API_CLIENT, name, namespace)
-  mock_pod.Read = mock.Mock()
-  mock_pod.Read.return_value = read_response
-  return mock_pod
-
-
-def MakeMockK8sDeployment(
-    name: str, namespace: str,
-    read_response: Optional[client.V1Deployment]) -> workloads.K8sDeployment:
-  """Make mock Kubernetes Deployment by patching Read method."""
-  mock_deploy = workloads.K8sDeployment(MOCK_API_CLIENT, name, namespace)
-  if read_response:
-    mock_deploy.Read = mock.Mock()
-    mock_deploy.Read.return_value = read_response
-  return mock_deploy
-
-def MakeMockK8sWorkload(name: str, namespace: str):
-  """Make mock Kubernetes workload.
-
-  Needs to be called in an appropriate mock.patch context since K8sWorkload is
-  an abstract class
-  """
-  return workloads.K8sWorkload(MOCK_API_CLIENT, name, namespace)
-
-
-def MakeMockK8sReplicaSet(name: str, namespace: str):
-  """Make mock Kubernetes ReplicaSet."""
-  return workloads.K8sReplicaSet(MOCK_API_CLIENT, name, namespace)
+          template=V1PodTemplateSpec(template_spec_labels or {})))
