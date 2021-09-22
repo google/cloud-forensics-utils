@@ -16,9 +16,10 @@
 
 import abc
 import itertools
+import logging
 from collections import defaultdict
-from typing import Any, Callable, Dict, Generic, Iterable, List, Optional, \
-  Tuple, TypeVar
+from typing import Any, Callable, Dict, Generic, Iterable, Optional, Tuple, \
+  TypeVar
 
 from libcloudforensics import logging_utils
 from libcloudforensics.providers.kubernetes import base
@@ -145,58 +146,52 @@ class Enumeration(Generic[ObjT], metaclass=abc.ABCMeta):
     # subclasses.
 
   def __PrintTable(
-      self, print_func: Callable[[str], None], filter_empty: bool) -> None:
+      self, print_func: Callable[[str, int], None], filter_empty: bool) -> None:
     """Displays the table of information and warnings to the user.
 
     Args:
-      print_func (Callable[[str], None]): A printing function, typically
+      print_func (Callable[[str, int], None]): A printing function, typically
           already with the required indent.
       filter_empty (bool): Filter for information/warning entries that have a
           non-empty value.
     """
     info, warnings = self._GetInformationAndWarnings(filter_empty=filter_empty)
 
-    key_len = max(map(len, info.keys() | warnings.keys()), default=-1)
-    if key_len == -1:
+    key_max_len = max(map(len, info.keys() | warnings.keys()), default=-1)
+    if key_max_len == -1:
       # Nothing to display, info and warnings were both empty
-      print_func('-')
+      print_func('-', logging.INFO)
       return
 
-    row_max_len = 0
-
-    def MakeRow(kv: Tuple[str, str]) -> str:
-      """Creates a row from a key-value pair and updates row_max_len.
+    def MakeRow(_item: Tuple[str, Any]) -> str:
+      """Creates a row from a key-value pair.
 
       Args:
-        kv (Tuple[str, str]): The key-value pair.
+        _item (Tuple[str, str]): The key-value pair.
 
       Returns:
         str: The created row.
       """
-      nonlocal row_max_len
-      k, v = kv
-      key_str = str(k).ljust(key_len)
-      val_str = str(v)
-      row_str = '{0:s} : {1:s}'.format(key_str, val_str)
-      row_max_len = max(row_max_len, len(row_str))
-      return row_str
+      return '{0:s} : {1!s}'.format(_item[0].ljust(key_max_len), _item[1])
 
-    rows = []  # type: List[str]
-    rows.extend(MakeRow(item) for item in info.items())
-    rows.extend(_Underline(MakeRow(item)) for item in warnings.items())
+    row_max_len = max(
+        len(MakeRow(item))
+        for item in (list(info.items()) + list(warnings.items())))
+    separator = '-' * row_max_len
 
-    sep = '-' * row_max_len
-    print_func(sep)
-    for row in rows:
-      print_func(row)
-    print_func(sep)
+    print_func(separator, logging.INFO)
+    for info_item in info.items():
+      print_func(MakeRow(info_item), logging.INFO)
+    for warning_item in warnings.items():
+      print_func(MakeRow(warning_item), logging.WARNING)
+    print_func(separator, logging.INFO)
 
   def Enumerate(
       self,
       namespace: Optional[str] = None,
       filter_empty: bool = True,
       silent: bool = False,
-      _print_func: Optional[Callable[[str], None]] = None) -> str:
+      _print_func: Optional[Callable[[str, int], None]] = None) -> str:
     """Enumerates the object and its children to the user.
 
     Args:
@@ -206,8 +201,8 @@ class Enumeration(Generic[ObjT], metaclass=abc.ABCMeta):
           lines for which the value is empty. Defaults to True.
       silent (bool): Optional. If True, the output from the enumeration is not
           logged to stdout.
-      _print_func (Callable[[str], None]): Optional. The function to use for
-          displaying and registering the enumeration text. Only to be used
+      _print_func (Callable[[str, int], None]): Optional. The function to use
+          for displaying and registering the enumeration text. Only to be used
           internally.
 
     Returns:
@@ -216,31 +211,33 @@ class Enumeration(Generic[ObjT], metaclass=abc.ABCMeta):
 
     rows = []
 
-    def PrintFunc(text: str) -> None:
+    def PrintFunc(text: str, level: int) -> None:
       """Displays and registers the given text.
 
       Args:
         text (str): The text to be displayed and registered.
+        level (int): The log level of the text.
       """
       rows.append(text)
       if not silent:
-        logger.info(text)
+        logger.log(level, text)
 
-    print_func: Callable[[str], None]
+    print_func: Callable[[str, int], None]
     if _print_func is None:
       print_func = PrintFunc
     else:
       print_func = _print_func
 
-    def ChildPrintFunc(text: str) -> None:
+    def ChildPrintFunc(text: str, level: int) -> None:
       """Wraps the current _print_func with an indent.
 
       Args:
         text (str): The text to be displayed and registered.
+        level (int): The log level of the text.
       """
-      print_func(self._INDENT_STRING + text)
+      print_func(self._INDENT_STRING + text, level)
 
-    print_func(_Bold(self.keyword))
+    print_func(_Bold(self.keyword), logging.INFO)
     self.__PrintTable(print_func, filter_empty)
     for child in self._Children(namespace=namespace):
       child.Enumerate(
