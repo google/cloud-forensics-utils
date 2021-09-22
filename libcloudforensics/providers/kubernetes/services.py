@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Kubernetes service classes extending the base hierarchy."""
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from kubernetes import client
 
@@ -66,3 +66,25 @@ class K8sService(base.K8sNamespacedResource):
             self._api_client, pod.metadata.name, pod.metadata.namespace)
         for pod in pods.items
     ]
+
+  def ClusterIp(self) -> Optional[str]:
+    """Returns the Cluster IP of this service.
+
+    The return type is optional to correspond to the API return type.
+
+    Returns:
+      str: Optional. The Cluster IP of this service
+    """
+    cluster_ip = self.Read().spec.cluster_ip  # type: Optional[str]
+    return cluster_ip
+
+  def ExternalIps(self) -> Optional[List[str]]:
+    """Returns the external IPs of this service.
+
+    The return type is optional to correspond to the API return type.
+
+    Returns:
+      List[str]: Optional. The Cluster IP of this service
+    """
+    external_ips = self.Read().spec.external_i_ps  # type: Optional[List[str]]
+    return external_ips

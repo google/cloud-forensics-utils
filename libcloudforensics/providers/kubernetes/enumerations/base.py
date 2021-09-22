@@ -305,12 +305,10 @@ class ContainerEnumeration(Enumeration[container.K8sContainer]):
         'Name': self._object.Name(),
         'Image': self._object.Image(),
         'Mounts': self._object.VolumeMounts(),
-        'DeclaredPorts': self._object.ContainerPorts(),
     })
-    if self._object.IsPrivileged():
-      warnings['Privileged'] = 'Yes'
-    else:
-      info['Privileged'] = 'No'
+    (warnings if self._object.IsPrivileged() else
+     info)['Privileged'] = self._object.IsPrivileged()
+    warnings['DeclaredPorts'] = self._object.ContainerPorts()
 
 
 class VolumeEnumeration(Enumeration[volume.K8sVolume]):
@@ -325,9 +323,12 @@ class VolumeEnumeration(Enumeration[volume.K8sVolume]):
     """Method override."""
     info.update({
         'Name': self._object.Name(),
-        'Type': self._object.Type(),
-        'HostPath': self._object.HostPath()
     })
+    (warnings if self._object.Type() in {'host_path', 'secret'} else
+     info)['Type'] = self._object.Type()
+    (warnings if self._object.IsHostRootFilesystem() else
+     info)['HostPath'] = self._object.HostPath()
+
 
 
 class PodsEnumeration(Enumeration[base.K8sPod]):
@@ -350,7 +351,7 @@ class PodsEnumeration(Enumeration[base.K8sPod]):
     info.update({
         'Name': self._object.name,
         'Namespace': self._object.namespace,
-        'Node': self._object.GetNode().name,
+        'NodeName': self._object.GetNode().name,
     })
 
 
@@ -371,8 +372,8 @@ class NodeEnumeration(Enumeration[base.K8sNode]):
     """Method override."""
     info.update({
         'Name': self._object.name,
-        'ExtIP': self._object.ExternalIP(),
-        'IntIP': self._object.InternalIP(),
+        'ExternalIPs': self._object.ExternalIPs(),
+        'InternalIPs': self._object.InternalIPs(),
     })
 
 
@@ -430,5 +431,8 @@ class ServiceEnumeration(Enumeration[services.K8sService]):
     info.update({
         'Name': self._object.name,
         'Namespace': self._object.namespace,
-        'Type': self._object.Type(),
     })
+    (warnings if self._object.Type() == 'LoadBalancer' else
+     info)['Type'] = self._object.Type()
+    info['ExternalIPs'] = self._object.ExternalIps()
+    info['ClusterIP'] = self._object.ClusterIp()
