@@ -145,7 +145,7 @@ class GkeCluster(GoogleKubernetesEngine):
     return response
 
   def _GetValue(self, *keys: str, default: Any = None) -> Any:
-    """Gets a nested from this cluster's 'GET' using a list of keys.
+    """Gets a nested value from this cluster's 'GET' using a list of keys.
 
     Args:
       *keys (str): The key path to the nested value.
@@ -195,7 +195,7 @@ class GkeCluster(GoogleKubernetesEngine):
     """Returns whether legacy endpoints are enabled.
 
     Returns:
-      bool: True if legacy endpoints are enabled, False otherwise.
+      bool: True if legacy endpoints are disabled, False otherwise.
     """
     return bool(
         self._GetValue(
