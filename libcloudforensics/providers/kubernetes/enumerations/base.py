@@ -330,7 +330,6 @@ class VolumeEnumeration(Enumeration[volume.K8sVolume]):
      info)['HostPath'] = self._object.HostPath()
 
 
-
 class PodsEnumeration(Enumeration[base.K8sPod]):
   """Enumeration for a Kubernetes pod."""
 

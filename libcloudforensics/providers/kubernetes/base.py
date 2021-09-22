@@ -195,9 +195,10 @@ class K8sNode(K8sResource):
       List[str]: The external IPs found for this node.
     """
     return [
-      str(address.address)
-      for address in self.Read().status.addresses
-      if address.type == 'ExternalIP']
+        str(address.address)
+        for address in self.Read().status.addresses
+        if address.type == 'ExternalIP'
+    ]
 
   def InternalIPs(self) -> List[str]:
     """Returns the internal IPs of this node.
@@ -206,9 +207,10 @@ class K8sNode(K8sResource):
       List[str]: The internal IPs found for this node.
     """
     return [
-      str(address.address)
-      for address in self.Read().status.addresses
-      if address.type == 'InternalIP']
+        str(address.address)
+        for address in self.Read().status.addresses
+        if address.type == 'InternalIP'
+    ]
 
 
 class K8sPod(K8sNamespacedResource):
