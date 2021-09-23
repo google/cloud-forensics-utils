@@ -21,6 +21,7 @@ from libcloudforensics import logging_utils
 logging_utils.SetUpLogger(__name__, no_newline=True)
 logger = logging_utils.GetLogger(__name__)
 
+DisableList = List[Tuple['PromptOption', str]]
 
 def _Strikethrough(text: str) -> str:
   """Returns given text with strikethrough codes after each character.
@@ -45,15 +46,17 @@ class PromptOption:
       self,
       text: str,
       *functions: Callable[[], None],
-      disable_options: Optional[List[Tuple['PromptOption', str]]] = None) -> None:
+      disable_options: Optional[DisableList] = None) -> None:
     """Builds a PromptOption.
 
     Args:
       text (str): The text description this prompt option.
       functions (Callable[[], None]): The underlying functions of this prompt
           option to be called upon execution.
-      disable_options (List[PromptOption]): Optional. List of prompt options
-          to disable upon selection of this prompt option.
+      disable_options (DisableList): Optional. List of prompt options
+          to disable upon selection of this prompt option. This is a list of
+          tuples, with a prompt option to disable and an associated reason for
+          disabling.
     """
     self._text = text
     self._functions = functions
@@ -96,7 +99,8 @@ class PromptOption:
     """The text to be displayed for this prompt option."""
     question = '{0:s}?'.format(self._text)
     if self.IsDisabled():
-      question = '{0:s} ({1:s})'.format(_Strikethrough(question), self._disabled_reason)
+      question = '{0:s} ({1:s})'.format(
+          _Strikethrough(question), self._disabled_reason)
     return question
 
   def Execute(self) -> None:
