@@ -20,6 +20,7 @@ from kubernetes import client
 from libcloudforensics import logging_utils
 from libcloudforensics.providers.kubernetes import base
 from libcloudforensics.providers.kubernetes import netpol
+from libcloudforensics.providers.kubernetes import services
 from libcloudforensics.providers.kubernetes import workloads
 
 logging_utils.SetUpLogger(__name__)
@@ -138,6 +139,18 @@ class K8sCluster(base.K8sClient):
       workloads.K8sDeployment: The matching Kubernetes deployment.
     """
     return workloads.K8sDeployment(self._api_client, workload_id, namespace)
+
+  def GetService(self, service_id: str, namespace: str) -> services.K8sService:
+    """Gets a service in this cluster.
+
+    Args:
+      service_id (str): The name of the service.
+      namespace (str): The namespace of the service.
+
+    Returns:
+      services.K8sService: The matching Kubernetes service.
+    """
+    return services.K8sService(self._api_client, service_id, namespace)
 
   def DenyAllNetworkPolicy(
       self, namespace: str) -> netpol.K8sDenyAllNetworkPolicy:
