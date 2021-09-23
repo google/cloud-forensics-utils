@@ -511,7 +511,7 @@ def QuarantineGKEWorkload(project_id: str,
   compute_project = compute.GoogleCloudCompute(project_id)
   groups_by_instance = compute_project.ListMIGSByInstanceName(zone)
 
-  workload_nodes = {pod.GetNode() for pod in k8s_workload.GetCoveredPods()}
+  workload_nodes = k8s_workload.GetCoveredNodes()
 
   def CordonNodes() -> None:
     """Cordons the compromised nodes."""
@@ -569,30 +569,39 @@ def QuarantineGKEWorkload(project_id: str,
 
   # Second prompt options, defined afterwards so that we can link disables
   preserve_delete = prompts.PromptOption(
-      'Preserve evidence and delete workload',
-      OrphanPods,
-      disable_options=[isolate_pods])
+      'Preserve evidence and delete workload', OrphanPods)
   preserve_preserve = prompts.PromptOption(
       'Preserve evidence and preserve workload',
       # No functions are called when this option is selected, a multi prompt
       # was favored over a yes/no prompt for clarity
-      disable_options=[isolate_nodes, isolate_nodes_and_pods])
+      disable_options=[
+          (
+              isolate_nodes,
+              'Isolating nodes will cause workload pods to appear elsewhere.'),
+          (
+              isolate_nodes_and_pods,
+              'Isolating nodes will cause workload pods to appear elsewhere.')
+      ])
 
   prompt_sequence = prompts.PromptSequence(
       prompts.YesNoPrompt(
           prompts.PromptOption(
-              'Abandon nodes from managed instance group', AbandonNodes)),
-      prompts.YesNoPrompt(prompts.PromptOption('Cordon nodes', CordonNodes)),
+              'Abandon nodes from managed instance group', AbandonNodes),
+          default_yes=True),
+      prompts.YesNoPrompt(
+          prompts.PromptOption('Cordon nodes', CordonNodes), default_yes=True),
       prompts.MultiPrompt([
           preserve_delete,
           preserve_preserve,
       ]),
-      prompts.MultiPrompt([
-          isolate_nodes,
-          isolate_pods,
-          isolate_nodes_and_pods
-      ]),
+      prompts.MultiPrompt([isolate_nodes, isolate_pods,
+                           isolate_nodes_and_pods]),
   )
+
+  # If network policy is disabled, disable the isolate_pods prompt because
+  # it will have no effect
+  if not gke_cluster.IsNetworkPolicyEnabled():
+    isolate_pods.Disable('NetworkPolicy not enabled.')
 
   prompt_sequence.Run(summarize=True)
 
