@@ -98,6 +98,18 @@ class K8sWorkload(base.K8sNamespacedResource, metaclass=abc.ABCMeta):
         for pod in pods.items
     ]
 
+  def GetCoveredNodes(self) -> List[base.K8sNode]:
+    """Gets a list of Kubernetes nodes covered by this workload.
+
+    Returns:
+      List[base.K8sNode]: A list of pods covered by this workload.
+    """
+    nodes_by_name = {}  # type: Dict[str, base.K8sNode]
+    for pod in self.GetCoveredPods():
+      node = pod.GetNode()
+      nodes_by_name[node.name] = node
+    return list(nodes_by_name.values())
+
   def IsCoveringPod(self, pod: base.K8sPod) -> bool:
     """Determines whether a pod is covered by this workload.
 
