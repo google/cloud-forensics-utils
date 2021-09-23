@@ -77,9 +77,9 @@ class GkeCluster(GoogleKubernetesEngine):
       str: Full name of the cluster resource.
     """
     return 'projects/{0:s}/locations/{1:s}/clusters/{2:s}'.format(
-      self.project_id,
-      self.zone,
-      self.cluster_id,
+        self.project_id,
+        self.zone,
+        self.cluster_id,
     )
 
   def _GetK8sApiClient(self) -> client.ApiClient:
@@ -100,35 +100,35 @@ class GkeCluster(GoogleKubernetesEngine):
     # Context string is built the same way that gcloud does
     # in get-credentials
     context = '_'.join([
-      'gke',
-      self.project_id,
-      self.zone,
-      self.name,
+        'gke',
+        self.project_id,
+        self.zone,
+        self.name,
     ])
     # Build kubeconfig dict and load
     kubeconfig = client.Configuration()
     loader = kube_config.KubeConfigLoader({
-      'apiVersion': self.GKE_API_VERSION,
-      'current-context': context,
-      'clusters': [{
-        'name': context,
-        'cluster': {
-          'certificate-authority-data': ca_data,
-          'server': 'https://{0:s}'.format(get_op['endpoint']),
-        }
-      }],
-      'contexts': [{
-        'name': context, 'context': {
-          'cluster': context, 'user': context
-        }
-      }],
-      'users': [{
-        'name': context, 'user': {
-          'auth-provider': {
-            'name': 'gcp'
-          }
-        }
-      }]
+        'apiVersion': self.GKE_API_VERSION,
+        'current-context': context,
+        'clusters': [{
+            'name': context,
+            'cluster': {
+                'certificate-authority-data': ca_data,
+                'server': 'https://{0:s}'.format(get_op['endpoint']),
+            }
+        }],
+        'contexts': [{
+            'name': context, 'context': {
+                'cluster': context, 'user': context
+            }
+        }],
+        'users': [{
+            'name': context, 'user': {
+                'auth-provider': {
+                    'name': 'gcp'
+                }
+            }
+        }]
     })
     loader.load_and_set(kubeconfig)
     return client.ApiClient(kubeconfig)
@@ -144,6 +144,32 @@ class GkeCluster(GoogleKubernetesEngine):
     response = request.execute()  # type: Dict[str, Any]
     return response
 
+  def _GetValue(self, *keys: str, default: Any = None) -> Any:
+    """Gets a nested value from this cluster's 'GET' using a list of keys.
+
+    Args:
+      *keys (str): The key path to the nested value.
+      default (Any): Optional. If a key from the key path is not present,
+          this value will be returned. Defaults to None.
+
+    Returns:
+      Any: The value at the end of the key path, or the default value if
+          a key was not present
+
+    Raises:
+      KeyError: If an object along the key path was not a dict.
+    """
+    current = self.GetOperation()
+    for key in keys:
+      if isinstance(current, dict):
+        if key in current:
+          current = current[key]
+        else:
+          return default
+      else:
+        raise KeyError('Nested object was not a dict.')
+    return current
+
   def GetK8sCluster(self) -> cluster.K8sCluster:
     """Returns the Kubernetes cluster of this GKE cluster.
 
@@ -152,3 +178,35 @@ class GkeCluster(GoogleKubernetesEngine):
           exposing methods to call the Kubernetes API.
     """
     return cluster.K8sCluster(self._GetK8sApiClient())
+
+  def IsWorkloadIdentityEnabled(self) -> bool:
+    """Returns whether the workload identity is enabled.
+
+    Returns:
+      bool: True if workload identity is enabled, False otherwise.
+    """
+    return bool(
+        self._GetValue(
+            'nodeConfig',
+            'workloadMetadataConfig',
+            'mode') == 'GKE_METADATA')
+
+  def IsLegacyEndpointsDisabled(self) -> bool:
+    """Returns whether legacy endpoints are enabled.
+
+    Returns:
+      bool: True if legacy endpoints are disabled, False otherwise.
+    """
+    return bool(
+        self._GetValue(
+            'nodeConfig',
+            'metadata',
+            'disable-legacy-endpoints') == 'true')
+
+  def IsNetworkPolicyEnabled(self) -> bool:
+    """Returns whether network policies are enabled.
+
+    Returns:
+      bool: True if network policies are enabled, False otherwise.
+    """
+    return bool(self._GetValue('networkPolicy', 'enabled', default=False))
