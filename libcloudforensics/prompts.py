@@ -60,7 +60,7 @@ class PromptOption:
     """
     self._text = text
     self._functions = functions
-    self._disabled_reason = None
+    self._disabled_reason = None  # type: Optional[str]
     self._selected = False
     self._disable_options = disable_options or []
 
