@@ -70,7 +70,11 @@ class PromptOption:
     return self._text
 
   def Disable(self, reason: str) -> None:
-    """Disables this prompt."""
+    """Disables this prompt.
+
+    Args:
+      reason (str): The reason for disabling this prompt.
+    """
     self._disabled_reason = reason
 
   def IsDisabled(self) -> bool:
