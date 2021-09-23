@@ -102,7 +102,7 @@ class K8sWorkload(base.K8sNamespacedResource, metaclass=abc.ABCMeta):
     """Gets a list of Kubernetes nodes covered by this workload.
 
     Returns:
-      List[base.K8sNode]: A list of pods covered by this workload.
+      List[base.K8sNode]: A list of nodes covered by this workload.
     """
     nodes_by_name = {}  # type: Dict[str, base.K8sNode]
     for pod in self.GetCoveredPods():
