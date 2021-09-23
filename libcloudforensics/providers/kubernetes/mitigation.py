@@ -35,7 +35,7 @@ def DrainWorkloadNodesFromOtherPods(
     for node in nodes:
       node.Cordon()
   for node in nodes:
-    node.Drain(lambda p: not workload.IsCoveringPod(p))
+    node.Drain(lambda pod: not workload.IsCoveringPod(pod))
 
 
 def CreateDenyAllNetworkPolicyForWorkload(
@@ -43,9 +43,12 @@ def CreateDenyAllNetworkPolicyForWorkload(
     workload: workloads.K8sWorkload) -> netpol.K8sDenyAllNetworkPolicy:
   """Isolates a workload's pods via a deny all network policy.
 
+  **Warning:** It is the caller's responsibility to make sure that Kubernetes
+  NetworkPolicy is enabled for their cluster, via their cloud provider's API.
+
   Args:
-    cluster (k8s.K8sCluster): The cluster in which to create the deny
-        all policy, and subsequently patch existing policies
+    cluster (k8s.K8sCluster): The cluster in which to create the deny-all
+        policy, and subsequently patch existing policies
     workload (workloads.K8sWorkload): The workload in whose namespace the
         deny all network policy will be created, and whose pods will be tagged
         to be selected by the deny all network policy.
@@ -54,7 +57,6 @@ def CreateDenyAllNetworkPolicyForWorkload(
     netpol.K8sDenyAllNetworkPolicy: The deny all network policy that was
         created to isolate the workload's pods.
   """
-  # TODO: Check that network policies are enabled
   # First create the NetworkPolicy in the workload's namespace
   deny_all_policy = cluster.DenyAllNetworkPolicy(workload.namespace)
   deny_all_policy.Create()
