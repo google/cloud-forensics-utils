@@ -38,30 +38,6 @@ KeyT = TypeVar('KeyT')
 ValT = TypeVar('ValT')
 
 
-def _Underline(text: str) -> str:
-  """Underlines given text.
-
-  Args:
-    text (str): The text to be underlined.
-
-  Returns:
-    str: The underlined text.
-  """
-  return ''.join('\u0332{0:s}'.format(char) for char in text)
-
-
-def _Bold(text: str) -> str:
-  """Adds ANSI escape codes to text so that it is displayed in bold.
-
-  Args:
-    text (str): The text to be put in bold.
-
-  Returns:
-    str: The text with bold escape codes.
-  """
-  return '\033[1m{0:s}\033[0m'.format(text)
-
-
 def _SafeMerge(*dictionaries: Dict[KeyT, ValT]) -> Dict[KeyT, ValT]:
   """Merges given dictionaries, checking if there are overlapping keys.
 
@@ -237,7 +213,7 @@ class Enumeration(Generic[ObjT], metaclass=abc.ABCMeta):
       """
       print_func(self._INDENT_STRING + text, level)
 
-    print_func(_Bold(self.keyword), logging.INFO)
+    print_func(self.keyword, logging.INFO)
     self.__PrintTable(print_func, filter_empty)
     for child in self._Children(namespace=namespace):
       child.Enumerate(
