@@ -347,8 +347,8 @@ class NodeEnumeration(Enumeration[base.K8sNode]):
     """Method override."""
     info.update({
         'Name': self._object.name,
-        'ExternalIPs': self._object.ExternalIPs(),
-        'InternalIPs': self._object.InternalIPs(),
+        'ExternalIPs': self._object.ExternalIps(),
+        'InternalIPs': self._object.InternalIps(),
     })
 
 
@@ -367,7 +367,7 @@ class ClusterEnumeration(Enumeration[cluster.K8sCluster]):
       yield NodeEnumeration(node)
 
 
-class WorkloadEnumeration(Enumeration[workloads.K8sWorkload]):
+class WorkloadEnumeration(Enumeration[base.K8sWorkload]):
   """Enumeration of a Kubernetes workload."""
 
   @property

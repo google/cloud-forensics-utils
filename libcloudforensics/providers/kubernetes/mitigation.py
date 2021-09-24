@@ -13,18 +13,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Mitigation functions to be used in end-to-end functionality."""
-
+from libcloudforensics.providers.kubernetes import base
 from libcloudforensics.providers.kubernetes import cluster as k8s
 from libcloudforensics.providers.kubernetes import netpol
 from libcloudforensics.providers.kubernetes import workloads
 
 
 def DrainWorkloadNodesFromOtherPods(
-    workload: workloads.K8sWorkload, cordon: bool = True) -> None:
+    workload: base.K8sWorkload, cordon: bool = True) -> None:
   """Drains a workload's nodes from non-workload pods.
 
   Args:
-    workload (workloads.K8sWorkload): The workload for which nodes
+    workload (base.K8sWorkload): The workload for which nodes
         must be drained from pods that are not covered by the workload.
     cordon (bool): Optional. Whether or not to cordon the nodes before draining,
         to prevent pods from appearing on the nodes again as it will be marked
@@ -40,7 +40,7 @@ def DrainWorkloadNodesFromOtherPods(
 
 def CreateDenyAllNetworkPolicyForWorkload(
     cluster: k8s.K8sCluster,
-    workload: workloads.K8sWorkload) -> netpol.K8sDenyAllNetworkPolicy:
+    workload: base.K8sWorkload) -> netpol.K8sDenyAllNetworkPolicy:
   """Isolates a workload's pods via a deny all network policy.
 
   **Warning:** It is the caller's responsibility to make sure that Kubernetes
@@ -49,7 +49,7 @@ def CreateDenyAllNetworkPolicyForWorkload(
   Args:
     cluster (k8s.K8sCluster): The cluster in which to create the deny-all
         policy, and subsequently patch existing policies
-    workload (workloads.K8sWorkload): The workload in whose namespace the
+    workload (base.K8sWorkload): The workload in whose namespace the
         deny all network policy will be created, and whose pods will be tagged
         to be selected by the deny all network policy.
 

@@ -152,6 +152,9 @@ class K8sCluster(base.K8sClient):
     """
     return services.K8sService(self._api_client, service_id, namespace)
 
+  def GetPod(self, pod_name: str, namespace: str) -> base.K8sPod:
+    return base.K8sPod(self._api_client, pod_name, namespace)
+
   def DenyAllNetworkPolicy(
       self, namespace: str) -> netpol.K8sDenyAllNetworkPolicy:
     """Gets a deny-all network policy for the cluster.
