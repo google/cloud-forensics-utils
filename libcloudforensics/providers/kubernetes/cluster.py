@@ -152,7 +152,27 @@ class K8sCluster(base.K8sClient):
     """
     return services.K8sService(self._api_client, service_id, namespace)
 
+  def GetNode(self, node_name: str) -> base.K8sNode:
+    """Gets a node object in this cluster.
+
+    Args:
+      node_name (str): The name of the node.
+
+    Returns:
+      base.K8sNode: The matching node object.
+    """
+    return base.K8sNode(self._api_client, node_name)
+
   def GetPod(self, pod_name: str, namespace: str) -> base.K8sPod:
+    """Gets a pod object in this cluster.
+
+    Args:
+      pod_name (str): The name of the pod.
+      namespace (str): The namespace of the pod.
+
+    Returns:
+      base.K8sPod: The matching pod object.
+    """
     return base.K8sPod(self._api_client, pod_name, namespace)
 
   def DenyAllNetworkPolicy(
