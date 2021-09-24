@@ -30,7 +30,7 @@ def DrainWorkloadNodesFromOtherPods(
         to prevent pods from appearing on the nodes again as it will be marked
         as unschedulable. Defaults to True.
   """
-  nodes = set(pod.GetNode() for pod in workload.GetCoveredPods())
+  nodes = workload.GetCoveredNodes()
   if cordon:
     for node in nodes:
       node.Cordon()
