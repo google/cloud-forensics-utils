@@ -518,7 +518,7 @@ def QuarantineGKEWorkload(project_id: str,
     for node in workload_nodes:
       logger.info(
           'Cordoning Kubernetes node {0:s} from {1:s} '
-          'deployment...'.format(node, k8s_workload.name))
+          'deployment...'.format(node.name, k8s_workload.name))
       node.Cordon()
 
   def AbandonNodes() -> None:
