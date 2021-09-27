@@ -512,6 +512,7 @@ def QuarantineGKEWorkload(project_id: str,
   groups_by_instance = compute_project.ListMIGSByInstanceName(zone)
 
   workload_nodes = k8s_workload.GetCoveredNodes()
+  workload_pods = k8s_workload.GetCoveredPods()
 
   def CordonNodes() -> None:
     """Cordons the compromised nodes."""
@@ -540,7 +541,7 @@ def QuarantineGKEWorkload(project_id: str,
     logger.info(
         'Creating deny-all NetworkPolicy for {0:s} '
         'workload...'.format(workload_id))
-    mitigation.CreateDenyAllNetworkPolicyForWorkload(k8s_cluster, k8s_workload)
+    mitigation.IsolatePodsWithNetworkPolicy(k8s_cluster, workload_pods)
 
   def DrainNodes() -> None:
     """Drains the workload nodes from other pods."""
