@@ -623,6 +623,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
 
     Raises:
       InvalidNameError: If the GCE Image name is invalid.
+      ResourceCreationError: If the GCE Image cannot be inserted
     """
 
     if name:
@@ -646,7 +647,20 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     gce_image_client = self.GceApi().images()
     request = gce_image_client.insert(
         project=self.project_id, body=image_body, forceCreate=True)
-    response = request.execute()
+
+    try:
+      response = request.execute()
+    except HttpError as exception:
+      if exception.status_code == 409:
+        # 409 - Resource already exists.
+        # Message is
+        #   `The resource 'projects/badcloud-hasher/global/images/<DISK_NAME>'
+        #   already exists`
+        msg = exception.error_details[0]['message']
+      else:
+        msg = str(exception)
+      raise errors.ResourceCreationError(msg, __name__) from exception
+
     self.BlockOperation(response)
     return GoogleComputeImage(self.project_id, '', name)
 
