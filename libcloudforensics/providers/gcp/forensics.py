@@ -510,13 +510,14 @@ def QuarantineGKEWorkload(project_id: str,
   groups_by_instance = compute_project.ListMIGSByInstanceName(zone)
 
   workload_nodes = workload.GetCoveredNodes()
+  workload_pods = workload.GetCoveredPods()
 
   def CordonNodes() -> None:
     """Cordons the compromised nodes."""
     for node in workload_nodes:
       logger.info(
           'Cordoning Kubernetes node {0:s} from {1:s} '
-          'deployment...'.format(node, workload.name))
+          'deployment...'.format(node.name, workload.name))
       node.Cordon()
 
   def AbandonNodes() -> None:
@@ -538,7 +539,7 @@ def QuarantineGKEWorkload(project_id: str,
     logger.info(
         'Creating deny-all NetworkPolicy for {0:s} '
         'workload...'.format(workload_id))
-    mitigation.CreateDenyAllNetworkPolicyForWorkload(cluster, workload)
+    mitigation.IsolatePodsWithNetworkPolicy(cluster, workload_pods)
 
   def DrainNodes() -> None:
     """Drains the workload nodes from other pods."""
