@@ -28,6 +28,8 @@ from tests.providers.kubernetes import k8s_mocks
 class K8sClusterTest(unittest.TestCase):
   """Test K8sCluster functionality, mainly checking API calls."""
 
+  # pylint: disable=abstract-class-instantiated
+
   @typing.no_type_check
   @mock.patch('kubernetes.client.CoreV1Api')
   def testClusterListNodes(self, mock_k8s_api):

@@ -27,7 +27,6 @@ from libcloudforensics.providers.kubernetes import cluster
 from libcloudforensics.providers.kubernetes import container
 from libcloudforensics.providers.kubernetes import services
 from libcloudforensics.providers.kubernetes import volume
-from libcloudforensics.providers.kubernetes import workloads
 
 logging_utils.SetUpLogger(__name__)
 logger = logging_utils.GetLogger(__name__)
