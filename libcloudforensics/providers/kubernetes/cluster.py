@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Kubernetes cluster class, starting point for Kubernetes API calls."""
+import abc
 from typing import Optional, List
 
 from kubernetes import client
@@ -27,8 +28,8 @@ logging_utils.SetUpLogger(__name__)
 logger = logging_utils.GetLogger(__name__)
 
 
-class K8sCluster(base.K8sClient):
-  """Class representing a Kubernetes cluster."""
+class K8sCluster(base.K8sClient, metaclass=abc.ABCMeta):
+  """Abstract class representing a Kubernetes cluster."""
 
   def __init__(self, api_client: client.ApiClient) -> None:
     """Creates a K8sCluster object, checking the API client's authorization.
@@ -190,3 +191,11 @@ class K8sCluster(base.K8sClient):
           the creation method on the object to create the policy.
     """
     return netpol.K8sDenyAllNetworkPolicy(self._api_client, namespace)
+
+  @abc.abstractmethod
+  def IsNetworkPolicyEnabled(self):
+    """Returns whether network policies are enabled.
+
+    Returns:
+      bool: True if network policies are enabled, False otherwise.
+    """
