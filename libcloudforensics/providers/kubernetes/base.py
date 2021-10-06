@@ -15,13 +15,16 @@
 """Kubernetes core class structure."""
 
 import abc
-from typing import List, TypeVar, Callable, Optional, Dict
+from typing import List, TypeVar, Callable, Optional, Dict, TYPE_CHECKING
 
 from kubernetes import client
 
 from libcloudforensics.providers.kubernetes import container
 from libcloudforensics.providers.kubernetes import selector
 from libcloudforensics.providers.kubernetes import volume
+
+if TYPE_CHECKING:
+  from libcloudforensics.providers.gcp.internal import gke
 
 
 class K8sClient(metaclass=abc.ABCMeta):
@@ -250,12 +253,37 @@ class K8sWorkload(K8sNamespacedResource):
       bool: True if the pod is covered this workload, False otherwise.
     """
 
+  @property
+  @abc.abstractmethod
+  def gcp_log_type(self) -> str:
+    """The GCP log type of this workload."""
+
+  def GcpAuditLogsQuery(self, containing_cluster: 'gke.GkeCluster') -> str:
+    return (
+        'logName="projects/{project_id:s}/logs/cloudaudit.googleapis.com%2Factivity"\n'
+        'resource.type="k8s_cluster"\n'
+        'resource.labels.cluster_name="{cluster_id:s}"\n'
+        'resource.labels.location="{zone:s}"\n'
+        'protoPayload.request.metadata.name="{workload_id:s}"\n'
+        'protoPayload.methodName:"{workload_type:s}."'.format(
+            project_id=containing_cluster.project_id,
+            cluster_id=containing_cluster.cluster_id,
+            zone=containing_cluster.zone,
+            workload_id=self.name,
+            workload_type=self.gcp_log_type,
+        ))
+
 
 class K8sPod(K8sWorkload):
   """Class representing a Kubernetes pod.
 
   https://kubernetes.io/docs/concepts/workloads/pods/
   """
+
+  @property
+  def gcp_log_type(self) -> str:
+    """Override of abstract property."""
+    return 'pods'
 
   def GetCoveredPods(self) -> List['K8sPod']:
     """Override of abstract method"""

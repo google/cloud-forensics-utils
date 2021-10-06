@@ -198,3 +198,4 @@ class GkeCluster(cluster.K8sCluster, GoogleKubernetesEngine):
   def IsNetworkPolicyEnabled(self) -> bool:
     """Override of abstract method."""
     return bool(self._GetValue('networkPolicy', 'enabled', default=False))
+

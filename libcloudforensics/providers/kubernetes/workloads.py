@@ -96,6 +96,11 @@ class K8sControlledWorkload(base.K8sWorkload):
 class K8sDeployment(K8sControlledWorkload):
   """Class representing a Kubernetes deployment."""
 
+  @property
+  def gcp_log_type(self) -> str:
+    """Override of abstract property."""
+    return 'deployments'
+
   def OrphanPods(self) -> None:
     """Override of abstract method.
 
@@ -162,6 +167,11 @@ class K8sDeployment(K8sControlledWorkload):
 
 class K8sReplicaSet(K8sControlledWorkload):
   """Class representing a Kubernetes deployment."""
+
+  @property
+  def gcp_log_type(self) -> str:
+    """Override of abstract property."""
+    return 'replicasets'
 
   def OrphanPods(self) -> None:
     """Override of abstract method."""
