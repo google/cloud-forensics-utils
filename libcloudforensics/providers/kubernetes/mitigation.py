@@ -54,6 +54,9 @@ def CreateDenyAllNetworkPolicyForWorkload(
   Returns:
     netpol.K8sDenyAllNetworkPolicy: The deny all network policy that was
         created to isolate the workload's pods.
+
+  Raises:
+    errors.OperationFailedError: If NetworkPolicy is not enabled in the cluster.
   """
   if not cluster.IsNetworkPolicyEnabled():
     raise errors.OperationFailedError(
