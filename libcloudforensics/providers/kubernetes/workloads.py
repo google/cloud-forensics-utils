@@ -86,18 +86,6 @@ class K8sControlledWorkload(base.K8sWorkload):
         for pod in pods.items
     ]
 
-  def GetCoveredNodes(self) -> List[base.K8sNode]:
-    """Gets a list of Kubernetes nodes covered by this workload.
-
-    Returns:
-      List[base.K8sNode]: A list of nodes covered by this workload.
-    """
-    nodes_by_name = {}  # type: Dict[str, base.K8sNode]
-    for pod in self.GetCoveredPods():
-      node = pod.GetNode()
-      nodes_by_name[node.name] = node
-    return list(nodes_by_name.values())
-
   def IsCoveringPod(self, pod: base.K8sPod) -> bool:
     """Override of abstract method."""
     # Since labels are type Dict[str, str], we can use set-like operations
@@ -114,8 +102,9 @@ class K8sDeployment(K8sControlledWorkload):
     To achieve the goal of orphaning the pods, this deployment and its matching
     ReplicaSet are deleted, without cascading.
     """
+    rs = self._ReplicaSet()
     self.Delete(cascade=False)
-    self._ReplicaSet().Delete(cascade=False)
+    rs.Delete(cascade=False)
 
   def Delete(self, cascade: bool = True) -> None:
     """Override of abstract method."""
