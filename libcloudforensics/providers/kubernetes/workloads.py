@@ -46,7 +46,7 @@ class K8sControlledWorkload(base.K8sWorkload):
   def OrphanPods(self) -> None:
     """Orphans the pods covered by this workload.
 
-    Note that calling this function may entail the deletion of the object
+    Note that calling this function will entail the deletion of the object
     upon which this method was called.
     """
 
