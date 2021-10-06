@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Mitigation functions to be used in end-to-end functionality."""
+from libcloudforensics import errors
 from libcloudforensics.providers.kubernetes import base
 from libcloudforensics.providers.kubernetes import cluster as k8s
 from libcloudforensics.providers.kubernetes import netpol
@@ -43,9 +44,6 @@ def CreateDenyAllNetworkPolicyForWorkload(
     workload: base.K8sWorkload) -> netpol.K8sDenyAllNetworkPolicy:
   """Isolates a workload's pods via a deny all network policy.
 
-  **Warning:** It is the caller's responsibility to make sure that Kubernetes
-  NetworkPolicy is enabled for their cluster, via their cloud provider's API.
-
   Args:
     cluster (k8s.K8sCluster): The cluster in which to create the deny-all
         policy, and subsequently patch existing policies
@@ -57,6 +55,11 @@ def CreateDenyAllNetworkPolicyForWorkload(
     netpol.K8sDenyAllNetworkPolicy: The deny all network policy that was
         created to isolate the workload's pods.
   """
+  if not cluster.IsNetworkPolicyEnabled():
+    raise errors.OperationFailedError(
+        'NetworkPolicy is not enabled for the cluster. Creating the deny-all '
+        'NetworkPolicy will have no effect.',
+        __name__)
   # First create the NetworkPolicy in the workload's namespace
   deny_all_policy = cluster.DenyAllNetworkPolicy(workload.namespace)
   deny_all_policy.Create()

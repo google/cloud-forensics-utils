@@ -212,6 +212,7 @@ class K8sNode(K8sResource):
         if address.type == 'InternalIP'
     ]
 
+
 class K8sWorkload(K8sNamespacedResource):
   """Abstract class representing Kubernetes workloads."""
 
@@ -248,6 +249,7 @@ class K8sWorkload(K8sNamespacedResource):
     Returns:
       bool: True if the pod is covered this workload, False otherwise.
     """
+
 
 class K8sPod(K8sWorkload):
   """Class representing a Kubernetes pod.
