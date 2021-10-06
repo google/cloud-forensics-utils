@@ -14,13 +14,14 @@
 # limitations under the License.
 """Classes for displaying prompts to a user and running their choices."""
 import abc
-from typing import List, Optional, Callable
+from typing import List, Optional, Callable, Tuple
 
 from libcloudforensics import logging_utils
 
 logging_utils.SetUpLogger(__name__, no_newline=True)
 logger = logging_utils.GetLogger(__name__)
 
+DisableList = List[Tuple['PromptOption', str]]
 
 def _Strikethrough(text: str) -> str:
   """Returns given text with strikethrough codes after each character.
@@ -31,7 +32,7 @@ def _Strikethrough(text: str) -> str:
   Returns:
     str: The given text with strikethrough codes.
   """
-  return ''.join('{0:s}\u0336'.format(char) for char in text)
+  return ''.join('\u0336{0:s}'.format(char) for char in text)
 
 
 class PromptOption:
@@ -45,19 +46,21 @@ class PromptOption:
       self,
       text: str,
       *functions: Callable[[], None],
-      disable_options: Optional[List['PromptOption']] = None) -> None:
+      disable_options: Optional[DisableList] = None) -> None:
     """Builds a PromptOption.
 
     Args:
       text (str): The text description this prompt option.
       functions (Callable[[], None]): The underlying functions of this prompt
           option to be called upon execution.
-      disable_options (List[PromptOption]): Optional. List of prompt options
-          to disable upon selection of this prompt option.
+      disable_options (DisableList): Optional. List of prompt options
+          to disable upon selection of this prompt option. This is a list of
+          tuples, with a prompt option to disable and an associated reason for
+          disabling.
     """
     self._text = text
     self._functions = functions
-    self._disabled = False
+    self._disabled_reason = None  # type: Optional[str]
     self._selected = False
     self._disable_options = disable_options or []
 
@@ -66,9 +69,13 @@ class PromptOption:
     """The text description of this PromptOption."""
     return self._text
 
-  def Disable(self) -> None:
-    """Disables this prompt."""
-    self._disabled = True
+  def Disable(self, reason: str) -> None:
+    """Disables this prompt.
+
+    Args:
+      reason (str): The reason for disabling this prompt.
+    """
+    self._disabled_reason = reason
 
   def IsDisabled(self) -> bool:
     """Returns True if this prompt is disabled, false otherwise.
@@ -76,12 +83,12 @@ class PromptOption:
     Returns:
       bool: True if this prompt is disabled, false otherwise.
     """
-    return self._disabled
+    return self._disabled_reason is not None
 
   def Select(self) -> None:
     """Selects this prompt, disabling dependent prompts."""
-    for option in self._disable_options:
-      option.Disable()
+    for option, reason in self._disable_options:
+      option.Disable(reason)
     self._selected = True
 
   def IsSelected(self) -> bool:
@@ -95,8 +102,9 @@ class PromptOption:
   def ToQuestion(self) -> str:
     """The text to be displayed for this prompt option."""
     question = '{0:s}?'.format(self._text)
-    if self._disabled:
-      question = _Strikethrough(question)
+    if self.IsDisabled():
+      question = '{0:s} ({1:s})'.format(
+          _Strikethrough(question), self._disabled_reason)
     return question
 
   def Execute(self) -> None:
