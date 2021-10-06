@@ -19,25 +19,27 @@ import unittest
 import mock
 
 from libcloudforensics.providers.gcp.internal import gke
+import libcloudforensics.providers.kubernetes.cluster as k8s
 
 
 class GoogleKubernetesEngineTest(unittest.TestCase):
   """Test Google Kubernetes Engine class."""
 
-  FAKE_GKE = gke.GkeCluster('fake', 'fake', 'still-fake')
-  MOCK_GKE_CLUSTER_OBJECT = {
-      "name": "test-cluster",
-      "location": "fake-region"
-  }
 
-  # pylint: disable=line-too-long
   @typing.no_type_check
-  @mock.patch('libcloudforensics.providers.gcp.internal.gke.GoogleKubernetesEngine.GkeApi')
+  # The next two decorators enable GkeCluster to be instantiated
+  @mock.patch.object(k8s.K8sCluster, '_AuthorizationCheck', mock.Mock)
+  @mock.patch.object(gke.GkeCluster, '_GetK8sApiClient', mock.Mock)
+  @mock.patch.object(gke.GoogleKubernetesEngine, 'GkeApi')
   def testGetCluster(self, mock_gke_api):
-    """Test GKE cluster Get operation."""
-    cluster_mock = GoogleKubernetesEngineTest.MOCK_GKE_CLUSTER_OBJECT
-    fake_gke = GoogleKubernetesEngineTest.FAKE_GKE
-    api_cluster_object = mock_gke_api.return_value.projects.return_value.locations.return_value.clusters.return_value
-    api_cluster_object.get.return_value.execute.return_value = cluster_mock
-    get_results = fake_gke.GetOperation()
-    self.assertEqual(cluster_mock, get_results)
+    """Test GkeCluster calls the API correctly and returns its response."""
+    clusters_api = mock_gke_api().projects().locations().clusters()
+    clusters_api.get.return_value.execute.return_value = {
+      'key': 'ddbjnaxz'
+    }
+
+    cluster = gke.GkeCluster('fake-project-id', 'fake-zone', 'fake-cluster-id')
+    get_operation_result = cluster.GetOperation()
+
+    clusters_api.get.assert_called_once_with(name=cluster.name)
+    self.assertEqual({'key': 'ddbjnaxz'}, get_operation_result)

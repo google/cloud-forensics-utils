@@ -42,7 +42,7 @@ class K8sCluster(base.K8sClient, metaclass=abc.ABCMeta):
       api_client (client.ApiClient): The API client to the Kubernetes cluster.
     """
     super().__init__(api_client)
-    self.__AuthorizationCheck()
+    self._AuthorizationCheck()
 
   def ListPods(self, namespace: Optional[str] = None) -> List[base.K8sPod]:
     """Lists the pods of this cluster, possibly filtering for a namespace.
@@ -109,7 +109,7 @@ class K8sCluster(base.K8sClient, metaclass=abc.ABCMeta):
         for policy in policies
     ]
 
-  def __AuthorizationCheck(self) -> None:
+  def _AuthorizationCheck(self) -> None:
     """Checks the authorization of this cluster's API client.
 
     Performs a check as per `kubectl auth can-i '*' '*' --all-namespaces`,
