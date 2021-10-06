@@ -263,7 +263,7 @@ class K8sPod(K8sWorkload):
 
   def IsCoveringPod(self, pod: 'K8sPod') -> bool:
     """Override of abstract method."""
-    return self.Read() == pod.Read()
+    return bool(self.Read() == pod.Read())
 
   def Read(self) -> client.V1Pod:
     """Override of abstract method."""

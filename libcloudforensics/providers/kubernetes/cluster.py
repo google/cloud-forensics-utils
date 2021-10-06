@@ -193,7 +193,7 @@ class K8sCluster(base.K8sClient, metaclass=abc.ABCMeta):
     return netpol.K8sDenyAllNetworkPolicy(self._api_client, namespace)
 
   @abc.abstractmethod
-  def IsNetworkPolicyEnabled(self):
+  def IsNetworkPolicyEnabled(self) -> bool:
     """Returns whether network policies are enabled.
 
     Returns:
