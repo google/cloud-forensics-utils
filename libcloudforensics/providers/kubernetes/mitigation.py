@@ -64,9 +64,9 @@ def IsolatePodsWithNetworkPolicy(
     return None
   if not cluster.IsNetworkPolicyEnabled():
     raise errors.OperationFailedError(
-      'NetworkPolicy is not enabled for the cluster. Creating the deny-all '
-      'NetworkPolicy will have no effect.',
-      __name__)
+        'NetworkPolicy is not enabled for the cluster. Creating the deny-all '
+        'NetworkPolicy will have no effect.',
+        __name__)
   if any(pod.namespace != pods[0].namespace for pod in pods):
     raise ValueError('Supplied pods are not in the same namespace.')
   # First create the NetworkPolicy in the workload's namespace
