@@ -259,6 +259,14 @@ class K8sWorkload(K8sNamespacedResource):
     """The GCP log type of this workload."""
 
   def GcpAuditLogsQuery(self, containing_cluster: 'gke.GkeCluster') -> str:
+    """Returns the workload's query string for the GCP audit logs.
+
+    Args:
+      gke.GkeCluster: The GKE cluster for which to create a query string.
+
+    Returns:
+       str: The query string.
+    """
     return (
         'logName="projects/{project_id:s}/logs/cloudaudit.googleapis.com%2Factivity"\n'
         'resource.type="k8s_cluster"\n'
@@ -273,6 +281,16 @@ class K8sWorkload(K8sNamespacedResource):
             workload_type=self.gcp_log_type,
         ))
 
+  @abc.abstractmethod
+  def GcpContainerLogsQuery(self, containing_cluster: 'gke.GkeCluster') -> str:
+    """Returns the workload's query string for the GCP container logs.
+
+    Args:
+      gke.GkeCluster: The GKE cluster for which to create a query string.
+
+    Returns:
+       str: The query string.
+    """
 
 class K8sPod(K8sWorkload):
   """Class representing a Kubernetes pod.
@@ -284,6 +302,22 @@ class K8sPod(K8sWorkload):
   def gcp_log_type(self) -> str:
     """Override of abstract property."""
     return 'pods'
+
+  def GcpContainerLogsQuery(self, containing_cluster: 'gke.GkeCluster') -> str:
+    """Override of abstract method."""
+    return (
+        'resource.type="k8s_container"\n'
+        'resource.labels.project_id="{project_id:s}"\n'
+        'resource.labels.location="{zone:s}"\n'
+        'resource.labels.cluster_name="{cluster_id:s}"\n'
+        'resource.labels.namespace_name="{namespace:s}"\n'
+        'resource.labels.pod_name="{name:s}"'.format(
+            project_id=containing_cluster.project_id,
+            zone=containing_cluster.zone,
+            cluster_id=containing_cluster.cluster_id,
+            namespace=self.namespace,
+            name=self.name,
+        ))
 
   def GetCoveredPods(self) -> List['K8sPod']:
     """Override of abstract method"""

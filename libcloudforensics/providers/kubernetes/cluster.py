@@ -176,6 +176,18 @@ class K8sCluster(base.K8sClient, metaclass=abc.ABCMeta):
     """
     return base.K8sPod(self._api_client, pod_name, namespace)
 
+  def GetReplicaSet(self, replica_set_name: str, namespace: str) -> workloads.K8sReplicaSet:
+    """Gets a replica set object in this cluster.
+
+    Args:
+      replica_set_name (str): The name of the replica set.
+      namespace (str): The namespace of the replica set.
+
+    Returns:
+      base.K8sPod: The matching replica set object.
+    """
+    return workloads.K8sReplicaSet(self._api_client, replica_set_name, namespace)
+
   def DenyAllNetworkPolicy(
       self, namespace: str) -> netpol.K8sDenyAllNetworkPolicy:
     """Gets a deny-all network policy for the cluster.
