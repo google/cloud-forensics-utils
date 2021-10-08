@@ -602,7 +602,7 @@ def QuarantineGKEWorkload(project_id: str,
   )
 
   # If network policy is disabled, disable the isolate_pods prompt because
-  # it will have no effect
+  # it will raise an error
   if not cluster.IsNetworkPolicyEnabled():
     isolate_pods.Disable('NetworkPolicy not enabled.')
 
