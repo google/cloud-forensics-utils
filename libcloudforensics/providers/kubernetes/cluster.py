@@ -65,7 +65,8 @@ class K8sCluster(base.K8sClient, metaclass=abc.ABCMeta):
         for pod in pods.items
     ]
 
-  def ListDeployments(self, namespace: Optional[str] = None) -> List[workloads.K8sDeployment]:
+  def ListDeployments(
+      self, namespace: Optional[str] = None) -> List[workloads.K8sDeployment]:
     """Lists the deployments in this cluster.
 
     Args:
@@ -81,11 +82,14 @@ class K8sCluster(base.K8sClient, metaclass=abc.ABCMeta):
     else:
       deployments = api.list_deployment_for_all_namespaces()
     return [
-      workloads.K8sDeployment(self._api_client, deployment.metadata.name, deployment.metadata.namespace)
-      for deployment in deployments.items
+        workloads.K8sDeployment(
+            self._api_client,
+            deployment.metadata.name,
+            deployment.metadata.namespace) for deployment in deployments.items
     ]
 
-  def ListReplicaSets(self, namespace: Optional[str] = None) -> List[workloads.K8sReplicaSet]:
+  def ListReplicaSets(
+      self, namespace: Optional[str] = None) -> List[workloads.K8sReplicaSet]:
     """Lists the replica sets in this cluster.
 
     Args:
@@ -101,8 +105,11 @@ class K8sCluster(base.K8sClient, metaclass=abc.ABCMeta):
     else:
       replica_sets = api.list_replica_set_for_all_namespaces()
     return [
-      workloads.K8sReplicaSet(self._api_client, replica_set.metadata.name, replica_set.metadata.namespace)
-      for replica_set in replica_sets.items
+        workloads.K8sReplicaSet(
+            self._api_client,
+            replica_set.metadata.name,
+            replica_set.metadata.namespace)
+        for replica_set in replica_sets.items
     ]
 
   def ListNodes(self) -> List[base.K8sNode]:
@@ -164,7 +171,8 @@ class K8sCluster(base.K8sClient, metaclass=abc.ABCMeta):
           'This object\'s client is not authorized to perform all operations'
           'on the Kubernetes cluster. API calls may fail.')
 
-  def AllWorkloads(self, namespace: Optional[str]) -> Iterable[base.K8sWorkload]:
+  def AllWorkloads(self,
+                   namespace: Optional[str]) -> Iterable[base.K8sWorkload]:
     """Lists all workloads in this cluster.
 
     Currently supported workloads are deployments, replica sets and pods, and
@@ -181,8 +189,8 @@ class K8sCluster(base.K8sClient, metaclass=abc.ABCMeta):
     yield from self.ListReplicaSets(namespace=namespace)
     yield from self.ListPods(namespace=namespace)
 
-
-  def FindWorkload(self, name: str, namespace: str) -> Optional[base.K8sWorkload]:
+  def FindWorkload(self, name: str,
+                   namespace: str) -> Optional[base.K8sWorkload]:
     """Finds a workload in this cluster by its name and namespace.
 
     This method relies on the workloads listed in `self.AllWorkloads`.

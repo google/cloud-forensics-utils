@@ -504,7 +504,9 @@ def QuarantineGKEWorkload(project_id: str,
   cluster = gke.GkeCluster(project_id, zone, cluster_id)
   workload = cluster.FindWorkload(workload_id, namespace)
   if not workload:
-    raise errors.ResourceNotFoundError('Workload not found. Cannot proceed with quarantining process.', __name__)
+    raise errors.ResourceNotFoundError(
+        'Workload not found. Cannot proceed with quarantining process.',
+        __name__)
 
   # Build a dict to find a managed instance group via an instance name,
   # so that we can instance.AbandonFromMIG
