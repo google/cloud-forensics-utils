@@ -188,7 +188,7 @@ class K8sNode(K8sResource):
         for pod in pods.items
     ]
 
-  def ExternalIPs(self) -> List[str]:
+  def ExternalIps(self) -> List[str]:
     """Returns the external IPs of this node.
 
     Returns:
@@ -200,7 +200,7 @@ class K8sNode(K8sResource):
         if address.type == 'ExternalIP'
     ]
 
-  def InternalIPs(self) -> List[str]:
+  def InternalIps(self) -> List[str]:
     """Returns the internal IPs of this node.
 
     Returns:
@@ -213,11 +213,57 @@ class K8sNode(K8sResource):
     ]
 
 
-class K8sPod(K8sNamespacedResource):
+class K8sWorkload(K8sNamespacedResource):
+  """Abstract class representing Kubernetes workloads."""
+
+  @abc.abstractmethod
+  def GetCoveredPods(self) -> List['K8sPod']:
+    """Gets a list of Kubernetes pods covered by this workload.
+
+    Returns:
+      List[K8sPod]: A list of pods covered by this workload.
+    """
+
+  def GetCoveredNodes(self) -> List[K8sNode]:
+    """Gets a list of Kubernetes nodes covered by this workload.
+
+    Returns:
+      List[K8sNode]: A list of nodes covered by this workload.
+    """
+    nodes_by_name = {}  # type: Dict[str, K8sNode]
+    for pod in self.GetCoveredPods():
+      node = pod.GetNode()
+      nodes_by_name[node.name] = node
+    return list(nodes_by_name.values())
+
+  @abc.abstractmethod
+  def IsCoveringPod(self, pod: 'K8sPod') -> bool:
+    """Determines whether a pod is covered by this workload.
+
+    This function checks if this workload's pod match labels are a subset of the
+    given pod's labels.
+
+    Args:
+      pod (K8sPod): The pod to be checked with the labels of this workload.
+
+    Returns:
+      bool: True if the pod is covered this workload, False otherwise.
+    """
+
+
+class K8sPod(K8sWorkload):
   """Class representing a Kubernetes pod.
 
   https://kubernetes.io/docs/concepts/workloads/pods/
   """
+
+  def GetCoveredPods(self) -> List['K8sPod']:
+    """Override of abstract method"""
+    return [self]
+
+  def IsCoveringPod(self, pod: 'K8sPod') -> bool:
+    """Override of abstract method."""
+    return bool(self.Read() == pod.Read())
 
   def Read(self) -> client.V1Pod:
     """Override of abstract method."""

@@ -501,25 +501,23 @@ def QuarantineGKEWorkload(project_id: str,
     namespace (str): The Kubernetes namespace of the workload (e.g. 'default').
     workload_id (str): The name of the workload.
   """
-  gke_cluster = gke.GkeCluster(project_id, zone, cluster_id)
-  k8s_cluster = gke_cluster.GetK8sCluster()
-
-  k8s_workload = k8s_cluster.GetDeployment(workload_id, namespace)
+  cluster = gke.GkeCluster(project_id, zone, cluster_id)
+  workload = cluster.GetDeployment(workload_id, namespace)
 
   # Build a dict to find a managed instance group via an instance name,
   # so that we can instance.AbandonFromMIG
   compute_project = compute.GoogleCloudCompute(project_id)
   groups_by_instance = compute_project.ListMIGSByInstanceName(zone)
 
-  workload_nodes = k8s_workload.GetCoveredNodes()
-  workload_pods = k8s_workload.GetCoveredPods()
+  workload_nodes = workload.GetCoveredNodes()
+  workload_pods = workload.GetCoveredPods()
 
   def CordonNodes() -> None:
     """Cordons the compromised nodes."""
     for node in workload_nodes:
       logger.info(
           'Cordoning Kubernetes node {0:s} from {1:s} '
-          'deployment...'.format(node.name, k8s_workload.name))
+          'deployment...'.format(node.name, workload.name))
       node.Cordon()
 
   def AbandonNodes() -> None:
@@ -541,18 +539,18 @@ def QuarantineGKEWorkload(project_id: str,
     logger.info(
         'Creating deny-all NetworkPolicy for {0:s} '
         'workload...'.format(workload_id))
-    mitigation.IsolatePodsWithNetworkPolicy(k8s_cluster, workload_pods)
+    mitigation.IsolatePodsWithNetworkPolicy(cluster, workload_pods)
 
   def DrainNodes() -> None:
     """Drains the workload nodes from other pods."""
     logger.info('Draining workload nodes from other pods...')
-    mitigation.DrainWorkloadNodesFromOtherPods(k8s_workload, cordon=False)
+    mitigation.DrainWorkloadNodesFromOtherPods(workload, cordon=False)
 
   def OrphanPods() -> None:
     """Orphans the pods of the workload."""
     logger.info(
         'Orphaning Kubernetes workload {0:s}\'s pods...'.format(workload_id))
-    k8s_workload.OrphanPods()
+    workload.OrphanPods()
 
   def FirewallNodes() -> None:
     """Puts each node from the workload into network quarantine."""
@@ -601,7 +599,7 @@ def QuarantineGKEWorkload(project_id: str,
 
   # If network policy is disabled, disable the isolate_pods prompt because
   # it will have no effect
-  if not gke_cluster.IsNetworkPolicyEnabled():
+  if not cluster.IsNetworkPolicyEnabled():
     isolate_pods.Disable('NetworkPolicy not enabled.')
 
   prompt_sequence.Run(summarize=True)

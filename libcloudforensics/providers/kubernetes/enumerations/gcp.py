@@ -30,7 +30,7 @@ class GkeClusterEnumeration(base.Enumeration[gke.GkeCluster]):
   def _Children(
       self, namespace: Optional[str] = None) -> Iterable[base.Enumeration[Any]]:
     """Method override."""
-    yield base.ClusterEnumeration(self._object.GetK8sCluster())
+    yield base.ClusterEnumeration(self._object)
 
   def _Populate(self, info: Dict[str, Any], warnings: Dict[str, Any]) -> None:
     """Method override."""
