@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Google Kubernetes Engine functionalities."""
+from typing import Optional
 from typing import TYPE_CHECKING, Any, Dict
 
 from kubernetes import client
@@ -20,6 +21,7 @@ from kubernetes.config import kube_config
 
 from libcloudforensics import logging_utils
 from libcloudforensics.providers.gcp.internal import common
+from libcloudforensics.providers.kubernetes import base
 from libcloudforensics.providers.kubernetes import cluster
 
 if TYPE_CHECKING:
@@ -144,6 +146,38 @@ class GkeCluster(cluster.K8sCluster, GoogleKubernetesEngine):
     request = clusters.get(name=self.name)
     response = request.execute()  # type: Dict[str, Any]
     return response
+
+  def AuditLogsQuery(self, workload: Optional[base.K8sWorkload]) -> str:
+    query = (
+        'logName="projects/{project_id:s}/logs/cloudaudit.googleapis.com%2Factivity"\n'
+        'resource.type="k8s_cluster"\n'
+        'resource.labels.cluster_name="{cluster_id:s}"\n'
+        'resource.labels.location="{zone:s}"\n'.format(
+            project_id=self.project_id,
+            cluster_id=self.cluster_id,
+            zone=self.zone))
+
+    if workload:
+      query += workload.GcpAuditLogsQuerySupplement()
+
+    return query
+
+  def ContainerLogsQuery(self, workload: Optional[base.K8sWorkload]) -> str:
+
+    query = (
+        'resource.type="k8s_container"\n'
+        'resource.labels.project_id="{project_id:s}"\n'
+        'resource.labels.location="{zone:s}"\n'
+        'resource.labels.cluster_name="{cluster_id:s}"\n'.format(
+            project_id=self.project_id,
+            zone=self.zone,
+            cluster_id=self.cluster_id))
+
+    if workload:
+      query += workload.GcpContainerLogsQuerySupplement()
+
+    return query
+
 
   def _GetValue(self, *keys: str, default: Any = None) -> Any:
     """Gets a nested value from this cluster's 'GET' using a list of keys.

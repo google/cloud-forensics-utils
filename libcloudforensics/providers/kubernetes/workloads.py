@@ -15,16 +15,13 @@
 """Kubernetes workload classes extending the base hierarchy."""
 
 import abc
-from typing import TYPE_CHECKING, List, Dict, Union
+from typing import List, Dict, Union
 
 from kubernetes import client
 
 from libcloudforensics import errors
 from libcloudforensics.providers.kubernetes import base
 from libcloudforensics.providers.kubernetes import selector
-
-if TYPE_CHECKING:
-  from libcloudforensics.providers.gcp.internal import gke
 
 
 class K8sControlledWorkload(base.K8sWorkload):
@@ -33,23 +30,11 @@ class K8sControlledWorkload(base.K8sWorkload):
   Examples: ReplicaSet, Deployment, StatefulSet.
   """
 
-  def GcpContainerLogsQuery(self, containing_cluster: 'gke.GkeCluster') -> str:
+  def GcpContainerLogsQuerySupplement(self) -> str:
     """Override of abstract method."""
-    namespace_and_cluster_query = (
-        'resource.type="k8s_container"\n'
-        'resource.labels.project_id="{project_id:s}"\n'
-        'resource.labels.location="{zone:s}"\n'
-        'resource.labels.cluster_name="{cluster_id:s}"\n'
-        'resource.labels.namespace_name="{namespace:s}"\n'.format(
-            project_id=containing_cluster.project_id,
-            zone=containing_cluster.zone,
-            cluster_id=containing_cluster.cluster_id,
-            namespace=self.namespace,
-        ))
-    pod_query = '\n'.join(
-        'labels.k8s-pod/{key:s}="{value:s}"'.format(key=key, value=value)
-        for key, value in self.MatchLabels().items())
-    return namespace_and_cluster_query + pod_query
+    queries = ['resource.labels.namespace_name="{namespace:s}"'.format(namespace=self.namespace)]
+    queries.extend('labels.k8s-pod/{key:s}="{value:s}"'.format(key=key, value=value) for key, value in self.MatchLabels().items())
+    return '\n'.join(queries)
 
   @abc.abstractmethod
   def _PodMatchLabels(self) -> Dict[str, str]:

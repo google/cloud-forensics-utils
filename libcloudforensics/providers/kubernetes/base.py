@@ -15,16 +15,13 @@
 """Kubernetes core class structure."""
 
 import abc
-from typing import List, TypeVar, Callable, Optional, Dict, TYPE_CHECKING
+from typing import List, TypeVar, Callable, Optional, Dict
 
 from kubernetes import client
 
 from libcloudforensics.providers.kubernetes import container
 from libcloudforensics.providers.kubernetes import selector
 from libcloudforensics.providers.kubernetes import volume
-
-if TYPE_CHECKING:
-  from libcloudforensics.providers.gcp.internal import gke
 
 
 class K8sClient(metaclass=abc.ABCMeta):
@@ -258,7 +255,7 @@ class K8sWorkload(K8sNamespacedResource):
   def gcp_log_type(self) -> str:
     """The GCP log type of this workload."""
 
-  def GcpAuditLogsQuery(self, containing_cluster: 'gke.GkeCluster') -> str:
+  def GcpAuditLogsQuerySupplement(self) -> str:
     """Returns the workload's query string for the GCP audit logs.
 
     Args:
@@ -268,25 +265,15 @@ class K8sWorkload(K8sNamespacedResource):
        str: The query string.
     """
     return (
-        'logName="projects/{project_id:s}/logs/cloudaudit.googleapis.com%2Factivity"\n'
-        'resource.type="k8s_cluster"\n'
-        'resource.labels.cluster_name="{cluster_id:s}"\n'
-        'resource.labels.location="{zone:s}"\n'
         'protoPayload.request.metadata.name="{workload_id:s}"\n'
         'protoPayload.methodName:"{workload_type:s}."'.format(
-            project_id=containing_cluster.project_id,
-            cluster_id=containing_cluster.cluster_id,
-            zone=containing_cluster.zone,
             workload_id=self.name,
             workload_type=self.gcp_log_type,
         ))
 
   @abc.abstractmethod
-  def GcpContainerLogsQuery(self, containing_cluster: 'gke.GkeCluster') -> str:
+  def GcpContainerLogsQuerySupplement(self) -> str:
     """Returns the workload's query string for the GCP container logs.
-
-    Args:
-      gke.GkeCluster: The GKE cluster for which to create a query string.
 
     Returns:
        str: The query string.
@@ -303,21 +290,13 @@ class K8sPod(K8sWorkload):
     """Override of abstract property."""
     return 'pods'
 
-  def GcpContainerLogsQuery(self, containing_cluster: 'gke.GkeCluster') -> str:
+  def GcpContainerLogsQuerySupplement(self) -> str:
     """Override of abstract method."""
     return (
-        'resource.type="k8s_container"\n'
-        'resource.labels.project_id="{project_id:s}"\n'
-        'resource.labels.location="{zone:s}"\n'
-        'resource.labels.cluster_name="{cluster_id:s}"\n'
         'resource.labels.namespace_name="{namespace:s}"\n'
         'resource.labels.pod_name="{name:s}"'.format(
-            project_id=containing_cluster.project_id,
-            zone=containing_cluster.zone,
-            cluster_id=containing_cluster.cluster_id,
             namespace=self.namespace,
-            name=self.name,
-        ))
+            name=self.name))
 
   def GetCoveredPods(self) -> List['K8sPod']:
     """Override of abstract method"""
