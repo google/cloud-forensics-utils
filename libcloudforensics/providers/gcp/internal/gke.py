@@ -148,6 +148,18 @@ class GkeCluster(cluster.K8sCluster, GoogleKubernetesEngine):
     return response
 
   def AuditLogsQuery(self, workload: Optional[base.K8sWorkload]) -> str:
+    """Returns the GCP audit logs query string for this cluster.
+
+    A workload may optionally be specified, in which case the returned query
+    string will be more specific to cover that workload.
+
+    Args:
+      workload (base.K8sWorkload): Optional. A workload to specify in the query
+          string.
+
+    Returns:
+      str: The audit logs query string.
+    """
     query = (
         'logName="projects/{project_id:s}/logs/cloudaudit.googleapis.com%2Factivity"\n'
         'resource.type="k8s_cluster"\n'
@@ -160,10 +172,21 @@ class GkeCluster(cluster.K8sCluster, GoogleKubernetesEngine):
     if workload:
       query += workload.GcpAuditLogsQuerySupplement()
 
-    return query
+    return query.strip()
 
   def ContainerLogsQuery(self, workload: Optional[base.K8sWorkload]) -> str:
+    """Returns the GCP container logs query string for this cluster.
 
+    A workload may optionally be specified, in which case the returned query
+    string will be more specific to cover that workload.
+
+    Args:
+      workload (base.K8sWorkload): Optional. A workload to specify in the query
+          string.
+
+    Returns:
+      str: The container logs query string.
+    """
     query = (
         'resource.type="k8s_container"\n'
         'resource.labels.project_id="{project_id:s}"\n'
@@ -176,7 +199,7 @@ class GkeCluster(cluster.K8sCluster, GoogleKubernetesEngine):
     if workload:
       query += workload.GcpContainerLogsQuerySupplement()
 
-    return query
+    return query.strip()
 
 
   def _GetValue(self, *keys: str, default: Any = None) -> Any:

@@ -252,8 +252,8 @@ class K8sWorkload(K8sNamespacedResource):
 
   @property
   @abc.abstractmethod
-  def gcp_log_type(self) -> str:
-    """The GCP log type of this workload."""
+  def gcp_audit_log_type(self) -> str:
+    """The GCP log type, to be used as input to "protoPayload.methodName"."""
 
   def GcpAuditLogsQuerySupplement(self) -> str:
     """Returns the workload's query string for the GCP audit logs.
@@ -266,9 +266,9 @@ class K8sWorkload(K8sNamespacedResource):
     """
     return (
         'protoPayload.request.metadata.name="{workload_id:s}"\n'
-        'protoPayload.methodName:"{workload_type:s}."'.format(
+        'protoPayload.methodName:"{workload_type:s}."\n'.format(
             workload_id=self.name,
-            workload_type=self.gcp_log_type,
+            workload_type=self.gcp_audit_log_type,
         ))
 
   @abc.abstractmethod
@@ -286,7 +286,7 @@ class K8sPod(K8sWorkload):
   """
 
   @property
-  def gcp_log_type(self) -> str:
+  def gcp_audit_log_type(self) -> str:
     """Override of abstract property."""
     return 'pods'
 
@@ -294,7 +294,7 @@ class K8sPod(K8sWorkload):
     """Override of abstract method."""
     return (
         'resource.labels.namespace_name="{namespace:s}"\n'
-        'resource.labels.pod_name="{name:s}"'.format(
+        'resource.labels.pod_name="{name:s}"\n'.format(
             namespace=self.namespace,
             name=self.name))
 

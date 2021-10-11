@@ -103,7 +103,7 @@ class K8sDeployment(K8sControlledWorkload):
   """Class representing a Kubernetes deployment."""
 
   @property
-  def gcp_log_type(self) -> str:
+  def gcp_audit_log_type(self) -> str:
     """Override of abstract property."""
     return 'deployments'
 
@@ -175,7 +175,7 @@ class K8sReplicaSet(K8sControlledWorkload):
   """Class representing a Kubernetes deployment."""
 
   @property
-  def gcp_log_type(self) -> str:
+  def gcp_audit_log_type(self) -> str:
     """Override of abstract property."""
     return 'replicasets'
 
