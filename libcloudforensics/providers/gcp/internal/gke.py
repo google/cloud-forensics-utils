@@ -146,60 +146,61 @@ class GkeCluster(cluster.K8sCluster, GoogleKubernetesEngine):
     response = request.execute()  # type: Dict[str, Any]
     return response
 
-  def AuditLogsQuery(self, workload: Optional[base.K8sWorkload]) -> str:
-    """Returns the GCP audit logs query string for this cluster.
-
-    A workload may optionally be specified, in which case the returned query
-    string will be more specific to cover that workload.
+  def _MakeQuery(self, query_type: str) -> str:
+    """Creates a query string filtering for this cluster and the given type.
 
     Args:
-      workload (base.K8sWorkload): Optional. A workload to specify in the query
-          string.
+      query_type (str): The query type string (the value for the resource.type
+          key).
 
     Returns:
-      str: The audit logs query string.
+      str: The query string filtering for this cluster and the given type.
     """
-    query = (
-        'logName="projects/{project_id:s}/logs/cloudaudit.googleapis.com%2Factivity"\n'
-        'resource.type="k8s_cluster"\n'
+    return (
+        'resource.type="{query_type:s}"\n'
+        'resource.labels.project_id="{project_id:s}"\n'
         'resource.labels.cluster_name="{cluster_id:s}"\n'
         'resource.labels.location="{zone:s}"\n'.format(
+            query_type=query_type,
             project_id=self.project_id,
             cluster_id=self.cluster_id,
             zone=self.zone))
 
-    if workload:
-      query += workload.GcpAuditLogsQuerySupplement()
-
-    return query.strip()
-
-  def ContainerLogsQuery(self, workload: Optional[base.K8sWorkload]) -> str:
-    """Returns the GCP container logs query string for this cluster.
+  def ClusterLogsQuery(self, workload: Optional[base.K8sWorkload]) -> str:
+    """Creates the GCP k8s_cluster logs query string for this cluster.
 
     A workload may optionally be specified, in which case the returned query
-    string will be more specific to cover that workload.
+    string will be more specific to only cover that workload.
 
     Args:
       workload (base.K8sWorkload): Optional. A workload to specify in the query
           string.
 
     Returns:
-      str: The container logs query string.
+      str: The k8s_cluster logs query string.
     """
-    query = (
-        'resource.type="k8s_container"\n'
-        'resource.labels.project_id="{project_id:s}"\n'
-        'resource.labels.location="{zone:s}"\n'
-        'resource.labels.cluster_name="{cluster_id:s}"\n'.format(
-            project_id=self.project_id,
-            zone=self.zone,
-            cluster_id=self.cluster_id))
-
+    query = self._MakeQuery('k8s_cluster')
     if workload:
-      query += workload.GcpContainerLogsQuerySupplement()
-
+      query += workload.GcpClusterLogsQuerySupplement()
     return query.strip()
 
+  def ContainerLogsQuery(self, workload: Optional[base.K8sWorkload]) -> str:
+    """Returns the GCP k8s_container logs query string for this cluster.
+
+    A workload may optionally be specified, in which case the returned query
+    string will be more specific to only cover that workload.
+
+    Args:
+      workload (base.K8sWorkload): Optional. A workload to specify in the query
+          string.
+
+    Returns:
+      str: The k8s_container logs query string.
+    """
+    query = self._MakeQuery('k8s_container')
+    if workload:
+      query += workload.GcpContainerLogsQuerySupplement()
+    return query.strip()
 
   def _GetValue(self, *keys: str, default: Any = None) -> Any:
     """Gets a nested value from this cluster's 'GET' using a list of keys.

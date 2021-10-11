@@ -255,7 +255,7 @@ class K8sWorkload(K8sNamespacedResource):
   def gcp_audit_log_type(self) -> str:
     """The GCP log type, to be used as input to "protoPayload.methodName"."""
 
-  def GcpAuditLogsQuerySupplement(self) -> str:
+  def GcpClusterLogsQuerySupplement(self) -> str:
     """Returns the workload's query string for the GCP audit logs.
 
     Args:
@@ -265,7 +265,7 @@ class K8sWorkload(K8sNamespacedResource):
        str: The query string.
     """
     return (
-        'protoPayload.request.metadata.name="{workload_id:s}"\n'
+        'protoPayload.resourceName=~"\\b{workload_id:s}$"\n'
         'protoPayload.methodName:"{workload_type:s}."\n'.format(
             workload_id=self.name,
             workload_type=self.gcp_audit_log_type,
