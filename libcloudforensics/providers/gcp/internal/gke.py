@@ -166,7 +166,8 @@ class GkeCluster(cluster.K8sCluster, GoogleKubernetesEngine):
             cluster_id=self.cluster_id,
             zone=self.zone))
 
-  def ClusterLogsQuery(self, workload: Optional[base.K8sWorkload]) -> str:
+  def ClusterLogsQuery(
+      self, workload: Optional[base.K8sWorkload] = None) -> str:
     """Creates the GCP k8s_cluster logs query string for this cluster.
 
     A workload may optionally be specified, in which case the returned query
@@ -184,7 +185,8 @@ class GkeCluster(cluster.K8sCluster, GoogleKubernetesEngine):
       query += workload.GcpClusterLogsQuerySupplement()
     return query.strip()
 
-  def ContainerLogsQuery(self, workload: Optional[base.K8sWorkload]) -> str:
+  def ContainerLogsQuery(
+      self, workload: Optional[base.K8sWorkload] = None) -> str:
     """Returns the GCP k8s_container logs query string for this cluster.
 
     A workload may optionally be specified, in which case the returned query
