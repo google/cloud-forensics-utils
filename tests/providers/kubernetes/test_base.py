@@ -23,12 +23,9 @@ from libcloudforensics.providers.kubernetes import base
 from libcloudforensics.providers.kubernetes import cluster
 from tests.providers.kubernetes import k8s_mocks
 
-# Make K8sCluster instantiable
-@mock.patch.object(cluster.K8sCluster, '__abstractmethods__', ())
+
 class K8sClusterTest(unittest.TestCase):
   """Test K8sCluster functionality, mainly checking API calls."""
-
-  # pylint: disable=abstract-class-instantiated
 
   @typing.no_type_check
   @mock.patch('kubernetes.client.CoreV1Api')
