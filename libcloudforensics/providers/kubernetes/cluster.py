@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Kubernetes cluster class, starting point for Kubernetes API calls."""
-import abc
 from typing import Optional, List
 
 from kubernetes import client
@@ -28,8 +27,8 @@ logging_utils.SetUpLogger(__name__)
 logger = logging_utils.GetLogger(__name__)
 
 
-class K8sCluster(base.K8sClient, metaclass=abc.ABCMeta):
-  """Abstract class representing a Kubernetes cluster."""
+class K8sCluster(base.K8sClient):
+  """Class representing a Kubernetes cluster."""
 
   def __init__(self, api_client: client.ApiClient) -> None:
     """Creates a K8sCluster object, checking the API client's authorization.
@@ -42,7 +41,7 @@ class K8sCluster(base.K8sClient, metaclass=abc.ABCMeta):
       api_client (client.ApiClient): The API client to the Kubernetes cluster.
     """
     super().__init__(api_client)
-    self._AuthorizationCheck()
+    self.__AuthorizationCheck()
 
   def ListPods(self, namespace: Optional[str] = None) -> List[base.K8sPod]:
     """Lists the pods of this cluster, possibly filtering for a namespace.
@@ -109,7 +108,7 @@ class K8sCluster(base.K8sClient, metaclass=abc.ABCMeta):
         for policy in policies
     ]
 
-  def _AuthorizationCheck(self) -> None:
+  def __AuthorizationCheck(self) -> None:
     """Checks the authorization of this cluster's API client.
 
     Performs a check as per `kubectl auth can-i '*' '*' --all-namespaces`,
@@ -153,29 +152,6 @@ class K8sCluster(base.K8sClient, metaclass=abc.ABCMeta):
     """
     return services.K8sService(self._api_client, service_id, namespace)
 
-  def GetNode(self, node_name: str) -> base.K8sNode:
-    """Gets a node object in this cluster.
-
-    Args:
-      node_name (str): The name of the node.
-
-    Returns:
-      base.K8sNode: The matching node object.
-    """
-    return base.K8sNode(self._api_client, node_name)
-
-  def GetPod(self, pod_name: str, namespace: str) -> base.K8sPod:
-    """Gets a pod object in this cluster.
-
-    Args:
-      pod_name (str): The name of the pod.
-      namespace (str): The namespace of the pod.
-
-    Returns:
-      base.K8sPod: The matching pod object.
-    """
-    return base.K8sPod(self._api_client, pod_name, namespace)
-
   def DenyAllNetworkPolicy(
       self, namespace: str) -> netpol.K8sDenyAllNetworkPolicy:
     """Gets a deny-all network policy for the cluster.
@@ -191,11 +167,3 @@ class K8sCluster(base.K8sClient, metaclass=abc.ABCMeta):
           the creation method on the object to create the policy.
     """
     return netpol.K8sDenyAllNetworkPolicy(self._api_client, namespace)
-
-  @abc.abstractmethod
-  def IsNetworkPolicyEnabled(self) -> bool:
-    """Returns whether network policies are enabled.
-
-    Returns:
-      bool: True if network policies are enabled, False otherwise.
-    """

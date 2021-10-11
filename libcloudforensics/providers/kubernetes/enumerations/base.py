@@ -27,6 +27,7 @@ from libcloudforensics.providers.kubernetes import cluster
 from libcloudforensics.providers.kubernetes import container
 from libcloudforensics.providers.kubernetes import services
 from libcloudforensics.providers.kubernetes import volume
+from libcloudforensics.providers.kubernetes import workloads
 
 logging_utils.SetUpLogger(__name__)
 logger = logging_utils.GetLogger(__name__)
@@ -346,8 +347,8 @@ class NodeEnumeration(Enumeration[base.K8sNode]):
     """Method override."""
     info.update({
         'Name': self._object.name,
-        'ExternalIPs': self._object.ExternalIps(),
-        'InternalIPs': self._object.InternalIps(),
+        'ExternalIPs': self._object.ExternalIPs(),
+        'InternalIPs': self._object.InternalIPs(),
     })
 
 
@@ -366,7 +367,7 @@ class ClusterEnumeration(Enumeration[cluster.K8sCluster]):
       yield NodeEnumeration(node)
 
 
-class WorkloadEnumeration(Enumeration[base.K8sWorkload]):
+class WorkloadEnumeration(Enumeration[workloads.K8sWorkload]):
   """Enumeration of a Kubernetes workload."""
 
   @property

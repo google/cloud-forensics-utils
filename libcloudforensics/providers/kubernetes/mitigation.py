@@ -15,18 +15,18 @@
 """Mitigation functions to be used in end-to-end functionality."""
 from typing import List, Optional
 
-from libcloudforensics import errors
 from libcloudforensics.providers.kubernetes import base
 from libcloudforensics.providers.kubernetes import cluster as k8s
 from libcloudforensics.providers.kubernetes import netpol
+from libcloudforensics.providers.kubernetes import workloads
 
 
 def DrainWorkloadNodesFromOtherPods(
-    workload: base.K8sWorkload, cordon: bool = True) -> None:
+    workload: workloads.K8sWorkload, cordon: bool = True) -> None:
   """Drains a workload's nodes from non-workload pods.
 
   Args:
-    workload (base.K8sWorkload): The workload for which nodes
+    workload (workloads.K8sWorkload): The workload for which nodes
         must be drained from pods that are not covered by the workload.
     cordon (bool): Optional. Whether or not to cordon the nodes before draining,
         to prevent pods from appearing on the nodes again as it will be marked
@@ -45,6 +45,9 @@ def IsolatePodsWithNetworkPolicy(
     pods: List[base.K8sPod]) -> Optional[netpol.K8sDenyAllNetworkPolicy]:
   """Isolates pods via a deny-all NetworkPolicy.
 
+  **Warning:** It is the caller's responsibility to make sure that Kubernetes
+  NetworkPolicy is enabled for their cluster, via their cloud provider's API.
+
   Args:
     cluster (k8s.K8sCluster): The cluster in which to create the deny-all
         policy.
@@ -58,15 +61,9 @@ def IsolatePodsWithNetworkPolicy(
 
   Raises:
     ValueError: If the pods are not in the same namespace.
-    errors.OperationFailedError: If NetworkPolicy is not enabled in the cluster.
   """
   if not pods:
     return None
-  if not cluster.IsNetworkPolicyEnabled():
-    raise errors.OperationFailedError(
-        'NetworkPolicy is not enabled for the cluster. Creating the deny-all '
-        'NetworkPolicy will have no effect.',
-        __name__)
   if any(pod.namespace != pods[0].namespace for pod in pods):
     raise ValueError('Supplied pods are not in the same namespace.')
   # First create the NetworkPolicy in the workload's namespace
