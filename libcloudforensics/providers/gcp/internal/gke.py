@@ -13,8 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Google Kubernetes Engine functionalities."""
-from typing import Optional
-from typing import TYPE_CHECKING, Any, Dict
+from typing import Optional, TYPE_CHECKING, Any, Dict
 
 from kubernetes import client
 from kubernetes.config import kube_config

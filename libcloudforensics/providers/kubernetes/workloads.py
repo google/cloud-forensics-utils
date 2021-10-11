@@ -32,8 +32,14 @@ class K8sControlledWorkload(base.K8sWorkload):
 
   def GcpContainerLogsQuerySupplement(self) -> str:
     """Override of abstract method."""
-    queries = ['resource.labels.namespace_name="{namespace:s}"'.format(namespace=self.namespace)]
-    queries.extend('labels.k8s-pod/{key:s}="{value:s}"'.format(key=key, value=value) for key, value in self.MatchLabels().items())
+    queries = [
+        'resource.labels.namespace_name="{namespace:s}"'.format(
+            namespace=self.namespace)
+    ]
+    queries.extend(
+        'labels.k8s-pod/{key:s}="{value:s}"'.format(key=key, value=value)
+        for key,
+        value in self.MatchLabels().items())
     return '\n'.join(queries)
 
   @abc.abstractmethod

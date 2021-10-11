@@ -279,6 +279,7 @@ class K8sWorkload(K8sNamespacedResource):
        str: The query string.
     """
 
+
 class K8sPod(K8sWorkload):
   """Class representing a Kubernetes pod.
 
@@ -295,8 +296,7 @@ class K8sPod(K8sWorkload):
     return (
         'resource.labels.namespace_name="{namespace:s}"\n'
         'resource.labels.pod_name="{name:s}"\n'.format(
-            namespace=self.namespace,
-            name=self.name))
+            namespace=self.namespace, name=self.name))
 
   def GetCoveredPods(self) -> List['K8sPod']:
     """Override of abstract method"""
