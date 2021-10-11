@@ -38,8 +38,7 @@ class K8sControlledWorkload(base.K8sWorkload):
     ]
     queries.extend(
         'labels.k8s-pod/{key:s}="{value:s}"'.format(key=key, value=value)
-        for key,
-        value in self.MatchLabels().items())
+        for key, value in self.MatchLabels().items())
     return '\n'.join(queries)
 
   @abc.abstractmethod
