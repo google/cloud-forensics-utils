@@ -105,7 +105,7 @@ class K8sCluster(base.K8sClient, metaclass=abc.ABCMeta):
       policies = api.list_network_policy_for_all_namespaces()
     return [
         netpol.K8sNetworkPolicy(
-            self._api_client, policy.name, policy.namespace)
+            self._api_client, policy.metadata.name, policy.metadata.namespace)
         for policy in policies.items
     ]
 
