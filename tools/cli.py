@@ -56,6 +56,7 @@ PROVIDER_TO_FUNC = {
         'deleteinstance': gcp_cli.DeleteInstance,
         'deleteobject': gcp_cli.DeleteObject,
         'createbucket': gcp_cli.CreateBucket,
+        'gkequarantine': gcp_cli.GKEWorkloadQuarantine,
         'listbuckets': gcp_cli.ListBuckets,
         'listcloudsqlinstances': gcp_cli.ListCloudSqlInstances,
         'listdisks': gcp_cli.ListDisks,
@@ -482,6 +483,14 @@ def Main() -> None:
                 ('instance_name', 'Name of the instance to affect', ''),
                 ('--leave_stopped', 'Leave the machine TERMINATED after '
                     'removing the service account (default: False)', False)
+            ])
+  AddParser('gcp', gcp_subparsers, 'gkequarantine',
+            'Start the quarantining process for a GKE workload.',
+            args=[
+                ('cluster', 'The name of the workload\'s GKE cluster.', ''),
+                ('zone', 'The zone of the workload\'s GKE cluster.', ''),
+                ('workload', 'The name of the GKE workload to isolate.', ''),
+                ('--namespace', 'The namespace of the workload.', 'default')
             ])
 
   if len(sys.argv) == 1:

@@ -519,3 +519,14 @@ def S3ToGCS(args: 'argparse.Namespace') -> None:
   gcst.S3ToGCS(args.s3_path, args.zone, args.gcs_path)
 
   logger.info('File successfully transferred.')
+
+
+def GKEWorkloadQuarantine(args: 'argparse.Namespace') -> None:
+  """Trigger quarantining process for GKE workload.
+
+  Args:
+    args (argparse.Namespace): Arguments from ArgumentParser.
+  """
+  AssignProjectID(args)
+  forensics.QuarantineGKEWorkload(args.project, args.zone, args.cluster,
+                                  args.namespace, args.workload)
