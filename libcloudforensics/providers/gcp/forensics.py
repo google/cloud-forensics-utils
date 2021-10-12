@@ -501,13 +501,11 @@ def QuarantineGKEWorkload(project_id: str,
     namespace (str): The Kubernetes namespace of the workload (e.g. 'default').
     workload_id (str): The name of the workload.
   """
+  logger.info('Starting GKE quarantining process...')
+  logger.info('Workload "{0:s}" in namespace "{1:s}"...'.format(workload_id, namespace))
+
   cluster = gke.GkeCluster(project_id, zone, cluster_id)
   workload = cluster.GetDeployment(workload_id, namespace)
-
-  # Build a dict to find a managed instance group via an instance name,
-  # so that we can instance.AbandonFromMIG
-  compute_project = compute.GoogleCloudCompute(project_id)
-  groups_by_instance = compute_project.ListMIGSByInstanceName(zone)
 
   workload_nodes = workload.GetCoveredNodes()
   workload_pods = workload.GetCoveredPods()
@@ -522,6 +520,8 @@ def QuarantineGKEWorkload(project_id: str,
 
   def AbandonNodes() -> None:
     """Abandons the nodes from their respective managed instance groups."""
+    compute_project = compute.GoogleCloudCompute(project_id)
+    groups_by_instance = compute_project.ListMIGSByInstanceName(zone)
     for node in workload_nodes:
       if node.name in groups_by_instance:
         logger.info(
