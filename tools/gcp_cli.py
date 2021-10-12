@@ -21,7 +21,9 @@ from typing import TYPE_CHECKING
 from google.auth import default
 
 # pylint: disable=line-too-long
+from libcloudforensics import errors
 from libcloudforensics.providers.gcp.internal import compute as gcp_compute
+from libcloudforensics.providers.gcp.internal import gke
 from libcloudforensics.providers.gcp.internal import log as gcp_log
 from libcloudforensics.providers.gcp.internal import monitoring as gcp_monitoring
 from libcloudforensics.providers.gcp.internal import project as gcp_project
@@ -31,6 +33,9 @@ from libcloudforensics.providers.gcp.internal import cloudsql as gcp_cloudsql
 from libcloudforensics.providers.gcp import forensics
 from libcloudforensics import logging_utils
 # pylint: enable=line-too-long
+import libcloudforensics.providers.kubernetes.enumerations as k8s_enumerations
+import libcloudforensics.providers.kubernetes.enumerations.gcp
+import libcloudforensics.providers.kubernetes.enumerations.base
 
 logging_utils.SetUpLogger(__name__)
 logger = logging_utils.GetLogger(__name__)
@@ -530,3 +535,50 @@ def GKEWorkloadQuarantine(args: 'argparse.Namespace') -> None:
   AssignProjectID(args)
   forensics.QuarantineGKEWorkload(args.project, args.zone, args.cluster,
                                   args.namespace, args.workload)
+
+def GKEEnumerate(args: 'argparse.Namespace') -> None:
+  """Enumerate GKE cluster objects.
+
+  Args:
+    args (argparse.Namespace): Arguments from ArgumentParser.
+  """
+  AssignProjectID(args)
+
+  cluster = gke.GkeCluster(args.project, args.zone, args.cluster)
+
+  enumerations = []
+
+  if args.workload:
+    if not args.namespace:
+      raise AttributeError('Namespace must be provided for workload enumeration.')
+    # TODO: Use FindWorkload
+    workload = cluster.GetDeployment(args.workload, args.namespace)
+    if not workload:
+      raise errors.ResourceNotFoundError('Workload not found.', __name__)
+    enumerations.append(k8s_enumerations.base.WorkloadEnumeration(workload))
+
+  if args.node:
+    node = cluster.FindNode(args.node)
+    if not node:
+      raise errors.ResourceNotFoundError('Node not found.', __name__)
+    enumerations.append(k8s_enumerations.base.NodeEnumeration(node))
+
+  if args.service:
+    if not args.namespace:
+      raise AttributeError('Namespace must be provided for service enumeration.')
+    service = cluster.FindService(args.service, args.namespace)
+    if not service:
+      raise errors.ResourceNotFoundError('Service not found.', __name__)
+    enumerations.append(k8s_enumerations.base.ServiceEnumeration(service))
+
+  if len(enumerations) == 1:
+    enumeration = enumerations[0]
+  elif len(enumerations) == 0:
+    enumeration = k8s_enumerations.gcp.GkeClusterEnumeration(cluster)
+  else:
+    raise AttributeError('At most one enumeration point can be specified.')
+
+  if args.as_json:
+    json.dump(enumeration.ToJson(namespace=args.namespace), sys.stdout, indent=2)
+  else:
+    enumeration.Enumerate(namespace=args.namespace)

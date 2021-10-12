@@ -106,7 +106,18 @@ class K8sCluster(base.K8sClient, metaclass=abc.ABCMeta):
     return [
         netpol.K8sNetworkPolicy(
             self._api_client, policy.name, policy.namespace)
-        for policy in policies
+        for policy in policies.items
+    ]
+
+  def ListServices(self, namespace: Optional[str]= None) -> List[services.K8sService]:
+    api = self._Api(client.CoreV1Api)
+    if namespace is not None:
+      services_ = api.list_namespaced_service(namespace)
+    else:
+      services_ = api.list_service_for_all_namespaces()
+    return [
+      services.K8sService(self._api_client, service.metadata.name, service.metadata.namespace)
+      for service in services_.items
     ]
 
   def _AuthorizationCheck(self) -> None:
@@ -127,6 +138,14 @@ class K8sCluster(base.K8sClient, metaclass=abc.ABCMeta):
       logger.warning(
           'This object\'s client is not authorized to perform all operations'
           'on the Kubernetes cluster. API calls may fail.')
+
+  def FindNode(self, name: str) -> Optional[base.K8sNode]:
+    return next((node for node in self.ListNodes() if node.name == name), None)
+
+  def FindService(self, name: str, namespace: str):
+    return next((svc
+                 for svc in self.ListServices()
+                 if svc.name == name and svc.namespace == namespace), None)
 
   def GetDeployment(
       self, workload_id: str, namespace: str) -> workloads.K8sDeployment:
