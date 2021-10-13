@@ -501,7 +501,8 @@ def Main() -> None:
                 ('--workload', 'The name of the workload to enumerate.', ''),
                 ('--service', 'The name of the service to enumerate.', None),
                 ('--node', 'The name of the node to enumerate.', None),
-                ('--namespace', 'The namespace of the object to enumerate.', None),
+                ('--namespace', 'The namespace of the object to enumerate.',
+                    None),
                 ('--as_json', 'Output in JSON format.', False)
             ])
 
