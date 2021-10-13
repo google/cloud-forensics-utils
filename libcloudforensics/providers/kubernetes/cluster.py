@@ -152,7 +152,17 @@ class K8sCluster(base.K8sClient, metaclass=abc.ABCMeta):
         for policy in policies.items
     ]
 
-  def ListServices(self, namespace: Optional[str]= None) -> List[services.K8sService]:
+  def ListServices(self, namespace: Optional[str] = None) -> List[services.K8sService]:
+    """Lists the services in a namespace of this cluster.
+
+    Args:
+      namespace: Optional. The namespace in which to list this cluster's
+          services. If unspecified, it lists services in all namespaces of this
+          cluster.
+
+    Returns:
+      The list of services.
+    """
     api = self._Api(client.CoreV1Api)
     if namespace is not None:
       services_ = api.list_namespaced_service(namespace)
@@ -183,9 +193,27 @@ class K8sCluster(base.K8sClient, metaclass=abc.ABCMeta):
           'on the Kubernetes cluster. API calls may fail.')
 
   def FindNode(self, name: str) -> Optional[base.K8sNode]:
+    """Finds a node in this cluster by its name.
+
+    Args:
+      name: The node name.
+
+    Returns:
+      The cluster node if a node's name corresponds, None otherwise
+    """
     return next((node for node in self.ListNodes() if node.name == name), None)
 
-  def FindService(self, name: str, namespace: str):
+  def FindService(self, name: str, namespace: str) -> Optional[services.K8sService]:
+    """Finds a service in this cluster by its name and namespace.
+
+    Args:
+      name: The service name.
+      namespace: The service namespace.
+
+    Returns:
+      A service in this cluster if its name and namespace corresponds, None
+          otherwise.
+    """
     return next((svc
                  for svc in self.ListServices()
                  if svc.name == name and svc.namespace == namespace), None)

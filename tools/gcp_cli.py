@@ -34,8 +34,8 @@ from libcloudforensics.providers.gcp import forensics
 from libcloudforensics import logging_utils
 # pylint: enable=line-too-long
 import libcloudforensics.providers.kubernetes.enumerations as k8s_enumerations
-import libcloudforensics.providers.kubernetes.enumerations.gcp
-import libcloudforensics.providers.kubernetes.enumerations.base
+import libcloudforensics.providers.kubernetes.enumerations.gcp  # pylint: disable=unused-import
+import libcloudforensics.providers.kubernetes.enumerations.base  # pylint: disable=unused-import
 
 logging_utils.SetUpLogger(__name__)
 logger = logging_utils.GetLogger(__name__)
@@ -551,8 +551,7 @@ def GKEEnumerate(args: 'argparse.Namespace') -> None:
   if args.workload:
     if not args.namespace:
       raise AttributeError('Namespace must be provided for workload enumeration.')
-    # TODO: Use FindWorkload
-    workload = cluster.GetDeployment(args.workload, args.namespace)
+    workload = cluster.FindWorkload(args.workload, args.namespace)
     if not workload:
       raise errors.ResourceNotFoundError('Workload not found.', __name__)
     enumerations.append(k8s_enumerations.base.WorkloadEnumeration(workload))
