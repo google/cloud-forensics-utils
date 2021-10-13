@@ -505,7 +505,16 @@ def QuarantineGKEWorkload(project_id: str,
   logger.info('Workload "{0:s}" in namespace "{1:s}"...'.format(workload_id, namespace))
 
   cluster = gke.GkeCluster(project_id, zone, cluster_id)
-  workload = cluster.GetDeployment(workload_id, namespace)
+  maybe_workload = cluster.FindWorkload(workload_id, namespace)
+  if not maybe_workload:
+    raise errors.ResourceNotFoundError(
+        'Workload not found. Cannot proceed with quarantining process.',
+        __name__)
+  # If we directly assigned to `workload`, mypy would consider it of type
+  # `Optional[K8sWorkload]`, causing type check failures below. Doing it
+  # indirectly after the `if not` check allows mypy to infer that `workload`
+  # is of type `K8sWorkload`.
+  workload = maybe_workload
 
   workload_nodes = workload.GetCoveredNodes()
   workload_pods = workload.GetCoveredPods()
@@ -598,7 +607,7 @@ def QuarantineGKEWorkload(project_id: str,
   )
 
   # If network policy is disabled, disable the isolate_pods prompt because
-  # it will have no effect
+  # it will raise an error
   if not cluster.IsNetworkPolicyEnabled():
     isolate_pods.Disable('NetworkPolicy not enabled.')
 
