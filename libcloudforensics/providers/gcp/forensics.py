@@ -502,7 +502,6 @@ def QuarantineGKEWorkload(project_id: str,
     workload_id (str): The name of the workload.
   """
   logger.info('Starting GKE quarantining process...')
-  logger.info('Workload "{0:s}" in namespace "{1:s}"...'.format(workload_id, namespace))
 
   cluster = gke.GkeCluster(project_id, zone, cluster_id)
   maybe_workload = cluster.FindWorkload(workload_id, namespace)
@@ -515,6 +514,8 @@ def QuarantineGKEWorkload(project_id: str,
   # indirectly after the `if not` check allows mypy to infer that `workload`
   # is of type `K8sWorkload`.
   workload = maybe_workload
+  logger.info(
+      'Workload "{0:s}" in namespace "{1:s}"...'.format(workload_id, namespace))
 
   workload_nodes = workload.GetCoveredNodes()
   workload_pods = workload.GetCoveredPods()
