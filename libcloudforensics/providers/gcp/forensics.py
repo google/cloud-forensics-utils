@@ -507,6 +507,10 @@ def QuarantineGKEWorkload(project_id: str,
     raise errors.ResourceNotFoundError(
         'Workload not found. Cannot proceed with quarantining process.',
         __name__)
+  # If we directly assigned to `workload`, mypy would consider it of type
+  # `Optional[K8sWorkload]`, causing type check failures below. Doing it
+  # indirectly after the `if not` check allows mypy to infer that `workload`
+  # is of type `K8sWorkload`.
   workload = maybe_workload
 
   # Build a dict to find a managed instance group via an instance name,
