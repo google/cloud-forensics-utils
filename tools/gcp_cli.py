@@ -550,7 +550,8 @@ def GKEEnumerate(args: 'argparse.Namespace') -> None:
 
   if args.workload:
     if not args.namespace:
-      raise AttributeError('Namespace must be provided for workload enumeration.')
+      raise AttributeError(
+          'Namespace must be provided for workload enumeration.')
     workload = cluster.FindWorkload(args.workload, args.namespace)
     if not workload:
       raise errors.ResourceNotFoundError('Workload not found.', __name__)
@@ -564,7 +565,8 @@ def GKEEnumerate(args: 'argparse.Namespace') -> None:
 
   if args.service:
     if not args.namespace:
-      raise AttributeError('Namespace must be provided for service enumeration.')
+      raise AttributeError(
+          'Namespace must be provided for service enumeration.')
     service = cluster.FindService(args.service, args.namespace)
     if not service:
       raise errors.ResourceNotFoundError('Service not found.', __name__)
@@ -578,6 +580,7 @@ def GKEEnumerate(args: 'argparse.Namespace') -> None:
     raise AttributeError('At most one enumeration point can be specified.')
 
   if args.as_json:
-    json.dump(enumeration.ToJson(namespace=args.namespace), sys.stdout, indent=2)
+    json.dump(
+        enumeration.ToJson(namespace=args.namespace), sys.stdout, indent=2)
   else:
     enumeration.Enumerate(namespace=args.namespace)
