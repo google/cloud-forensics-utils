@@ -152,7 +152,8 @@ class K8sCluster(base.K8sClient, metaclass=abc.ABCMeta):
         for policy in policies.items
     ]
 
-  def ListServices(self, namespace: Optional[str] = None) -> List[services.K8sService]:
+  def ListServices(
+      self, namespace: Optional[str] = None) -> List[services.K8sService]:
     """Lists the services in a namespace of this cluster.
 
     Args:
@@ -169,8 +170,9 @@ class K8sCluster(base.K8sClient, metaclass=abc.ABCMeta):
     else:
       services_ = api.list_service_for_all_namespaces()
     return [
-      services.K8sService(self._api_client, service.metadata.name, service.metadata.namespace)
-      for service in services_.items
+        services.K8sService(
+            self._api_client, service.metadata.name, service.metadata.namespace)
+        for service in services_.items
     ]
 
   def _AuthorizationCheck(self) -> None:
@@ -201,9 +203,13 @@ class K8sCluster(base.K8sClient, metaclass=abc.ABCMeta):
     Returns:
       The cluster node if a node's name corresponds, None otherwise
     """
-    return next((node for node in self.ListNodes() if node.name == name), None)
+    for node in self.ListNodes():
+      if node.name == name:
+        return node
+    return None
 
-  def FindService(self, name: str, namespace: str) -> Optional[services.K8sService]:
+  def FindService(self, name: str,
+                  namespace: str) -> Optional[services.K8sService]:
     """Finds a service in this cluster by its name and namespace.
 
     Args:
@@ -214,9 +220,10 @@ class K8sCluster(base.K8sClient, metaclass=abc.ABCMeta):
       A service in this cluster if its name and namespace corresponds, None
           otherwise.
     """
-    return next((svc
-                 for svc in self.ListServices()
-                 if svc.name == name and svc.namespace == namespace), None)
+    for service in self.ListServices():
+      if service.name == name and service.namespace == namespace:
+        return service
+    return None
 
   def AllWorkloads(self,
                    namespace: Optional[str]) -> Iterable[base.K8sWorkload]:
