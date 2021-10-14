@@ -55,13 +55,10 @@ class GoogleCloudResourceManager:
   def ProjectAncestry(self) -> List[Any]:
     """List ancestor resources for a project.
 
-    If the caller doesn't have permissions to call GetResource on a
-    folder/organization then the last resource in the list will only include
-    the resource name and the list won't contain any subsequent resources in
-    the hierarchy.
-
     Returns:
-      List[Any]: the list of ancestor resources.
+      List[Any]: the list of ancestor resources. If the caller doesn't have
+        permissions to call GetResource on a folder or organization this list
+        will be incomplete.
     """
 
     ancestry = []
