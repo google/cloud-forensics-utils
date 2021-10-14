@@ -281,6 +281,7 @@ class K8sWorkload(K8sNamespacedResource):
 
     Returns:
        str: The query string.
+    """
 
   @abc.abstractmethod
   def OrphanPods(self) -> None:
