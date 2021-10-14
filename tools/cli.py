@@ -491,7 +491,10 @@ def Main() -> None:
                 ('cluster', 'The name of the workload\'s GKE cluster.', ''),
                 ('zone', 'The zone of the workload\'s GKE cluster.', ''),
                 ('workload', 'The name of the GKE workload to isolate.', ''),
-                ('namespace', 'The namespace of the workload.', '')
+                ('namespace', 'The namespace of the workload.', ''),
+                ('--exempted_src_ips', 'Comma separated list of source IPs '
+                    'to exempt from ingress firewall rules when isolating '
+                    'nodes.', None)
             ])
   AddParser('gcp', gcp_subparsers, 'gkeenumerate',
             'Enumerate a GKE cluster or one of its objects.',

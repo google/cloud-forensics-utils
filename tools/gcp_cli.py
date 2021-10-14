@@ -17,7 +17,7 @@
 from datetime import datetime
 import json
 import sys
-from typing import TYPE_CHECKING, List, Any
+from typing import TYPE_CHECKING, Optional, List, Any
 from google.auth import default
 
 # pylint: disable=line-too-long
@@ -533,8 +533,12 @@ def GKEWorkloadQuarantine(args: 'argparse.Namespace') -> None:
     args (argparse.Namespace): Arguments from ArgumentParser.
   """
   AssignProjectID(args)
+  exempted_src_ips = None  # type: Optional[List[str]]
+  if args.exempted_src_ips:
+    exempted_src_ips = args.exempted_src_ips.split(',')
   forensics.QuarantineGKEWorkload(args.project, args.zone, args.cluster,
-                                  args.namespace, args.workload)
+                                  args.namespace, args.workload,
+                                  exempted_src_ips=exempted_src_ips)
 
 def GKEEnumerate(args: 'argparse.Namespace') -> None:
   """Enumerate GKE cluster objects.

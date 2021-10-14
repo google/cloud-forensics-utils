@@ -491,7 +491,8 @@ def QuarantineGKEWorkload(project_id: str,
                           zone: str,
                           cluster_id: str,
                           namespace: str,
-                          workload_id: str) -> None:
+                          workload_id: str,
+                          exempted_src_ips: Optional[List[str]] = None) -> None:
   """Guides the analyst through quarantining a GKE workload.
 
   Args:
@@ -500,6 +501,9 @@ def QuarantineGKEWorkload(project_id: str,
     cluster_id (str): The name of the Kubernetes cluster holding the workload.
     namespace (str): The Kubernetes namespace of the workload (e.g. 'default').
     workload_id (str): The name of the workload.
+    exempted_src_ips (List[str]): Optional. The list of source IPs to exempt
+        in the GCP firewall rules when isolating the nodes. If not specified,
+        no IPs are exempted.
   """
   logger.info('Starting GKE quarantining process...')
 
@@ -568,7 +572,8 @@ def QuarantineGKEWorkload(project_id: str,
       logger.info(
           'Putting instance {0:s} into network quarantine...'.format(
               workload_id))
-      InstanceNetworkQuarantine(project_id, node.name)
+      InstanceNetworkQuarantine(project_id, node.name,
+                                exempted_src_ips=exempted_src_ips)
 
   # Third prompt options
   isolate_nodes = prompts.PromptOption('Isolate nodes', FirewallNodes)
