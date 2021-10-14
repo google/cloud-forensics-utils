@@ -53,14 +53,6 @@ class K8sControlledWorkload(base.K8sWorkload):
   def Read(self) -> Union[client.V1Deployment, client.V1ReplicaSet,]:
     """Override of abstract method."""  # Narrows down type hint
 
-  @abc.abstractmethod
-  def OrphanPods(self) -> None:
-    """Orphans the pods covered by this workload.
-
-    Note that calling this function will entail the deletion of the object
-    upon which this method was called.
-    """
-
   def MatchLabels(self) -> Dict[str, str]:
     """Gets the label key-value pairs in the matchLabels field.
 

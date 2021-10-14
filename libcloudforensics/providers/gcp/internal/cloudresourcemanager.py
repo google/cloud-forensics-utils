@@ -15,6 +15,7 @@
 """Google Cloud Resource Manager functionality."""
 
 from typing import TYPE_CHECKING, Dict, List, Any
+from googleapiclient import errors as google_api_errors
 from libcloudforensics.providers.gcp.internal import common
 
 if TYPE_CHECKING:
@@ -55,7 +56,9 @@ class GoogleCloudResourceManager:
     """List ancestor resources for a project.
 
     Returns:
-      List[Any]: the list of ancestor resources.
+      List[Any]: the list of ancestor resources. If the caller doesn't have
+        permissions to call GetResource on a folder or organization this list
+        will be incomplete.
     """
 
     ancestry = []
@@ -64,7 +67,14 @@ class GoogleCloudResourceManager:
 
     while 'parent' in current_resource:
       parent_name = current_resource['parent']
-      current_resource = self.GetResource(parent_name)
+      try:
+        current_resource = self.GetResource(parent_name)
+      except google_api_errors.HttpError:
+        # If the caller doesn't have permission to call GetResource on a
+        # folder/organization at least record name from the child resource.
+        current_resource = {
+          'name': parent_name
+        }
       ancestry.append(current_resource)
 
     return ancestry
