@@ -19,9 +19,13 @@ from typing import List, TypeVar, Callable, Optional, Dict
 
 from kubernetes import client
 
+from libcloudforensics import logging_utils
 from libcloudforensics.providers.kubernetes import container
 from libcloudforensics.providers.kubernetes import selector
 from libcloudforensics.providers.kubernetes import volume
+
+logging_utils.SetUpLogger(__name__)
+logger = logging_utils.GetLogger(__name__)
 
 
 class K8sClient(metaclass=abc.ABCMeta):
@@ -250,12 +254,24 @@ class K8sWorkload(K8sNamespacedResource):
       bool: True if the pod is covered this workload, False otherwise.
     """
 
+  @abc.abstractmethod
+  def OrphanPods(self) -> None:
+    """Orphans the pods covered by this workload.
+
+    Note that calling this function will entail the deletion of the object
+    upon which this method was called, unless this workload is a pod.
+    """
+
 
 class K8sPod(K8sWorkload):
   """Class representing a Kubernetes pod.
 
   https://kubernetes.io/docs/concepts/workloads/pods/
   """
+
+  def OrphanPods(self) -> None:
+    """Override of abstract method."""
+    logger.warning('Calling OrphanPods on a Pod has no effect.')
 
   def GetCoveredPods(self) -> List['K8sPod']:
     """Override of abstract method"""
