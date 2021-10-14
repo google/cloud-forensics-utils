@@ -257,16 +257,13 @@ class K8sWorkload(K8sNamespacedResource):
   @property
   @abc.abstractmethod
   def gcp_protopayload_methodname(self) -> str:
-    """The GCP log type, to be used as input to "protoPayload.methodName"."""
+    """The "protoPayload.methodName" substring for this workload."""
 
   def GcpClusterLogsQuerySupplement(self) -> str:
-    """Returns the workload's query string for the GCP audit logs.
-
-    Args:
-      gke.GkeCluster: The GKE cluster for which to create a query string.
+    """Returns the lines specifying this workload for GCP k8s_cluster logs.
 
     Returns:
-       str: The query string.
+       str: The specifying query string.
     """
     return (
         'protoPayload.resourceName=~"\\b{workload_id:s}$"\n'
@@ -277,10 +274,10 @@ class K8sWorkload(K8sNamespacedResource):
 
   @abc.abstractmethod
   def GcpContainerLogsQuerySupplement(self) -> str:
-    """Returns the workload's query string for the GCP container logs.
+    """Returns the lines specifying this workload for GCP k8s_container logs.
 
     Returns:
-       str: The query string.
+       str: The specifying query string.
     """
 
   @abc.abstractmethod
