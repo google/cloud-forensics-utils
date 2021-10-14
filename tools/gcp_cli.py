@@ -17,7 +17,7 @@
 from datetime import datetime
 import json
 import sys
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 from google.auth import default
 
 # pylint: disable=line-too-long
@@ -546,7 +546,7 @@ def GKEEnumerate(args: 'argparse.Namespace') -> None:
 
   cluster = gke.GkeCluster(args.project, args.zone, args.cluster)
 
-  enumerations = []
+  enumerations = []  # type: List[k8s_enumerations.base.Enumeration]
 
   if args.workload:
     if not args.namespace:
