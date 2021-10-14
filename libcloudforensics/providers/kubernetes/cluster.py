@@ -265,7 +265,7 @@ class K8sCluster(base.K8sClient, metaclass=abc.ABCMeta):
       namespace (str): The namespace of the replica set.
 
     Returns:
-      base.K8sPod: The matching replica set object.
+      workloads.K8sReplicaSet: The matching replica set object.
     """
     return workloads.K8sReplicaSet(
         self._api_client, replica_set_name, namespace)
