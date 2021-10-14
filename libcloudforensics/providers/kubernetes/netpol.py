@@ -16,7 +16,7 @@
 import abc
 import random
 import string
-from typing import Dict
+from typing import Dict, Optional
 
 from kubernetes import client
 
@@ -35,6 +35,58 @@ class K8sNetworkPolicy(base.K8sNamespacedResource):
     """Override of abstract method."""
     api = self._Api(client.NetworkingV1Api)
     return api.read_namespaced_network_policy(self.name, self.namespace)
+
+  def Patch(self,
+            match_labels: Optional[Dict[str, str]] = None,
+            not_match_labels: Optional[Dict[str, str]] = None) -> None:
+    """Patches a Kubernetes NetworkPolicy to (not) match specified labels.
+
+    The patched NetworkPolicy will have new fields in the podSelector's
+    matchLabels and matchExpressions, so that it now has to match the labels
+    given in match_labels, and not match the labels in not_match_labels.
+
+    e.g. calling this method on a policy with an empty podSelector with args:
+
+    ```
+    match_labels={'app': 'nginx'}
+    not_match_labels={'quarantine': 'true'}
+    ```
+
+    will result in a NetworkPolicy with the following spec YAML:
+
+    ```
+      spec:
+        podSelector:
+          matchExpressions:
+          - key: quarantine
+            operator: NotIn
+            values:
+            - "true"
+          matchLabels:
+            app: nginx
+    ```
+
+    Args:
+      match_labels: The matchLabels to be added to the NetworkPolicy spec.
+      not_match_labels: The labels to excluded from the NetworkPolicy. Each
+          of these key-value pairs will result in a line in matchExpressions
+          with the format {key: KEY, operator: NotIn, values: [VALUE]}.
+    """
+    api = self._Api(client.NetworkingV1Api)
+    match_expressions = self.Read().spec.pod_selector.match_expressions or []
+    if not_match_labels:
+      match_expressions.extend(
+        client.V1LabelSelectorRequirement(
+            key=key, operator='NotIn', values=[value])
+        for key, value in not_match_labels.items()
+      )
+    return api.patch_namespaced_network_policy(self.name, self.namespace, {
+        'spec': client.V1NetworkPolicySpec(
+            pod_selector=client.V1LabelSelector(
+                match_labels=match_labels,
+                match_expressions=match_expressions,
+            ))
+    })
 
 
 class K8sNetworkPolicyWithSpec(K8sNetworkPolicy, metaclass=abc.ABCMeta):
