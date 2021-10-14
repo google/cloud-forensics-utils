@@ -634,8 +634,8 @@ def TriageInstance(project_id: str,
   ancestry = project.cloudresourcemanager.ProjectAncestry()
   parsed_ancestry = []
   for resource in ancestry:
-    name = resource['displayName']
-    resource_id = resource['name']
+    name = resource.get('displayName', '')
+    resource_id = resource.get('name', '')
     parsed_ancestry.append('{0:s} ({1:s})'.format(name, resource_id))
   ancestry_string = ' -> '.join(parsed_ancestry)
 
