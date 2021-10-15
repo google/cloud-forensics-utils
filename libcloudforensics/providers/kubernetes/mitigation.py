@@ -48,7 +48,8 @@ def DrainWorkloadNodesFromOtherPods(
 def IsolatePodsWithNetworkPolicy(
     cluster: k8s.K8sCluster,
     pods: List[base.K8sPod],
-    existing_policies_prompt = False) -> Optional[netpol.K8sDenyAllNetworkPolicy]:
+    existing_policies_prompt: bool = False
+) -> Optional[netpol.K8sDenyAllNetworkPolicy]:
   """Isolates pods via a deny-all NetworkPolicy.
 
   Args:
