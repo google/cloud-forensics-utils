@@ -18,13 +18,15 @@ import typing
 import unittest
 
 import mock
+from kubernetes import client
 
+import libcloudforensics.providers.kubernetes.cluster as k8s_cluster
 from libcloudforensics.providers.kubernetes import base
-from libcloudforensics.providers.kubernetes import cluster
 from tests.providers.kubernetes import k8s_mocks
 
+
 # Make K8sCluster instantiable
-@mock.patch.object(cluster.K8sCluster, '__abstractmethods__', ())
+@mock.patch.object(k8s_cluster.K8sCluster, '__abstractmethods__', ())
 class K8sClusterTest(unittest.TestCase):
   """Test K8sCluster functionality, mainly checking API calls."""
 
@@ -40,7 +42,8 @@ class K8sClusterTest(unittest.TestCase):
     mock_k8s_api_func = mock_k8s_api.return_value.list_node
     mock_k8s_api_func.return_value = mock_nodes
 
-    nodes = cluster.K8sCluster(api_client=k8s_mocks.MOCK_API_CLIENT).ListNodes()
+    nodes = k8s_cluster.K8sCluster(
+        api_client=k8s_mocks.MOCK_API_CLIENT).ListNodes()
 
     # Assert API and corresponding function was called appropriately
     mock_k8s_api.assert_called_with(k8s_mocks.MOCK_API_CLIENT)
@@ -60,7 +63,8 @@ class K8sClusterTest(unittest.TestCase):
     mock_k8s_api_func = mock_k8s_api.return_value.list_pod_for_all_namespaces
     mock_k8s_api_func.return_value = mock_pods
 
-    pods = cluster.K8sCluster(api_client=k8s_mocks.MOCK_API_CLIENT).ListPods()
+    pods = k8s_cluster.K8sCluster(
+        api_client=k8s_mocks.MOCK_API_CLIENT).ListPods()
 
     # Assert API and corresponding function was called appropriately
     mock_k8s_api.assert_called_with(k8s_mocks.MOCK_API_CLIENT)
@@ -81,7 +85,7 @@ class K8sClusterTest(unittest.TestCase):
     mock_k8s_api_func = mock_k8s_api.return_value.list_namespaced_pod
     mock_k8s_api_func.return_value = mock_pods
 
-    pods = cluster.K8sCluster(
+    pods = k8s_cluster.K8sCluster(
         api_client=k8s_mocks.MOCK_API_CLIENT).ListPods(mock_namespace)
 
     # Assert API and corresponding function was called appropriately
@@ -91,6 +95,41 @@ class K8sClusterTest(unittest.TestCase):
     self.assertEqual(
         set(pod.name for pod in pods),
         set(pod.metadata.name for pod in mock_pods.items))
+
+  @typing.no_type_check
+  @mock.patch.object(client.NetworkingV1Api, 'list_namespaced_network_policy')
+  def testListNamespacedNetworkPolicy(self, mock_list_network_policy):
+    """Test network policies list API is correctly called and used."""
+    fake_network_policy_list = k8s_mocks.V1NetworkPolicyList(4, 'default')
+
+    mock_list_network_policy.return_value = fake_network_policy_list
+
+    cluster = k8s_cluster.K8sCluster(api_client=k8s_mocks.MOCK_API_CLIENT)
+    self.assertEqual(
+      {(np.metadata.name, np.metadata.namespace)
+       for np in fake_network_policy_list.items},
+      {(np.name, np.namespace)
+       for np in cluster.ListNetworkPolicies('namespace-bpvnxfvs')})
+
+    mock_list_network_policy.assert_called_once_with('namespace-bpvnxfvs')
+
+  @typing.no_type_check
+  @mock.patch.object(
+      client.NetworkingV1Api, 'list_network_policy_for_all_namespaces')
+  def testListAllNamespacesNetworkPolicy(self, mock_list_network_policy):
+    """Test network policies list API is correctly called and used."""
+    fake_network_policy_list = k8s_mocks.V1NetworkPolicyList(4, 'default')
+
+    mock_list_network_policy.return_value = fake_network_policy_list
+
+    cluster = k8s_cluster.K8sCluster(api_client=k8s_mocks.MOCK_API_CLIENT)
+    self.assertEqual(
+      {(np.metadata.name, np.metadata.namespace)
+       for np in fake_network_policy_list.items},
+      {(np.name, np.namespace)
+       for np in cluster.ListNetworkPolicies()})
+
+    mock_list_network_policy.assert_called_once_with()
 
 
 class K8sNodeTest(unittest.TestCase):

@@ -26,7 +26,7 @@ from tests.providers.kubernetes import k8s_mocks
 
 @mock.patch.object(netpol.K8sNetworkPolicyWithSpec, '__abstractmethods__', ())
 @mock.patch.object(client.NetworkingV1Api, 'create_namespaced_network_policy')
-class K8sNetworkPolicyWithSpecCreationTest(unittest.TestCase):
+class K8sNetworkPolicyCreationTest(unittest.TestCase):
   """Test the K8sNetworkPolicyWithSpec's creation API call."""
 
   # pylint: disable=abstract-class-instantiated

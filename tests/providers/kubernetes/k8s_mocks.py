@@ -42,6 +42,22 @@ def V1PodList(amount: int) -> client.V1PodList:
   items = [V1Pod(name='pod-{0:d}'.format(i)) for i in range(amount)]
   return client.V1PodList(items=items)
 
+def V1NetworkPolicyList(amount: int, namespace: str):
+  """Make Kubernetes API NetworkPolicy list, see V1NetworkPolicyList."""
+  items = [
+      V1NetworkPolicy('netpol-{0:d}'.format(i), namespace)
+      for i in range(amount)
+  ]
+  return client.V1NetworkPolicyList(items=items)
+
+def V1NetworkPolicy(name: str, namespace: str) -> client.V1NetworkPolicy:
+  """Make Kubernetes API NetworkPolicy response, see V1NetworkPolicy."""
+  return client.V1NetworkPolicy(
+      metadata=V1ObjectMeta(name=name, namespace=namespace))
+
+def V1Service(selector_labels: Labels):
+  """Make Kubernetes API service response, see V1Service."""
+  return client.V1Service(spec=client.V1ServiceSpec(selector=selector_labels))
 
 def V1Node(name: str) -> client.V1Node:
   """Make Kubernetes API Node response, see V1Node."""

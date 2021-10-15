@@ -23,8 +23,8 @@ from libcloudforensics.providers.kubernetes import workloads
 from tests.providers.kubernetes import k8s_mocks
 
 
-@mock.patch.object(workloads.K8sWorkload, '__abstractmethods__', set())
-@mock.patch.object(workloads.K8sWorkload, '_PodMatchLabels')
+@mock.patch.object(workloads.K8sControlledWorkload, '__abstractmethods__', ())
+@mock.patch.object(workloads.K8sControlledWorkload, '_PodMatchLabels')
 class K8sWorkloadTest(unittest.TestCase):
   """Test K8sWorkload API calls."""
 
@@ -37,7 +37,7 @@ class K8sWorkloadTest(unittest.TestCase):
     """Test that a pod is indeed covered by a workload."""
     # Patch abstract method
     workload_pod_match_labels.return_value = self.mock_match_labels
-    workload = workloads.K8sWorkload(
+    workload = workloads.K8sControlledWorkload(
         k8s_mocks.MOCK_API_CLIENT, 'name', 'namespace')
 
     mock_pod_response = k8s_mocks.V1Pod(labels=self.mock_match_labels)
@@ -52,7 +52,7 @@ class K8sWorkloadTest(unittest.TestCase):
     """Test that a pod is not covered by a workload with different labels."""
     # Patch abstract method
     workload_pod_match_labels.return_value = self.mock_match_labels
-    workload = workloads.K8sWorkload(
+    workload = workloads.K8sControlledWorkload(
         k8s_mocks.MOCK_API_CLIENT, 'name', 'namespace')
 
     mock_pod_response = k8s_mocks.V1Pod(labels={})
@@ -67,7 +67,7 @@ class K8sWorkloadTest(unittest.TestCase):
     """Test that pod is not covered by workload with different namespace."""
     # Patch abstract method
     workload_pod_match_labels.return_value = self.mock_match_labels
-    workload = workloads.K8sWorkload(
+    workload = workloads.K8sControlledWorkload(
         k8s_mocks.MOCK_API_CLIENT, 'name', 'namespace')
 
     mock_pod_response = k8s_mocks.V1Pod(labels=self.mock_match_labels)
@@ -84,7 +84,7 @@ class K8sWorkloadTest(unittest.TestCase):
     """Test that workload pods are listed with correct arguments."""
     # Override abstract method
     workload_pod_match_labels.return_value = self.mock_match_labels
-    workload = workloads.K8sWorkload(
+    workload = workloads.K8sControlledWorkload(
         k8s_mocks.MOCK_API_CLIENT, 'name', 'namespace-xdwvkhrj')
     workload.GetCoveredPods()
 
