@@ -13,7 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Kubernetes cluster class, starting point for Kubernetes API calls."""
-from typing import Optional, List
+import abc
+from typing import Iterable, Optional, List
 
 from kubernetes import client
 
@@ -27,8 +28,8 @@ logging_utils.SetUpLogger(__name__)
 logger = logging_utils.GetLogger(__name__)
 
 
-class K8sCluster(base.K8sClient):
-  """Class representing a Kubernetes cluster."""
+class K8sCluster(base.K8sClient, metaclass=abc.ABCMeta):
+  """Abstract class representing a Kubernetes cluster."""
 
   def __init__(self, api_client: client.ApiClient) -> None:
     """Creates a K8sCluster object, checking the API client's authorization.
@@ -41,31 +42,74 @@ class K8sCluster(base.K8sClient):
       api_client (client.ApiClient): The API client to the Kubernetes cluster.
     """
     super().__init__(api_client)
-    self.__AuthorizationCheck()
+    self._AuthorizationCheck()
 
   def ListPods(self, namespace: Optional[str] = None) -> List[base.K8sPod]:
-    """Lists the pods of this cluster, possibly filtering for a namespace.
+    """Lists the pods in this cluster.
 
     Args:
-      namespace (str): Optional. The namespace in which to list the pods.
+      namespace (str): Optional. The namespace in which to list the pods. If not
+          specified, pods are listed in all namespaces.
 
     Returns:
-      List[base.K8sPod]: The list of pods for the namespace, or in all
-          namespaces if none is specified.
+      List[base.K8sPod]: The list of pods.
     """
     api = self._Api(client.CoreV1Api)
-
-    # Collect pods
     if namespace is not None:
       pods = api.list_namespaced_pod(namespace)
     else:
       pods = api.list_pod_for_all_namespaces()
-
-    # Convert to node objects
     return [
         base.K8sPod(
             self._api_client, pod.metadata.name, pod.metadata.namespace)
         for pod in pods.items
+    ]
+
+  def ListDeployments(
+      self, namespace: Optional[str] = None) -> List[workloads.K8sDeployment]:
+    """Lists the deployments in this cluster.
+
+    Args:
+      namespace (str): Optional. The namespace in which to list the deployments.
+          If not specified, deployments are listed in all namespaces.
+
+    Returns:
+      List[workloads.K8sDeployment]: The list of deployments.
+    """
+    api = self._Api(client.AppsV1Api)
+    if namespace is not None:
+      deployments = api.list_namespaced_deployment(namespace)
+    else:
+      deployments = api.list_deployment_for_all_namespaces()
+    return [
+        workloads.K8sDeployment(
+            self._api_client,
+            deployment.metadata.name,
+            deployment.metadata.namespace) for deployment in deployments.items
+    ]
+
+  def ListReplicaSets(
+      self, namespace: Optional[str] = None) -> List[workloads.K8sReplicaSet]:
+    """Lists the replica sets in this cluster.
+
+    Args:
+      namespace (str): Optional. The namespace in which to list the replica
+          sets. If not specified, replica sets are listed in all namespaces.
+
+    Returns:
+      List[workloads.K8sReplicaSet]: The list of replica sets.
+    """
+    api = self._Api(client.AppsV1Api)
+    if namespace is not None:
+      replica_sets = api.list_namespaced_replica_set(namespace)
+    else:
+      replica_sets = api.list_replica_set_for_all_namespaces()
+    return [
+        workloads.K8sReplicaSet(
+            self._api_client,
+            replica_set.metadata.name,
+            replica_set.metadata.namespace)
+        for replica_set in replica_sets.items
     ]
 
   def ListNodes(self) -> List[base.K8sNode]:
@@ -108,7 +152,7 @@ class K8sCluster(base.K8sClient):
         for policy in policies
     ]
 
-  def __AuthorizationCheck(self) -> None:
+  def _AuthorizationCheck(self) -> None:
     """Checks the authorization of this cluster's API client.
 
     Performs a check as per `kubectl auth can-i '*' '*' --all-namespaces`,
@@ -126,6 +170,43 @@ class K8sCluster(base.K8sClient):
       logger.warning(
           'This object\'s client is not authorized to perform all operations'
           'on the Kubernetes cluster. API calls may fail.')
+
+  def AllWorkloads(self,
+                   namespace: Optional[str]) -> Iterable[base.K8sWorkload]:
+    """Lists all workloads in this cluster.
+
+    Currently supported workloads are deployments, replica sets and pods, and
+    are listed in that order.
+
+    Args:
+      namespace (str): The namespace in which to list the workloads. If not
+          specified, workloads are listed in all namespaces.
+
+    Returns:
+      Iterable[base.K8sWorkload]: An iterator for this cluster's workloads.
+    """
+    yield from self.ListDeployments(namespace=namespace)
+    yield from self.ListReplicaSets(namespace=namespace)
+    yield from self.ListPods(namespace=namespace)
+
+  def FindWorkload(self, name: str,
+                   namespace: str) -> Optional[base.K8sWorkload]:
+    """Finds a workload in this cluster by its name and namespace.
+
+    This method relies on the workloads listed in `self.AllWorkloads`.
+
+    Args:
+      name (str): The name of the workload.
+      namespace (str): The namespace of the workload.
+
+    Returns:
+      base.K8sWorkload: Optional. A workload with the matching name and
+          namespace.
+    """
+    for workload in self.AllWorkloads(namespace=namespace):
+      if workload.name == name and workload.namespace == namespace:
+        return workload
+    return None
 
   def GetDeployment(
       self, workload_id: str, namespace: str) -> workloads.K8sDeployment:
@@ -152,6 +233,29 @@ class K8sCluster(base.K8sClient):
     """
     return services.K8sService(self._api_client, service_id, namespace)
 
+  def GetNode(self, node_name: str) -> base.K8sNode:
+    """Gets a node object in this cluster.
+
+    Args:
+      node_name (str): The name of the node.
+
+    Returns:
+      base.K8sNode: The matching node object.
+    """
+    return base.K8sNode(self._api_client, node_name)
+
+  def GetPod(self, pod_name: str, namespace: str) -> base.K8sPod:
+    """Gets a pod object in this cluster.
+
+    Args:
+      pod_name (str): The name of the pod.
+      namespace (str): The namespace of the pod.
+
+    Returns:
+      base.K8sPod: The matching pod object.
+    """
+    return base.K8sPod(self._api_client, pod_name, namespace)
+
   def DenyAllNetworkPolicy(
       self, namespace: str) -> netpol.K8sDenyAllNetworkPolicy:
     """Gets a deny-all network policy for the cluster.
@@ -167,3 +271,11 @@ class K8sCluster(base.K8sClient):
           the creation method on the object to create the policy.
     """
     return netpol.K8sDenyAllNetworkPolicy(self._api_client, namespace)
+
+  @abc.abstractmethod
+  def IsNetworkPolicyEnabled(self) -> bool:
+    """Returns whether network policies are enabled.
+
+    Returns:
+      bool: True if network policies are enabled, False otherwise.
+    """

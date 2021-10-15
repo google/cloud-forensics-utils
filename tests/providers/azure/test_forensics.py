@@ -39,7 +39,7 @@ class AZForensicsTest(unittest.TestCase):
   @mock.patch('libcloudforensics.providers.azure.internal.compute.AZCompute.GetDisk')
   @mock.patch('libcloudforensics.providers.azure.internal.compute.AZComputeVirtualMachine.GetBootDisk')
   @mock.patch('libcloudforensics.providers.azure.internal.compute.AZCompute.GetInstance')
-  @mock.patch('azure.mgmt.compute.v2020_12_01.operations._disks_operations.DisksOperations.begin_create_or_update')
+  @mock.patch('azure.mgmt.compute.v2021_04_01.operations._disks_operations.DisksOperations.begin_create_or_update')
   @typing.no_type_check
   def testCreateDiskCopy1(self,
                           mock_create_disk,
@@ -88,7 +88,7 @@ class AZForensicsTest(unittest.TestCase):
   @mock.patch('libcloudforensics.providers.azure.internal.compute.AZCompute.GetDisk')
   @mock.patch('libcloudforensics.providers.azure.internal.compute.AZComputeVirtualMachine.GetBootDisk')
   @mock.patch('libcloudforensics.providers.azure.internal.compute.AZCompute.GetInstance')
-  @mock.patch('azure.mgmt.compute.v2020_12_01.operations._disks_operations.DisksOperations.begin_create_or_update')
+  @mock.patch('azure.mgmt.compute.v2021_04_01.operations._disks_operations.DisksOperations.begin_create_or_update')
   @typing.no_type_check
   def testCreateDiskCopy2(self,
                           mock_create_disk,

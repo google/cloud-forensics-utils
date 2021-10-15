@@ -45,7 +45,7 @@ class GoogleKubernetesEngine:
     return common.CreateService('container', self.GKE_API_VERSION)
 
 
-class GkeCluster(GoogleKubernetesEngine):
+class GkeCluster(cluster.K8sCluster, GoogleKubernetesEngine):
   """Class to call GKE and Kubernetes APIs on a GKE resource.
 
   https://cloud.google.com/kubernetes-engine/docs/reference/rest
@@ -68,6 +68,7 @@ class GkeCluster(GoogleKubernetesEngine):
     self.project_id = project_id
     self.zone = zone
     self.cluster_id = cluster_id
+    cluster.K8sCluster.__init__(self, self._GetK8sApiClient())
 
   @property
   def name(self) -> str:
@@ -170,15 +171,6 @@ class GkeCluster(GoogleKubernetesEngine):
         raise KeyError('Nested object was not a dict.')
     return current
 
-  def GetK8sCluster(self) -> cluster.K8sCluster:
-    """Returns the Kubernetes cluster of this GKE cluster.
-
-    Returns:
-      cluster.K8sCluster: The Kubernetes cluster matching this GKE cluster,
-          exposing methods to call the Kubernetes API.
-    """
-    return cluster.K8sCluster(self._GetK8sApiClient())
-
   def IsWorkloadIdentityEnabled(self) -> bool:
     """Returns whether the workload identity is enabled.
 
@@ -204,9 +196,5 @@ class GkeCluster(GoogleKubernetesEngine):
             'disable-legacy-endpoints') == 'true')
 
   def IsNetworkPolicyEnabled(self) -> bool:
-    """Returns whether network policies are enabled.
-
-    Returns:
-      bool: True if network policies are enabled, False otherwise.
-    """
+    """Override of abstract method."""
     return bool(self._GetValue('networkPolicy', 'enabled', default=False))

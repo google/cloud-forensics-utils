@@ -24,10 +24,10 @@ from libcloudforensics.providers.kubernetes import base
 from libcloudforensics.providers.kubernetes import selector
 
 
-class K8sWorkload(base.K8sNamespacedResource, metaclass=abc.ABCMeta):
-  """Abstract class representing Kubernetes workloads.
+class K8sControlledWorkload(base.K8sWorkload):
+  """Abstract class representing workloads covering pods with via a selector.
 
-  A Kubernetes workload could be a ReplicaSet, a Deployment, a StatefulSet.
+  Examples: ReplicaSet, Deployment, StatefulSet.
   """
 
   @abc.abstractmethod
@@ -41,22 +41,6 @@ class K8sWorkload(base.K8sNamespacedResource, metaclass=abc.ABCMeta):
   @abc.abstractmethod
   def Read(self) -> Union[client.V1Deployment, client.V1ReplicaSet,]:
     """Override of abstract method."""  # Narrows down type hint
-
-  @abc.abstractmethod
-  def OrphanPods(self) -> None:
-    """Orphans the pods covered by this workload.
-
-    Note that calling this function may entail the deletion of the object
-    upon which this method was called.
-    """
-
-  @abc.abstractmethod
-  def AddTemplateLabels(self, labels: Dict[str, str]) -> None:
-    """Adds labels to the pod template spec of this deployment.
-
-    Args:
-      labels (Dict[str, str]): The labels to be added to the pod template spec.
-    """
 
   def MatchLabels(self) -> Dict[str, str]:
     """Gets the label key-value pairs in the matchLabels field.
@@ -79,11 +63,7 @@ class K8sWorkload(base.K8sNamespacedResource, metaclass=abc.ABCMeta):
     return match_labels
 
   def GetCoveredPods(self) -> List[base.K8sPod]:
-    """Gets a list of Kubernetes pods covered by this workload.
-
-    Returns:
-      List[base.K8sPod]: A list of pods covered by this workload.
-    """
+    """Override of abstract method."""
     api = self._Api(client.CoreV1Api)
 
     labels_selector = selector.K8sSelector.FromLabelsDict(
@@ -99,17 +79,7 @@ class K8sWorkload(base.K8sNamespacedResource, metaclass=abc.ABCMeta):
     ]
 
   def IsCoveringPod(self, pod: base.K8sPod) -> bool:
-    """Determines whether a pod is covered by this workload.
-
-    This function checks if this workload's pod match labels are a subset of the
-    given pod's labels.
-
-    Args:
-      pod (base.K8sPod): The pod to be checked with the labels of this workload.
-
-    Returns:
-      bool: True if the pod is covered this workload, False otherwise.
-    """
+    """Override of abstract method."""
     # Since labels are type Dict[str, str], we can use set-like operations
     # on the items of the dict
     return (
@@ -117,22 +87,8 @@ class K8sWorkload(base.K8sNamespacedResource, metaclass=abc.ABCMeta):
         self._PodMatchLabels().items() <= pod.GetLabels().items())
 
 
-class K8sDeployment(K8sWorkload):
+class K8sDeployment(K8sControlledWorkload):
   """Class representing a Kubernetes deployment."""
-
-  def AddTemplateLabels(self, labels: Dict[str, str]) -> None:
-    """Override of abstract method."""
-    api = self._Api(client.AppsV1Api)
-    api.patch_namespaced_deployment(
-        self.name,
-        self.namespace,
-        body={'spec': {
-            'template': {
-                'metadata': {
-                    'labels': labels
-                }
-            }
-        }})
 
   def OrphanPods(self) -> None:
     """Override of abstract method.
@@ -140,8 +96,9 @@ class K8sDeployment(K8sWorkload):
     To achieve the goal of orphaning the pods, this deployment and its matching
     ReplicaSet are deleted, without cascading.
     """
+    rs = self._ReplicaSet()
     self.Delete(cascade=False)
-    self._ReplicaSet().Delete(cascade=False)
+    rs.Delete(cascade=False)
 
   def Delete(self, cascade: bool = True) -> None:
     """Override of abstract method."""
@@ -198,22 +155,8 @@ class K8sDeployment(K8sWorkload):
     return self._ReplicaSet().MatchLabels()
 
 
-class K8sReplicaSet(K8sWorkload):
+class K8sReplicaSet(K8sControlledWorkload):
   """Class representing a Kubernetes deployment."""
-
-  def AddTemplateLabels(self, labels: Dict[str, str]) -> None:
-    """Override of abstract method."""
-    api = self._Api(client.AppsV1Api)
-    api.patch_namespaced_replica_set(
-        self.name,
-        self.namespace,
-        body={'spec': {
-            'template': {
-                'metadata': {
-                    'labels': labels
-                }
-            }
-        }})
 
   def OrphanPods(self) -> None:
     """Override of abstract method."""

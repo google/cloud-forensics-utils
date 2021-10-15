@@ -501,24 +501,32 @@ def QuarantineGKEWorkload(project_id: str,
     namespace (str): The Kubernetes namespace of the workload (e.g. 'default').
     workload_id (str): The name of the workload.
   """
-  gke_cluster = gke.GkeCluster(project_id, zone, cluster_id)
-  k8s_cluster = gke_cluster.GetK8sCluster()
-
-  k8s_workload = k8s_cluster.GetDeployment(workload_id, namespace)
+  cluster = gke.GkeCluster(project_id, zone, cluster_id)
+  maybe_workload = cluster.FindWorkload(workload_id, namespace)
+  if not maybe_workload:
+    raise errors.ResourceNotFoundError(
+        'Workload not found. Cannot proceed with quarantining process.',
+        __name__)
+  # If we directly assigned to `workload`, mypy would consider it of type
+  # `Optional[K8sWorkload]`, causing type check failures below. Doing it
+  # indirectly after the `if not` check allows mypy to infer that `workload`
+  # is of type `K8sWorkload`.
+  workload = maybe_workload
 
   # Build a dict to find a managed instance group via an instance name,
   # so that we can instance.AbandonFromMIG
   compute_project = compute.GoogleCloudCompute(project_id)
   groups_by_instance = compute_project.ListMIGSByInstanceName(zone)
 
-  workload_nodes = {pod.GetNode() for pod in k8s_workload.GetCoveredPods()}
+  workload_nodes = workload.GetCoveredNodes()
+  workload_pods = workload.GetCoveredPods()
 
   def CordonNodes() -> None:
     """Cordons the compromised nodes."""
     for node in workload_nodes:
       logger.info(
           'Cordoning Kubernetes node {0:s} from {1:s} '
-          'deployment...'.format(node, k8s_workload.name))
+          'deployment...'.format(node.name, workload.name))
       node.Cordon()
 
   def AbandonNodes() -> None:
@@ -540,18 +548,18 @@ def QuarantineGKEWorkload(project_id: str,
     logger.info(
         'Creating deny-all NetworkPolicy for {0:s} '
         'workload...'.format(workload_id))
-    mitigation.CreateDenyAllNetworkPolicyForWorkload(k8s_cluster, k8s_workload)
+    mitigation.IsolatePodsWithNetworkPolicy(cluster, workload_pods)
 
   def DrainNodes() -> None:
     """Drains the workload nodes from other pods."""
     logger.info('Draining workload nodes from other pods...')
-    mitigation.DrainWorkloadNodesFromOtherPods(k8s_workload, cordon=False)
+    mitigation.DrainWorkloadNodesFromOtherPods(workload, cordon=False)
 
   def OrphanPods() -> None:
     """Orphans the pods of the workload."""
     logger.info(
         'Orphaning Kubernetes workload {0:s}\'s pods...'.format(workload_id))
-    k8s_workload.OrphanPods()
+    workload.OrphanPods()
 
   def FirewallNodes() -> None:
     """Puts each node from the workload into network quarantine."""
@@ -569,30 +577,39 @@ def QuarantineGKEWorkload(project_id: str,
 
   # Second prompt options, defined afterwards so that we can link disables
   preserve_delete = prompts.PromptOption(
-      'Preserve evidence and delete workload',
-      OrphanPods,
-      disable_options=[isolate_pods])
+      'Preserve evidence and delete workload', OrphanPods)
   preserve_preserve = prompts.PromptOption(
       'Preserve evidence and preserve workload',
       # No functions are called when this option is selected, a multi prompt
       # was favored over a yes/no prompt for clarity
-      disable_options=[isolate_nodes, isolate_nodes_and_pods])
+      disable_options=[
+          (
+              isolate_nodes,
+              'Isolating nodes will cause workload pods to appear elsewhere.'),
+          (
+              isolate_nodes_and_pods,
+              'Isolating nodes will cause workload pods to appear elsewhere.')
+      ])
 
   prompt_sequence = prompts.PromptSequence(
       prompts.YesNoPrompt(
           prompts.PromptOption(
-              'Abandon nodes from managed instance group', AbandonNodes)),
-      prompts.YesNoPrompt(prompts.PromptOption('Cordon nodes', CordonNodes)),
+              'Abandon nodes from managed instance group', AbandonNodes),
+          default_yes=True),
+      prompts.YesNoPrompt(
+          prompts.PromptOption('Cordon nodes', CordonNodes), default_yes=True),
       prompts.MultiPrompt([
           preserve_delete,
           preserve_preserve,
       ]),
-      prompts.MultiPrompt([
-          isolate_nodes,
-          isolate_pods,
-          isolate_nodes_and_pods
-      ]),
+      prompts.MultiPrompt([isolate_nodes, isolate_pods,
+                           isolate_nodes_and_pods]),
   )
+
+  # If network policy is disabled, disable the isolate_pods prompt because
+  # it will raise an error
+  if not cluster.IsNetworkPolicyEnabled():
+    isolate_pods.Disable('NetworkPolicy not enabled.')
 
   prompt_sequence.Run(summarize=True)
 
@@ -616,8 +633,8 @@ def TriageInstance(project_id: str,
   ancestry = project.cloudresourcemanager.ProjectAncestry()
   parsed_ancestry = []
   for resource in ancestry:
-    name = resource['displayName']
-    resource_id = resource['name']
+    name = resource.get('displayName', '')
+    resource_id = resource.get('name', '')
     parsed_ancestry.append('{0:s} ({1:s})'.format(name, resource_id))
   ancestry_string = ' -> '.join(parsed_ancestry)
 
