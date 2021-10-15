@@ -73,6 +73,7 @@ class K8sNetworkPolicy(base.K8sNamespacedResource):
           with the format {key: KEY, operator: NotIn, values: [VALUE]}.
     """
     api = self._Api(client.NetworkingV1Api)
+
     match_expressions = self.Read().spec.pod_selector.match_expressions or []
     if not_match_labels:
       match_expressions.extend(
@@ -80,7 +81,8 @@ class K8sNetworkPolicy(base.K8sNamespacedResource):
             key=key, operator='NotIn', values=[value])
         for key, value in not_match_labels.items()
       )
-    return api.patch_namespaced_network_policy(self.name, self.namespace, {
+
+    api.patch_namespaced_network_policy(self.name, self.namespace, {
         'spec': client.V1NetworkPolicySpec(
             pod_selector=client.V1LabelSelector(
                 match_labels=match_labels,

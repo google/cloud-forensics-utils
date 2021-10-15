@@ -92,11 +92,11 @@ def IsolatePodsWithNetworkPolicy(
   # this, either patching the network policies or deleting them.
   existing_policies = cluster.ListNetworkPolicies(namespace)
 
-  def PatchExistingNetworkPolicies():
+  def PatchExistingNetworkPolicies() -> None:
     for policy in existing_policies:
       policy.Patch(not_match_labels=deny_all_policy.labels)
 
-  def DeleteExistingNetworkPolicies():
+  def DeleteExistingNetworkPolicies() -> None:
     for policy in existing_policies:
       policy.Delete()
 
