@@ -27,7 +27,7 @@ class K8sServiceTest(unittest.TestCase):
   """Test the K8sService methods."""
 
   @mock.patch.object(client.CoreV1Api, 'list_namespaced_pod')
-  def testListCoveredPods(self, list_namespaced_pod):
+  def testListCoveredPods(self, list_namespaced_pod) -> None:
     """Test that GetCoveredPods calls API correctly and returns correctly."""
     mock_pods = k8s_mocks.V1PodList(4)
     list_namespaced_pod.return_value = mock_pods
