@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests on Kubernetes service objects."""
-
+import typing
 import unittest
 
 import mock
@@ -26,8 +26,9 @@ from tests.providers.kubernetes import k8s_mocks
 class K8sServiceTest(unittest.TestCase):
   """Test the K8sService methods."""
 
+  @typing.no_type_check
   @mock.patch.object(client.CoreV1Api, 'list_namespaced_pod')
-  def testListCoveredPods(self, list_namespaced_pod) -> None:
+  def testListCoveredPods(self, list_namespaced_pod):
     """Test that GetCoveredPods calls API correctly and returns correctly."""
     mock_pods = k8s_mocks.V1PodList(4)
     list_namespaced_pod.return_value = mock_pods
