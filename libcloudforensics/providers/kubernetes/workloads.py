@@ -30,6 +30,17 @@ class K8sControlledWorkload(base.K8sWorkload):
   Examples: ReplicaSet, Deployment, StatefulSet.
   """
 
+  def GcpContainerLogsQuerySupplement(self) -> str:
+    """Override of abstract method."""
+    queries = [
+        'resource.labels.namespace_name="{namespace:s}"'.format(
+            namespace=self.namespace)
+    ]
+    queries.extend(
+        'labels.k8s-pod/{key:s}="{value:s}"'.format(key=key, value=value)
+        for key, value in self.MatchLabels().items())
+    return '\n'.join(queries)
+
   @abc.abstractmethod
   def _PodMatchLabels(self) -> Dict[str, str]:
     """Gets the key-value pairs that pods belonging to this workload would have.
@@ -89,6 +100,11 @@ class K8sControlledWorkload(base.K8sWorkload):
 
 class K8sDeployment(K8sControlledWorkload):
   """Class representing a Kubernetes deployment."""
+
+  @property
+  def gcp_protopayload_methodname(self) -> str:
+    """Override of abstract property."""
+    return 'deployments'
 
   def OrphanPods(self) -> None:
     """Override of abstract method.
@@ -157,6 +173,11 @@ class K8sDeployment(K8sControlledWorkload):
 
 class K8sReplicaSet(K8sControlledWorkload):
   """Class representing a Kubernetes deployment."""
+
+  @property
+  def gcp_protopayload_methodname(self) -> str:
+    """Override of abstract property."""
+    return 'replicasets'
 
   def OrphanPods(self) -> None:
     """Override of abstract method."""
