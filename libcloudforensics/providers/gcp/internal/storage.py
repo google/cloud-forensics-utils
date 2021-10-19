@@ -167,7 +167,7 @@ class GoogleCloudStorage:
     bucket, object_path = SplitStoragePath(gcs_path)
     gcs_objects = self.GcsApi().objects() # pylint: disable=no-member
     request = gcs_objects.delete(bucket=bucket, object=object_path)
-    request.execute()  # type: Dict[str, Any]
+    request.execute()
 
   def GetBucketSize(self,
                     bucket: str,

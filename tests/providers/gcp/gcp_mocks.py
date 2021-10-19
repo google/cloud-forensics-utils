@@ -68,6 +68,8 @@ FAKE_LOG_LIST = [
     'projects/fake-target-project/logs/OSConfigAgent'
 ]
 
+STARTUP_SCRIPT = 'scripts/startup.sh'
+
 FAKE_LOG_ENTRIES = [{
     'logName': 'test_log',
     'timestamp': '123456789',
@@ -215,9 +217,13 @@ MOCK_GCE_OPERATION_INSTANCES_GET = {
     # for complete structure
     'name':
         FAKE_INSTANCE.name,
+    'machineType': 'https://www.googleapis.com/compute/v1/projects/fake-project/zones/us-central1-a/machineTypes/e2-medium',
+    'status': 'RUNNING',
+    'zone': 'https://www.googleapis.com/compute/v1/projects/ake-project/zones/us-central1-a',
     'disks': [{
         'boot': True,
         'source': '/' + FAKE_BOOT_DISK.name,
+        'diskSizeGb': '10'
     }, {
         'boot': False,
         'source': '/' + FAKE_DISK.name,
@@ -225,7 +231,17 @@ MOCK_GCE_OPERATION_INSTANCES_GET = {
             'diskName': FAKE_DISK.name
         }
     }],
-    'networkInterfaces': MOCK_NETWORK_INTERFACES
+    'networkInterfaces': MOCK_NETWORK_INTERFACES,
+    'metadata': {
+    'fingerprint': 'b4UswdFiBpQ=',
+    'items': [
+      {
+        'key': 'startup-script',
+        'value': STARTUP_SCRIPT
+      }
+    ],
+    'kind': 'compute#metadata'
+  }
 }
 # pylint: enable=line-too-long
 
@@ -593,7 +609,6 @@ MOCK_GCM_METRICS_CPU = {
 
 # See: https://cloud.google.com/compute/docs/reference/rest/v1/disks
 REGEX_DISK_NAME = re.compile('^(?=.{1,63}$)[a-z]([-a-z0-9]*[a-z0-9])?$')
-STARTUP_SCRIPT = 'scripts/startup.sh'
 
 # pylint: disable=line-too-long
 MOCK_SSH_VERBOSE_STDERR = b"""debug1: SSH2_MSG_SERVICE_ACCEPT received
@@ -810,3 +825,86 @@ MOCK_ENABLED_SERVICES = [
         ]
     }
 ]
+
+MOCK_COMPUTE_NETWORK = {
+  "id": "3640003993983414",
+  "creationTimestamp": "2019-11-15T02:42:01.395-08:00",
+  "name": "fake_network",
+  "description": "Default network for the project",
+  "selfLink": "https://www.googleapis.com/compute/v1/projects/fake-project/global/networks/default",
+  "autoCreateSubnetworks": True,
+  "subnetworks": [
+    "https://www.googleapis.com/compute/v1/projects/fake-project/regions/us-central1/subnetworks/default",
+    "https://www.googleapis.com/compute/v1/projects/fake-project/regions/europe-north1/subnetworks/default",
+    "https://www.googleapis.com/compute/v1/projects/fake-project/regions/europe-west3/subnetworks/default"
+  ],
+  "routingConfig": {
+    "routingMode": "REGIONAL"
+  },
+  "kind": "compute#network"
+}
+
+MOCK_MACHINE_TYPES = {
+  "id": "801030",
+  "creationTimestamp": "1969-12-31T16:00:00.000-08:00",
+  "name": "c2-standard-30",
+  "description": "Compute Optimized: 30 vCPUs, 120 GB RAM",
+  "guestCpus": 30,
+  "memoryMb": 122880,
+  "imageSpaceGb": 0,
+  "maximumPersistentDisks": 128,
+  "maximumPersistentDisksSizeGb": "263168",
+  "zone": "us-central1-a",
+  "selfLink": "https://www.googleapis.com/compute/v1/projects/eids-disk-cleaner-test/zones/us-central1-a/machineTypes/c2-standard-30",
+  "isSharedCpu": False,
+  "kind": "compute#machineType"
+}
+
+MOCK_DISK_TYPES = {
+  "creationTimestamp": "1969-12-31T16:00:00.000-08:00",
+  "name": "pd-standard",
+  "description": "Standard Persistent Disk",
+  "validDiskSize": "10GB-65536GB",
+  "zone": "https://www.googleapis.com/compute/v1/projects/eids-disk-cleaner-test/zones/us-central1-a",
+  "selfLink": "https://www.googleapis.com/compute/v1/projects/eids-disk-cleaner-test/zones/us-central1-a/diskTypes/pd-standard",
+  "defaultDiskSizeGb": "500",
+  "kind": "compute#diskType"
+}
+
+MOCK_COMPUTE_IMAGE = {
+  "id": "2427010555319344057",
+  "creationTimestamp": "2021-09-16T08:40:06.506-07:00",
+  "name": "debian-10-buster-v20210916",
+  "description": "Debian, Debian GNU/Linux, 10 (buster), amd64 built on 20210916, supports Shielded VM features",
+  "sourceType": "RAW",
+  "rawDisk": {
+    "source": "",
+    "containerType": "TAR"
+  },
+  "status": "READY",
+  "archiveSizeBytes": "1180353600",
+  "diskSizeGb": "10",
+  "licenses": [
+    "https://www.googleapis.com/compute/v1/projects/debian-cloud/global/licenses/debian-10-buster"
+  ],
+  "family": "debian-10",
+  "selfLink": "https://www.googleapis.com/compute/v1/projects/debian-cloud/global/images/debian-10-buster-v20210916",
+  "labelFingerprint": "42WmSpB8rSM=",
+  "guestOsFeatures": [
+    {
+      "type": "UEFI_COMPATIBLE"
+    },
+    {
+      "type": "VIRTIO_SCSI_MULTIQUEUE"
+    }
+  ],
+  "licenseCodes": [
+    "5543610867827062957"
+  ],
+  "storageLocations": [
+    "eu",
+    "asia",
+    "us"
+  ],
+  "kind": "compute#image"
+}

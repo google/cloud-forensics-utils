@@ -88,3 +88,6 @@ class TransferCreationError(LCFError):
 
 class TransferExecutionError(LCFError):
   """Error when an issue with running a transfer job is encountered."""
+
+class ResourceAlreadyExistsError(LCFError):
+  """Error when trying to create a resource with existing name."""
