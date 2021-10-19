@@ -254,6 +254,32 @@ class K8sWorkload(K8sNamespacedResource):
       bool: True if the pod is covered this workload, False otherwise.
     """
 
+  @property
+  @abc.abstractmethod
+  def gcp_protopayload_methodname(self) -> str:
+    """The "protoPayload.methodName" substring for this workload."""
+
+  def GcpClusterLogsQuerySupplement(self) -> str:
+    """Returns the lines specifying this workload for GCP k8s_cluster logs.
+
+    Returns:
+       str: The specifying query string.
+    """
+    return (
+        'protoPayload.resourceName=~"\\b{workload_id:s}$"\n'
+        'protoPayload.methodName:"{workload_type:s}."\n'.format(
+            workload_id=self.name,
+            workload_type=self.gcp_protopayload_methodname,
+        ))
+
+  @abc.abstractmethod
+  def GcpContainerLogsQuerySupplement(self) -> str:
+    """Returns the lines specifying this workload for GCP k8s_container logs.
+
+    Returns:
+       str: The specifying query string.
+    """
+
   @abc.abstractmethod
   def OrphanPods(self) -> None:
     """Orphans the pods covered by this workload.
@@ -268,6 +294,18 @@ class K8sPod(K8sWorkload):
 
   https://kubernetes.io/docs/concepts/workloads/pods/
   """
+
+  @property
+  def gcp_protopayload_methodname(self) -> str:
+    """Override of abstract property."""
+    return 'pods'
+
+  def GcpContainerLogsQuerySupplement(self) -> str:
+    """Override of abstract method."""
+    return (
+        'resource.labels.namespace_name="{namespace:s}"\n'
+        'resource.labels.pod_name="{name:s}"\n'.format(
+            namespace=self.namespace, name=self.name))
 
   def OrphanPods(self) -> None:
     """Override of abstract method."""
