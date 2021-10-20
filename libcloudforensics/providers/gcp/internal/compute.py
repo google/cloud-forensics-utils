@@ -303,7 +303,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
 
   Args:
     disk_name: name of the regional disk to get.
-    
+
     Returns:
       Regional disk object.
 
