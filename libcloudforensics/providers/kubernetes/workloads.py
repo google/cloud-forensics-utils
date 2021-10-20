@@ -30,6 +30,17 @@ class K8sControlledWorkload(base.K8sWorkload):
   Examples: ReplicaSet, Deployment, StatefulSet.
   """
 
+  def GcpContainerLogsQuerySupplement(self) -> str:
+    """Override of abstract method."""
+    queries = [
+        'resource.labels.namespace_name="{namespace:s}"'.format(
+            namespace=self.namespace)
+    ]
+    queries.extend(
+        'labels.k8s-pod/{key:s}="{value:s}"'.format(key=key, value=value)
+        for key, value in self.MatchLabels().items())
+    return '\n'.join(queries)
+
   @abc.abstractmethod
   def _PodMatchLabels(self) -> Dict[str, str]:
     """Gets the key-value pairs that pods belonging to this workload would have.
@@ -82,11 +93,18 @@ class K8sControlledWorkload(base.K8sWorkload):
     """Override of abstract method."""
     # Since labels are type Dict[str, str], we can use set-like operations
     # on the items of the dict
-    return self._PodMatchLabels().items() <= pod.GetLabels().items()
+    return (
+        self.namespace == pod.namespace and
+        self._PodMatchLabels().items() <= pod.GetLabels().items())
 
 
 class K8sDeployment(K8sControlledWorkload):
   """Class representing a Kubernetes deployment."""
+
+  @property
+  def gcp_protopayload_methodname(self) -> str:
+    """Override of abstract property."""
+    return 'deployments'
 
   def OrphanPods(self) -> None:
     """Override of abstract method.
@@ -135,13 +153,14 @@ class K8sDeployment(K8sControlledWorkload):
       rs_template_spec = replica_set.spec.template
       # Delete the hash appended to the labels of this replicaset, so that
       # the following comparison does not factor in the hash label
-      del rs_template_spec.metadata.labels['pod-template-hash']
-      if rs_template_spec == this_template_spec:
-        return K8sReplicaSet(
-            self._api_client,
-            replica_set.metadata.name,
-            replica_set.metadata.namespace,
-        )
+      if 'pod-template-hash' in rs_template_spec.metadata.labels:
+        del rs_template_spec.metadata.labels['pod-template-hash']
+        if rs_template_spec == this_template_spec:
+          return K8sReplicaSet(
+              self._api_client,
+              replica_set.metadata.name,
+              replica_set.metadata.namespace,
+          )
 
     raise errors.ResourceNotFoundError(
         'Matching ReplicaSet for deployment {0:s} not found.'.format(self.name),
@@ -154,6 +173,11 @@ class K8sDeployment(K8sControlledWorkload):
 
 class K8sReplicaSet(K8sControlledWorkload):
   """Class representing a Kubernetes deployment."""
+
+  @property
+  def gcp_protopayload_methodname(self) -> str:
+    """Override of abstract property."""
+    return 'replicasets'
 
   def OrphanPods(self) -> None:
     """Override of abstract method."""
