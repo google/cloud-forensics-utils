@@ -49,7 +49,7 @@ def IsolatePodsWithNetworkPolicy(
     cluster: k8s.K8sCluster,
     pods: List[base.K8sPod],
     existing_policies_prompt: bool = False
-) -> Optional[netpol.K8sDenyAllNetworkPolicy]:
+) -> Optional[netpol.K8sTargetedDenyAllNetworkPolicy]:
   """Isolates pods via a deny-all NetworkPolicy.
 
   Args:
@@ -62,9 +62,9 @@ def IsolatePodsWithNetworkPolicy(
         policies. Defaults to False.
 
   Returns:
-    netpol.K8sDenyAllNetworkPolicy: Optional. The deny-all network policy that
-        was created to isolate the pods. If no pods were supplied, None is
-        returned.
+    netpol.K8sTargetedDenyAllNetworkPolicy: Optional. The deny-all network
+        policy that was created to isolate the pods. If no pods were supplied,
+        None is returned.
 
   Raises:
     ValueError: If the pods are not in the same namespace.
@@ -85,7 +85,7 @@ def IsolatePodsWithNetworkPolicy(
 
   # Keep in mind that this does not create the network policy in the cluster,
   # it just creates the K8sNetworkPolicy object
-  deny_all_policy = cluster.DenyAllNetworkPolicy(namespace)
+  deny_all_policy = cluster.TargetedDenyAllNetworkPolicy(namespace)
 
   # If other network policies exist, they need to be handled, otherwise the
   # deny-all NetworkPolicy may have no effect. There are a two options to do

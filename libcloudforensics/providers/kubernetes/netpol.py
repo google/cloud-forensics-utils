@@ -36,9 +36,10 @@ class K8sNetworkPolicy(base.K8sNamespacedResource):
     api = self._Api(client.NetworkingV1Api)
     return api.read_namespaced_network_policy(self.name, self.namespace)
 
-  def Patch(self,
-            match_labels: Optional[Dict[str, str]] = None,
-            not_match_labels: Optional[Dict[str, str]] = None) -> None:
+  def Patch(
+      self,
+      match_labels: Optional[Dict[str, str]] = None,
+      not_match_labels: Optional[Dict[str, str]] = None) -> None:
     """Patches a Kubernetes NetworkPolicy to (not) match specified labels.
 
     The patched NetworkPolicy will have new fields in the podSelector's
@@ -77,18 +78,21 @@ class K8sNetworkPolicy(base.K8sNamespacedResource):
     match_expressions = self.Read().spec.pod_selector.match_expressions or []
     if not_match_labels:
       match_expressions.extend(
-        client.V1LabelSelectorRequirement(
-            key=key, operator='NotIn', values=[value])
-        for key, value in not_match_labels.items()
-      )
+          client.V1LabelSelectorRequirement(
+              key=key, operator='NotIn', values=[value]) for key,
+          value in not_match_labels.items())
 
-    api.patch_namespaced_network_policy(self.name, self.namespace, {
-        'spec': client.V1NetworkPolicySpec(
-            pod_selector=client.V1LabelSelector(
-                match_labels=match_labels,
-                match_expressions=match_expressions,
-            ))
-    })
+    api.patch_namespaced_network_policy(
+        self.name,
+        self.namespace,
+        {
+            'spec':
+                client.V1NetworkPolicySpec(
+                    pod_selector=client.V1LabelSelector(
+                        match_labels=match_labels,
+                        match_expressions=match_expressions,
+                    ))
+        })
 
 
 class K8sNetworkPolicyWithSpec(K8sNetworkPolicy, metaclass=abc.ABCMeta):
@@ -119,7 +123,7 @@ class K8sNetworkPolicyWithSpec(K8sNetworkPolicy, metaclass=abc.ABCMeta):
     api.create_namespaced_network_policy(self.namespace, self._policy)
 
 
-class K8sDenyAllNetworkPolicy(K8sNetworkPolicyWithSpec):
+class K8sTargetedDenyAllNetworkPolicy(K8sNetworkPolicyWithSpec):
   """Class representing a deny-all NetworkPolicy.
 
   https://kubernetes.io/docs/concepts/services-networking/network-policies/#default-deny-all-ingress-and-all-egress-traffic  # pylint: disable=line-too-long
