@@ -17,11 +17,13 @@
 from datetime import datetime
 import json
 import sys
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional, List, Any
 from google.auth import default
 
 # pylint: disable=line-too-long
+from libcloudforensics import errors
 from libcloudforensics.providers.gcp.internal import compute as gcp_compute
+from libcloudforensics.providers.gcp.internal import gke
 from libcloudforensics.providers.gcp.internal import log as gcp_log
 from libcloudforensics.providers.gcp.internal import monitoring as gcp_monitoring
 from libcloudforensics.providers.gcp.internal import project as gcp_project
@@ -31,6 +33,9 @@ from libcloudforensics.providers.gcp.internal import cloudsql as gcp_cloudsql
 from libcloudforensics.providers.gcp import forensics
 from libcloudforensics import logging_utils
 # pylint: enable=line-too-long
+import libcloudforensics.providers.kubernetes.enumerations as k8s_enumerations
+import libcloudforensics.providers.kubernetes.enumerations.gcp  # pylint: disable=unused-import
+import libcloudforensics.providers.kubernetes.enumerations.base  # pylint: disable=unused-import
 
 logging_utils.SetUpLogger(__name__)
 logger = logging_utils.GetLogger(__name__)
@@ -519,3 +524,67 @@ def S3ToGCS(args: 'argparse.Namespace') -> None:
   gcst.S3ToGCS(args.s3_path, args.zone, args.gcs_path)
 
   logger.info('File successfully transferred.')
+
+
+def GKEWorkloadQuarantine(args: 'argparse.Namespace') -> None:
+  """Trigger quarantining process for GKE workload.
+
+  Args:
+    args (argparse.Namespace): Arguments from ArgumentParser.
+  """
+  AssignProjectID(args)
+  exempted_src_ips = None  # type: Optional[List[str]]
+  if args.exempted_src_ips:
+    exempted_src_ips = args.exempted_src_ips.split(',')
+  forensics.QuarantineGKEWorkload(args.project, args.zone, args.cluster,
+                                  args.namespace, args.workload,
+                                  exempted_src_ips=exempted_src_ips)
+
+def GKEEnumerate(args: 'argparse.Namespace') -> None:
+  """Enumerate GKE cluster objects.
+
+  Args:
+    args (argparse.Namespace): Arguments from ArgumentParser.
+  """
+  AssignProjectID(args)
+
+  cluster = gke.GkeCluster(args.project, args.zone, args.cluster)
+
+  enumerations = []  # type: List[k8s_enumerations.base.Enumeration[Any]]
+
+  if args.workload:
+    if not args.namespace:
+      raise AttributeError(
+          'Namespace must be provided for workload enumeration.')
+    workload = cluster.FindWorkload(args.workload, args.namespace)
+    if not workload:
+      raise errors.ResourceNotFoundError('Workload not found.', __name__)
+    enumerations.append(k8s_enumerations.base.WorkloadEnumeration(workload))
+
+  if args.node:
+    node = cluster.FindNode(args.node)
+    if not node:
+      raise errors.ResourceNotFoundError('Node not found.', __name__)
+    enumerations.append(k8s_enumerations.base.NodeEnumeration(node))
+
+  if args.service:
+    if not args.namespace:
+      raise AttributeError(
+          'Namespace must be provided for service enumeration.')
+    service = cluster.FindService(args.service, args.namespace)
+    if not service:
+      raise errors.ResourceNotFoundError('Service not found.', __name__)
+    enumerations.append(k8s_enumerations.base.ServiceEnumeration(service))
+
+  if len(enumerations) == 1:
+    enumeration = enumerations[0]
+  elif len(enumerations) == 0:
+    enumeration = k8s_enumerations.gcp.GkeClusterEnumeration(cluster)
+  else:
+    raise AttributeError('At most one enumeration point can be specified.')
+
+  if args.as_json:
+    json.dump(
+        enumeration.ToJson(namespace=args.namespace), sys.stdout, indent=2)
+  else:
+    enumeration.Enumerate(namespace=args.namespace)
