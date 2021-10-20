@@ -276,7 +276,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     """List regional disks in project.
 
     Returns:
-      Dict[str, GoogleRegionComputeDisk]: Dictionary mapping disk names (str) to
+      Dictionary mapping disk names (str) to
           their respective GoogleRegionComputeDisk object.
     """
     region_disks = {}
@@ -301,8 +301,11 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
 
     Regional disks API resource: https://cloud.google.com/compute/docs/reference/rest/v1/regionDisks#resource:-disk  # pylint: disable=line-too-long
 
+  Args:
+    disk_name: name of the regional disk to get.
+    
     Returns:
-      GoogleRegionComputeDisk: Regional disk object.
+      Regional disk object.
 
     Raises:
       ResourceNotFoundError: When the specified disk cannot be found in project.
@@ -415,7 +418,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
 
   def GetMachineTypes(self, machine_type: str,
                       zone: Optional[str] = None) -> Dict[str, Any]:
-    """ Get selected machineTypes API object in specified zone/project.
+    """Get selected machineTypes API object in specified zone/project.
 
     Args:
       machine_type: Name of the machine type.
@@ -426,7 +429,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       https://cloud.google.com/compute/docs/reference/latest/machineTypes#resource  # pylint: disable=line-too-long
 
     Raises:
-     HttpError if getting machineType object for the given machine-type name fails.
+      HttpError if getting machineType object for the given machine-type name fails.
     """
 
     compute_zone = zone if zone else self.default_zone
@@ -441,7 +444,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
 
   def GetDiskTypes(self, disk_type: str,
                    zone: Optional[str] = None) -> Dict[str, Any]:
-    """ Get selected diskTypes API object in specified zone/project.
+    """Get selected diskTypes API object in specified zone/project.
 
     Args:
       disk_type: Name of the disk type.
@@ -452,7 +455,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       https://cloud.google.com/compute/docs/reference/rest/v1/diskTypes#resource  # pylint: disable=line-too-long
 
     Raises:
-     HttpError if getting diskType object for the given disk-type name fails.
+      HttpError if getting diskType object for the given disk-type name fails.
     """
 
     compute_zone = zone if zone else self.default_zone
@@ -465,7 +468,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
 
   def GetImageFamily(self, image_family: str,
                      project: Optional[str] = None) -> Dict[str, Any]:
-    """ Get image family API object in specified project.
+    """Get image family API object in specified project.
 
     Args:
       image_family: Name of the image famiky.
@@ -484,7 +487,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     return common.ExecuteRequest(images_client, 'getFromFamily', params)[0]
 
   def GetNetwork(self, network_name: str) -> Dict[str, Any]:
-    """ Get selected network API object in specified project.
+    """Get selected network API object in specified project.
 
     Args:
       network_name: Name of the network.
@@ -513,6 +516,9 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       request_body: Insert instance request body at
           https://cloud.google.com/compute/docs/reference/rest/v1/instances/insert#request-body  # pylint: disable=line-too-long
       zone: Compute zone to start the instance in, default is self.default_zone.
+
+Returns:
+  Compute instance object.
 
     Raises:
       ResourceAlreadyExistsError: If an instance with the same name already exists.
@@ -587,6 +593,9 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       network_name: Name of the VPC network to use, "default" network is default.
       external_ip: True if the instance should have an external IP.
 
+Returns:
+  Compute instance object.
+
     Raises:
       ResourceNotFoundError: If boot disk is not found.
       OperationFailedError: If Get operation on boot disk failed.
@@ -651,10 +660,10 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       ]
       request_body['metadata'] = {'items': metadata_res}
     network_interface = {
-        "network":
+        'network':
             self.GetNetwork(network_name)['selfLink'],
-        "accessConfigs": [] if not external_ip else [{
-            "name": "External NAT", "type": "ONE_TO_ONE_NAT"
+        'accessConfigs': [] if not external_ip else [{
+            'name': 'External NAT', 'type': 'ONE_TO_ONE_NAT'
         }]
     }
     request_body['networkInterfaces'] = [network_interface]
@@ -1959,7 +1968,7 @@ class GoogleRegionComputeDisk(compute_base_resource.GoogleComputeBaseResource):
     """Get API operation object for the regional disk.
 
     Returns:
-      Dict: An API operation object for a Google Regional Compute Engine disk.
+      An API operation object for a Google Regional Compute Engine disk.
           hhttps://cloud.google.com/compute/docs/reference/rest/v1/regionDisks/get#response-body  # pylint: disable=line-too-long
     """
     gce_disk_client = self.GceApi().regionDisks()
