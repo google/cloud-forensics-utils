@@ -90,7 +90,7 @@ def IsolatePodsWithNetworkPolicy(
   # If other network policies exist, they need to be handled, otherwise the
   # deny-all NetworkPolicy may have no effect. There are a two options to do
   # this, either patching the network policies or deleting them.
-  existing_policies = cluster.ListNetworkPolicies(namespace)
+  existing_policies = cluster.ListNetworkPolicies(namespace=namespace)
 
   def PatchExistingNetworkPolicies() -> None:
     for policy in existing_policies:
@@ -106,10 +106,10 @@ def IsolatePodsWithNetworkPolicy(
         prompts.MultiPrompt(
             options=[
                 prompts.PromptOption(
-                    'Delete existing NetworkPolicy objects',
+                    'Delete existing NetworkPolicy objects in same namespace',
                     DeleteExistingNetworkPolicies),
                 prompts.PromptOption(
-                    'Patch existing NetworkPolicy objects',
+                    'Patch existing NetworkPolicy objects in same namespace',
                     PatchExistingNetworkPolicies),
                 prompts.PromptOption('Leave existing NetworkPolicy objects')
             ]))
