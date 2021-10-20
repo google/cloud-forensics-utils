@@ -56,6 +56,8 @@ PROVIDER_TO_FUNC = {
         'deleteinstance': gcp_cli.DeleteInstance,
         'deleteobject': gcp_cli.DeleteObject,
         'createbucket': gcp_cli.CreateBucket,
+        'gkequarantine': gcp_cli.GKEWorkloadQuarantine,
+        'gkeenumerate': gcp_cli.GKEEnumerate,
         'listbuckets': gcp_cli.ListBuckets,
         'listcloudsqlinstances': gcp_cli.ListCloudSqlInstances,
         'listdisks': gcp_cli.ListDisks,
@@ -482,6 +484,29 @@ def Main() -> None:
                 ('instance_name', 'Name of the instance to affect', ''),
                 ('--leave_stopped', 'Leave the machine TERMINATED after '
                     'removing the service account (default: False)', False)
+            ])
+  AddParser('gcp', gcp_subparsers, 'gkequarantine',
+            'Start the quarantining process for a GKE workload.',
+            args=[
+                ('cluster', 'The name of the workload\'s GKE cluster.', ''),
+                ('zone', 'The zone of the workload\'s GKE cluster.', ''),
+                ('workload', 'The name of the GKE workload to isolate.', ''),
+                ('namespace', 'The namespace of the workload.', ''),
+                ('--exempted_src_ips', 'Comma separated list of source IPs '
+                    'to exempt from ingress firewall rules when isolating '
+                    'nodes.', None)
+            ])
+  AddParser('gcp', gcp_subparsers, 'gkeenumerate',
+            'Enumerate a GKE cluster or one of its objects.',
+            args=[
+                ('cluster', 'The name of the GKE cluster.', ''),
+                ('zone', 'The zone of the GKE cluster.', ''),
+                ('--workload', 'The name of the workload to enumerate.', ''),
+                ('--service', 'The name of the service to enumerate.', None),
+                ('--node', 'The name of the node to enumerate.', None),
+                ('--namespace', 'The namespace of the object to enumerate.',
+                    None),
+                ('--as_json', 'Output in JSON format.', False)
             ])
 
   if len(sys.argv) == 1:
