@@ -39,16 +39,18 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
                zone: str,
                name: str,
                labels: Optional[Dict[str, Any]] = None,
-               deletion_protection: bool = False) -> None:
+               deletion_protection: bool = False,
+               region: Optional[str] = None) -> None:
     """Initialize the Google Compute Resource base object.
 
     Args:
-      project_id (str): Google Cloud project ID.
-      zone (str): What zone the resource is in.
-      name (str): Name of the resource.
-      labels (Dict): Dictionary of labels for the resource, if existing.
-      deletion_protection (bool): True if the resource has deletionProtection
+      project_id: Google Cloud project ID.
+      zone: What zone the resource is in.
+      name: Name of the resource.
+      labels: Dictionary of labels for the resource, if existing.
+      deletion_protection: True if the resource has deletionProtection
           enabled.
+      region: What region the resource is in.
     """
 
     self.deletion_protection = deletion_protection
@@ -57,6 +59,7 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
     self.labels = labels
     self._data = {}  # type: Dict[str, Any]
     self.project_id = project_id  # type: str
+    self.region = region
     super().__init__(self.project_id)
 
   def FormatLogMessage(self, message: str) -> str:
