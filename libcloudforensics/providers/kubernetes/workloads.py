@@ -93,7 +93,9 @@ class K8sControlledWorkload(base.K8sWorkload):
     """Override of abstract method."""
     # Since labels are type Dict[str, str], we can use set-like operations
     # on the items of the dict
-    return self._PodMatchLabels().items() <= pod.GetLabels().items()
+    return (
+        self.namespace == pod.namespace and
+        self._PodMatchLabels().items() <= pod.GetLabels().items())
 
 
 class K8sDeployment(K8sControlledWorkload):
@@ -151,13 +153,14 @@ class K8sDeployment(K8sControlledWorkload):
       rs_template_spec = replica_set.spec.template
       # Delete the hash appended to the labels of this replicaset, so that
       # the following comparison does not factor in the hash label
-      del rs_template_spec.metadata.labels['pod-template-hash']
-      if rs_template_spec == this_template_spec:
-        return K8sReplicaSet(
-            self._api_client,
-            replica_set.metadata.name,
-            replica_set.metadata.namespace,
-        )
+      if 'pod-template-hash' in rs_template_spec.metadata.labels:
+        del rs_template_spec.metadata.labels['pod-template-hash']
+        if rs_template_spec == this_template_spec:
+          return K8sReplicaSet(
+              self._api_client,
+              replica_set.metadata.name,
+              replica_set.metadata.namespace,
+          )
 
     raise errors.ResourceNotFoundError(
         'Matching ReplicaSet for deployment {0:s} not found.'.format(self.name),

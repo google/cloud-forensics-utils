@@ -495,12 +495,12 @@ def CheckInstanceSSHAuth(project_id: str,
   return None
 
 
-def QuarantineGKEWorkload(
-    project_id: str,
-    zone: str,
-    cluster_id: str,
-    namespace: str,
-    workload_id: str) -> None:
+def QuarantineGKEWorkload(project_id: str,
+                          zone: str,
+                          cluster_id: str,
+                          namespace: str,
+                          workload_id: str,
+                          exempted_src_ips: Optional[List[str]] = None) -> None:
   """Guides the analyst through quarantining a GKE workload.
 
   Args:
@@ -509,7 +509,12 @@ def QuarantineGKEWorkload(
     cluster_id (str): The name of the Kubernetes cluster holding the workload.
     namespace (str): The Kubernetes namespace of the workload (e.g. 'default').
     workload_id (str): The name of the workload.
+    exempted_src_ips (List[str]): Optional. The list of source IPs to exempt
+        in the GCP firewall rules when isolating the nodes. If not specified,
+        no IPs are exempted.
   """
+  logger.info('Starting GKE quarantining process...')
+
   cluster = gke.GkeCluster(project_id, zone, cluster_id)
   maybe_workload = cluster.FindWorkload(workload_id, namespace)
   if not maybe_workload:
@@ -521,11 +526,8 @@ def QuarantineGKEWorkload(
   # indirectly after the `if not` check allows mypy to infer that `workload`
   # is of type `K8sWorkload`.
   workload = maybe_workload
-
-  # Build a dict to find a managed instance group via an instance name,
-  # so that we can instance.AbandonFromMIG
-  compute_project = compute.GoogleCloudCompute(project_id)
-  groups_by_instance = compute_project.ListMIGSByInstanceName(zone)
+  logger.info(
+      'Workload "{0:s}" in namespace "{1:s}"...'.format(workload_id, namespace))
 
   workload_nodes = workload.GetCoveredNodes()
   workload_pods = workload.GetCoveredPods()
@@ -540,6 +542,8 @@ def QuarantineGKEWorkload(
 
   def AbandonNodes() -> None:
     """Abandons the nodes from their respective managed instance groups."""
+    compute_project = compute.GoogleCloudCompute(project_id)
+    groups_by_instance = compute_project.ListMIGSByInstanceName(zone)
     for node in workload_nodes:
       if node.name in groups_by_instance:
         logger.info(
@@ -576,7 +580,8 @@ def QuarantineGKEWorkload(
       logger.info(
           'Putting instance {0:s} into network quarantine...'.format(
               workload_id))
-      InstanceNetworkQuarantine(project_id, node.name)
+      InstanceNetworkQuarantine(project_id, node.name,
+                                exempted_src_ips=exempted_src_ips)
 
   # Third prompt options
   isolate_nodes = prompts.PromptOption('Isolate nodes', FirewallNodes)

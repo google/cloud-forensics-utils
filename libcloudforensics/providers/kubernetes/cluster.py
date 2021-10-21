@@ -148,8 +148,31 @@ class K8sCluster(base.K8sClient, metaclass=abc.ABCMeta):
       policies = api.list_network_policy_for_all_namespaces()
     return [
         netpol.K8sNetworkPolicy(
-            self._api_client, policy.name, policy.namespace)
-        for policy in policies
+            self._api_client, policy.metadata.name, policy.metadata.namespace)
+        for policy in policies.items
+    ]
+
+  def ListServices(
+      self, namespace: Optional[str] = None) -> List[services.K8sService]:
+    """Lists the services in a namespace of this cluster.
+
+    Args:
+      namespace: Optional. The namespace in which to list this cluster's
+          services. If unspecified, it lists services in all namespaces of this
+          cluster.
+
+    Returns:
+      The list of services.
+    """
+    api = self._Api(client.CoreV1Api)
+    if namespace is not None:
+      services_ = api.list_namespaced_service(namespace)
+    else:
+      services_ = api.list_service_for_all_namespaces()
+    return [
+        services.K8sService(
+            self._api_client, service.metadata.name, service.metadata.namespace)
+        for service in services_.items
     ]
 
   def _AuthorizationCheck(self) -> None:
@@ -170,6 +193,37 @@ class K8sCluster(base.K8sClient, metaclass=abc.ABCMeta):
       logger.warning(
           'This object\'s client is not authorized to perform all operations'
           'on the Kubernetes cluster. API calls may fail.')
+
+  def FindNode(self, name: str) -> Optional[base.K8sNode]:
+    """Finds a node in this cluster by its name.
+
+    Args:
+      name: The node name.
+
+    Returns:
+      The cluster node if a node's name corresponds, None otherwise
+    """
+    for node in self.ListNodes():
+      if node.name == name:
+        return node
+    return None
+
+  def FindService(self, name: str,
+                  namespace: str) -> Optional[services.K8sService]:
+    """Finds a service in this cluster by its name and namespace.
+
+    Args:
+      name: The service name.
+      namespace: The service namespace.
+
+    Returns:
+      A service in this cluster if its name and namespace corresponds, None
+          otherwise.
+    """
+    for service in self.ListServices():
+      if service.name == name and service.namespace == namespace:
+        return service
+    return None
 
   def AllWorkloads(self,
                    namespace: Optional[str]) -> Iterable[base.K8sWorkload]:
