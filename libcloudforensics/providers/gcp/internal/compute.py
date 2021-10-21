@@ -301,8 +301,8 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
 
     Regional disks API resource: https://cloud.google.com/compute/docs/reference/rest/v1/regionDisks#resource:-disk  # pylint: disable=line-too-long
 
-  Args:
-    disk_name: name of the regional disk to get.
+    Args:
+      disk_name: name of the regional disk to get.
 
     Returns:
       Regional disk object.
@@ -479,7 +479,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       https://cloud.google.com/compute/docs/reference/rest/v1/images/getFromFamily  # pylint: disable=line-too-long
 
     Raises:
-     HttpError if getting image object for the given image family name fails.
+      HttpError if getting image object for the given image family name fails.
     """
     images_client = self.GceApi().images()
     params = {'project': project, 'family': image_family}
@@ -497,7 +497,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       https://cloud.google.com/compute/docs/reference/rest/v1/networks  # pylint: disable=line-too-long
 
     Raises:
-     HttpError if getting network object for the given machine-type name fails.
+      HttpError if getting network object for the given machine-type name fails.
     """
     networks_client = self.GceApi().networks()
     params = {
@@ -517,8 +517,8 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
           https://cloud.google.com/compute/docs/reference/rest/v1/instances/insert#request-body  # pylint: disable=line-too-long
       zone: Compute zone to start the instance in, default is self.default_zone.
 
-Returns:
-  Compute instance object.
+    Returns:
+      Compute instance object.
 
     Raises:
       ResourceAlreadyExistsError: If an instance with the same name already exists.
@@ -593,8 +593,8 @@ Returns:
       network_name: Name of the VPC network to use, "default" network is default.
       external_ip: True if the instance should have an external IP.
 
-Returns:
-  Compute instance object.
+    Returns:
+      Compute instance object.
 
     Raises:
       ResourceNotFoundError: If boot disk is not found.
@@ -1969,7 +1969,7 @@ class GoogleRegionComputeDisk(compute_base_resource.GoogleComputeBaseResource):
 
     Returns:
       An API operation object for a Google Regional Compute Engine disk.
-          hhttps://cloud.google.com/compute/docs/reference/rest/v1/regionDisks/get#response-body  # pylint: disable=line-too-long
+          https://cloud.google.com/compute/docs/reference/rest/v1/regionDisks/get#response-body  # pylint: disable=line-too-long
     """
     gce_disk_client = self.GceApi().regionDisks()
     param = {
