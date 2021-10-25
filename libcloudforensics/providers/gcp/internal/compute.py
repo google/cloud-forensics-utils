@@ -1311,7 +1311,8 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
         time.sleep(5)  # seconds between connections
 
   def AttachDisk(
-      self, disk: Union['GoogleComputeDisk', 'GoogleRegionComputeDisk'], read_write: bool = False) -> None:
+      self, disk: Union['GoogleComputeDisk', 'GoogleRegionComputeDisk'],
+      read_write: bool = False) -> None:
     """Attach a disk to the virtual machine.
 
     Args:
