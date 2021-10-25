@@ -16,9 +16,14 @@
 from typing import List, Optional
 
 from libcloudforensics import errors
+from libcloudforensics import logging_utils
+from libcloudforensics import prompts
 from libcloudforensics.providers.kubernetes import base
 from libcloudforensics.providers.kubernetes import cluster as k8s
 from libcloudforensics.providers.kubernetes import netpol
+
+logging_utils.SetUpLogger(__name__)
+logger = logging_utils.GetLogger(__name__)
 
 
 def DrainWorkloadNodesFromOtherPods(
@@ -42,7 +47,9 @@ def DrainWorkloadNodesFromOtherPods(
 
 def IsolatePodsWithNetworkPolicy(
     cluster: k8s.K8sCluster,
-    pods: List[base.K8sPod]) -> Optional[netpol.K8sDenyAllNetworkPolicy]:
+    pods: List[base.K8sPod],
+    existing_policies_prompt: bool = False
+) -> Optional[netpol.K8sTargetedDenyAllNetworkPolicy]:
   """Isolates pods via a deny-all NetworkPolicy.
 
   Args:
@@ -50,11 +57,14 @@ def IsolatePodsWithNetworkPolicy(
         policy.
     pods (List[base.K8sPod]): The pods to patch with the labels of the created
         deny-all NetworkPolicy.
+    existing_policies_prompt (bool): Optional. If True, the user will be
+        prompted with options to patch, delete or leave the existing network
+        policies. Defaults to False.
 
   Returns:
-    netpol.K8sDenyAllNetworkPolicy: Optional. The deny-all network policy that
-        was created to isolate the pods. If no pods were supplied, None is
-        returned.
+    netpol.K8sTargetedDenyAllNetworkPolicy: Optional. The deny-all network
+        policy that was created to isolate the pods. If no pods were supplied,
+        None is returned.
 
   Raises:
     ValueError: If the pods are not in the same namespace.
@@ -62,22 +72,54 @@ def IsolatePodsWithNetworkPolicy(
   """
   if not pods:
     return None
+
   if not cluster.IsNetworkPolicyEnabled():
     raise errors.OperationFailedError(
         'NetworkPolicy is not enabled for the cluster. Creating the deny-all '
         'NetworkPolicy will have no effect.',
         __name__)
-  if any(pod.namespace != pods[0].namespace for pod in pods):
+
+  namespace = pods[0].namespace
+  if any(pod.namespace != namespace for pod in pods):
     raise ValueError('Supplied pods are not in the same namespace.')
-  # First create the NetworkPolicy in the workload's namespace
-  deny_all_policy = cluster.DenyAllNetworkPolicy(pods[0].namespace)
-  deny_all_policy.Create()
+
+  # Keep in mind that this does not create the network policy in the cluster,
+  # it just creates the K8sNetworkPolicy object
+  deny_all_policy = cluster.TargetedDenyAllNetworkPolicy(namespace)
+
+  # If other network policies exist, they need to be handled, otherwise the
+  # deny-all NetworkPolicy may have no effect. There are a two options to do
+  # this, either patching the network policies or deleting them.
+  existing_policies = cluster.ListNetworkPolicies(namespace=namespace)
+
+  def PatchExistingNetworkPolicies() -> None:
+    for policy in existing_policies:
+      policy.Patch(not_match_labels=deny_all_policy.labels)
+
+  def DeleteExistingNetworkPolicies() -> None:
+    for policy in existing_policies:
+      policy.Delete()
+
+  if existing_policies and existing_policies_prompt:
+    logger.warning('There are existing NetworkPolicy objects.')
+    prompt_sequence = prompts.PromptSequence(
+        prompts.MultiPrompt(
+            options=[
+                prompts.PromptOption(
+                    'Delete existing NetworkPolicy objects in same namespace',
+                    DeleteExistingNetworkPolicies),
+                prompts.PromptOption(
+                    'Patch existing NetworkPolicy objects in same namespace',
+                    PatchExistingNetworkPolicies),
+                prompts.PromptOption('Leave existing NetworkPolicy objects')
+            ]))
+    prompt_sequence.Run()
+
   # Tag the pods covered by the workload with the selecting label of the
   # deny-all NetworkPolicy
   for pod in pods:
     pod.AddLabels(deny_all_policy.labels)
-  # For all other policies, specify that they are not selecting the pods
-  # that are selected by the deny-all policy
-  # TODO: Patch other policies
+
+  deny_all_policy.Create()
 
   return deny_all_policy

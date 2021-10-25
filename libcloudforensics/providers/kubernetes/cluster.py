@@ -324,8 +324,8 @@ class K8sCluster(base.K8sClient, metaclass=abc.ABCMeta):
     return workloads.K8sReplicaSet(
         self._api_client, replica_set_name, namespace)
 
-  def DenyAllNetworkPolicy(
-      self, namespace: str) -> netpol.K8sDenyAllNetworkPolicy:
+  def TargetedDenyAllNetworkPolicy(
+      self, namespace: str) -> netpol.K8sTargetedDenyAllNetworkPolicy:
     """Gets a deny-all network policy for the cluster.
 
     Note that the returned policy is not created when using this method. It can
@@ -335,10 +335,10 @@ class K8sCluster(base.K8sClient, metaclass=abc.ABCMeta):
       namespace (str): The namespace for the returned network policy.
 
     Returns:
-      netpol.K8sDenyAllNetworkPolicy: The matching network policy object. Call
-          the creation method on the object to create the policy.
+      netpol.K8sTargetedDenyAllNetworkPolicy: The matching network policy
+          object. Call the creation method on the object to create the policy.
     """
-    return netpol.K8sDenyAllNetworkPolicy(self._api_client, namespace)
+    return netpol.K8sTargetedDenyAllNetworkPolicy(self._api_client, namespace)
 
   @abc.abstractmethod
   def IsNetworkPolicyEnabled(self) -> bool:

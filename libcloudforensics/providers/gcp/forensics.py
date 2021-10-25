@@ -561,7 +561,8 @@ def QuarantineGKEWorkload(project_id: str,
     logger.info(
         'Creating deny-all NetworkPolicy for {0:s} '
         'workload...'.format(workload_id))
-    mitigation.IsolatePodsWithNetworkPolicy(cluster, workload_pods)
+    mitigation.IsolatePodsWithNetworkPolicy(cluster, workload_pods,
+                                            existing_policies_prompt=True)
 
   def DrainNodes() -> None:
     """Drains the workload nodes from other pods."""

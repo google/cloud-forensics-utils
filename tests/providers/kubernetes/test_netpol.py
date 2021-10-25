@@ -71,7 +71,7 @@ class K8sDenyAllNetworkPolicyCreationTest(unittest.TestCase):
   @typing.no_type_check
   def testIsDenyAllNetworkPolicyCreationSpec(self, mock_create_func):
     """Test that a deny-all network policy creation has deny-all spec."""
-    network_policy = netpol.K8sDenyAllNetworkPolicy(
+    network_policy = netpol.K8sTargetedDenyAllNetworkPolicy(
         k8s_mocks.MOCK_API_CLIENT, 'default')
     network_policy.Create()
     # Check that given network policy is a deny-all policy
