@@ -718,6 +718,15 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     # Re-use instance if it already exists, or create a new one.
     try:
       instance = self.GetInstance(vm_name)
+
+      # Instance exists, attach disks that have not already been attached
+      disks_to_attach = {disk.name : disk for disk in data_disks}
+      attached_disks = instance.ListDisks().keys()
+      for attached_disk in attached_disks:
+        disks_to_attach.pop(attached_disk, None)
+      for disk_to_attach in disks_to_attach.values():
+        instance.AttachDisk(disk_to_attach)
+
       return instance, False
     except errors.ResourceNotFoundError:
       pass
