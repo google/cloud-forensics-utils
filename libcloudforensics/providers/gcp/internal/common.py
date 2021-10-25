@@ -40,12 +40,22 @@ COMPUTE_RFC1035_REGEX = re.compile('^(?=.{1,63}$)[a-z]([-a-z0-9]*[a-z0-9])?$')
 REGEX_DISK_NAME = COMPUTE_RFC1035_REGEX
 COMPUTE_NAME_LIMIT = 63
 STORAGE_LINK_URL = 'https://storage.cloud.google.com'
+DEFAULT_COMPUTE_INSTANCE_SCOPE = [
+    'https://www.googleapis.com/auth/devstorage.read_only',
+    'https://www.googleapis.com/auth/logging.write',
+    'https://www.googleapis.com/auth/monitoring.write',
+    'https://www.googleapis.com/auth/service.management.readonly',
+    'https://www.googleapis.com/auth/servicecontrol',
+    'https://www.googleapis.com/auth/trace.append'
+]
+DEFAULT_SA_EMAIL = 'default'
 logging_utils.SetUpLogger(__name__)
 logger = logging_utils.GetLogger(__name__)
 
 
-def GenerateDiskName(snapshot: 'compute.GoogleComputeSnapshot',
-                     disk_name_prefix: Optional[str] = None) -> str:
+def GenerateDiskName(
+    snapshot: 'compute.GoogleComputeSnapshot',
+    disk_name_prefix: Optional[str] = None) -> str:
   """Generate a new disk name for the disk to be created from the Snapshot.
 
   The disk name must comply with the following RegEx:
@@ -87,7 +97,8 @@ def GenerateDiskName(snapshot: 'compute.GoogleComputeSnapshot',
   if not REGEX_DISK_NAME.match(disk_name):
     raise errors.InvalidNameError(
         'Disk name {0:s} does not comply with {1:s}'.format(
-            disk_name, REGEX_DISK_NAME.pattern), __name__)
+            disk_name, REGEX_DISK_NAME.pattern),
+        __name__)
 
   return disk_name
 
@@ -112,15 +123,15 @@ def GenerateSourceRange(
       ip_set.remove(ip)
     ip_cidrs = ip_set.iter_cidrs()
     for ip_cidr in ip_cidrs:
-      source_range.append('{0:s}/{1:d}'.format(
-          ip_cidr.ip.format(), ip_cidr.prefixlen))
+      source_range.append(
+          '{0:s}/{1:d}'.format(ip_cidr.ip.format(), ip_cidr.prefixlen))
   else:
     source_range.append('0.0.0.0/0')
   return source_range
 
 
-def GenerateUniqueInstanceName(prefix: str,
-                               truncate_at: Optional[int] = None) -> str:
+def GenerateUniqueInstanceName(
+    prefix: str, truncate_at: Optional[int] = None) -> str:
   """Add a timestamp as a suffix to provided name and truncate at max limit.
 
   Args:
@@ -139,8 +150,9 @@ def GenerateUniqueInstanceName(prefix: str,
   return name
 
 
-def CreateService(service_name: str,
-                  api_version: str) -> 'googleapiclient.discovery.Resource':
+def CreateService(
+    service_name: str,
+    api_version: str) -> 'googleapiclient.discovery.Resource':
   """Creates an GCP API service.
 
   Args:
@@ -225,9 +237,9 @@ class GoogleCloudComputeClient:
         'compute', self.COMPUTE_ENGINE_API_VERSION)
     return self._gce_api_client
 
-  def BlockOperation(self,
-                     response: Dict[str, Any],
-                     zone: Optional[str] = None) -> Dict[str, Any]:
+  def BlockOperation(
+      self, response: Dict[str, Any],
+      zone: Optional[str] = None) -> Dict[str, Any]:
     """Block until API operation is finished.
 
     Args:
@@ -262,10 +274,11 @@ class GoogleCloudComputeClient:
       time.sleep(5)  # Seconds between requests
 
 
-def ExecuteRequest(client: 'googleapiclient.discovery.Resource',
-                   func: str,
-                   kwargs: Dict[str, Any],
-                   throttle: bool = False) -> List[Dict[str, Any]]:
+def ExecuteRequest(
+    client: 'googleapiclient.discovery.Resource',
+    func: str,
+    kwargs: Dict[str, Any],
+    throttle: bool = False) -> List[Dict[str, Any]]:
   """Execute a request to the GCP API.
 
   Args:
@@ -303,7 +316,8 @@ def ExecuteRequest(client: 'googleapiclient.discovery.Resource',
       raise errors.CredentialsConfigurationError(
           ': {0!s}. Something is wrong with your Application Default '
           'Credentials. Try running: $ gcloud auth application-default '
-          'login'.format(exception), __name__) from exception
+          'login'.format(exception),
+          __name__) from exception
     responses.append(response)
     next_token = response.get('nextPageToken')
     if not next_token:

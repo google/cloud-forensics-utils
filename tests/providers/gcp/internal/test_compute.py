@@ -151,7 +151,7 @@ class GoogleCloudComputeTest(unittest.TestCase):
     # disk_name='fake-disk') where 'fake-disk' exists already
     disks.return_value.insert.return_value.execute.side_effect = HttpError(
         resp=mock.Mock(status=409), content=b'Disk already exists')
-    with self.assertRaises(errors.ResourceCreationError) as context:
+    with self.assertRaises(errors.ResourceAlreadyExistsError) as context:
       _ = gcp_mocks.FAKE_ANALYSIS_PROJECT.compute.CreateDiskFromSnapshot(
           gcp_mocks.FAKE_SNAPSHOT, disk_name=gcp_mocks.FAKE_DISK.name)
     self.assertIn(
@@ -168,48 +168,191 @@ class GoogleCloudComputeTest(unittest.TestCase):
         str(context.exception))
 
   @typing.no_type_check
-  @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleCloudCompute.GetInstance')
+  @mock.patch('libcloudforensics.providers.gcp.internal.common.GoogleCloudComputeClient.GceApi')
+  def testGetNetwork(self, mock_gce_api):
+    """Test getting the network API object."""
+    networks_mock = mock_gce_api.return_value.networks.return_value
+    networks_mock.get.return_value.execute.return_value = gcp_mocks.MOCK_COMPUTE_NETWORK
+    network_name = 'fake_network'
+    compute_network = gcp_mocks.FAKE_ANALYSIS_PROJECT.compute.GetNetwork(network_name)
+    self.assertEqual(network_name, compute_network.get('name'))
+    networks_mock.get.assert_called()
+
+  @typing.no_type_check
+  @mock.patch('libcloudforensics.providers.gcp.internal.common.GoogleCloudComputeClient.GceApi')
+  def testGetImageFamily(self, mock_gce_api):
+    """Test getting the Image Family API object."""
+    images_mock = mock_gce_api.return_value.images.return_value
+    images_mock.getFromFamily.return_value.execute.return_value = gcp_mocks.MOCK_COMPUTE_IMAGE
+    image_name = 'debian-10-buster-v20210916'
+    compute_image = gcp_mocks.FAKE_ANALYSIS_PROJECT.compute.GetImageFamily(
+        'debian-10', 'debian-cloud')
+    self.assertEqual(image_name, compute_image.get('name'))
+    images_mock.getFromFamily.assert_called()
+
+  @typing.no_type_check
+  @mock.patch('libcloudforensics.providers.gcp.internal.common.GoogleCloudComputeClient.GceApi')
+  def testGetDiskTypes(self, mock_gce_api):
+    """Test getting the Disk Type API object."""
+    disk_types_mock = mock_gce_api.return_value.diskTypes.return_value
+    disk_types_mock.get.return_value.execute.return_value = gcp_mocks.MOCK_DISK_TYPES
+    disk_type_name = 'pd-standard'
+    disk_type = gcp_mocks.FAKE_ANALYSIS_PROJECT.compute.GetDiskTypes(
+        disk_type_name, 'us-central1-a')
+    self.assertEqual(disk_type_name, disk_type.get('name'))
+    disk_types_mock.get.assert_called()
+
+  @typing.no_type_check
+  @mock.patch('libcloudforensics.providers.gcp.internal.common.GoogleCloudComputeClient.GceApi')
+  def testGetMachineTypes(self, mock_gce_api):
+    """Test getting the Machine Type API object."""
+    machine_types_mock = mock_gce_api.return_value.machineTypes.return_value
+    machine_types_mock.get.return_value.execute.return_value = gcp_mocks.MOCK_MACHINE_TYPES
+    machine_type_name = 'c2-standard-30'
+    machine_type = gcp_mocks.FAKE_ANALYSIS_PROJECT.compute.GetMachineTypes(
+        machine_type_name, 'us-central1-a')
+    self.assertEqual(machine_type_name, machine_type.get('name'))
+    machine_types_mock.get.assert_called()
+
+  @typing.no_type_check
   @mock.patch('libcloudforensics.providers.gcp.internal.common.GoogleCloudComputeClient.BlockOperation')
   @mock.patch('libcloudforensics.providers.gcp.internal.common.GoogleCloudComputeClient.GceApi')
-  def testGetOrCreateAnalysisVm(
-      self, mock_gce_api, mock_block_operation, mock_get_instance):
-    """Test that a new virtual machine is created if it doesn't exist,
-    or that the existing one is returned. """
-    images = mock_gce_api.return_value.images
-    images.return_value.getFromFamily.return_value.execute.return_value = {
-        'selfLink': 'value'
-    }
+  def testCreateInstanceFromRequest(
+      self, mock_gce_api, mock_block_operation):
+    """Test creating compute instance via providing arguments."""
     instances = mock_gce_api.return_value.instances
-    instances.return_value.insert.return_value.execute.return_value = None
+    mock_insert = instances.return_value.insert
+    mock_insert.return_value.execute.return_value = {
+        'name': gcp_mocks.FAKE_INSTANCE.name}
     mock_block_operation.return_value = None
+
+    instance = gcp_mocks.FAKE_ANALYSIS_PROJECT.compute.CreateInstanceFromRequest(
+        {'name': gcp_mocks.FAKE_INSTANCE.name}, 'us-central1-a')
+
+    self.assertIsInstance(instance, compute.GoogleComputeInstance)
+    self.assertEqual(gcp_mocks.FAKE_INSTANCE.name, instance.name)
+    mock_insert.return_value.execute.assert_called()
+
+  @typing.no_type_check
+  @mock.patch('libcloudforensics.providers.gcp.internal.common.GoogleCloudComputeClient.GceApi')
+  def testCreateInstanceFromRequestError(
+      self, mock_gce_api):
+    """Test creating compute instance via providing arguments."""
+    instances = mock_gce_api.return_value.instances
+    mock_insert = instances.return_value.insert
+
+    mock_insert.return_value.execute.side_effect = HttpError(
+        resp=mock.Mock(status=409), content=b'An instance with the name')
+    with self.assertRaises(errors.ResourceAlreadyExistsError) as context:
+      _ = gcp_mocks.FAKE_ANALYSIS_PROJECT.compute.CreateInstanceFromRequest(
+        {'name': gcp_mocks.FAKE_INSTANCE.name}, 'us-central1-a')
+    msg = (
+            'An instance with the name {0:s} already exists '
+            'in project {1:s}').format(
+                gcp_mocks.FAKE_INSTANCE.name,
+                gcp_mocks.FAKE_ANALYSIS_PROJECT.project_id)
+    self.assertIn(msg, str(context.exception))
+
+    mock_insert.return_value.execute.side_effect = HttpError(
+        resp=mock.Mock(status=400), content=b'Error while creating instance')
+    with self.assertRaises(errors.ResourceCreationError) as context:
+      _ = gcp_mocks.FAKE_ANALYSIS_PROJECT.compute.CreateInstanceFromRequest(
+        {'name': gcp_mocks.FAKE_INSTANCE.name}, 'us-central1-a')
+    msg = 'Error while creating instance {0:s}'.format(
+        gcp_mocks.FAKE_INSTANCE.name)
+    self.assertIn(msg, str(context.exception))
+
+  @typing.no_type_check
+  @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleCloudCompute.GetNetwork')
+  @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleCloudCompute.GetImageFamily')
+  @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleCloudCompute.GetDiskTypes')
+  @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleCloudCompute.GetMachineTypes')
+  @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleCloudCompute.CreateInstanceFromRequest')
+  def testCreateInstanceFromArguments(self,
+      mock_create_from_request, mock_get_machine_type,
+      mock_get_disk_type, mock_get_image_family, mock_get_network):
+    """Test creating compute instance via providing arguments."""
+    mock_create_from_request.return_value = gcp_mocks.FAKE_INSTANCE
+    mock_get_machine_type.return_value = gcp_mocks.MOCK_MACHINE_TYPES
+    mock_get_disk_type.return_value = gcp_mocks.MOCK_DISK_TYPES
+    mock_get_image_family.return_value = gcp_mocks.MOCK_COMPUTE_IMAGE
+    mock_get_network.return_value = gcp_mocks.MOCK_COMPUTE_NETWORK
+
+    instance = gcp_mocks.FAKE_ANALYSIS_PROJECT.compute.CreateInstanceFromArguments(
+        gcp_mocks.FAKE_INSTANCE.name, 'e2-medium', 'us-central1-a', boot_disk_size=10,
+        boot_image_project='debian-cloud', boot_image_family='debian-10',
+        metadata={'startup-script': gcp_mocks.STARTUP_SCRIPT})
+    mock_create_from_request.assert_called()
+    self.assertIsInstance(instance, compute.GoogleComputeInstance)
+    self.assertEqual('fake-instance', instance.name)
+
+  @typing.no_type_check
+  @mock.patch('libcloudforensics.providers.gcp.internal.common.GoogleCloudComputeClient.GceApi')
+  @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleCloudCompute.GetImageFamily')
+  @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleCloudCompute.GetDiskTypes')
+  @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleCloudCompute.GetMachineTypes')
+  @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleCloudCompute.CreateInstanceFromRequest')
+  def testCreateInstanceFromArgumentsError(self,
+      mock_create_from_request, mock_get_machine_type,
+      mock_get_disk_type, mock_get_image_family, mock_gce_api):
+    """Test creating compute instance while loading boot disk fails."""
+    mock_create_from_request.return_value = gcp_mocks.FAKE_INSTANCE
+    mock_get_machine_type.return_value = gcp_mocks.MOCK_MACHINE_TYPES
+    mock_get_disk_type.return_value = gcp_mocks.MOCK_DISK_TYPES
+    mock_get_image_family.return_value = gcp_mocks.MOCK_COMPUTE_IMAGE
+
+    mock_gce_api.return_value.disks.return_value.get.return_value.execute.side_effect = HttpError(
+        resp=mock.Mock(status=404), content=b'No compute disk')
+    with self.assertRaises(errors.ResourceNotFoundError) as context:
+      _ = gcp_mocks.FAKE_ANALYSIS_PROJECT.compute.CreateInstanceFromArguments(
+        gcp_mocks.FAKE_INSTANCE.name, 'e2-medium', 'us-central1-a',
+        boot_disk=gcp_mocks.FAKE_BOOT_DISK)
+    msg = ('No compute disk {0:s} found in project {1:s} in zone '
+          '{2:s}').format(
+                gcp_mocks.FAKE_BOOT_DISK.name,
+                gcp_mocks.FAKE_ANALYSIS_PROJECT.project_id,
+                'us-central1-a')
+    self.assertIn(msg, str(context.exception))
+
+    mock_gce_api.return_value.disks.return_value.get.return_value.execute.side_effect = HttpError(
+        resp=mock.Mock(status=400), content=b'Error while getting')
+    with self.assertRaises(errors.OperationFailedError) as context:
+      _ = gcp_mocks.FAKE_ANALYSIS_PROJECT.compute.CreateInstanceFromArguments(
+        gcp_mocks.FAKE_INSTANCE.name, 'e2-medium', 'us-central1-a',
+        boot_disk=gcp_mocks.FAKE_BOOT_DISK)
+    msg = 'Error while getting {0:s}'.format(gcp_mocks.FAKE_BOOT_DISK.name)
+    self.assertIn(msg, str(context.exception))
+
+  @typing.no_type_check
+  @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleCloudCompute.GetInstance')
+  @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleCloudCompute.CreateInstanceFromArguments')
+  def testGetOrCreateAnalysisVmNew(self, mock_create_from_args, mock_get_instance):
+    """Test creating analysis VM, no existing instance"""
+    mock_get_instance.side_effect = errors.ResourceNotFoundError('', __name__)
+    mock_create_from_args.return_value = gcp_mocks.FAKE_ANALYSIS_VM
+
+    vm, created = gcp_mocks.FAKE_ANALYSIS_PROJECT.compute.GetOrCreateAnalysisVm(
+        gcp_mocks.FAKE_ANALYSIS_VM.name)
+
+    self.assertIsInstance(vm, compute.GoogleComputeInstance)
+    self.assertEqual(gcp_mocks.FAKE_ANALYSIS_VM.name, vm.name)
+    self.assertTrue(created)
+
+  @typing.no_type_check
+  @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleCloudCompute.GetInstance')
+  @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleCloudCompute.CreateInstanceFromArguments')
+  def testGetOrCreateAnalysisVmExist(self, mock_create_from_args, mock_get_instance):
+    """Test getting analysis VM, if instance already exists"""
     mock_get_instance.return_value = gcp_mocks.FAKE_ANALYSIS_VM
 
-    # GetOrCreateAnalysisVm(existing_vm, boot_disk_size)
     vm, created = gcp_mocks.FAKE_ANALYSIS_PROJECT.compute.GetOrCreateAnalysisVm(
         gcp_mocks.FAKE_ANALYSIS_VM.name, boot_disk_size=1)
+
     mock_get_instance.assert_called_with(gcp_mocks.FAKE_ANALYSIS_VM.name)
-    instances.return_value.insert.assert_not_called()
     self.assertIsInstance(vm, compute.GoogleComputeInstance)
     self.assertEqual('fake-analysis-vm', vm.name)
     self.assertFalse(created)
-
-    # GetOrCreateAnalysisVm(non_existing_vm, boot_disk_size) mocking the
-    # GetInstance() call to throw a ResourceNotFoundError error to mimic an
-    # instance that wasn't found
-    mock_get_instance.side_effect = errors.ResourceNotFoundError('', __name__)
-    vm, created = gcp_mocks.FAKE_ANALYSIS_PROJECT.compute.GetOrCreateAnalysisVm(
-        'non-existent-analysis-vm', boot_disk_size=1)
-    mock_get_instance.assert_called_with('non-existent-analysis-vm')
-    instances.return_value.insert.assert_called()
-    self.assertIsInstance(vm, compute.GoogleComputeInstance)
-    self.assertEqual('non-existent-analysis-vm', vm.name)
-    self.assertTrue(created)
-
-    # If specifying a number of CPU cores that's not available, should throw a
-    # ValueError
-    with self.assertRaises(ValueError):
-      _, created = gcp_mocks.FAKE_ANALYSIS_PROJECT.compute.GetOrCreateAnalysisVm(
-          'non-existent-analysis-vm', boot_disk_size=1, cpu_cores=5)
+    mock_create_from_args.assert_not_called()
 
   @typing.no_type_check
   @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleCloudCompute.ListInstanceByLabels')

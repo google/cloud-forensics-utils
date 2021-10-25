@@ -82,7 +82,7 @@ class Formatter(logging.Formatter):
       if random_color:
         color = random.choice(COLOR_SEQS)
       kwargs['fmt'] = LOG_FORMAT.format(BOLD, RESET_SEQ, color=color)
-    super().__init__(**kwargs)
+    super().__init__(**kwargs)  # type: ignore
 
   def format(self, record: logging.LogRecord) -> str:
     """Hooks the native format method and colorizes messages if needed.

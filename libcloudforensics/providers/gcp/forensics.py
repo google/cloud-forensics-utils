@@ -18,7 +18,7 @@ import base64
 import random
 import re
 import subprocess
-from typing import List, Tuple, Optional, Dict, Any
+from typing import List, Tuple, Optional, Dict, Any, Union, Sequence
 
 from google.auth.exceptions import DefaultCredentialsError
 from google.auth.exceptions import RefreshError
@@ -85,8 +85,7 @@ def CreateDiskCopy(
     if not disk_type:
       disk_type = disk_to_copy.GetDiskType()
 
-    logger.info('Disk copy of {0:s} started...'.format(
-        disk_to_copy.name))
+    logger.info('Disk copy of {0:s} started...'.format(disk_to_copy.name))
     snapshot = disk_to_copy.Snapshot()
     logger.debug('Snapshot created: {0:s}'.format(snapshot.name))
     new_disk = dst_project.compute.CreateDiskFromSnapshot(
@@ -101,7 +100,8 @@ def CreateDiskCopy(
     raise errors.CredentialsConfigurationError(
         'Something is wrong with your Application Default Credentials. Try '
         'running: $ gcloud auth application-default login: {0!s}'.format(
-            exception), __name__) from exception
+            exception),
+        __name__) from exception
   except HttpError as exception:
     if exception.resp.status == 403:
       raise errors.CredentialsConfigurationError(
@@ -110,7 +110,8 @@ def CreateDiskCopy(
     if exception.resp.status == 404:
       raise errors.ResourceNotFoundError(
           'GCP resource not found. Maybe a typo in the project / instance / '
-          'disk name?', __name__) from exception
+          'disk name?',
+          __name__) from exception
     raise RuntimeError(exception) from exception
   except RuntimeError as exception:
     raise errors.ResourceCreationError(
@@ -124,44 +125,52 @@ def StartAnalysisVm(
     project: str,
     vm_name: str,
     zone: str,
-    boot_disk_size: int,
-    boot_disk_type: str,
-    cpu_cores: int,
+    boot_disk_size: int = 10,
+    boot_disk_type: str = 'pd-standard',
+    cpu_cores: int = 4,
     attach_disks: Optional[List[str]] = None,
     image_project: str = 'ubuntu-os-cloud',
-    image_family: str = 'ubuntu-1804-lts') -> Tuple['compute.GoogleComputeInstance', bool]:  # pylint: disable=line-too-long
+    image_family: str = 'ubuntu-1804-lts'
+) -> Tuple['compute.GoogleComputeInstance', bool]:
   """Start a virtual machine for analysis purposes.
 
   Args:
-    project (str): Project id for virtual machine.
-    vm_name (str): The name of the virtual machine.
-    zone (str): Zone for the virtual machine.
-    boot_disk_size (int): The size of the analysis VM boot disk (in GB).
-    boot_disk_type (str): URL of the disk type resource describing
+    project: Project id for virtual machine.
+    vm_name: The name of the virtual machine.
+    zone: Zone for the virtual machine.
+    boot_disk_size: The size of the analysis VM boot disk (in GB).
+    boot_disk_type: URL of the disk type resource describing
         which disk type to use to create the disk. Use pd-standard for a
         standard disk and pd-ssd for a SSD disk.
-    cpu_cores (int): The number of CPU cores to create the machine with.
-    attach_disks (List[str]): Optional. List of disk names to attach.
-    image_project (str): Optional. Name of the project where the analysis VM
+    cpu_cores: The number of CPU cores to create the machine with.
+    attach_disks: List of disk names to attach. Default
+        behaviour is to search in zonal disks then regional disks, when using
+        regional disks CreateInstanceFromArguments from GoogleCloudCompute is
+        recommended to avoid name colisions with zonal disks.
+    image_project: Name of the project where the analysis VM
         image is hosted.
-    image_family (str): Optional. Name of the image to use to create the
+    image_family: Name of the image to use to create the
         analysis VM.
 
   Returns:
-    Tuple(GoogleComputeInstance, bool): A tuple with a virtual machine object
+    A tuple with a virtual machine object
         and a boolean indicating if the virtual machine was created or not.
   """
 
   proj = gcp_project.GoogleCloudProject(project, default_zone=zone)
   logger.info('Starting analysis VM {0:s}'.format(vm_name))
+  data_disks = []
+  for disk_name in (attach_disks or []):
+    try:
+      disk = proj.compute.GetDisk(disk_name)  # type: Union['compute.GoogleComputeDisk', 'compute.GoogleRegionComputeDisk'] # pylint: disable=line-too-long
+    except errors.ResourceNotFoundError:
+      disk = proj.compute.GetRegionDisk(disk_name)
+    data_disks.append(disk)
   analysis_vm, created = proj.compute.GetOrCreateAnalysisVm(
       vm_name, boot_disk_size, disk_type=boot_disk_type, cpu_cores=cpu_cores,
-      image_project=image_project, image_family=image_family)
+      image_project=image_project, image_family=image_family,
+      data_disks=data_disks, zone=zone)
   logger.info('VM started.')
-  for disk_name in (attach_disks or []):
-    logger.info('Attaching disk {0:s}'.format(disk_name))
-    analysis_vm.AttachDisk(proj.compute.GetDisk(disk_name))
-  logger.info('VM ready.')
   return analysis_vm, created
 
 
@@ -213,11 +222,12 @@ def CreateDiskFromGCSImage(
     if not common.REGEX_DISK_NAME.match(name):
       raise errors.InvalidNameError(
           'Disk name {0:s} does not comply with {1:s}'.format(
-              name, common.REGEX_DISK_NAME.pattern), __name__)
+              name, common.REGEX_DISK_NAME.pattern),
+          __name__)
     name = name[:common.COMPUTE_NAME_LIMIT]
   else:
-    name = common.GenerateUniqueInstanceName('imported-disk',
-                                             common.COMPUTE_NAME_LIMIT)
+    name = common.GenerateUniqueInstanceName(
+        'imported-disk', common.COMPUTE_NAME_LIMIT)
 
   project = gcp_project.GoogleCloudProject(project_id)
   image_object = project.compute.ImportImageFromStorage(storage_image_path)
@@ -235,12 +245,13 @@ def CreateDiskFromGCSImage(
   return result
 
 
-def AddDenyAllFirewallRules(project_id: str,
-                            network: str,
-                            deny_ingress_tag: str,
-                            deny_egress_tag: str,
-                            exempted_src_ips: Optional[List[str]] = None,
-                            enable_logging: bool = False) -> None:
+def AddDenyAllFirewallRules(
+    project_id: str,
+    network: str,
+    deny_ingress_tag: str,
+    deny_egress_tag: str,
+    exempted_src_ips: Optional[List[str]] = None,
+    enable_logging: bool = False) -> None:
   """Add deny-all firewall rules, of highest priority.
 
   Args:
@@ -259,66 +270,60 @@ def AddDenyAllFirewallRules(project_id: str,
     InvalidNameError: If Tag names are invalid.
   """
 
-  logger.info('Creating deny-all (ingress/egress) '
-          'firewall rules in {0:s} network.'.format(network))
+  logger.info(
+      'Creating deny-all (ingress/egress) '
+      'firewall rules in {0:s} network.'.format(network))
   project = gcp_project.GoogleCloudProject(project_id)
   if not common.COMPUTE_RFC1035_REGEX.match(deny_ingress_tag):
     raise errors.InvalidNameError(
         'Deny ingress tag name {0:s} does not comply with {1:s}'.format(
-            deny_ingress_tag, common.COMPUTE_RFC1035_REGEX.pattern), __name__)
+            deny_ingress_tag, common.COMPUTE_RFC1035_REGEX.pattern),
+        __name__)
   if not common.COMPUTE_RFC1035_REGEX.match(deny_egress_tag):
     raise errors.InvalidNameError(
         'Deny egress tag name {0:s} does not comply with {1:s}'.format(
-            deny_egress_tag, common.COMPUTE_RFC1035_REGEX.pattern), __name__)
+            deny_egress_tag, common.COMPUTE_RFC1035_REGEX.pattern),
+        __name__)
 
   source_range = common.GenerateSourceRange(exempted_src_ips)
 
   deny_ingress = {
-    'name': deny_ingress_tag,
-    'network': network,
-    'direction': 'INGRESS',
-    'priority': 0,
-    'targetTags': [
-      deny_ingress_tag
-    ],
-    'denied': [
-      {
-        'IPProtocol': 'all'
-      }
-    ],
-    'logConfig': {
-      'enable': enable_logging
-    },
-    'sourceRanges': source_range
+      'name': deny_ingress_tag,
+      'network': network,
+      'direction': 'INGRESS',
+      'priority': 0,
+      'targetTags': [deny_ingress_tag],
+      'denied': [{
+          'IPProtocol': 'all'
+      }],
+      'logConfig': {
+          'enable': enable_logging
+      },
+      'sourceRanges': source_range
   }
   deny_egress = {
-    'name': deny_egress_tag,
-    'network': network,
-    'direction': 'EGRESS',
-    'priority': 0,
-    'targetTags': [
-      deny_egress_tag
-    ],
-    'denied': [
-      {
-        'IPProtocol': 'all'
-      }
-    ],
-    'logConfig': {
-      'enable': enable_logging
-    },
-    'destinationRanges': [
-      '0.0.0.0/0'
-    ]
+      'name': deny_egress_tag,
+      'network': network,
+      'direction': 'EGRESS',
+      'priority': 0,
+      'targetTags': [deny_egress_tag],
+      'denied': [{
+          'IPProtocol': 'all'
+      }],
+      'logConfig': {
+          'enable': enable_logging
+      },
+      'destinationRanges': ['0.0.0.0/0']
   }
   project.compute.InsertFirewallRule(body=deny_ingress)
   project.compute.InsertFirewallRule(body=deny_egress)
 
 
-def InstanceNetworkQuarantine(project_id: str,
-                              instance_name: str,
-                              exempted_src_ips: Optional[List[str]] = None,
-                              enable_logging: bool = False) -> None:
+def InstanceNetworkQuarantine(
+    project_id: str,
+    instance_name: str,
+    exempted_src_ips: Optional[List[str]] = None,
+    enable_logging: bool = False) -> None:
   """Put a Google Cloud instance in network quarantine.
 
   Network quarantine is imposed via applying deny-all
@@ -332,8 +337,9 @@ def InstanceNetworkQuarantine(project_id: str,
     enable_logging (bool): Optional. Enable firewall logging.
         Default is False.
   """
-  logger.info('Putting instance "{0:s}", in project {1:s}, in network '
-              'quarantine.'.format(instance_name, project_id))
+  logger.info(
+      'Putting instance "{0:s}", in project {1:s}, in network '
+      'quarantine.'.format(instance_name, project_id))
   project = gcp_project.GoogleCloudProject(project_id)
   instance = project.compute.GetInstance(instance_name)
   get_operation = instance.GetOperation()
@@ -343,7 +349,7 @@ def InstanceNetworkQuarantine(project_id: str,
     network_url = interface["network"]
     # Adding a random suffix to the tag to avoid name collisions,
     # tags are used as firewall rule names, which need to be unique.
-    tag_suffix = random.randint(10**(19),(10**20)-1)
+    tag_suffix = random.randint(10**(19), (10**20) - 1)
     deny_ingress_tag = 'deny-ingress-tag-' + str(tag_suffix)
     deny_egress_tag = 'deny-egress-tag-' + str(tag_suffix)
     AddDenyAllFirewallRules(
@@ -357,11 +363,12 @@ def InstanceNetworkQuarantine(project_id: str,
     target_tags.append(deny_egress_tag)
   instance.SetTags(target_tags)
   if exempted_src_ips:
-    logger.info('From a host with an exempted IP, '
+    logger.info(
+        'From a host with an exempted IP, '
         'connect to the quarantined instance using:\n'
         'gcloud compute ssh --zone "{0:s}" "{1:s}" --project "{2:s}"\n'
         'Connecting from the browser via GCP console will not work.'.format(
-              instance.zone, instance_name, project_id))
+            instance.zone, instance_name, project_id))
   # Then remove the VM's external IP address, to break all ongoing
   # connections
   logger.info('Removing external IP addresses to break ongoing connections')
@@ -371,18 +378,17 @@ def InstanceNetworkQuarantine(project_id: str,
   for net_if, removed_ip in removed_ips.items():
     if removed_ip in available_ips:
       # IP address was static, re-assign static
-      logger.info('Re-assigning static IP {0:s} to {1:s}'.format(
-        removed_ip,
-        net_if))
+      logger.info(
+          'Re-assigning static IP {0:s} to {1:s}'.format(removed_ip, net_if))
       instance.AssignExternalIp(net_if, removed_ip)
     else:
       # IP address was ephemeral, re-assign ephemeral
       logger.info('Re-assigning ephemeral IP to {0:s}'.format(net_if))
       instance.AssignExternalIp(net_if, None)
 
-def VMRemoveServiceAccount(project_id: str,
-                           instance_name: str,
-                           leave_stopped: bool = False) -> bool:
+
+def VMRemoveServiceAccount(
+    project_id: str, instance_name: str, leave_stopped: bool = False) -> bool:
   """
   Remove a service account attachment from a GCP VM.
 
@@ -401,8 +407,9 @@ def VMRemoveServiceAccount(project_id: str,
   Returns:
     bool: True if the service account was successfully removed, False otherwise.
   """
-  logger.info('Removing service account attachment from "{0:s}",'
-              ' in project {1:s}'.format(instance_name, project_id))
+  logger.info(
+      'Removing service account attachment from "{0:s}",'
+      ' in project {1:s}'.format(instance_name, project_id))
 
   valid_starting_states = ['RUNNING', 'STOPPING', 'TERMINATED']
 
@@ -413,8 +420,9 @@ def VMRemoveServiceAccount(project_id: str,
   initial_state = instance.GetPowerState()
 
   if not initial_state in valid_starting_states:
-    logger.error('Instance "{0:s}" is currently {1:s} which is an invalid '
-               'state for this operation'.format(instance_name, initial_state))
+    logger.error(
+        'Instance "{0:s}" is currently {1:s} which is an invalid '
+        'state for this operation'.format(instance_name, initial_state))
     return False
 
   try:
@@ -473,7 +481,7 @@ def CheckInstanceSSHAuth(project_id: str,
   external_ips = instance.GetNatIps()
 
   for ip in external_ips:
-    ssh_command = ssh_args + ['root@{0:s}'.format(ip)]
+    ssh_command = ssh_args + ['root@{0:s}'.format(ip)]  # type: Sequence[str]
     # pylint: disable=subprocess-run-check
     ssh_run = subprocess.run(ssh_command, capture_output=True)
     # pylint: enable=subprocess-run-check
@@ -621,8 +629,7 @@ def QuarantineGKEWorkload(project_id: str,
   prompt_sequence.Run(summarize=True)
 
 
-def TriageInstance(project_id: str,
-                   instance_name: str) -> Dict[str, Any]:
+def TriageInstance(project_id: str, instance_name: str) -> Dict[str, Any]:
   """Gather triage information for an instance.
 
   Args:
@@ -656,37 +663,35 @@ def TriageInstance(project_id: str,
     parsed_cpu = cpu_usage[0].get('cpu_usage', [])
 
   instance_triage = {
-    'instance_info': {
-      'instance_name': instance_info['name'],
-      'instance_id': instance_info['id'],
-      'ancestry': ancestry_string,
-      'external_ipv4': ', '.join(instance.GetNatIps()),
-      'zone': instance_info['zone'].rsplit('/', 1)[1],
-      'creation_timestamp': instance_info['creationTimestamp'],
-      'laststart_timestamp': instance_info['lastStartTimestamp'],
-    },
-    'triage_data': [
-      {
-        'data_type': 'service_accounts',
-        'values': instance_info['serviceAccounts']
+      'instance_info': {
+          'instance_name': instance_info['name'],
+          'instance_id': instance_info['id'],
+          'ancestry': ancestry_string,
+          'external_ipv4': ', '.join(instance.GetNatIps()),
+          'zone': instance_info['zone'].rsplit('/', 1)[1],
+          'creation_timestamp': instance_info['creationTimestamp'],
+          'laststart_timestamp': instance_info['lastStartTimestamp'],
       },
-      {
-        'data_type': 'firewalls',
-        'values': instance.GetNormalisedFirewalls()
+      'triage_data': [{
+          'data_type': 'service_accounts',
+          'values': instance_info['serviceAccounts']
       },
-      {
-        'data_type': 'cpu_usage',
-        'values': parsed_cpu
-      },
-      {
-        'data_type': 'ssh_auth',
-        'values': CheckInstanceSSHAuth(project_id, instance_info['name'])
-      },
-      {
-        'data_type': 'active_services',
-        'values': parsed_services
-      }
-    ]
+                      {
+                          'data_type': 'firewalls',
+                          'values': instance.GetNormalisedFirewalls()
+                      }, {
+                          'data_type': 'cpu_usage', 'values': parsed_cpu
+                      },
+                      {
+                          'data_type':
+                              'ssh_auth',
+                          'values':
+                              CheckInstanceSSHAuth(
+                                  project_id, instance_info['name'])
+                      }, {
+                          'data_type': 'active_services',
+                          'values': parsed_services
+                      }]
   }
 
   return instance_triage
