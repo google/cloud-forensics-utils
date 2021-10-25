@@ -705,7 +705,8 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       packages: List of packages to install in the VM.
       zone: Compute zone to start the instance in, default is self.default_zone.
       data_disks: List of disks to attach to the instance, default
-          mode is READ_ONLY.
+          mode is READ_ONLY. If the VM already exists, disks will be attached
+          to the existing VM.
 
     Returns:
       A tuple with a virtual machine object and a boolean indicating
@@ -1316,8 +1317,8 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
     """Attach a disk to the virtual machine.
 
     Args:
-      disk (GoogleComputeDisk): Disk to attach.
-      read_write (bool): Optional. Boolean indicating whether the disk should
+      disk: Disk to attach.
+      read_write: Boolean indicating whether the disk should
           be attached in RW mode. Default is False (read-only).
     """
 
