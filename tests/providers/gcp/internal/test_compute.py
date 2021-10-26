@@ -119,7 +119,7 @@ class GoogleCloudComputeTest(unittest.TestCase):
     disk_from_snapshot = gcp_mocks.FAKE_ANALYSIS_PROJECT.compute.CreateDiskFromSnapshot(
         gcp_mocks.FAKE_SNAPSHOT)
     self.assertIsInstance(disk_from_snapshot, compute.GoogleComputeDisk)
-    self.assertEqual('fake-snapshot-857c0b16-copy', disk_from_snapshot.name)
+    self.assertEqual('fake-snapshot-268f2df3-copy', disk_from_snapshot.name)
 
     # CreateDiskFromSnapshot(Snapshot=gcp_mocks.FAKE_SNAPSHOT,
     # disk_name='new-forensics-disk', disk_name_prefix='')
@@ -136,7 +136,7 @@ class GoogleCloudComputeTest(unittest.TestCase):
     self.assertIsInstance(
         disk_from_snapshot, compute.GoogleComputeDisk)
     self.assertEqual(
-        'prefix-fake-snapshot-857c0b16-copy', disk_from_snapshot.name)
+        'prefix-fake-snapshot-268f2df3-copy', disk_from_snapshot.name)
 
     # CreateDiskFromSnapshot(Snapshot=gcp_mocks.FAKE_SNAPSHOT,
     # disk_name='new-forensics-disk', disk_name_prefix='prefix')
