@@ -40,19 +40,19 @@ class GCPCommonTest(unittest.TestCase):
     """
 
     disk_name = common.GenerateDiskName(gcp_mocks.FAKE_SNAPSHOT)
-    self.assertEqual('fake-snapshot-857c0b16-copy', disk_name)
+    self.assertEqual('fake-snapshot-268f2df3-copy', disk_name)
     self.assertTrue(gcp_mocks.REGEX_DISK_NAME.match(disk_name))
 
     disk_name = common.GenerateDiskName(gcp_mocks.FAKE_SNAPSHOT_LONG_NAME)
     self.assertEqual(
-        'this-is-a-kind-of-long-fake-snapshot-name-and-is--857c0b16-copy',
+        'this-is-a-kind-of-long-fake-snapshot-name-and-is--bc618512-copy',
         disk_name)
     self.assertTrue(gcp_mocks.REGEX_DISK_NAME.match(disk_name))
 
     disk_name = common.GenerateDiskName(
         gcp_mocks.FAKE_SNAPSHOT, disk_name_prefix='some-not-so-long-disk-name-prefix')
     self.assertEqual(
-        'some-not-so-long-disk-name-prefix-fake-snapshot-857c0b16-copy',
+        'some-not-so-long-disk-name-prefix-fake-snapshot-268f2df3-copy',
         disk_name)
     self.assertTrue(gcp_mocks.REGEX_DISK_NAME.match(disk_name))
 
@@ -60,7 +60,7 @@ class GCPCommonTest(unittest.TestCase):
         gcp_mocks.FAKE_SNAPSHOT_LONG_NAME,
         disk_name_prefix='some-not-so-long-disk-name-prefix')
     self.assertEqual(
-        'some-not-so-long-disk-name-prefix-this-is-a-kind--857c0b16-copy',
+        'some-not-so-long-disk-name-prefix-this-is-a-kind--bc618512-copy',
         disk_name)
     self.assertTrue(gcp_mocks.REGEX_DISK_NAME.match(disk_name))
 
@@ -69,7 +69,7 @@ class GCPCommonTest(unittest.TestCase):
         disk_name_prefix='some-really-really-really-really-really-really-long'
         '-disk-name-prefix')
     self.assertEqual(
-        'some-really-really-really-really-really-really-lo-857c0b16-copy',
+        'some-really-really-really-really-really-really-lo-268f2df3-copy',
         disk_name)
     self.assertTrue(gcp_mocks.REGEX_DISK_NAME.match(disk_name))
 
@@ -78,7 +78,7 @@ class GCPCommonTest(unittest.TestCase):
         disk_name_prefix='some-really-really-really-really-really-really-long'
         '-disk-name-prefix')
     self.assertEqual(
-        'some-really-really-really-really-really-really-lo-857c0b16-copy',
+        'some-really-really-really-really-really-really-lo-bc618512-copy',
         disk_name)
     self.assertTrue(gcp_mocks.REGEX_DISK_NAME.match(disk_name))
 

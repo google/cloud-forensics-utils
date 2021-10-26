@@ -78,7 +78,7 @@ def GenerateDiskName(
 
   # Max length of disk names in GCP is 63 characters
   project_id = snapshot.project_id
-  disk_id = project_id + snapshot.disk.name
+  disk_id = project_id + snapshot.name
   disk_id_crc32 = '{0:08x}'.format(
       binascii.crc32(disk_id.encode()) & 0xffffffff)
   truncate_at = 63 - len(disk_id_crc32) - len('-copy') - 1
