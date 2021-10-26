@@ -1778,8 +1778,9 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
             'l4config':
                 self._NormaliseFirewallL4Config(rule['match']['layer4Configs']),
             'ips': (
-                rule['match']['srcIpRanges']
-                if is_ingress else rule['match']['destIpRanges']),
+                rule['match'].get('srcIpRanges', []) if is_ingress else
+                rule['match'].get('destIpRanges', [])
+            ),
             'action':
                 rule['action']
         }
@@ -1801,7 +1802,8 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
               self._NormaliseFirewallL4Config(
                   rule['allowed'] if is_allow else rule['denied']),
           'ips': (
-              rule['sourceRanges'] if is_ingress else rule['destinationRanges']
+              rule.get('sourceRanges', []) if is_ingress else
+              rule.get('destinationRanges', [])
           ),
           'action':
               'allow' if is_allow else 'deny'
