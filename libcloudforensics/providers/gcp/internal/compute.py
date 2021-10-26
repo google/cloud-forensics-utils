@@ -705,7 +705,8 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       packages: List of packages to install in the VM.
       zone: Compute zone to start the instance in, default is self.default_zone.
       data_disks: List of disks to attach to the instance, default
-          mode is READ_ONLY.
+          mode is READ_ONLY. If the VM already exists, disks will be attached
+          to the existing VM.
 
     Returns:
       A tuple with a virtual machine object and a boolean indicating
@@ -718,6 +719,16 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     # Re-use instance if it already exists, or create a new one.
     try:
       instance = self.GetInstance(vm_name)
+
+      # Instance exists, attach disks that have not already been attached
+      if data_disks:
+        disks_to_attach = {disk.name : disk for disk in data_disks}
+        attached_disks = instance.ListDisks().keys()
+        for attached_disk in attached_disks:
+          disks_to_attach.pop(attached_disk, None)
+        for disk_to_attach in disks_to_attach.values():
+          instance.AttachDisk(disk_to_attach)
+
       return instance, False
     except errors.ResourceNotFoundError:
       pass
@@ -1301,12 +1312,13 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
         time.sleep(5)  # seconds between connections
 
   def AttachDisk(
-      self, disk: 'GoogleComputeDisk', read_write: bool = False) -> None:
+      self, disk: Union['GoogleComputeDisk', 'GoogleRegionComputeDisk'],
+      read_write: bool = False) -> None:
     """Attach a disk to the virtual machine.
 
     Args:
-      disk (GoogleComputeDisk): Disk to attach.
-      read_write (bool): Optional. Boolean indicating whether the disk should
+      disk: Disk to attach.
+      read_write: Boolean indicating whether the disk should
           be attached in RW mode. Default is False (read-only).
     """
 
