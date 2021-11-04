@@ -15,6 +15,7 @@
 """Google Compute Engine functionalities."""
 
 import os
+import re
 import subprocess
 import time
 from collections import defaultdict
@@ -567,7 +568,8 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
           List[Union['GoogleComputeDisk',
           'GoogleRegionComputeDisk']]] = None,
       network_name: str = 'default',
-      external_ip: bool = True
+      external_ip: bool = True,
+      owner_label: bool = True
   ) -> 'GoogleComputeInstance':
     """Create a compute instance.
 
@@ -592,6 +594,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       data_disks: List of disks to attach to the instance, default mode is READ_ONLY.
       network_name: Name of the VPC network to use, "default" network is default.
       external_ip: True if the instance should have an external IP.
+      owner_label: True if the instance should have an owner label.
 
     Returns:
       Compute instance object.
@@ -667,6 +670,16 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
         }]
     }
     request_body['networkInterfaces'] = [network_interface]
+
+    # TODO(ramo-j) Better than OS login would be the user authenticated to gcp,
+    # but I cannt find a way to determine that.
+    try:
+      if owner_label and os.getlogin():
+        owner = re.sub('[^-_a-z0-9]', '_', os.getlogin())
+        request_body['labels'] = [{'owner': owner}]
+    except OSError:
+      # If run as an automated user, no user can be found.
+      pass
     return self.CreateInstanceFromRequest(request_body, compute_zone)
 
   def GetOrCreateAnalysisVm(
