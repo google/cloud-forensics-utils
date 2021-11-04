@@ -676,7 +676,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     try:
       if owner_label and os.getlogin():
         owner = re.sub('[^-_a-z0-9]', '_', os.getlogin())
-        request_body['labels'] = [{'owner':owner}]
+        request_body['labels'] = [{'owner': owner}]
     except OSError:
       # If run as an automated user, no user can be found.
       pass
