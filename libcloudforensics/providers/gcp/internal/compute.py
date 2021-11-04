@@ -677,7 +677,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       if owner_label and os.getlogin():
         owner = re.sub('[^-_a-z0-9]', '_', os.getlogin())
         request_body['labels'] = [{'owner':owner}]
-    except OSError as exception:
+    except OSError:
       # If run as an automated user, no user can be found.
       pass
     return self.CreateInstanceFromRequest(request_body, compute_zone)
