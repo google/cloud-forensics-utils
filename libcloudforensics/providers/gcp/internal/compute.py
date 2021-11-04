@@ -674,7 +674,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     # TODO(ramo-j) Better than OS login would be the user authenticated to gcp,
     # but I cannt find a way to determine that.
     if owner_label and os.getlogin():
-      owner = re.sub('[^-_a-z0-9]', '_', "ramoj@google.com")
+      owner = re.sub('[^-_a-z0-9]', '_', os.getlogin())
       request_body['labels'] = [{'owner':owner}]
     return self.CreateInstanceFromRequest(request_body, compute_zone)
 
