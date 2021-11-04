@@ -151,7 +151,7 @@ class Enumeration(Generic[ObjT], metaclass=abc.ABCMeta):
 
     row_max_len = max(
         len(MakeRow(item))
-        for item in (list(info.items()) + list(warnings.items())))
+        for item in list(info.items()) + list(warnings.items()))
     separator = '-' * row_max_len
 
     print_func(separator, logging.INFO)
