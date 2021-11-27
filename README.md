@@ -19,5 +19,3 @@ Quick access:
 * [Installation](https://libcloudforensics.readthedocs.io/en/latest/gettingstarted.html#installing-from-pypi)
 * [User Manual](https://libcloudforensics.readthedocs.io/en/latest/usermanual/index.html#)
 * [How to contribute](https://libcloudforensics.readthedocs.io/en/latest/contributing.html)
-
-
