@@ -318,6 +318,7 @@ of in a different account (Account B).
 #### Using the library and the CLI
 
 To make the copy, import the `forensics` package and use the `CreateDiskCopy` method.
+`resource_group_name` is the destination resource group where disk copy and eventually analysis VM will be created.
 
 ```python
 from libcloudforensics.providers.azure import forensics
@@ -404,6 +405,12 @@ cloudforensics az 'resource_group_name' copydisk --disk_name='disk1' --src_profi
 # dst_profile, and attach a volume to it.
 # A SSH key pair will be automatically generated and associated to the instance.
 cloudforensics az 'resource_group_name' startvm 'vm-forensics' --disk_size=50 --cpu_cores=4 --attach_disks='disk1-copy' --dst_profile='dst_profile'
+
+# Start an analysis VM from a different publisher/sku
+cloudforensics az 'resource_group_name' startvm 'vm-forensics' --cpu_cores=4 --attach_disks='disk1-copy' --dst_profile='dst_profile' --image_reference='{ "publisher": "Canonical","offer": "0001-com-ubuntu-server-focal","sku": "20_04-lts","version": "latest"}'
+
+# Start an analysis VM from a shared gallery image, like pre-built forensics image
+cloudforensics az 'resource_group_name' startvm 'vm-forensics' --cpu_cores=4 --attach_disks='disk1-copy' --dst_profile='dst_profile' --image_reference='{"id": "/subscriptions/<GUID>/resourceGroups/Testing/providers/Microsoft.Compute/galleries/<mygallery>/images/<myimagename>/versions/latest"}'
 ```
 
 You're now ready to go! Log in your Azure account, find the instance's IP address and SSH to it.
@@ -411,4 +418,56 @@ You're now ready to go! Log in your Azure account, find the instance's IP addres
 ``` important:: Pro tip: you can export an environment variable 'STARTUP_SCRIPT' that points to a custom bash script. 
 This script will be shipped to the instance being created and executed during the first boot. You can do any kind of 
 pre-processing you want in this script.
+```
+
+### Azure App token creation
+
+You can do either through portal, either through following command lines (with azure cloudshell for example):
+```powershell
+az ad app create --display-name <name> --available-to-other-tenants false --reply-urls http://localhost --native-app false --credential-description "<description>"
+az ad app credential reset --id <appid per previous outpout> --append
+Connect-AzureAD
+New-AzureADServicePrincipal -AccountEnabled $true -AppId "<appid per previous outpout>" -AppRoleAssignmentRequired $true -DisplayName "<name>" -Tags {WindowsAzureActiveDirectoryIntegratedApp}
+az ad app list --show-mine
+az ad app credential list --id <appid>
+az ad app credential reset --id <appid>
+```
+
+### Azure permissions
+
+Here are the following built-in IAM roles needed per task for matching app token:
+* Source Copy: Disk Backup Reader+Disk Snapshot Contributor+Reader at resource group or subscription level
+* Destination Copy: Disk pool operator just for target ressource group
+* Analysis VM: Virtual Machine Contributor, Network Contributor on target resource group
+
+For source permissions, it's possible to be stricter. The following has been found to work but may change and depend on context.
+```json
+{
+    "id": "/subscriptions/<GUID>/providers/Microsoft.Authorization/roleDefinitions/<GUID>",
+    "properties": {
+        "roleName": "c_VMSnapshot",
+        "description": "Least privilege IAM role for disk snapshot during Security incident",
+        "assignableScopes": [
+            "/subscriptions/<GUID>"
+        ],
+        "permissions": [
+            {
+                "actions": [
+                    "Microsoft.Resources/subscriptions/resourceGroups/read",
+                    "Microsoft.Compute/snapshots/write",
+                    "Microsoft.Compute/snapshots/read",
+                    "Microsoft.Compute/snapshots/delete",
+                    "Microsoft.Compute/snapshots/beginGetAccess/action",
+                    "Microsoft.Compute/snapshots/endGetAccess/action",
+                    "Microsoft.Compute/disks/beginGetAccess/action",
+                    "Microsoft.Storage/storageAccounts/listkeys/action",
+                    "Microsoft.Storage/storageAccounts/read"
+                ],
+                "notActions": [],
+                "dataActions": [],
+                "notDataActions": []
+            }
+        ]
+    }
+}
 ```

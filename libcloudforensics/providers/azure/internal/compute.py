@@ -377,6 +377,7 @@ class AZCompute:
       ssh_public_key: str,
       region: Optional[str] = None,
       packages: Optional[List[str]] = None,
+      image_reference: Optional[Dict[str, str]] = None,
       tags: Optional[Dict[str, str]] = None
   ) -> Tuple['AZComputeVirtualMachine', bool]:
     """Get or create a new virtual machine for analysis purposes.
@@ -393,6 +394,9 @@ class AZCompute:
           provided, the vm will be created in the default_region
           associated to the AZAccount object.
       packages (List[str]): Optional. List of packages to install in the VM.
+      image_reference (Dict[str, str]): Optional. A dictionary of Azure image
+          to bootstrap. It can be usual sku/publisher/version/offer or shared
+          image id.
       tags (Dict[str, str]): Optional. A dictionary of tags to add to the
           instance, for example {'TicketID': 'xxx'}. An entry for the
           instance name is added by default.
@@ -432,16 +436,20 @@ class AZCompute:
     if not region:
       region = self.az_account.default_region
 
+    if not image_reference:
+      image_reference = {
+                    'sku': common.UBUNTU_1804_SKU,
+                    'publisher': 'Canonical',
+                    'version': 'latest',
+                    'offer': 'UbuntuServer'}
+    logger.debug('VM image_reference {}'.format(image_reference))
+
     creation_data = {
         'location': region,
         'properties': {
             'hardwareProfile': {'vmSize': instance_type},
             'storageProfile': {
-                'imageReference': {
-                    'sku': common.UBUNTU_1804_SKU,
-                    'publisher': 'Canonical',
-                    'version': 'latest',
-                    'offer': 'UbuntuServer'}
+                'imageReference': image_reference
             },
             'osDisk': {
                 'caching': 'ReadWrite',

@@ -76,7 +76,11 @@ def CreateDiskCopy(
     raise ValueError(
         'You must specify at least one of [instance_name, disk_name].')
 
-  src_account = account.AZAccount(
+  if src_profile and dst_profile and src_profile != dst_profile:
+    src_account = account.AZAccount(
+      None, default_region=region, profile_name=src_profile)
+  else:
+    src_account = account.AZAccount(
       resource_group_name, default_region=region, profile_name=src_profile)
   dst_account = account.AZAccount(resource_group_name,
                                   default_region=region,
@@ -141,6 +145,7 @@ def StartAnalysisVm(
     memory_in_mb: int = 8192,
     region: str = 'eastus',
     attach_disks: Optional[List[str]] = None,
+    image_reference: Optional[Dict[str, str]] = None,
     tags: Optional[Dict[str, str]] = None,
     dst_profile: Optional[str] = None
     ) -> Tuple['compute.AZComputeVirtualMachine', bool]:
@@ -164,6 +169,9 @@ def StartAnalysisVm(
     region (str): Optional. The region in which to create the VM.
         Default is eastus.
     attach_disks (List[str]): Optional. List of disk names to attach to the VM.
+    image_reference (Dict[str, str]): Optional. A dictionary of Azure image
+        to bootstrap. It can be usual sku/publisher/version/offer or shared
+        image id.
     tags (Dict[str, str]): Optional. A dictionary of tags to add to the
         instance, for example {'TicketID': 'xxx'}. An entry for the instance
         name is added by default.
@@ -188,6 +196,7 @@ def StartAnalysisVm(
       cpu_cores,
       memory_in_mb,
       ssh_public_key,
+      image_reference=image_reference,
       tags=tags)
 
   for disk_name in (attach_disks or []):

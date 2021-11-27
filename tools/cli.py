@@ -318,6 +318,8 @@ def Main() -> None:
                 ('--disk_size', 'Size of disk in GB.', 50),
                 ('--cpu_cores', 'Instance CPU core count.', 4),
                 ('--memory_in_mb', 'Instance amount of RAM memory.', 8192),
+                ('--image_reference', 'VM image to use (default: Bionic).',
+                 None),
                 ('--region', 'The region in which to create the VM. If not '
                              'provided, the VM will be created in the '
                              '"eastus" region.', 'eastus'),

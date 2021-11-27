@@ -42,7 +42,7 @@ class AZAccount:
   """
 
   def __init__(self,
-               default_resource_group_name: str,
+               default_resource_group_name: Optional[str] = None,
                default_region: str = 'eastus',
                profile_name: Optional[str] = None) -> None:
     """Initialize the AZAccount class.
@@ -66,8 +66,11 @@ class AZAccount:
     self._network = None  # type: Optional[network_module.AZNetwork]
     self._resource = None  # type: Optional[resource_module.AZResource]
     self._storage = None  # type: Optional[storage_module.AZStorage]
-    self.default_resource_group_name = self.resource.GetOrCreateResourceGroup(
-        default_resource_group_name)
+    if default_resource_group_name:
+      self.default_resource_group_name = self.resource.GetOrCreateResourceGroup(
+          default_resource_group_name)
+    else:
+      self.default_resource_group_name = None
 
   @property
   def compute(self) -> compute_module.AZCompute:

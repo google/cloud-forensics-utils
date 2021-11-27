@@ -15,6 +15,7 @@
 """Demo CLI tool for Azure."""
 
 import os
+import json
 from datetime import datetime
 from typing import TYPE_CHECKING
 from Crypto.PublicKey import RSA
@@ -100,6 +101,10 @@ def StartAnalysisVm(args: 'argparse.Namespace') -> None:
       logger.error('error: parameter --attach_disks: {0:s}'.format(
           args.attach_disks))
       return
+  if args.image_reference:
+    image_reference = json.loads(args.image_reference)
+  else:
+    image_reference = None
 
   ssh_public_key = args.ssh_public_key
   if not ssh_public_key:
@@ -118,7 +123,8 @@ def StartAnalysisVm(args: 'argparse.Namespace') -> None:
                                  memory_in_mb=int(args.memory_in_mb),
                                  region=args.region,
                                  attach_disks=attach_disks,
-                                 dst_profile=args.dst_profile)
+                                 dst_profile=args.dst_profile,
+                                 image_reference=image_reference)
 
   logger.info('Analysis VM started.')
   logger.info('Name: {0:s}, Started: {1:s}'.format(vm[0].name, str(vm[1])))
