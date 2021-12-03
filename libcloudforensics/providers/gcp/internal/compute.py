@@ -973,7 +973,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     try:
       response = request.execute()
     except HttpError as e:
-      if e.resp.code == 409:
+      if e.resp.status == 409:
         # 409 - Resource already exists.
         # Message is
         #   `The resource 'projects/badcloud-hasher/global/images/<DISK_NAME>'
