@@ -70,7 +70,7 @@ class AZAccount:
       self.default_resource_group_name = self.resource.GetOrCreateResourceGroup(
           default_resource_group_name)
     else:
-      self.default_resource_group_name = None
+      self.default_resource_group_name = ''
 
   @property
   def compute(self) -> compute_module.AZCompute:
