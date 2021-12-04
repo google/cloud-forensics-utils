@@ -136,6 +136,7 @@ def CreateDiskCopy(
   return new_disk
 
 
+# pylint: disable=too-many-arguments
 def StartAnalysisVm(
     resource_group_name: str,
     vm_name: str,
