@@ -88,7 +88,11 @@ class GoogleCloudProject:
     # pylint: enable=line-too-long
 
   def Delete(self) -> Dict[str, Any]:
-    """Delete a GCP project."""
+    """Delete a GCP project.
+
+    Returns:
+      Dict[str, Any]: The operation's result details.
+    """
     return self.cloudresourcemanager.DeleteResource("projects/{0:s}".format(
       self.project_id))
 
