@@ -116,10 +116,10 @@ class GoogleCloudResourceManager:
     Args:
       name (str): a resource identifier in the format
         resource_type/resource_number e.g. projects/123456789012 where
-        project_type is one of projects, folders or organizations.
+        project_type is one of projects or folders.
 
     Returns:
-      Dict[str, Any]: The resource details.
+      Dict[str, Any]: The operation's result details.
 
     Raises:
       TypeError: if an invalid resource type is provided.
