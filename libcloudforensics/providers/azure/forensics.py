@@ -171,7 +171,7 @@ def StartAnalysisVm(
         Default is eastus.
     attach_disks (List[str]): Optional. List of disk names to attach to the VM.
     image_reference (Dict[str, str]): Optional. A dictionary of Azure image
-        to bootstrap. It can be usual sku/publisher/version/offer or shared
+        to bootstrap. It can be a sku/publisher/version/offer or a shared
         image id.
     tags (Dict[str, str]): Optional. A dictionary of tags to add to the
         instance, for example {'TicketID': 'xxx'}. An entry for the instance
