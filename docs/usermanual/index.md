@@ -422,7 +422,7 @@ pre-processing you want in this script.
 
 ### Azure App token creation
 
-You can do either through portal, either through following command lines (with azure cloudshell for example):
+You can do this either through Azure portal, or through the following command lines (with azure cloudshell for example):
 ```powershell
 az ad app create --display-name <name> --available-to-other-tenants false --reply-urls http://localhost --native-app false --credential-description "<description>"
 az ad app credential reset --id <appid per previous outpout> --append
