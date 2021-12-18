@@ -78,7 +78,7 @@ def CreateDiskCopy(
 
   if src_profile and dst_profile and src_profile != dst_profile:
     src_account = account.AZAccount(
-      None, default_region=region, profile_name=src_profile)
+      '', default_region=region, profile_name=src_profile)
   else:
     src_account = account.AZAccount(
       resource_group_name, default_region=region, profile_name=src_profile)
