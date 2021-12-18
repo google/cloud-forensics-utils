@@ -438,10 +438,11 @@ class AZCompute:
 
     if not image_reference:
       image_reference = {
-                    'sku': common.UBUNTU_1804_SKU,
-                    'publisher': 'Canonical',
-                    'version': 'latest',
-                    'offer': 'UbuntuServer'}
+        'sku': common.UBUNTU_1804_SKU,
+        'publisher': 'Canonical',
+        'version': 'latest',
+        'offer': 'UbuntuServer'
+      }
     logger.debug('VM image_reference {}'.format(image_reference))
 
     creation_data = {
