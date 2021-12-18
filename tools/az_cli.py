@@ -104,9 +104,11 @@ def StartAnalysisVm(args: 'argparse.Namespace') -> None:
   if args.image_reference:
     try:
       image_reference = json.loads(args.image_reference)
-    except JSONDecodeError as exception:
+    except json.JSONDecodeError as exception:
       raise RuntimeError(
-          'Cannot parse Image Reference JSON: {0!s}'.format(exception)) from exception
+          'Cannot parse Image Reference JSON: {0!s}'.format(
+              exception)
+          ) from exception
   else:
     image_reference = None
 
