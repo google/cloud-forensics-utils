@@ -66,6 +66,9 @@ class AZResource:
     Returns:
       str: The resource group name.
     """
+    if not resource_group_name:
+      return ''
+
     try:
       self.resource_client.resource_groups.get(resource_group_name)
     except azure_exceptions.CloudError:
