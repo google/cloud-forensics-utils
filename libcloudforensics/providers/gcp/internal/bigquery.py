@@ -33,7 +33,7 @@ class GoogleBigQuery:
     """Initialize the GoogleBigQuery object.
 
     Args:
-      project_id (str): Optional. Google Cloud project ID.
+      project_id: Optional. Google Cloud project ID.
     """
 
     self.project_id = project_id
@@ -42,7 +42,7 @@ class GoogleBigQuery:
     """Get a Google BigQuery service object.
 
     Returns:
-      googleapiclient.discovery.Resource: A Google BigQuery service object.
+      A Google BigQuery service object.
     """
 
     return common.CreateService('bigquery', self.BIGQUERY_API_VERSION)
