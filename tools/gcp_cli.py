@@ -595,7 +595,7 @@ def ListBigQueryJobs(args: 'argparse.Namespace') -> None:
   """List the BigQuery jobs of a Project.
 
   Args:
-    args (argsparse.Namespace): Arguments from ArgumentParser.
+    args: Arguments from ArgumentParser.
 
   Raises:
     AttributeError: If no project_id was provided and none was inferred
