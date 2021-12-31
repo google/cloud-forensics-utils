@@ -20,6 +20,7 @@ from libcloudforensics.providers.gcp.internal import common
 if TYPE_CHECKING:
   import googleapiclient.discovery
 
+_BIGQUERY_API_VERSION = 'v2'
 
 class GoogleBigQuery:
   """Class to call Google BigQuery APIs.
@@ -27,7 +28,6 @@ class GoogleBigQuery:
   Attributes:
     project_id: Google Cloud project ID.
   """
-  BIGQUERY_API_VERSION = 'v2'
 
   def __init__(self, project_id: Optional[str] = None) -> None:
     """Initialize the GoogleBigQuery object.
@@ -45,7 +45,7 @@ class GoogleBigQuery:
       A Google BigQuery service object.
     """
 
-    return common.CreateService('bigquery', self.BIGQUERY_API_VERSION)
+    return common.CreateService('bigquery', _BIGQUERY_API_VERSION)
 
   def ListBigQueryJobs(self) -> List[Dict[str, Any]]:
     """List jobs of Google BigQuery within a project.
