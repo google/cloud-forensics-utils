@@ -87,7 +87,7 @@ class GoogleCloudProject:
     self._cloudresourcemanager = None  # type: Optional[cloudresourcemanager_module.GoogleCloudResourceManager]
     self._serviceusage = None  # type: Optional[serviceusage_module.GoogleServiceUsage]
     # pylint: enable=line-too-long
-    self._bigquery = None  # type: Optional[cloudsql_module.GoogleBigQuery]
+    self._bigquery = None  # type: Optional[bigquery_module.GoogleBigQuery]
 
 
   @property
