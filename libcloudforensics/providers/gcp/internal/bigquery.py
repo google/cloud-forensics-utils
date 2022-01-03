@@ -51,7 +51,7 @@ class GoogleBigQuery:
     """List jobs of Google BigQuery within a project.
 
     Returns:
-      List[Dict[str, Any]]: List of jobs.
+      List of jobs.
     """
     bq_jobs = self.GoogleBigQueryApi().jobs()  # pylint: disable=no-member
     request = bq_jobs.list(projectId=self.project_id, projection='full')
