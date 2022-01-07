@@ -267,7 +267,7 @@ class GoogleCloudProject:
 
     if self._bigquery:
       return self._bigquery
-    self._bigquery = bigquery_module.CloudBigQuery(
+    self._bigquery = bigquery_module.GoogleBigQuery(
       self.project_id
     )
     return self._bigquery
