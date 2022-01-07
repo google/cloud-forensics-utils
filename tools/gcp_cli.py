@@ -22,6 +22,7 @@ from google.auth import default
 
 # pylint: disable=line-too-long
 from libcloudforensics import errors
+from libcloudforensics.providers.gcp.internal import bigquery as gcp_bigquery
 from libcloudforensics.providers.gcp.internal import compute as gcp_compute
 from libcloudforensics.providers.gcp.internal import gke
 from libcloudforensics.providers.gcp.internal import log as gcp_log
@@ -588,3 +589,30 @@ def GKEEnumerate(args: 'argparse.Namespace') -> None:
         enumeration.ToJson(namespace=args.namespace), sys.stdout, indent=2)
   else:
     enumeration.Enumerate(namespace=args.namespace)
+
+
+def ListBigQueryJobs(args: 'argparse.Namespace') -> None:
+  """List the BigQuery jobs of a Project.
+
+  Args:
+    args: Arguments from ArgumentParser.
+
+  Raises:
+    AttributeError: If no project_id was provided and none was inferred
+        from the gcloud environment.
+  """
+
+  AssignProjectID(args)
+
+  bq = gcp_bigquery.GoogleBigQuery(args.project)
+  jobs = bq.ListBigQueryJobs()
+  for job in jobs:
+    job_config = job['configuration']
+    if job_config['jobType'] == "QUERY":
+      logger.info(
+          '{0:s} {1:s} [{2:s}]'.format(
+              datetime.fromtimestamp(
+                  int(job['statistics']['startTime']) /
+                  1000).strftime('%Y-%m-%dT%H:%M:%SZ'),
+              job['user_email'],
+              job_config['query']['query']))

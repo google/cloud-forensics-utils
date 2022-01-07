@@ -27,6 +27,7 @@ from libcloudforensics.providers.gcp.internal import storagetransfer as gcp_stor
 from libcloudforensics.providers.gcp.internal import cloudsql as gcp_cloudsql
 from libcloudforensics.providers.gcp.internal import cloudresourcemanager as gcp_resourcemanager
 from libcloudforensics.providers.gcp.internal import serviceusage as gcp_serviceusage
+from libcloudforensics.providers.gcp.internal import bigquery as gcp_bigquery
 # pylint: enable=line-too-long
 
 FAKE_ANALYSIS_PROJECT = gcp_project.GoogleCloudProject(
@@ -89,6 +90,7 @@ FAKE_MONITORING = gcp_monitoring.GoogleCloudMonitoring('fake-target-project')
 FAKE_CLOUDSQLINSTANCE = gcp_cloudsql.GoogleCloudSQL('fake-target-project')
 FAKE_CLOUD_RESOURCE_MANAGER = gcp_resourcemanager.GoogleCloudResourceManager('fake-project')
 FAKE_SERVICE_USAGE = gcp_serviceusage.GoogleServiceUsage('fake-project')
+FAKE_BIGQUERY = gcp_bigquery.GoogleBigQuery('fake-target-project')
 # pylint: enable=line-too-long
 
 # Mock struct to mimic GCP's API responses
@@ -907,4 +909,49 @@ MOCK_COMPUTE_IMAGE = {
     "us"
   ],
   "kind": "compute#image"
+}
+
+MOCK_BIGQUERY_JOBS = {
+	"etag": "ABCde1FGHiJklmn23op4rs==",
+	"kind": "bigquery#jobList",
+	"jobs": [{
+		"id": "fake-target-project:europe-west1.bquxjob_12345678_abcdefghij1k",
+		"kind": "bigquery#job",
+		"jobReference": {
+			"projectId": "fake-target-project",
+			"jobId": "bquxjob_12345678_abcdefghij1k",
+			"location": "europe-west1"
+		},
+		"state": "DONE",
+		"statistics": {
+			"creationTime": "1640804415278",
+			"startTime": "1640804415351",
+			"endTime": "1640804415457",
+			"totalBytesProcessed": "0",
+			"query": {
+				"totalBytesProcessed": "0",
+				"totalBytesBilled": "0",
+				"cacheHit": True,
+				"statementType": "SELECT"
+			}
+		},
+		"configuration": {
+			"query": {
+				"query": "SELECT * FROM `fake-target-project.fake-target-project-dataset.fake-target-project-table`",
+				"destinationTable": {
+					"projectId": "fake-target-project",
+					"datasetId": "_1a2b34c567890d1efghi2j345678kl9012mn34c5",
+					"tableId": "anona1234c5d67890123efg45678hij90kl23mnoprst"
+				},
+				"writeDisposition": "WRITE_TRUNCATE",
+				"priority": "INTERACTIVE",
+				"useLegacySql": False
+			},
+			"jobType": "QUERY"
+		},
+		"status": {
+			"state": "DONE"
+		},
+		"user_email": "fake-user-email@test.com"
+	}]
 }

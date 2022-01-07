@@ -33,6 +33,7 @@ import libcloudforensics.providers.gcp.internal.cloudresourcemanager\
   as cloudresourcemanager_module
 import libcloudforensics.providers.gcp.internal.serviceusage\
   as serviceusage_module
+import libcloudforensics.providers.gcp.internal.bigquery as bigquery_module
 
 class GoogleCloudProject:
   """Class representing a Google Cloud Project.
@@ -86,6 +87,8 @@ class GoogleCloudProject:
     self._cloudresourcemanager = None  # type: Optional[cloudresourcemanager_module.GoogleCloudResourceManager]
     self._serviceusage = None  # type: Optional[serviceusage_module.GoogleServiceUsage]
     # pylint: enable=line-too-long
+    self._bigquery = None  # type: Optional[bigquery_module.GoogleBigQuery]
+
 
   def Delete(self) -> Dict[str, Any]:
     """Delete a GCP project.
@@ -253,3 +256,18 @@ class GoogleCloudProject:
     self._serviceusage = serviceusage_module.GoogleServiceUsage(
         self.project_id)
     return self._serviceusage
+
+  @property
+  def bigquery(self) -> bigquery_module.GoogleBigQuery:
+    """Get a GoogleBigQuery object for the project.
+
+    Returns:
+      GoogleBigQuery: Object that represents Google BigQuery.
+    """
+
+    if self._bigquery:
+      return self._bigquery
+    self._bigquery = bigquery_module.GoogleBigQuery(
+      self.project_id
+    )
+    return self._bigquery
