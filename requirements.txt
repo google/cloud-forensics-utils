@@ -2,7 +2,7 @@
 azure-common
 azure-core
 azure-identity
-azure-mgmt-compute==24.0.0
+azure-mgmt-compute==23.1.0
 azure-mgmt-monitor
 azure-mgmt-network
 azure-mgmt-resource
