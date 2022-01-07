@@ -13,13 +13,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Google Cloud Resource Manager functionality."""
-
 from typing import TYPE_CHECKING, Dict, List, Any
 from googleapiclient import errors as google_api_errors
+
+from libcloudforensics import logging_utils
 from libcloudforensics.providers.gcp.internal import common
 
 if TYPE_CHECKING:
   import googleapiclient
+
+logging_utils.SetUpLogger(__name__)
+logger = logging_utils.GetLogger(__name__)
 
 
 class GoogleCloudResourceManager:
@@ -104,4 +108,31 @@ class GoogleCloudResourceManager:
     request = {'name': name}
     # Safe to unpack
     response = common.ExecuteRequest(resource_client, 'get', request)[0]
+    return response
+
+  def DeleteResource(self, name: str) -> Dict[str, Any]:
+    """Delete a Cloud Resource Manager resource.
+
+    Args:
+      name (str): a resource identifier in the format
+        resource_type/resource_number e.g. projects/123456789012 where
+        project_type is one of projects or folders.
+
+    Returns:
+      Dict[str, Any]: The operation's result details.
+
+    Raises:
+      TypeError: if an invalid resource type is provided.
+    """
+    resource_type = name.split('/')[0]
+    if resource_type not in self.RESOURCE_TYPES[:-1]:
+      raise TypeError('Invalid resource type "{0:s}", resource must be one of '
+                      '"projects" or "folders" provided in the format '
+                      '"resource_type/resource_number".'.format(name))
+    service = self.GrmApi()
+    resource_client = getattr(service, resource_type)()
+    request = {'name': name}
+    # Safe to unpack
+    response = common.ExecuteRequest(resource_client, 'delete', request)[0]
+    logger.info("Resource {0:s} was set for deletion.".format(name))
     return response
