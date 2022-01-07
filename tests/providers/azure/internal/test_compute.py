@@ -115,7 +115,7 @@ class AZComputeTest(unittest.TestCase):
     self.assertEqual('fake-region', disk.region)
     self.assertEqual(['fake-zone'], disk.zones)
 
-  @mock.patch('azure.mgmt.compute.v2021_04_01.operations._disks_operations.DisksOperations.begin_create_or_update')
+  @mock.patch('azure.mgmt.compute.v2021_08_01.operations._disks_operations.DisksOperations.begin_create_or_update')
   @typing.no_type_check
   def testCreateDiskFromSnapshot(self, mock_create_disk):
     """Test that a disk can be created from a snapshot."""
@@ -182,7 +182,7 @@ class AZComputeTest(unittest.TestCase):
   @mock.patch('azure.storage.blob._blob_service_client.BlobServiceClient.__init__')
   @mock.patch('libcloudforensics.providers.azure.internal.storage.AZStorage.DeleteStorageAccount')
   @mock.patch('libcloudforensics.providers.azure.internal.storage.AZStorage.CreateStorageAccount')
-  @mock.patch('azure.mgmt.compute.v2021_04_01.operations._disks_operations.DisksOperations.begin_create_or_update')
+  @mock.patch('azure.mgmt.compute.v2021_08_01.operations._disks_operations.DisksOperations.begin_create_or_update')
   @typing.no_type_check
   def testCreateDiskFromSnapshotUri(self,
                                     mock_create_disk,
