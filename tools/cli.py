@@ -79,7 +79,7 @@ PROVIDER_TO_FUNC = {
 def AddParser(
     provider: str,
     # pylint: disable=protected-access
-    provider_parser: argparse._SubParsersAction,
+    provider_parser: argparse._SubParsersAction,  # type: ignore
     # pylint: enable=protected-access
     func: str,
     func_helper: str,

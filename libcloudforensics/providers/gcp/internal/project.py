@@ -16,7 +16,7 @@
 
 from __future__ import unicode_literals
 
-from typing import Optional
+from typing import Optional, Dict, Any
 from google.auth import default
 
 import libcloudforensics.providers.gcp.internal.build as build_module
@@ -89,6 +89,15 @@ class GoogleCloudProject:
     # pylint: enable=line-too-long
     self._bigquery = None  # type: Optional[bigquery_module.GoogleBigQuery]
 
+
+  def Delete(self) -> Dict[str, Any]:
+    """Delete a GCP project.
+
+    Returns:
+      Dict[str, Any]: The operation's result details.
+    """
+    return self.cloudresourcemanager.DeleteResource("projects/{0:s}".format(
+      self.project_id))
 
   @property
   def compute(self) -> compute_module.GoogleCloudCompute:
