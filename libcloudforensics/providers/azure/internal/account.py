@@ -42,7 +42,7 @@ class AZAccount:
   """
 
   def __init__(self,
-               default_resource_group_name: str = '',
+               default_resource_group_name: Optional[str] = '',
                default_region: str = 'eastus',
                profile_name: Optional[str] = None) -> None:
     """Initialize the AZAccount class.
