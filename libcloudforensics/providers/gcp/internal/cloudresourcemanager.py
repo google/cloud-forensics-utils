@@ -144,8 +144,12 @@ class GoogleCloudResourceManager:
       name (str): a resource identifier in the format
         resource_type/resource_number e.g. projects/123456789012 where
         project_type is one of projects, folders or organizations.
+
     Returns:
       Dict[str, Any]: The policy bindings for the resource.
+
+    Raises:
+      TypeError: if an invalid resource type is provided.
     """
     resource_type = name.split('/')[0]
     if resource_type not in self.RESOURCE_TYPES:
