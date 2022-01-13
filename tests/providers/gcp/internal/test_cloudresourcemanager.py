@@ -99,3 +99,34 @@ class GoogleCloudResourceManagerTest(unittest.TestCase):
             'updateTime': '2020-01-01T00:00:00.000Z'
           }
         ])
+
+  @typing.no_type_check
+  @mock.patch('libcloudforensics.providers.gcp.internal.common.ExecuteRequest')
+  @mock.patch('libcloudforensics.providers.gcp.internal.cloudresourcemanager.GoogleCloudResourceManager.GrmApi')
+  def testGetIamPolicy(self, mock_grm_api, mock_execute_request):
+    """Validates the GetIamPolicy function"""
+    mock_execute_request.return_value = [gcp_mocks.MOCK_IAM_POLICY]
+    mock_resource_client = mock_grm_api.return_value.projects.return_value
+    response = gcp_mocks.FAKE_CLOUD_RESOURCE_MANAGER.GetIamPolicy(
+        'projects/000000000000')
+    mock_execute_request.assert_called_with(mock_resource_client,
+        'getIamPolicy', {'resource': 'projects/000000000000'})
+    self.assertEqual(response, {
+        "version": 1,
+        "etag": "bm90X2V0YWc=",
+        "bindings": [
+          {
+            "role": "roles/cloudbuild.builds.builder",
+            "members": [
+              "serviceAccount:012345678901@cloudbuild.gserviceaccount.com"
+            ]
+          },
+          {
+            "role": "roles/owner",
+            "members": [
+              "serviceAccount:fake_sa@fake-project.iam.gserviceaccount.com",
+              "user:fakeaccount@fakedomain.com"
+            ]
+          }
+        ]
+      })

@@ -136,3 +136,27 @@ class GoogleCloudResourceManager:
     response = common.ExecuteRequest(resource_client, 'delete', request)[0]
     logger.info("Resource {0:s} was set for deletion.".format(name))
     return response
+
+  def GetIamPolicy(self, name: str) -> Dict[str, Any]:
+    """Get IAM policy bindings for a resource.
+
+    Args:
+      name (str): a resource identifier in the format
+        resource_type/resource_number e.g. projects/123456789012 where
+        project_type is one of projects, folders or organizations.
+    Returns:
+      Dict[str, Any]: The policy bindings for the resource.
+    """
+    resource_type = name.split('/')[0]
+    if resource_type not in self.RESOURCE_TYPES:
+      raise TypeError('Invalid resource type "{0:s}", resource must be one of '
+          '"projects", "folders" or "organizations" provided in the format '
+          '"resource_type/resource_number".'.format(name))
+    service = self.GrmApi()
+    resource_client = getattr(service, resource_type)()
+    request = {'resource': name}
+    # Safe to unpack
+    response = common.ExecuteRequest(
+        resource_client, 'getIamPolicy', request)[0]
+
+    return response
