@@ -955,3 +955,23 @@ MOCK_BIGQUERY_JOBS = {
 		"user_email": "fake-user-email@test.com"
 	}]
 }
+
+MOCK_IAM_POLICY = {
+  "version": 1,
+  "etag": "bm90X2V0YWc=",
+  "bindings": [
+    {
+      "role": "roles/cloudbuild.builds.builder",
+      "members": [
+        "serviceAccount:012345678901@cloudbuild.gserviceaccount.com"
+      ]
+    },
+    {
+      "role": "roles/owner",
+      "members": [
+        "serviceAccount:fake_sa@fake-project.iam.gserviceaccount.com",
+        "user:fakeaccount@fakedomain.com"
+      ]
+    }
+  ]
+}
