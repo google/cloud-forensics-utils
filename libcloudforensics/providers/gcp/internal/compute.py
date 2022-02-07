@@ -523,7 +523,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
 
     Raises:
       ResourceAlreadyExistsError: If an instance with the same name already exists.
-      InvalidNameError: If istance name is invalid.
+      InvalidNameError: If instance name is invalid.
     """
     instance_name = request_body['name']
     if not common.COMPUTE_RFC1035_REGEX.match(instance_name):
@@ -589,7 +589,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       boot_image_family: Name of the image to use to create the boot disk.
       additional_scopes: additional scopes to be provided to the instance. Default
           scopes https://cloud.google.com/compute/docs/access/service-accounts#associating_a_service_account_to_an_instance  # pylint: disable=line-too-long
-      sa_email: Service account email incase default service account is not used.
+      sa_email: Service account email in case default service account is not used.
       metadata: A dictionary mapping metadata keys and values.
       data_disks: List of disks to attach to the instance, default mode is READ_ONLY.
       network_name: Name of the VPC network to use, "default" network is default.
@@ -1559,7 +1559,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
 
     Args:
       instance_group (str): The instance group that this instance should
-          be abondoned from.
+          be abandoned from.
 
     Raises:
       errors.OperationFailedError: If the request did not succeed.

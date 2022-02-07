@@ -25,7 +25,7 @@ class AWSCommonTest(unittest.TestCase):
 
   @typing.no_type_check
   def testCreateTags(self):
-    """Test that tag specifications are correclty created"""
+    """Test that tag specifications are correctly created"""
     tag_specifications = common.CreateTags(common.VOLUME, {'Name': 'fake-name'})
     self.assertEqual('volume', tag_specifications['ResourceType'])
     self.assertEqual(1, len(tag_specifications['Tags']))

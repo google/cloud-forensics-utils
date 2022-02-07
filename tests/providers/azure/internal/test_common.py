@@ -39,7 +39,7 @@ class AZCommonTest(unittest.TestCase):
 
   @typing.no_type_check
   def testGenerateDiskName(self):
-    """Test that disk names are correclty generated.
+    """Test that disk names are correctly generated.
 
     The disk name must comply with the following RegEx: ^[\\w]{1,80}$
         i.e., it must be between 1 and 80 chars and be within [a-zA-Z0-9].
