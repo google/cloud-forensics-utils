@@ -299,7 +299,7 @@ class IAM:
   def RevokeOldSessionsForRole(self, role_name: str) -> None:
     """Revoke old session tokens for a role.
 
-    This is acheived by adding an inline policy to the role, Deny *:* on the
+    This is achieved by adding an inline policy to the role, Deny *:* on the
     condition of TokenIssueTime.
 
     Args:

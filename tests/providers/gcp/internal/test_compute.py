@@ -59,7 +59,7 @@ class GoogleCloudComputeTest(unittest.TestCase):
     mig_request = mig.return_value.execute
     mig_request.return_value = gcp_mocks.MOCK_INSTANCE_ABANDONED
     mock_block_operation.return_value = gcp_mocks.MOCK_INSTANCE_ABANDONED
-    # Check that call completes succesfully
+    # Check that call completes successfully
     gcp_mocks.FAKE_INSTANCE.AbandonFromMIG('fake-instance-group')
     self.assertTrue(mig_request.called)
 

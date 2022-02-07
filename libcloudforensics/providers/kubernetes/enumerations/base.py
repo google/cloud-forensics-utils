@@ -113,7 +113,7 @@ class Enumeration(Generic[ObjT], metaclass=abc.ABCMeta):
     Args:
       info (Dict[str, Any]): The (empty) information dictionary to be populated
           with information about the underlying object's details.
-      warnings (Dict[str, Any]): The (emtpy) warning dictionary to be populated
+      warnings (Dict[str, Any]): The (empty) warning dictionary to be populated
           with warnings about the underlying object. These warnings will be
           highlighted in the enumeration.
     """

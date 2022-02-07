@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Make sure that your AWS/GCP  credentials are configured correclty
+# Make sure that your AWS/GCP  credentials are configured correctly
 """CLI tools for libcloudforensics."""
 
 import argparse

@@ -14,7 +14,7 @@
 # limitations under the License.
 
 # pylint: disable=line-too-long
-# Make sure that your AWS credentials are configured correclty, see
+# Make sure that your AWS credentials are configured correctly, see
 # https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html
 """Demo CLI tool for AWS."""
 
@@ -240,7 +240,7 @@ def ImageEBSSnapshotToS3(args: 'argparse.Namespace') -> None:
 
   Unfortunately, this is not a natively supported operation in AWS. As such, we
   must create a instance, create a volume, mount the volume to the instance and
-  perform a `dd` operation to perform the image. We acheive the creation of
+  perform a `dd` operation to perform the image. We achieve the creation of
   the volume, the attachment and the upload to S3 with a userdata script on the
   instance. That does mean however, the instance needs an instance profile with
   appropriate permissions.
