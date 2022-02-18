@@ -1906,6 +1906,7 @@ class GoogleComputeDisk(compute_base_resource.GoogleComputeBaseResource):
 
     Returns:
       GoogleComputeSnapshot: A Snapshot object.
+      created: False if the resource existed already.
 
     Raises:
       InvalidNameError: If the name of the snapshot does not comply with the
@@ -1930,9 +1931,16 @@ class GoogleComputeDisk(compute_base_resource.GoogleComputeBaseResource):
         project=self.project_id,
         zone=self.zone,
         body=operation_config)
-    response = request.execute()
-    self.BlockOperation(response, zone=self.zone)
-    return GoogleComputeSnapshot(disk=self, name=snapshot_name)
+    created = True
+    try:
+      response = request.execute()
+      self.BlockOperation(response, zone=self.zone)
+    except RuntimeError as e:
+      if 'already exists' not in str(e):
+        raise e
+      logger.info('Reusing existing snapshot {0:s}'.format(snapshot_name))
+      created = False
+    return GoogleComputeSnapshot(disk=self, name=snapshot_name), created
 
   def Delete(self) -> None:
     """Delete a Disk."""
