@@ -1891,7 +1891,9 @@ class GoogleComputeDisk(compute_base_resource.GoogleComputeBaseResource):
     return response
 
   def Snapshot(
-      self, snapshot_name: Optional[str] = None) -> 'GoogleComputeSnapshot':
+      self,
+      snapshot_name: Optional[str] = None) -> Tuple['GoogleComputeSnapshot',
+                                                    bool]:
     """Create Snapshot of the disk.
 
     The Snapshot name must comply with the following RegEx:
