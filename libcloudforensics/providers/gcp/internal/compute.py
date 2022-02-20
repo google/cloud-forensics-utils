@@ -1937,9 +1937,9 @@ class GoogleComputeDisk(compute_base_resource.GoogleComputeBaseResource):
     try:
       response = request.execute()
       self.BlockOperation(response, zone=self.zone)
-    except RuntimeError as e:
-      if 'already exists' not in str(e):
-        raise e
+    except RuntimeError as error:
+      if 'already exists' not in str(error):
+        raise error
       logger.info('Reusing existing snapshot {0:s}'.format(snapshot_name))
       created = False
     return GoogleComputeSnapshot(disk=self, name=snapshot_name), created
