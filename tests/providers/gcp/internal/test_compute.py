@@ -608,13 +608,13 @@ class GoogleComputeDiskTest(unittest.TestCase):
     mock_block_operation.return_value = None
 
     # Snapshot(snapshot_name=None). Snapshot should start with the disk's name
-    snapshot = gcp_mocks.FAKE_DISK.Snapshot()
+    snapshot, _ = gcp_mocks.FAKE_DISK.Snapshot()
     self.assertIsInstance(snapshot, compute.GoogleComputeSnapshot)
     self.assertTrue(snapshot.name.startswith('fake-disk'))
 
     # Snapshot(snapshot_name='my-Snapshot'). Snapshot should start with
     # 'my-Snapshot'
-    snapshot = gcp_mocks.FAKE_DISK.Snapshot(snapshot_name='my-snapshot')
+    snapshot, _ = gcp_mocks.FAKE_DISK.Snapshot(snapshot_name='my-snapshot')
     self.assertIsInstance(snapshot, compute.GoogleComputeSnapshot)
     self.assertTrue(snapshot.name.startswith('my-snapshot'))
 

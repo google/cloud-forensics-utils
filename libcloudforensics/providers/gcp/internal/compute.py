@@ -1891,7 +1891,9 @@ class GoogleComputeDisk(compute_base_resource.GoogleComputeBaseResource):
     return response
 
   def Snapshot(
-      self, snapshot_name: Optional[str] = None) -> 'GoogleComputeSnapshot':
+      self,
+      snapshot_name: Optional[str] = None) -> Tuple['GoogleComputeSnapshot',
+                                                    bool]:
     """Create Snapshot of the disk.
 
     The Snapshot name must comply with the following RegEx:
@@ -1906,6 +1908,7 @@ class GoogleComputeDisk(compute_base_resource.GoogleComputeBaseResource):
 
     Returns:
       GoogleComputeSnapshot: A Snapshot object.
+      created: False if the resource existed already.
 
     Raises:
       InvalidNameError: If the name of the snapshot does not comply with the
@@ -1930,9 +1933,16 @@ class GoogleComputeDisk(compute_base_resource.GoogleComputeBaseResource):
         project=self.project_id,
         zone=self.zone,
         body=operation_config)
-    response = request.execute()
-    self.BlockOperation(response, zone=self.zone)
-    return GoogleComputeSnapshot(disk=self, name=snapshot_name)
+    created = True
+    try:
+      response = request.execute()
+      self.BlockOperation(response, zone=self.zone)
+    except RuntimeError as error:
+      if 'already exists' not in str(error):
+        raise error
+      logger.info('Reusing existing snapshot {0:s}'.format(snapshot_name))
+      created = False
+    return GoogleComputeSnapshot(disk=self, name=snapshot_name), created
 
   def Delete(self) -> None:
     """Delete a Disk."""
