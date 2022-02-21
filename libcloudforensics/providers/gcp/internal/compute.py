@@ -408,7 +408,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
           response = request.execute()
           break
         except HttpError as exception:
-          if not 'is not ready' in str(exception):
+          if 'is not ready' not in str(exception):
             raise exception
           logger.warning("Resource not yet ready, pausing 30 seconds...")
           time.sleep(30)
