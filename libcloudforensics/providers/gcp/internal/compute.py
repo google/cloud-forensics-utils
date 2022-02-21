@@ -401,9 +401,17 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     }
     try:
       gce_disks_client = self.GceApi().disks()
-      request = gce_disks_client.insert(
-          project=self.project_id, zone=self.default_zone, body=body)
-      response = request.execute()
+      while True:
+        try:
+          request = gce_disks_client.insert(
+              project=self.project_id, zone=self.default_zone, body=body)
+          response = request.execute()
+          break
+        except HttpError as exception:
+          if not 'is not ready' in str(exception):
+            raise exception
+          logger.warning("Resource not yet ready, pausing 30 seconds...")
+          time.sleep(30)
     except HttpError as exception:
       if exception.resp.status == 409:
         raise errors.ResourceAlreadyExistsError(
