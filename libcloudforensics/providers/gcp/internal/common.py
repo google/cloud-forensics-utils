@@ -147,9 +147,9 @@ def GenerateUniqueInstanceName(
   """
   rand = ''.join(random.choices(string.ascii_lowercase, k=5))
   timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-  name = f'{prefix}-{rand}-{timestamp}'
   if truncate_at:
-    name = name[:truncate_at]
+    prefix = prefix[:(truncate_at - len(timestamp) - 7)]
+  name = f'{prefix}-{rand}-{timestamp}'
   return name
 
 
