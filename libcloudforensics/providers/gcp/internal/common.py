@@ -16,8 +16,10 @@
 
 import binascii
 import datetime
+import random
 import re
 import socket
+import string
 import time
 from typing import TYPE_CHECKING, Dict, List, Optional, Any
 import netaddr
@@ -141,12 +143,13 @@ def GenerateUniqueInstanceName(
 
   Returns:
     str: The name after adding a timestamp.
-        Ex: [prefix]-[TIMESTAMP('%Y%m%d%H%M%S')]
+        Ex: [prefix]-[rand]-[TIMESTAMP('%Y%m%d%H%M%S')]
   """
+  rand = ''.join(random.choices(string.ascii_lowercase, k=5))
   timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
   if truncate_at:
-    truncate_at = truncate_at - len(timestamp) - 1
-  name = '{0:s}-{1:s}'.format(prefix[:truncate_at], timestamp)
+    prefix = prefix[:(truncate_at - len(timestamp) - 7)]
+  name = f'{prefix}-{rand}-{timestamp}'
   return name
 
 
