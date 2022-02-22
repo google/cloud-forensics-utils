@@ -143,7 +143,7 @@ def GenerateUniqueInstanceName(
 
   Returns:
     str: The name after adding a timestamp.
-        Ex: [prefix]-[TIMESTAMP('%Y%m%d%H%M%S')]
+        Ex: [prefix]-[rand]-[TIMESTAMP('%Y%m%d%H%M%S')]
   """
   rand = ''.join(random.choices(string.ascii_lowercase, k=5))
   timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
