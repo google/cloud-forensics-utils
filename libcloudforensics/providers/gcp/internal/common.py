@@ -152,6 +152,7 @@ def GenerateUniqueInstanceName(
     name = name[:truncate_at]
   return name
 
+
 def CreateService(
     service_name: str,
     api_version: str) -> 'googleapiclient.discovery.Resource':
