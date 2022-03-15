@@ -1368,11 +1368,15 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
     """
 
     gce_instance_client = self.GceApi().instances()
+    device_name = None
+    for disk_dict in self.GetValue('disks'):
+      if disk_dict['source'].split('/')[-1] == disk.name:
+        device_name = disk_dict['deviceName']
     request = gce_instance_client.detachDisk(
         instance=self.name,
         project=self.project_id,
         zone=self.zone,
-        deviceName=disk.name)
+        deviceName=device_name)
     response = request.execute()
     self.BlockOperation(response, zone=self.zone)
 
