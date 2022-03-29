@@ -604,12 +604,6 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
         raise errors.ResourceAlreadyExistsError(msg, __name__) from e
       msg = 'Error while creating instance {0:s}'.format(instance_name)
       raise errors.ResourceCreationError(msg, __name__) from e
-
-    # Get ID for GoogleComputeInstance TODO: maybe not required
-    # request = gce_instance_client.get(
-    #     instance=instance_name, project=self.project_id, zone=compute_zone)
-    # response = request.execute()  # type: Dict[str, Any]
-
     return GoogleComputeInstance(
         project_id=self.project_id, zone=compute_zone, name=instance_name)
 
