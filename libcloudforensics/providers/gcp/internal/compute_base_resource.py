@@ -155,11 +155,11 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
           '(Instance, Disk or Snapshot).').format(resource_type)
       raise RuntimeError(error_msg)
     if resource_type == 'compute#instance':
-      module = self.GceApi().instances()
+      module = self.GceApi().instances() # pylint: disable=no-member
     elif resource_type == 'compute#disk':
-      module = self.GceApi().disks()
+      module = self.GceApi().disks() # pylint: disable=no-member
     elif resource_type == 'compute#Snapshot':
-      module = self.GceApi().snapshots()
+      module = self.GceApi().snapshots() # pylint: disable=no-member
 
     operation_func_to_call = getattr(module, operation_name)
     return operation_func_to_call

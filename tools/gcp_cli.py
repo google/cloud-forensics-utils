@@ -62,11 +62,11 @@ def ListInstances(args: 'argparse.Namespace') -> None:
   instances = project.compute.ListInstances()
 
   logger.info('Instances found:')
-  for instance in instances:
-    bootdisk = instances[instance].GetBootDisk()
+  for instance_name, instance in instances.items():
+    bootdisk = instance.GetBootDisk()
     if bootdisk:
       logger.info('Name: {0:s}, Bootdisk: {1:s}'.format(
-          instance, bootdisk.name))
+          instance_name, bootdisk.name))
 
 
 def ListDisks(args: 'argparse.Namespace') -> None:
@@ -85,8 +85,8 @@ def ListDisks(args: 'argparse.Namespace') -> None:
   project = gcp_project.GoogleCloudProject(args.project)
   disks = project.compute.ListDisks()
   logger.info('Disks found:')
-  for disk in disks:
-    logger.info('Name: {0:s}, Zone: {1:s}'.format(disk, disks[disk].zone))
+  for disk_name, disk in disks.items():
+    logger.info('Name: {0:s}, Zone: {1:s}'.format(disk_name, disk.zone))
 
 
 def CreateDiskCopy(args: 'argparse.Namespace') -> None:
