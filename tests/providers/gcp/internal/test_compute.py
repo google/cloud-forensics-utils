@@ -47,8 +47,8 @@ class GoogleCloudComputeTest(unittest.TestCase):
     instances.return_value.execute.return_value = gcp_mocks.MOCK_INSTANCES_AGGREGATED
     list_instances = gcp_mocks.FAKE_ANALYSIS_PROJECT.compute.ListInstances()
     self.assertEqual(1, len(list_instances))
-    self.assertEqual('fake-instance', list_instances['fake-instance'].name)
-    self.assertEqual('fake-zone', list_instances['fake-instance'].zone)
+    self.assertEqual('fake-instance', list_instances['0123456789012345678'].name)
+    self.assertEqual('fake-zone', list_instances['0123456789012345678'].zone)
 
   @typing.no_type_check
   @mock.patch('libcloudforensics.providers.gcp.internal.common.GoogleCloudComputeClient.BlockOperation')

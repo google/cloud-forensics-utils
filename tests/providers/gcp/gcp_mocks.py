@@ -44,7 +44,8 @@ FAKE_SOURCE_PROJECT = gcp_project.GoogleCloudProject(
     'fake-source-project', 'fake-zone')
 
 FAKE_INSTANCE = compute.GoogleComputeInstance(
-    FAKE_SOURCE_PROJECT.project_id, 'fake-zone', 'fake-instance')
+    FAKE_SOURCE_PROJECT.project_id, 'fake-zone', 'fake-instance', 
+    id='0123456789012345678')
 
 FAKE_DISK = compute.GoogleComputeDisk(
     FAKE_SOURCE_PROJECT.project_id, 'fake-zone', 'fake-disk')
@@ -101,7 +102,8 @@ MOCK_INSTANCES_AGGREGATED = {
         0: {
             'instances': [{
                 'name': FAKE_INSTANCE.name,
-                'zone': '/' + FAKE_INSTANCE.zone
+                'zone': '/' + FAKE_INSTANCE.zone,
+                'id': '0123456789012345678'
             }]
         }
     }
@@ -146,7 +148,7 @@ MOCK_DISKS_AGGREGATED = {
     }
 }
 
-MOCK_LIST_INSTANCES = {FAKE_INSTANCE.name: FAKE_INSTANCE}
+MOCK_LIST_INSTANCES = {'0123456789012345678': FAKE_INSTANCE} 
 
 MOCK_LIST_DISKS = {
     FAKE_DISK.name: FAKE_DISK,

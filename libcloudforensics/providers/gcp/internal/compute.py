@@ -46,6 +46,8 @@ E2_STANDARD_CPU_CORES = [2, 4, 8, 16, 32]
 # Numerical policy_level value for non-hierarchical FW rules
 NON_HIERARCHICAL_FW_POLICY_LEVEL = 999
 
+RESOURCE_ID_REGEX = r'^\d{19}$'
+
 
 class GoogleCloudCompute(common.GoogleCloudComputeClient):
   """Class representing all Google Cloud Compute objects in a project.
@@ -72,6 +74,50 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     self._disks = {}  # type: Dict[str, GoogleComputeDisk]
     self._region_disks = {}  # type: Dict[str, GoogleRegionComputeDisk]
     super().__init__(self.project_id)
+
+  def _FindResourceByName(
+      self,
+      resources: Dict[str, 'compute_base_resource.GoogleComputeBaseResource'],
+      name: str,
+      zone: Optional[str] = None
+  ) -> 'compute_base_resource.GoogleComputeBaseResource':
+    """A helper function for finding compute resources by name.
+    
+    Args:
+      resources: A dict of resources with resource IDs as keys and instantiated
+        resource objects as values.
+      name: The name of the resource to find.
+      zone: Optional. The zone containing the resource.
+
+    Returns:
+      A subclass of 'compute_base_resource.GoogleComputeBaseResource' depending
+        on the resource type.
+
+    Raises:
+      ResourceNotFoundError: If the resource name is not found in resources.
+      AmbiguousIdentifierError: If name matches multiple resources.
+    """
+
+    if zone:
+      matches = [resource for resource in resources.values()
+                if resource.name == name
+                and resource.zone == zone]    
+    else:
+      matches = [resource for resource in resources.values()
+                 if resource.name == name]
+
+    if not matches:
+      raise errors.ResourceNotFoundError(
+        f'Resource {name} was not found in project {self.project_id}',
+        __name__)
+    elif len(matches) > 1:
+      zones = [resource['zone'].rsplit('/', 1)[1] for resource in matches]
+      raise errors.AmbiguousIdentifierError(
+          f'Multiple resources found matching {name} in zones '
+          f'{", ".join(zones)} in project {self.project_id}. Either provide '
+          f'a resource ID or a zone argument.', __name__)
+
+    return matches.pop()
 
   def Instances(self,
                 refresh: bool = True) -> Dict[str, 'GoogleComputeInstance']:
@@ -140,11 +186,13 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
           for instance in response['items'][zone]['instances']:
             _, zone = instance['zone'].rsplit('/', 1)
             name = instance['name']
+            id = instance['id']
             deletion_protection = instance.get('deletionProtection', False)
-            instances[name] = GoogleComputeInstance(
+            instances[id] = GoogleComputeInstance(
                 self.project_id,
                 zone,
                 name,
+                id=id,
                 labels=instance.get('labels'),
                 deletion_protection=deletion_protection)
         except KeyError:
@@ -320,11 +368,15 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
               disk_name, self.project_id),
           __name__) from e
 
-  def GetInstance(self, instance_name: str) -> 'GoogleComputeInstance':
+  def GetInstance(
+      self,
+      instance_id: str,
+      zone: Optional[str] = None) -> 'GoogleComputeInstance':
     """Get instance from project.
 
     Args:
-      instance_name (str): The instance name.
+      instance_id (str): The instance identifier, either instance name or 
+        instance ID.
 
     Returns:
       GoogleComputeInstance: A Google Compute Instance object.
@@ -334,11 +386,15 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     """
 
     instances = self.Instances()
-    instance = instances.get(instance_name)
+
+    if re.match(RESOURCE_ID_REGEX, instance_id):
+      instance = instances.get(instance_id)
+    else:
+      instance = self._FindResourceByName(instances, instance_id, zone)
+      
     if not instance:
       raise errors.ResourceNotFoundError(
-          'Instance {0:s} was not found in project {1:s}'.format(
-              instance_name, self.project_id),
+          f'Instance {instance_id} was not found in project {self.project_id}',
           __name__)
     return instance
 
@@ -548,6 +604,12 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
         raise errors.ResourceAlreadyExistsError(msg, __name__) from e
       msg = 'Error while creating instance {0:s}'.format(instance_name)
       raise errors.ResourceCreationError(msg, __name__) from e
+
+    # Get ID for GoogleComputeInstance TODO: maybe not required
+    # request = gce_instance_client.get(
+    #     instance=instance_name, project=self.project_id, zone=compute_zone)
+    # response = request.execute()  # type: Dict[str, Any]
+
     return GoogleComputeInstance(
         project_id=self.project_id, zone=compute_zone, name=instance_name)
 
