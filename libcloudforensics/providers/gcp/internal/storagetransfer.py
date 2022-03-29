@@ -127,7 +127,7 @@ class GoogleCloudStorageTransfer:
         'status': 'ENABLED'
     }
     logger.info('Creating transfer job')
-    gcst_jobs = self.GcstApi().transferJobs()
+    gcst_jobs = self.GcstApi().transferJobs() # pylint: disable=no-member
     create_request = gcst_jobs.create(body=transfer_job_body)
     transfer_job = create_request.execute()
     logger.info('Job created: {0:s}'.format(str(transfer_job)))
@@ -138,7 +138,7 @@ class GoogleCloudStorageTransfer:
               str(transfer_job)),
           __name__)
     logger.info('Job created: {0:s}'.format(job_name))
-    gcst_transfers = self.GcstApi().transferOperations()
+    gcst_transfers = self.GcstApi().transferOperations() # pylint: disable=no-member
     filter_string = ('{{"projectId": "{0:s}", "jobNames": ["{1:s}"]}}').format(
         self.project_id, job_name)
     status = {}

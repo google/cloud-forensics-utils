@@ -51,9 +51,10 @@ def ListInstances(args: 'argparse.Namespace') -> None:
   instances = aws_account.ec2.ListInstances()
 
   logger.info('Instances found:')
-  for instance in instances:
-    boot_volume = instances[instance].GetBootVolume().volume_id
-    logger.info('Name: {0:s}, Boot volume: {1:s}'.format(instance, boot_volume))
+  for instance_name, instance in instances.items():
+    boot_volume = instance.GetBootVolume().volume_id
+    logger.info(
+        'Name: {0:s}, Boot volume: {1:s}'.format(instance_name, boot_volume))
 
 
 def ListVolumes(args: 'argparse.Namespace') -> None:
@@ -67,9 +68,10 @@ def ListVolumes(args: 'argparse.Namespace') -> None:
   volumes = aws_account.ebs.ListVolumes()
 
   logger.info('Volumes found:')
-  for volume in volumes:
-    logger.info('Name: {0:s}, Zone: {1:s}'.format(
-        volume, volumes[volume].availability_zone))
+  for volume_name, volume in volumes.items():
+    logger.info(
+        'Name: {0:s}, Zone: {1:s}'.format(
+            volume_name, volume.availability_zone))
 
 
 def CreateVolumeCopy(args: 'argparse.Namespace') -> None:

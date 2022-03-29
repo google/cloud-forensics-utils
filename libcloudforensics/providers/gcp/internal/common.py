@@ -261,11 +261,11 @@ class GoogleCloudComputeClient:
     service = self.GceApi()
     while True:
       if zone:
-        request = service.zoneOperations().get(
+        request = service.zoneOperations().get( # pylint: disable=no-member
             project=self.project_id, zone=zone, operation=response['name'])
         result = request.execute()  # type: Dict[str, Any]
       else:
-        request = service.globalOperations().get(
+        request = service.globalOperations().get( # pylint: disable=no-member
             project=self.project_id, operation=response['name'])
         result = request.execute()
 
