@@ -176,7 +176,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     """
 
     instances = {}
-    gce_instance_client = self.GceApi().instances()
+    gce_instance_client = self.GceApi().instances() # pylint: disable=no-member
     responses = common.ExecuteRequest(
         gce_instance_client, 'aggregatedList', {'project': self.project_id})
 
@@ -236,7 +236,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       Dict[str, List[GoogleComputeInstance]]: A mapping from managed instance
           groups to their managed GCE instances.
     """
-    groups_client = self.GceApi().instanceGroupManagers()
+    groups_client = self.GceApi().instanceGroupManagers() # pylint: disable=no-member
     responses = common.ExecuteRequest(
         groups_client, 'list', {
             'project': self.project_id,
@@ -263,7 +263,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       List[GoogleComputeInstance]: List of GCE instances managed by the
           managed instance group.
     """
-    groups_client = self.GceApi().instanceGroupManagers()
+    groups_client = self.GceApi().instanceGroupManagers() # pylint: disable=no-member
     responses = common.ExecuteRequest(
         groups_client,
         'listManagedInstances',
@@ -289,7 +289,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
           their respective GoogleComputeDisk object.
     """
     disks = {}
-    gce_disk_client = self.GceApi().disks()
+    gce_disk_client = self.GceApi().disks() # pylint: disable=no-member
     responses = common.ExecuteRequest(
         gce_disk_client, 'aggregatedList', {'project': self.project_id})
 
@@ -312,7 +312,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     Returns:
       List of all regions.
     """
-    gce_regions_client = self.GceApi().regions()
+    gce_regions_client = self.GceApi().regions() # pylint: disable=no-member
     responses = common.ExecuteRequest(
         gce_regions_client, 'list', {'project': self.project_id})
     # Unpack responses, response.get('items') returns a list of regions.
@@ -329,7 +329,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
           their respective GoogleRegionComputeDisk object.
     """
     region_disks = {}
-    gce_region_disk_client = self.GceApi().regionDisks()
+    gce_region_disk_client = self.GceApi().regionDisks() # pylint: disable=no-member
     for region in self.ListComputeRegions():
       responses = common.ExecuteRequest(
           gce_region_disk_client,
@@ -456,7 +456,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
                 self.project_id, self.default_zone, disk_type)
     }
     try:
-      gce_disks_client = self.GceApi().disks()
+      gce_disks_client = self.GceApi().disks() # pylint: disable=no-member
       request = gce_disks_client.insert(
           project=self.project_id, zone=self.default_zone, body=body)
       response = request.execute()
@@ -490,7 +490,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     """
 
     compute_zone = zone if zone else self.default_zone
-    machine_types_client = self.GceApi().machineTypes()
+    machine_types_client = self.GceApi().machineTypes() # pylint: disable=no-member
     params = {
         'project': self.project_id,
         'zone': compute_zone,
@@ -516,7 +516,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     """
 
     compute_zone = zone if zone else self.default_zone
-    disk_types_client = self.GceApi().diskTypes()
+    disk_types_client = self.GceApi().diskTypes() # pylint: disable=no-member
     params = {
         'project': self.project_id, 'zone': compute_zone, 'diskType': disk_type
     }
@@ -538,7 +538,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     Raises:
       HttpError if getting image object for the given image family name fails.
     """
-    images_client = self.GceApi().images()
+    images_client = self.GceApi().images() # pylint: disable=no-member
     params = {'project': project, 'family': image_family}
     # Safe to unpack, response is not paged.
     return common.ExecuteRequest(images_client, 'getFromFamily', params)[0]
@@ -556,7 +556,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     Raises:
       HttpError if getting network object for the given machine-type name fails.
     """
-    networks_client = self.GceApi().networks()
+    networks_client = self.GceApi().networks() # pylint: disable=no-member
     params = {
         'project': self.project_id,
         'network': network_name,
@@ -587,7 +587,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
           'Instance name {0:s} does not comply with {1:s}.'.format(
               instance_name, common.COMPUTE_RFC1035_REGEX.pattern),
           __name__)
-    gce_instance_client = self.GceApi().instances()
+    gce_instance_client = self.GceApi().instances() # pylint: disable=no-member
     compute_zone = zone if zone else self.default_zone
     params = {
         'project': self.project_id, 'zone': compute_zone, 'body': request_body
@@ -848,7 +848,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
           respective GoogleComputeInstance object.
     """
 
-    instance_service_object = self.GceApi().instances()
+    instance_service_object = self.GceApi().instances() # pylint: disable=no-member
     return self._ListByLabel(
         labels_filter, instance_service_object, filter_union)
 
@@ -873,7 +873,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
           respective GoogleComputeDisk object.
     """
 
-    disk_service_object = self.GceApi().disks()
+    disk_service_object = self.GceApi().disks() # pylint: disable=no-member
     return self._ListByLabel(labels_filter, disk_service_object, filter_union)
 
   def ListReservedExternalIps(self, zone: str) -> List[str]:
@@ -898,7 +898,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       raise ValueError('Invalid zone: {0:s}.'.format(zone))
     region = '-'.join(zone_parts[:-1])
     # Request list of addresses
-    addresses_client = self.GceApi().addresses()
+    addresses_client = self.GceApi().addresses() # pylint: disable=no-member
     params = {'project': self.project_id, 'region': region}
     try:
       responses = common.ExecuteRequest(addresses_client, 'list', params)
@@ -1022,7 +1022,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
                 zone=src_disk.zone,
                 src_disk=src_disk.name)
     }
-    gce_image_client = self.GceApi().images()
+    gce_image_client = self.GceApi().images() # pylint: disable=no-member
     request = gce_image_client.insert(
         project=self.project_id, body=image_body, forceCreate=True)
 
@@ -1084,7 +1084,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     if not gcs_uri.startswith(common.STORAGE_LINK_URL):
       gcs_uri = os.path.join(common.STORAGE_LINK_URL, gcs_uri)
     image_body = {'name': name, 'rawDisk': {'source': gcs_uri}}
-    gce_image_client = self.GceApi().images()
+    gce_image_client = self.GceApi().images() # pylint: disable=no-member
     request = gce_image_client.insert(
         project=self.project_id, body=image_body, forceCreate=True)
     response = request.execute()
@@ -1129,7 +1129,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
             'projects/{project_id}/global/images/{src_image}'.format(
                 project_id=src_image.project_id, src_image=src_image.name)
     }
-    gce_disk_client = self.GceApi().disks()
+    gce_disk_client = self.GceApi().disks() # pylint: disable=no-member
     request = gce_disk_client.insert(
         project=self.project_id, body=disk_body, zone=zone)
     response = request.execute()
@@ -1269,7 +1269,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     logger.info(
         'Inserting firewall rule {0:s}, '
         'targeting tags: {1!s}.'.format(body['name'], body['targetTags']))
-    firewall_client = self.GceApi().firewalls()
+    firewall_client = self.GceApi().firewalls() # pylint: disable=no-member
     request = firewall_client.insert(project=self.project_id, body=body)
     response = request.execute()
     self.BlockOperation(response)
@@ -1287,7 +1287,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
           https://cloud.google.com/compute/docs/reference/rest/v1/instances/get#response-body
     """
 
-    gce_instance_client = self.GceApi().instances()
+    gce_instance_client = self.GceApi().instances() # pylint: disable=no-member
     request = gce_instance_client.get(
         instance=self.name, project=self.project_id, zone=self.zone)
     response = request.execute()  # type: Dict[str, Any]
@@ -1407,7 +1407,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
         'boot': False,
         'autoDelete': False,
     }
-    gce_instance_client = self.GceApi().instances()
+    gce_instance_client = self.GceApi().instances() # pylint: disable=no-member
     request = gce_instance_client.attachDisk(
         instance=self.name,
         project=self.project_id,
@@ -1423,7 +1423,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
       disk (GoogleComputeDisk): Disk to detach.
     """
 
-    gce_instance_client = self.GceApi().instances()
+    gce_instance_client = self.GceApi().instances() # pylint: disable=no-member
     device_name = None
     for disk_dict in self.GetValue('disks'):
       if disk_dict['source'].split('/')[-1] == disk.name:
@@ -1459,7 +1459,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
           disk['source'].split('/')[-1] for disk in self.GetValue('disks')
       ]
 
-    gce_instance_client = self.GceApi().instances()
+    gce_instance_client = self.GceApi().instances() # pylint: disable=no-member
 
     if force_delete and self.deletion_protection:
       logger.info(
@@ -1534,7 +1534,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
     body = {}
     if ip_addr is not None:
       body['natIP'] = ip_addr
-    instances_client = self.GceApi().instances()
+    instances_client = self.GceApi().instances() # pylint: disable=no-member
     params = {
         'project': self.project_id,
         'zone': self.zone,
@@ -1592,7 +1592,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
               external_ip_address,
           ))
       # Execute the IP address removal by deleting access config
-      gce_instance_client = self.GceApi().instances()
+      gce_instance_client = self.GceApi().instances() # pylint: disable=no-member
       params = {
           'project': self.project_id,
           'zone': self.zone,
@@ -1633,7 +1633,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
              )
       raise errors.OperationFailedError(msg, __name__) from exception
 
-    mig_client = self.GceApi().instanceGroupManagers()
+    mig_client = self.GceApi().instanceGroupManagers() # pylint: disable=no-member
     params = {
         'project': self.project_id,
         'zone': self.zone,
@@ -1690,7 +1690,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
         'items': tags,
     }
 
-    gce_instance_client = self.GceApi().instances()
+    gce_instance_client = self.GceApi().instances() # pylint: disable=no-member
     request = gce_instance_client.setTags(
         project=self.project_id,
         zone=self.zone,
@@ -1719,7 +1719,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
 
     logger.info('Stopping instance "{0:s}"'.format(self.name))
     try:
-      gce_instance_client = self.GceApi().instances()
+      gce_instance_client = self.GceApi().instances() # pylint: disable=no-member
       request = gce_instance_client.stop(
           project=self.project_id, instance=self.name, zone=self.zone)
       response = request.execute()
@@ -1738,7 +1738,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
 
     logger.info('Starting instance "{0:s}"'.format(self.name))
     try:
-      gce_instance_client = self.GceApi().instances()
+      gce_instance_client = self.GceApi().instances() # pylint: disable=no-member
       request = gce_instance_client.start(
           project=self.project_id, instance=self.name, zone=self.zone)
       response = request.execute()
@@ -1759,7 +1759,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
     logger.info(
         'Detaching service account from instance "{0:s}"'.format(self.name))
     try:
-      gce_instance_client = self.GceApi().instances()
+      gce_instance_client = self.GceApi().instances() # pylint: disable=no-member
       request = gce_instance_client.setServiceAccount(
           project=self.project_id, instance=self.name, zone=self.zone, body={})
       response = request.execute()
@@ -1777,7 +1777,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
     Returns:
       List[Dict[str, Any]]: The effective firewall rules per interface.
     """
-    gce_instance_client = self.GceApi().instances()
+    gce_instance_client = self.GceApi().instances() # pylint: disable=no-member
     instance_info = self.GetOperation()
     effective_firewalls = []
 
@@ -1944,7 +1944,7 @@ class GoogleComputeDisk(compute_base_resource.GoogleComputeBaseResource):
           https://cloud.google.com/compute/docs/reference/rest/v1/disks/get#response-body
     """
 
-    gce_disk_client = self.GceApi().disks()
+    gce_disk_client = self.GceApi().disks() # pylint: disable=no-member
     request = gce_disk_client.get(
         disk=self.name, project=self.project_id, zone=self.zone)
     response = request.execute()  # type: Dict[str, Any]
@@ -1987,7 +1987,7 @@ class GoogleComputeDisk(compute_base_resource.GoogleComputeBaseResource):
     logger.info(
         self.FormatLogMessage('New Snapshot: {0:s}'.format(snapshot_name)))
     operation_config = {'name': snapshot_name}
-    gce_disk_client = self.GceApi().disks()
+    gce_disk_client = self.GceApi().disks() # pylint: disable=no-member
     request = gce_disk_client.createSnapshot(
         disk=self.name,
         project=self.project_id,
@@ -2007,7 +2007,7 @@ class GoogleComputeDisk(compute_base_resource.GoogleComputeBaseResource):
   def Delete(self) -> None:
     """Delete a Disk."""
 
-    gce_disk_client = self.GceApi().disks()
+    gce_disk_client = self.GceApi().disks() # pylint: disable=no-member
     try:
       request = gce_disk_client.delete(
           project=self.project_id, disk=self.name, zone=self.zone)
@@ -2068,7 +2068,7 @@ class GoogleRegionComputeDisk(compute_base_resource.GoogleComputeBaseResource):
       An API operation object for a Google Regional Compute Engine disk.
           https://cloud.google.com/compute/docs/reference/rest/v1/regionDisks/get#response-body  # pylint: disable=line-too-long
     """
-    gce_disk_client = self.GceApi().regionDisks()
+    gce_disk_client = self.GceApi().regionDisks() # pylint: disable=no-member
     param = {
         'project': self.project_id, 'region': self.region, 'disk': self.name
     }
@@ -2102,7 +2102,7 @@ class GoogleComputeSnapshot(compute_base_resource.GoogleComputeBaseResource):
           https://cloud.google.com/compute/docs/reference/rest/v1/snapshots/get#response-body
     """
 
-    gce_snapshot_client = self.GceApi().snapshots()
+    gce_snapshot_client = self.GceApi().snapshots() # pylint: disable=no-member
     request = gce_snapshot_client.get(
         snapshot=self.name, project=self.project_id)
     response = request.execute()  # type: Dict[str, Any]
@@ -2113,7 +2113,7 @@ class GoogleComputeSnapshot(compute_base_resource.GoogleComputeBaseResource):
 
     logger.info(
         self.FormatLogMessage('Deleting Snapshot: {0:s}'.format(self.name)))
-    gce_snapshot_client = self.GceApi().snapshots()
+    gce_snapshot_client = self.GceApi().snapshots() # pylint: disable=no-member
     request = gce_snapshot_client.delete(
         project=self.project_id, snapshot=self.name)
     response = request.execute()
@@ -2131,7 +2131,7 @@ class GoogleComputeImage(compute_base_resource.GoogleComputeBaseResource):
           https://cloud.google.com/compute/docs/reference/rest/v1/images/get#response-body
     """
 
-    gce_image_client = self.GceApi().images()
+    gce_image_client = self.GceApi().images() # pylint: disable=no-member
     request = gce_image_client.get(project=self.project_id, image=self.name)
     response = request.execute()  # type: Dict[str, Any]
     return response
@@ -2183,7 +2183,7 @@ class GoogleComputeImage(compute_base_resource.GoogleComputeBaseResource):
   def Delete(self) -> None:
     """Delete Compute Disk Image from a project."""
 
-    gce_image_client = self.GceApi().images()
+    gce_image_client = self.GceApi().images() # pylint: disable=no-member
     request = gce_image_client.delete(project=self.project_id, image=self.name)
     response = request.execute()
     self.BlockOperation(response)
