@@ -39,7 +39,7 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
                project_id: str,
                zone: str,
                name: str,
-               id: Optional[str] = None,
+               resource_id: Optional[str] = None,
                labels: Optional[Dict[str, Any]] = None,
                deletion_protection: bool = False,
                region: Optional[str] = None) -> None:
@@ -49,7 +49,7 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
       project_id: Google Cloud project ID.
       zone: What zone the resource is in.
       name: Name of the resource.
-      id (str): The ID of the resource.
+      resource_id (str): The ID of the resource.
       labels: Dictionary of labels for the resource, if existing.
       deletion_protection: True if the resource has deletionProtection
           enabled.
@@ -59,7 +59,7 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
     self.deletion_protection = deletion_protection
     self.zone = zone
     self.name = name
-    self.id = id
+    self.resource_id = resource_id
     self.labels = labels
     self._data = {}  # type: Dict[str, Any]
     self.project_id = project_id  # type: str

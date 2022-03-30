@@ -19,7 +19,7 @@ import re
 import subprocess
 import time
 from collections import defaultdict
-from typing import Dict, Tuple, List, TYPE_CHECKING, Union, Optional, Any
+from typing import Dict, Tuple, List, TYPE_CHECKING, Union, Optional, Any, TypeVar # pylint: disable=line-too-long
 
 from googleapiclient.errors import HttpError
 
@@ -47,6 +47,9 @@ E2_STANDARD_CPU_CORES = [2, 4, 8, 16, 32]
 NON_HIERARCHICAL_FW_POLICY_LEVEL = 999
 
 RESOURCE_ID_REGEX = r'^\d{19}$'
+
+ComputeResource = TypeVar(
+  'ComputeResource', bound='compute_base_resource.GoogleComputeBaseResource')
 
 
 class GoogleCloudCompute(common.GoogleCloudComputeClient):
@@ -77,15 +80,15 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
 
   def _FindResourceByName(
       self,
-      resources: Dict[str, 'compute_base_resource.GoogleComputeBaseResource'],
+      resources: Dict[str, ComputeResource],
       name: str,
       zone: Optional[str] = None
-  ) -> 'compute_base_resource.GoogleComputeBaseResource':
+  ) -> ComputeResource:
     """A helper function for finding compute resources by name.
-    
+
     Args:
-      resources: A dict of resources with resource IDs as keys and instantiated
-        resource objects as values.
+      resources: A dict of resources with resource IDs as keys and resource
+        objects as values.
       name: The name of the resource to find.
       zone: Optional. The zone containing the resource.
 
@@ -100,8 +103,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
 
     if zone:
       matches = [resource for resource in resources.values()
-                if resource.name == name
-                and resource.zone == zone]    
+                if resource.name == name and resource.zone == zone]
     else:
       matches = [resource for resource in resources.values()
                  if resource.name == name]
@@ -110,8 +112,8 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       raise errors.ResourceNotFoundError(
         f'Resource {name} was not found in project {self.project_id}',
         __name__)
-    elif len(matches) > 1:
-      zones = [resource['zone'].rsplit('/', 1)[1] for resource in matches]
+    if len(matches) > 1:
+      zones = [resource.zone for resource in matches]
       raise errors.AmbiguousIdentifierError(
           f'Multiple resources found matching {name} in zones '
           f'{", ".join(zones)} in project {self.project_id}. Either provide '
@@ -186,13 +188,13 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
           for instance in response['items'][zone]['instances']:
             _, zone = instance['zone'].rsplit('/', 1)
             name = instance['name']
-            id = instance['id']
+            resource_id = instance['id']
             deletion_protection = instance.get('deletionProtection', False)
-            instances[id] = GoogleComputeInstance(
+            instances[resource_id] = GoogleComputeInstance(
                 self.project_id,
                 zone,
                 name,
-                id=id,
+                resource_id=resource_id,
                 labels=instance.get('labels'),
                 deletion_protection=deletion_protection)
         except KeyError:
@@ -370,12 +372,12 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
 
   def GetInstance(
       self,
-      instance_id: str,
+      instance_name: str,
       zone: Optional[str] = None) -> 'GoogleComputeInstance':
     """Get instance from project.
 
     Args:
-      instance_id (str): The instance identifier, either instance name or 
+      instance_name (str): The instance identifier, either instance name or
         instance ID.
 
     Returns:
@@ -387,15 +389,15 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
 
     instances = self.Instances()
 
-    if re.match(RESOURCE_ID_REGEX, instance_id):
-      instance = instances.get(instance_id)
+    if re.match(RESOURCE_ID_REGEX, instance_name):
+      instance = instances.get(instance_name)
     else:
-      instance = self._FindResourceByName(instances, instance_id, zone)
-      
+      instance = self._FindResourceByName(instances, instance_name, zone)
+
     if not instance:
       raise errors.ResourceNotFoundError(
-          f'Instance {instance_id} was not found in project {self.project_id}',
-          __name__)
+          f'Instance {instance_name} was not found in project '
+          f'{self.project_id}', __name__)
     return instance
 
   def GetDisk(self, disk_name: str) -> 'GoogleComputeDisk':
