@@ -47,6 +47,10 @@ FAKE_INSTANCE = compute.GoogleComputeInstance(
     FAKE_SOURCE_PROJECT.project_id, 'fake-zone', 'fake-instance',
     resource_id='0123456789012345678')
 
+FAKE_INSTANCE_NAME_DUP = compute.GoogleComputeInstance(
+    FAKE_SOURCE_PROJECT.project_id, 'fake-zone2', 'fake-instance',
+    resource_id='1234567890123456789')
+
 FAKE_DISK = compute.GoogleComputeDisk(
     FAKE_SOURCE_PROJECT.project_id, 'fake-zone', 'fake-disk')
 

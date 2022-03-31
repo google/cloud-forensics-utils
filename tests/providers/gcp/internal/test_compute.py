@@ -40,6 +40,30 @@ class GoogleCloudComputeTest(unittest.TestCase):
     self.assertEqual('project:fake-source-project Test message', formatted_msg)
 
   @typing.no_type_check
+  def testFindResourceByName(self):
+    """Test _findResourceByName handles error cases."""
+    test_compute = gcp_mocks.FAKE_SOURCE_PROJECT.compute
+    test_resources = {
+      gcp_mocks.FAKE_INSTANCE.resource_id: gcp_mocks.FAKE_INSTANCE
+    }
+    test_resources_dup_name = {
+      gcp_mocks.FAKE_INSTANCE.resource_id: gcp_mocks.FAKE_INSTANCE,
+      gcp_mocks.FAKE_INSTANCE_NAME_DUP.resource_id: gcp_mocks.FAKE_INSTANCE_NAME_DUP
+    }
+    # pylint: disable=protected-access
+    self.assertEqual(
+        test_compute._FindResourceByName(test_resources, 'fake-instance'),
+        gcp_mocks.FAKE_INSTANCE)
+    self.assertEqual(
+        test_compute._FindResourceByName(test_resources_dup_name, 'fake-instance', zone='fake-zone'),
+        gcp_mocks.FAKE_INSTANCE)
+    with self.assertRaises(errors.ResourceNotFoundError):
+      test_compute._FindResourceByName(test_resources, 'not-found')
+    with self.assertRaises(errors.AmbiguousIdentifierError):
+      test_compute._FindResourceByName(test_resources_dup_name, 'fake-instance')
+    # pylint: enable=protected-access
+
+  @typing.no_type_check
   @mock.patch('libcloudforensics.providers.gcp.internal.common.GoogleCloudComputeClient.GceApi')
   def testListInstances(self, mock_gce_api):
     """Test that instances of project are correctly listed."""
@@ -91,6 +115,10 @@ class GoogleCloudComputeTest(unittest.TestCase):
     # pylint: enable=protected-access
     with self.assertRaises(errors.ResourceNotFoundError):
       gcp_mocks.FAKE_SOURCE_PROJECT.compute.GetInstance('non-existent-instance')
+
+    # Test calling with instance ID as well
+    found_instance = gcp_mocks.FAKE_SOURCE_PROJECT.compute.GetInstance(gcp_mocks.FAKE_INSTANCE.resource_id)
+    self.assertEqual(gcp_mocks.FAKE_INSTANCE, found_instance)
 
   @typing.no_type_check
   @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleCloudCompute.ListDisks')
