@@ -62,11 +62,11 @@ def ListInstances(args: 'argparse.Namespace') -> None:
   instances = project.compute.ListInstances()
 
   logger.info('Instances found:')
-  for instance_name, instance in instances.items():
+  for instance in instances.values():
     bootdisk = instance.GetBootDisk()
     if bootdisk:
       logger.info('Name: {0:s}, Bootdisk: {1:s}'.format(
-          instance_name, bootdisk.name))
+          instance.name, bootdisk.name))
 
 
 def ListDisks(args: 'argparse.Namespace') -> None:
