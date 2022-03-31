@@ -29,7 +29,7 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
     project_id (str): Google Cloud project ID.
     zone (str): What zone the resource is in.
     name (str): Name of the resource.
-    id (str): The ID of the resource.
+    resource_id (str): The ID of the resource.
     labels (Dict): Dictionary of labels for the resource, if existing.
     deletion_protection (bool): True if the resource has deletionProtection
         enabled.

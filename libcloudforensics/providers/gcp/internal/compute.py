@@ -14,12 +14,13 @@
 # limitations under the License.
 """Google Compute Engine functionalities."""
 
+# pylint: disable=line-too-long
 import os
 import re
 import subprocess
 import time
 from collections import defaultdict
-from typing import Dict, Tuple, List, TYPE_CHECKING, Union, Optional, Any, TypeVar # pylint: disable=line-too-long
+from typing import Any, Dict, List, Optional, Tuple, TypeVar, TYPE_CHECKING, Union
 
 from googleapiclient.errors import HttpError
 
@@ -32,6 +33,7 @@ from libcloudforensics import errors
 
 if TYPE_CHECKING:
   import googleapiclient
+# pylint: enable=line-too-long
 
 logging_utils.SetUpLogger(__name__)
 logger = logging_utils.GetLogger(__name__)
