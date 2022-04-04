@@ -134,7 +134,7 @@ class EndToEndTest(unittest.TestCase):
     gcp_client_api = common.GoogleCloudComputeClient(self.project_id).GceApi()
 
     # The disk copy should be attached to the analysis project
-    gce_disk_client = gcp_client_api.disks()
+    gce_disk_client = gcp_client_api.disks() # pylint: disable=no-member
     request = gce_disk_client.get(
         project=self.project_id, zone=self.zone, disk=self.boot_disk_copy.name)
     result = request.execute()
@@ -152,7 +152,7 @@ class EndToEndTest(unittest.TestCase):
 
     # The forensic instance should be live in the analysis GCP project and
     # the disk should be attached
-    gce_instance_client = gcp_client_api.instances()
+    gce_instance_client = gcp_client_api.instances() # pylint: disable=no-member
     request = gce_instance_client.get(
         project=self.project_id, zone=self.zone, instance=self.analysis_vm_name)
     result = request.execute()
@@ -197,7 +197,7 @@ class EndToEndTest(unittest.TestCase):
     gcp_client_api = common.GoogleCloudComputeClient(self.project_id).GceApi()
 
     # The disk copy should be existing in the analysis project
-    gce_disk_client = gcp_client_api.disks()
+    gce_disk_client = gcp_client_api.disks() # pylint: disable=no-member
     request = gce_disk_client.get(
         project=self.project_id, zone=self.zone,
         disk=self.disk_to_forensic_copy.name)
@@ -216,7 +216,7 @@ class EndToEndTest(unittest.TestCase):
 
     # The forensic instance should be live in the analysis GCP project and
     # the disk should be attached
-    gce_instance_client = gcp_client_api.instances()
+    gce_instance_client = gcp_client_api.instances() # pylint: disable=no-member
     request = gce_instance_client.get(
         project=self.project_id, zone=self.zone, instance=self.analysis_vm_name)
     result = request.execute()
@@ -247,7 +247,7 @@ class EndToEndTest(unittest.TestCase):
     # delete the created forensics VMs
     logger.info('Deleting analysis instance: {0:s}.'.format(
         analysis_vm.name))
-    gce_instance_client = gcp_client.GceApi().instances()
+    gce_instance_client = gcp_client.GceApi().instances() # pylint: disable=no-member
     request = gce_instance_client.delete(
         project=project.project_id, zone=zone, instance=analysis_vm.name)
     response = request.execute()
@@ -269,7 +269,7 @@ class EndToEndTest(unittest.TestCase):
       logger.info('Deleting disk: {0:s}.'.format(disk))
       while True:
         try:
-          gce_disk_client = gcp_client.GceApi().disks()
+          gce_disk_client = gcp_client.GceApi().disks() # pylint: disable=no-member
           request = gce_disk_client.delete(
               project=project.project_id, zone=zone, disk=disk)
           response = request.execute()

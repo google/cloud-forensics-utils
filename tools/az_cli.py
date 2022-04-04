@@ -61,8 +61,8 @@ def ListDisks(args: 'argparse.Namespace') -> None:
       resource_group_name=args.resource_group_name)
 
   logger.info('Disks found:')
-  for disk in disks:
-    logger.info('Name: {0:s}, Region: {1:s}'.format(disk, disks[disk].region))
+  for disk_name, disk in disks.items():
+    logger.info('Name: {0:s}, Region: {1:s}'.format(disk_name, disk.region))
 
 
 def CreateDiskCopy(args: 'argparse.Namespace') -> None:
