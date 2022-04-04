@@ -234,7 +234,7 @@ class S3:
     """Check if an object exists in S3.
 
     Args:
-      bucket (str): S3 nucket name.
+      bucket (str): S3 bucket name.
       key (str): object path and name.
 
     Returns:
