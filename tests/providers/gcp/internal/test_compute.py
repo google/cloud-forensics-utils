@@ -118,10 +118,6 @@ class GoogleCloudComputeTest(unittest.TestCase):
     id_found_instance = gcp_mocks.FAKE_SOURCE_PROJECT.compute.GetInstance(gcp_mocks.FAKE_INSTANCE.resource_id)
     self.assertEqual(id_found_instance, gcp_mocks.FAKE_INSTANCE)
 
-    # Test calling with instance ID as well
-    found_instance = gcp_mocks.FAKE_SOURCE_PROJECT.compute.GetInstance(gcp_mocks.FAKE_INSTANCE.resource_id)
-    self.assertEqual(gcp_mocks.FAKE_INSTANCE, found_instance)
-
   @typing.no_type_check
   @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleCloudCompute.ListDisks')
   def testGetDisk(self, mock_list_disks):
