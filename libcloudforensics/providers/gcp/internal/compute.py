@@ -46,6 +46,10 @@ E2_STANDARD_CPU_CORES = [2, 4, 8, 16, 32]
 # Numerical policy_level value for non-hierarchical FW rules
 NON_HIERARCHICAL_FW_POLICY_LEVEL = 999
 
+# Will only matches IDs as names can't start with a number
+# https://cloud.google.com/compute/docs/naming-resources#resource-name-format
+RESOURCE_ID_REGEX = r'^\d{19}$'
+
 
 class GoogleCloudCompute(common.GoogleCloudComputeClient):
   """Class representing all Google Cloud Compute objects in a project.
@@ -140,11 +144,13 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
           for instance in response['items'][zone]['instances']:
             _, zone = instance['zone'].rsplit('/', 1)
             name = instance['name']
+            resource_id = instance['id']
             deletion_protection = instance.get('deletionProtection', False)
             instances[name] = GoogleComputeInstance(
                 self.project_id,
                 zone,
                 name,
+                resource_id=resource_id,
                 labels=instance.get('labels'),
                 deletion_protection=deletion_protection)
         except KeyError:
@@ -324,7 +330,8 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     """Get instance from project.
 
     Args:
-      instance_name (str): The instance name.
+      instance_name (str): The instance identifier, can be either an instance
+        name or ID.
 
     Returns:
       GoogleComputeInstance: A Google Compute Instance object.
@@ -334,7 +341,14 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     """
 
     instances = self.Instances()
-    instance = instances.get(instance_name)
+
+    if re.match(RESOURCE_ID_REGEX, instance_name):
+      id_match = [instance for instance in instances.values()
+                  if instance.resource_id == instance_name]
+      instance = id_match.pop() if id_match else None
+    else:
+      instance = instances.get(instance_name)
+
     if not instance:
       raise errors.ResourceNotFoundError(
           'Instance {0:s} was not found in project {1:s}'.format(
