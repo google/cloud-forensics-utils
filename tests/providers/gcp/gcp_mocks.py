@@ -107,7 +107,7 @@ MOCK_INSTANCES_AGGREGATED = {
             'instances': [{
                 'name': FAKE_INSTANCE.name,
                 'zone': '/' + FAKE_INSTANCE.zone,
-                'id': '0123456789012345678'
+                'id': FAKE_INSTANCE.resource_id
             }]
         }
     }

@@ -115,6 +115,8 @@ class GoogleCloudComputeTest(unittest.TestCase):
     # pylint: enable=protected-access
     with self.assertRaises(errors.ResourceNotFoundError):
       gcp_mocks.FAKE_SOURCE_PROJECT.compute.GetInstance('non-existent-instance')
+    id_found_instance = gcp_mocks.FAKE_SOURCE_PROJECT.compute.GetInstance(gcp_mocks.FAKE_INSTANCE.resource_id)
+    self.assertEqual(id_found_instance, gcp_mocks.FAKE_INSTANCE)
 
     # Test calling with instance ID as well
     found_instance = gcp_mocks.FAKE_SOURCE_PROJECT.compute.GetInstance(gcp_mocks.FAKE_INSTANCE.resource_id)
