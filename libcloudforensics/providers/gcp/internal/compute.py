@@ -46,6 +46,8 @@ E2_STANDARD_CPU_CORES = [2, 4, 8, 16, 32]
 # Numerical policy_level value for non-hierarchical FW rules
 NON_HIERARCHICAL_FW_POLICY_LEVEL = 999
 
+# Will only matches IDs as names can't start with a number
+# https://cloud.google.com/compute/docs/naming-resources#resource-name-format
 RESOURCE_ID_REGEX = r'^\d{19}$'
 
 
