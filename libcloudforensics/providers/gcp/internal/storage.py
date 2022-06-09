@@ -254,6 +254,9 @@ class GoogleCloudStorage:
     Returns:
       Dict[str, Any]: An API operation object for a Google Cloud Storage bucket.
            https://cloud.google.com/storage/docs/json_api/v1/buckets#resource
+
+    Raises:
+      ResourceCreationError: If the resource could not be created.
     """
     if bucket.startswith('gs://'):
       bucket = bucket[5:]

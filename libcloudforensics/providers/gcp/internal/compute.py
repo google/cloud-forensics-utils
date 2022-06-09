@@ -399,6 +399,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       GoogleComputeDisk: Google Compute Disk.
 
     Raises:
+      ResourceAlreadyExistsError: If the disk already exists.
       ResourceCreationError: If the disk could not be created.
     """
 
@@ -537,6 +538,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
 
     Raises:
       ResourceAlreadyExistsError: If an instance with the same name already exists.
+      ResourceCreationError: If an error occurs creating the instance.
       InvalidNameError: If instance name is invalid.
     """
     instance_name = request_body['name']
@@ -741,6 +743,8 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
 
     Raises:
       ResourceCreationError: If virtual machine cannot be found after creation.
+      ValueError: If the requested CPU cores is not available for the
+        specified machine type.
     """
 
     # Re-use instance if it already exists, or create a new one.
@@ -958,6 +962,8 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
 
     Raises:
       InvalidNameError: If the GCE Image name is invalid.
+      ResourceAlreadyExistsError: If an image with the given name already
+        exists in the project.
       ResourceCreationError: If the GCE Image cannot be inserted
     """
 
@@ -1403,6 +1409,10 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
           when instance is deleted' bit).
       force_delete (bool): force delete the instance, even if deletionProtection
           is set to true.
+
+    Raises:
+      ResourceDeletionError: If deleteProtection could not be toggled on the
+        instance
     """
     if not force_delete and self.deletion_protection:
       logger.warning(
@@ -1930,7 +1940,8 @@ class GoogleComputeDisk(compute_base_resource.GoogleComputeBaseResource):
 
     Raises:
       InvalidNameError: If the name of the snapshot does not comply with the
-          RegEx.
+        RegEx.
+      RuntimeError: If the snapshot operation fails.
     """
 
     if not snapshot_name:
