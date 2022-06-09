@@ -968,12 +968,12 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     """
 
     if name:
+      name = name[:common.COMPUTE_NAME_LIMIT]
       if not common.REGEX_DISK_NAME.match(name):
         raise errors.InvalidNameError(
             'Image name {0:s} does not comply with {1:s}'.format(
                 name, common.REGEX_DISK_NAME.pattern),
             __name__)
-      name = name[:common.COMPUTE_NAME_LIMIT]
     else:
       name = common.GenerateUniqueInstanceName(
           src_disk.name, common.COMPUTE_NAME_LIMIT)
