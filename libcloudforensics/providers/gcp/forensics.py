@@ -513,6 +513,9 @@ def QuarantineGKEWorkload(project_id: str,
     exempted_src_ips (List[str]): Optional. The list of source IPs to exempt
         in the GCP firewall rules when isolating the nodes. If not specified,
         no IPs are exempted.
+
+  Raises:
+    ResourceNotFoundError: If the workload isn't found.
   """
   logger.info('Starting GKE quarantining process...')
 
