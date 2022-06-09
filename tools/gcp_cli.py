@@ -546,6 +546,11 @@ def GKEEnumerate(args: 'argparse.Namespace') -> None:
 
   Args:
     args (argparse.Namespace): Arguments from ArgumentParser.
+
+  Raises:
+    AttributeError: If a namespace is not provided or multiple enumerations
+      are provided.
+    ResourceNotFoundError: If a workload, node or service is not found.
   """
   AssignProjectID(args)
 

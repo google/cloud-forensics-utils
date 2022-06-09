@@ -372,14 +372,13 @@ def CopyEBSSnapshotToS3Process(
   userdata script then performs a `dd` operation to send the disk image to S3.
 
   Args:
+    aws_account (account.AWSAccount): An AWS account to use for the operation.
     s3_destination (str): S3 directory in the form of s3://bucket/path/folder
     snapshot_id (str): EBS snapshot ID.
-    instance_profile_name (str): The name of an existing instance profile to
+    instance_profile_arn (str): The name of an existing instance profile to
       attach to the instance, or to create if it does not yet exist.
-    zone (str): AWS Availability Zone the instance will be launched in.
     subnet_id (str): Optional. The subnet to launch the instance in.
     security_group_id (str): Optional. Security group ID to attach.
-    cleanup_iam (bool): If we created IAM components, remove them afterwards
 
   Raises:
     ResourceCreationError: If any dependent resource could not be created.
