@@ -29,6 +29,7 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
     project_id (str): Google Cloud project ID.
     zone (str): What zone the resource is in.
     name (str): Name of the resource.
+    resource_id (str): The ID number of the resource.
     labels (Dict): Dictionary of labels for the resource, if existing.
     deletion_protection (bool): True if the resource has deletionProtection
         enabled.
@@ -38,6 +39,7 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
                project_id: str,
                zone: str,
                name: str,
+               resource_id: Optional[str] = None,
                labels: Optional[Dict[str, Any]] = None,
                deletion_protection: bool = False,
                region: Optional[str] = None) -> None:
@@ -47,6 +49,7 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
       project_id: Google Cloud project ID.
       zone: What zone the resource is in.
       name: Name of the resource.
+      resource_id: The ID number of the resource.
       labels: Dictionary of labels for the resource, if existing.
       deletion_protection: True if the resource has deletionProtection
           enabled.
@@ -56,6 +59,7 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
     self.deletion_protection = deletion_protection
     self.zone = zone
     self.name = name
+    self.resource_id = resource_id
     self.labels = labels
     self._data = {}  # type: Dict[str, Any]
     self.project_id = project_id  # type: str
@@ -155,11 +159,11 @@ class GoogleComputeBaseResource(common.GoogleCloudComputeClient):
           '(Instance, Disk or Snapshot).').format(resource_type)
       raise RuntimeError(error_msg)
     if resource_type == 'compute#instance':
-      module = self.GceApi().instances()
+      module = self.GceApi().instances() # pylint: disable=no-member
     elif resource_type == 'compute#disk':
-      module = self.GceApi().disks()
+      module = self.GceApi().disks() # pylint: disable=no-member
     elif resource_type == 'compute#Snapshot':
-      module = self.GceApi().snapshots()
+      module = self.GceApi().snapshots() # pylint: disable=no-member
 
     operation_func_to_call = getattr(module, operation_name)
     return operation_func_to_call

@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Make sure that your AWS/GCP  credentials are configured correclty
+# Make sure that your AWS/GCP  credentials are configured correctly
 """CLI tools for libcloudforensics."""
 
 import argparse
@@ -58,6 +58,7 @@ PROVIDER_TO_FUNC = {
         'createbucket': gcp_cli.CreateBucket,
         'gkequarantine': gcp_cli.GKEWorkloadQuarantine,
         'gkeenumerate': gcp_cli.GKEEnumerate,
+        'listbigqueryjobs': gcp_cli.ListBigQueryJobs,
         'listbuckets': gcp_cli.ListBuckets,
         'listcloudsqlinstances': gcp_cli.ListCloudSqlInstances,
         'listdisks': gcp_cli.ListDisks,
@@ -78,7 +79,7 @@ PROVIDER_TO_FUNC = {
 def AddParser(
     provider: str,
     # pylint: disable=protected-access
-    provider_parser: argparse._SubParsersAction,
+    provider_parser: argparse._SubParsersAction,  # type: ignore
     # pylint: enable=protected-access
     func: str,
     func_helper: str,
@@ -510,6 +511,8 @@ def Main() -> None:
                     None),
                 ('--as_json', 'Output in JSON format.', False)
             ])
+  AddParser('gcp', gcp_subparsers, 'listbigqueryjobs',
+            'List BigQuery jobs for a project.')
 
   if len(sys.argv) == 1:
     parser.print_help()

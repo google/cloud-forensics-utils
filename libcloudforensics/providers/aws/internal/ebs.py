@@ -530,7 +530,7 @@ class EBS:
         'VolumeType': volume_type
     }
     if kms_key_id:
-      create_volume_args['Encrypted'] = True
+      create_volume_args['Encrypted'] = True  # type: ignore
       create_volume_args['KmsKeyId'] = kms_key_id
     if volume_type == 'io1':
       # If using the io1 volume type, we must specify Iops, see

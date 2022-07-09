@@ -116,7 +116,7 @@ class IAM:
     """Deletes the IAM policy with the given name.
 
     Args:
-      name (str): The ARN of the policy to delete.
+      arn (str): The ARN of the policy to delete.
     """
     logger.info('Deleting IAM policy {0:s}'.format(arn))
     try:
@@ -233,6 +233,9 @@ class IAM:
     Args:
       policy_arn (str): The Policy Arn.
       role_name (str): The Role Name.
+
+    Raises:
+      ResourceNotFoundError: If attaching the policy to the role failed.
     """
     logger.info('Attaching policy {0:s} to role {1:s}'
       .format(policy_arn, role_name))
@@ -299,11 +302,15 @@ class IAM:
   def RevokeOldSessionsForRole(self, role_name: str) -> None:
     """Revoke old session tokens for a role.
 
-    This is acheived by adding an inline policy to the role, Deny *:* on the
+    This is achieved by adding an inline policy to the role, Deny *:* on the
     condition of TokenIssueTime.
 
     Args:
       role_name (str): The role name to act on.
+
+    Raises:
+      ResourceNotFoundError: If an inline policy could not be added to an IAM
+        role.
     """
     now = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.000Z")
     policy = json.loads(ReadPolicyDoc(IAM_DENY_ALL_AFTER_TOKEN_ISSUE_DATE))

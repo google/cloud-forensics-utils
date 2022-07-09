@@ -154,6 +154,7 @@ class S3:
           Ex: {'ServerSideEncryption': "AES256"}
     Raises:
       ResourceCreationError: If the object couldn't be uploaded.
+      ResourceNotFoundError: If the file could not be found.
     """
     client = self.aws_account.ClientApi(common.S3_SERVICE)
     if not s3_path.startswith('s3://'):
@@ -197,9 +198,7 @@ class S3:
          supplied to the S3 Put call. Useful for specifying encryption
          parameters.
           Ex: {'ServerSideEncryption': "AES256"}
-    Returns:
-      Dict: An API operation object for an S3 Put request.
-        https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html#S3.Client.put_object  # pylint: disable=line-too-long
+
     Raises:
       ResourceCreationError: If the object couldn't be uploaded.
     """
@@ -234,7 +233,7 @@ class S3:
     """Check if an object exists in S3.
 
     Args:
-      bucket (str): S3 nucket name.
+      bucket (str): S3 bucket name.
       key (str): object path and name.
 
     Returns:

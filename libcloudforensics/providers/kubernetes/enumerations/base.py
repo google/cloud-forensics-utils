@@ -113,7 +113,7 @@ class Enumeration(Generic[ObjT], metaclass=abc.ABCMeta):
     Args:
       info (Dict[str, Any]): The (empty) information dictionary to be populated
           with information about the underlying object's details.
-      warnings (Dict[str, Any]): The (emtpy) warning dictionary to be populated
+      warnings (Dict[str, Any]): The (empty) warning dictionary to be populated
           with warnings about the underlying object. These warnings will be
           highlighted in the enumeration.
     """
@@ -138,16 +138,16 @@ class Enumeration(Generic[ObjT], metaclass=abc.ABCMeta):
       print_func('-', logging.INFO)
       return
 
-    def MakeRow(_item: Tuple[str, Any]) -> str:
+    def MakeRow(item: Tuple[str, Any]) -> str:
       """Creates a row from a key-value pair.
 
       Args:
-        _item (Tuple[str, str]): The key-value pair.
+        item (Tuple[str, str]): The key-value pair.
 
       Returns:
         str: The created row.
       """
-      return '{0:s} : {1!s}'.format(_item[0].ljust(key_max_len), _item[1])
+      return '{0:s} : {1!s}'.format(item[0].ljust(key_max_len), item[1])
 
     row_max_len = max(
         len(MakeRow(item))
@@ -166,7 +166,7 @@ class Enumeration(Generic[ObjT], metaclass=abc.ABCMeta):
       namespace: Optional[str] = None,
       filter_empty: bool = True,
       silent: bool = False,
-      _print_func: Optional[Callable[[str, int], None]] = None) -> str:
+      print_func_arg: Optional[Callable[[str, int], None]] = None) -> str:
     """Enumerates the object and its children to the user.
 
     Args:
@@ -176,7 +176,7 @@ class Enumeration(Generic[ObjT], metaclass=abc.ABCMeta):
           lines for which the value is empty. Defaults to True.
       silent (bool): Optional. If True, the output from the enumeration is not
           logged to stdout.
-      _print_func (Callable[[str, int], None]): Optional. The function to use
+      print_func_arg (Callable[[str, int], None]): Optional. The function to use
           for displaying and registering the enumeration text. Only to be used
           internally.
 
@@ -198,10 +198,10 @@ class Enumeration(Generic[ObjT], metaclass=abc.ABCMeta):
         logger.log(level, text)
 
     print_func: Callable[[str, int], None]
-    if _print_func is None:
+    if print_func_arg is None:
       print_func = PrintFunc
     else:
-      print_func = _print_func
+      print_func = print_func_arg
 
     def ChildPrintFunc(text: str, level: int) -> None:
       """Wraps the current _print_func with an indent.
@@ -218,7 +218,7 @@ class Enumeration(Generic[ObjT], metaclass=abc.ABCMeta):
       child.Enumerate(
           namespace=namespace,
           filter_empty=filter_empty,
-          _print_func=ChildPrintFunc)
+          print_func_arg=ChildPrintFunc)
 
     return '\n'.join(rows)
 

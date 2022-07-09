@@ -59,7 +59,7 @@ class GoogleCloudComputeTest(unittest.TestCase):
     mig_request = mig.return_value.execute
     mig_request.return_value = gcp_mocks.MOCK_INSTANCE_ABANDONED
     mock_block_operation.return_value = gcp_mocks.MOCK_INSTANCE_ABANDONED
-    # Check that call completes succesfully
+    # Check that call completes successfully
     gcp_mocks.FAKE_INSTANCE.AbandonFromMIG('fake-instance-group')
     self.assertTrue(mig_request.called)
 
@@ -91,6 +91,8 @@ class GoogleCloudComputeTest(unittest.TestCase):
     # pylint: enable=protected-access
     with self.assertRaises(errors.ResourceNotFoundError):
       gcp_mocks.FAKE_SOURCE_PROJECT.compute.GetInstance('non-existent-instance')
+    id_found_instance = gcp_mocks.FAKE_SOURCE_PROJECT.compute.GetInstance(gcp_mocks.FAKE_INSTANCE.resource_id)
+    self.assertEqual(id_found_instance, gcp_mocks.FAKE_INSTANCE)
 
   @typing.no_type_check
   @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleCloudCompute.ListDisks')
@@ -608,13 +610,13 @@ class GoogleComputeDiskTest(unittest.TestCase):
     mock_block_operation.return_value = None
 
     # Snapshot(snapshot_name=None). Snapshot should start with the disk's name
-    snapshot = gcp_mocks.FAKE_DISK.Snapshot()
+    snapshot, _ = gcp_mocks.FAKE_DISK.Snapshot()
     self.assertIsInstance(snapshot, compute.GoogleComputeSnapshot)
     self.assertTrue(snapshot.name.startswith('fake-disk'))
 
     # Snapshot(snapshot_name='my-Snapshot'). Snapshot should start with
     # 'my-Snapshot'
-    snapshot = gcp_mocks.FAKE_DISK.Snapshot(snapshot_name='my-snapshot')
+    snapshot, _ = gcp_mocks.FAKE_DISK.Snapshot(snapshot_name='my-snapshot')
     self.assertIsInstance(snapshot, compute.GoogleComputeSnapshot)
     self.assertTrue(snapshot.name.startswith('my-snapshot'))
 

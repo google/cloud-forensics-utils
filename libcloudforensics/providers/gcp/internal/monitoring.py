@@ -128,7 +128,7 @@ class GoogleCloudMonitoring:
         metrics for. When not provided will collect metrics for all instances
         in the project.
       days (int): Optional. The number of days to collect metrics for.
-      aggregate_minutes (int): Optional. The minutes to aggregate on.
+      aggregation_minutes (int): Optional. The minutes to aggregate on.
 
     Returns:
       List[Dict[str, Any]]: a list of CPU usage for each instance in the format

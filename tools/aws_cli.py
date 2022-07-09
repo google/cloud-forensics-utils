@@ -14,7 +14,7 @@
 # limitations under the License.
 
 # pylint: disable=line-too-long
-# Make sure that your AWS credentials are configured correclty, see
+# Make sure that your AWS credentials are configured correctly, see
 # https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html
 """Demo CLI tool for AWS."""
 
@@ -51,9 +51,10 @@ def ListInstances(args: 'argparse.Namespace') -> None:
   instances = aws_account.ec2.ListInstances()
 
   logger.info('Instances found:')
-  for instance in instances:
-    boot_volume = instances[instance].GetBootVolume().volume_id
-    logger.info('Name: {0:s}, Boot volume: {1:s}'.format(instance, boot_volume))
+  for instance_name, instance in instances.items():
+    boot_volume = instance.GetBootVolume().volume_id
+    logger.info(
+        'Name: {0:s}, Boot volume: {1:s}'.format(instance_name, boot_volume))
 
 
 def ListVolumes(args: 'argparse.Namespace') -> None:
@@ -67,9 +68,10 @@ def ListVolumes(args: 'argparse.Namespace') -> None:
   volumes = aws_account.ebs.ListVolumes()
 
   logger.info('Volumes found:')
-  for volume in volumes:
-    logger.info('Name: {0:s}, Zone: {1:s}'.format(
-        volume, volumes[volume].availability_zone))
+  for volume_name, volume in volumes.items():
+    logger.info(
+        'Name: {0:s}, Zone: {1:s}'.format(
+            volume_name, volume.availability_zone))
 
 
 def CreateVolumeCopy(args: 'argparse.Namespace') -> None:
@@ -240,7 +242,7 @@ def ImageEBSSnapshotToS3(args: 'argparse.Namespace') -> None:
 
   Unfortunately, this is not a natively supported operation in AWS. As such, we
   must create a instance, create a volume, mount the volume to the instance and
-  perform a `dd` operation to perform the image. We acheive the creation of
+  perform a `dd` operation to perform the image. We achieve the creation of
   the volume, the attachment and the upload to S3 with a userdata script on the
   instance. That does mean however, the instance needs an instance profile with
   appropriate permissions.
