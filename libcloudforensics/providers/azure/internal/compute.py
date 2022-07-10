@@ -443,7 +443,7 @@ class AZCompute:
         'version': 'latest',
         'offer': 'UbuntuServer'
       }
-    logger.debug('VM image_reference {0:!s}'.format(image_reference))
+    logger.debug('VM image_reference {0!s}'.format(image_reference))
 
     creation_data = {
         'location': region,
