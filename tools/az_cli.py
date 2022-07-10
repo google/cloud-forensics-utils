@@ -91,6 +91,9 @@ def StartAnalysisVm(args: 'argparse.Namespace') -> None:
 
   Args:
     args (argparse.Namespace): Arguments from ArgumentParser.
+
+  Raises:
+    RunTimeError: If cannot parse image reference.
   """
   attach_disks = []
   if args.attach_disks:
