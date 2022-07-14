@@ -129,13 +129,12 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
         f'Resource {name} was not found in project {self.project_id}',
         __name__)
     if len(matches) > 1:
-      location : List[str] = [
-          resource.zone or resource.region for resource in matches
-          if resource.zone or resource.region
-      ]
+      location = [resource.zone or resource.region for resource in matches]
+      if location:
+        location = ", ".join(location)
       raise errors.AmbiguousIdentifierError(
           f'Multiple resources found matching {name} in zones/regions '
-          f'{", ".join(location)} in project {self.project_id}. Either '
+          f'{location} in project {self.project_id}. Either '
           f'provide a resource ID or a zone argument.', __name__)
 
     return matches.pop()
