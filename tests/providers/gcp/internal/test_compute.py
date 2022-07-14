@@ -90,7 +90,7 @@ class GoogleCloudComputeTest(unittest.TestCase):
   @typing.no_type_check
   @mock.patch('libcloudforensics.providers.gcp.internal.common.GoogleCloudComputeClient.GceApi')
   def testListDisks(self, mock_gce_api):
-    """Test that disks of instances are correctly listed."""
+    """Test that disks are correctly listed."""
     disks = mock_gce_api.return_value.disks.return_value.aggregatedList
     disks.return_value.execute.return_value = gcp_mocks.MOCK_DISKS_AGGREGATED
     list_disks = gcp_mocks.FAKE_ANALYSIS_PROJECT.compute.ListDisks()
@@ -538,7 +538,7 @@ class GoogleComputeInstanceTest(unittest.TestCase):
 
     disks = gcp_mocks.FAKE_INSTANCE.ListDisks()
     self.assertEqual(2, len(disks))
-    self.assertEqual(['01234567890123456789', '0123456789012345678'], list(disks.keys()))
+    self.assertEqual(['fake-boot-disk', 'fake-disk'], list(disks.keys()))
 
   @typing.no_type_check
   @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleCloudCompute.ListDisks')
