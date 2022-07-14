@@ -98,7 +98,7 @@ class GoogleCloudComputeTest(unittest.TestCase):
     self.assertEqual('fake-disk', list_disks['0123456789012345678'].name)
     self.assertEqual('fake-boot-disk', list_disks['01234567890123456789'].name)
     self.assertEqual('fake-zone', list_disks['0123456789012345678'].zone)
-    self.assertEqual('fake-zone', list_disks['0123456789012345679'].zone)
+    self.assertEqual('fake-zone', list_disks['01234567890123456789'].zone)
 
   @typing.no_type_check
   @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleCloudCompute.ListInstances')
