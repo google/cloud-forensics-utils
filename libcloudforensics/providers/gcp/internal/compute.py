@@ -119,7 +119,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
                 if resource.name == name and resource.zone == zone]
     elif region:
       matches = [resource for resource in resources.values()
-                if resource.name == name and resource.region == zone]
+                if resource.name == name and resource.region == region]
     else:
       matches = [resource for resource in resources.values()
                  if resource.name == name]
@@ -313,9 +313,10 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
         gce_disk_client, 'aggregatedList', {'project': self.project_id})
 
     for response in responses:
+      # Disks.aggregatedList returns both zones and regions in items.
       for location in response['items']:
         for disk in response['items'][location].get('disks', []):
-          # Skip if regional disk, i.e. has no region.
+          # Skip if regional disk, i.e. has no zone.
           if not disk.get('zone'):
             continue
           name = disk['name']
