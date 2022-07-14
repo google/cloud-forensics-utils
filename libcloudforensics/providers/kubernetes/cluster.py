@@ -236,7 +236,7 @@ class K8sCluster(base.K8sClient, metaclass=abc.ABCMeta):
       namespace (str): The namespace in which to list the workloads. If not
           specified, workloads are listed in all namespaces.
 
-    Returns:
+    Yields:
       Iterable[base.K8sWorkload]: An iterator for this cluster's workloads.
     """
     yield from self.ListDeployments(namespace=namespace)

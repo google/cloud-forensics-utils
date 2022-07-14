@@ -688,6 +688,9 @@ class EC2:
       Tuple[str, str]: A tuple containing the association id of the profile
         attachment, and the Arn of the Instance profile attached. Both are None
         if no profile is attached, or the instance cannot be found.
+
+    Raises:
+      ResourceNotFoundError: If the instance does not exist.
     """
     try:
       client = self.aws_account.ClientApi(common.EC2_SERVICE)
