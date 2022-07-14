@@ -313,17 +313,16 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
         gce_disk_client, 'aggregatedList', {'project': self.project_id})
 
     for response in responses:
-      for zone in response['items']:
-        try:
-          for disk in response['items'][zone]['disks']:
-            _, zone = disk['zone'].rsplit('/', 1)
-            name = disk['name']
-            resource_id = disk['id']
-            disks[resource_id] = GoogleComputeDisk(
-                self.project_id, zone, name, labels=disk.get('labels'))
-        except KeyError:
-          pass
-
+      for location in response['items']:
+        for disk in response['items'][location].get('disks', []):
+          # Skip if regional disk, i.e. has no region.
+          if not disk.get('zone'):
+            continue
+          name = disk['name']
+          resource_id = disk['id']
+          _, zone = disk['zone'].rsplit('/', 1)
+          disks[resource_id] = GoogleComputeDisk(
+              self.project_id, zone, name, labels=disk.get('labels'))
     return disks
 
   def ListComputeRegions(self) -> List[str]:
