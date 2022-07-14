@@ -140,7 +140,7 @@ MOCK_DISKS_AGGREGATED = {
         0: {
             'disks': [{
                 'name': FAKE_BOOT_DISK.name,
-                'zone': '/' + FAKE_BOOT_DISK.zone
+                'zone': '/' + FAKE_BOOT_DISK.zone,
 		'id': '01234567890123456789'
             }]
         },
