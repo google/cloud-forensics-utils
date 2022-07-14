@@ -90,7 +90,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       region: Optional[str] = None
   ) -> ComputeResource:
     """A helper function for finding compute resources by name.
-    
+
     The resources can be zonal or regional.
 
     Args:
@@ -113,7 +113,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       raise ValueError(
           'The resource must be either zonal or regional: '
           '_FindResourceByName is called with a zone and a region.')
-    
+
     if zone:
       matches = [resource for resource in resources.values()
                 if resource.name == name and resource.zone == zone]
