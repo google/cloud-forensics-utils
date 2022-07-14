@@ -374,7 +374,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     Regional disks API resource: https://cloud.google.com/compute/docs/reference/rest/v1/regionDisks#resource:-disk  # pylint: disable=line-too-long
 
     Args:
-      disk_name: Name of the regional disk to get.
+      disk_name: Name or ID of the regional disk to get.
       region: Compute region.
 
     Returns:
