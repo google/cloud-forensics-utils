@@ -92,7 +92,7 @@ class GoogleCloudComputeTest(unittest.TestCase):
   def testListDisks(self, mock_gce_api):
     """Test that disks of instances are correctly listed."""
     disks = mock_gce_api.return_value.disks.return_value.aggregatedList
-    disks.return_value.execute.return_value = gcp_mocks.MOCK_LIST_DISKS
+    disks.return_value.execute.return_value = gcp_mocks.MOCK_DISKS_AGGREGATED
     list_disks = gcp_mocks.FAKE_ANALYSIS_PROJECT.compute.ListDisks()
     self.assertEqual(2, len(list_disks))
     self.assertEqual('fake-disk', list_disks['0123456789012345678'].name)
