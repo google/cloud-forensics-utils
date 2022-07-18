@@ -40,6 +40,30 @@ class GoogleCloudComputeTest(unittest.TestCase):
     self.assertEqual('project:fake-source-project Test message', formatted_msg)
 
   @typing.no_type_check
+  def testFindResourceByName(self):
+    """Test _findResourceByName handles error cases."""
+    test_compute = gcp_mocks.FAKE_SOURCE_PROJECT.compute
+    test_resources = {
+      gcp_mocks.FAKE_INSTANCE.resource_id: gcp_mocks.FAKE_INSTANCE
+    }
+    test_resources_dup_name = {
+      gcp_mocks.FAKE_INSTANCE.resource_id: gcp_mocks.FAKE_INSTANCE,
+      gcp_mocks.FAKE_INSTANCE_NAME_DUP.resource_id: gcp_mocks.FAKE_INSTANCE_NAME_DUP
+    }
+    # pylint: disable=protected-access
+    self.assertEqual(
+        test_compute._FindResourceByName(test_resources, 'fake-instance'),
+        gcp_mocks.FAKE_INSTANCE)
+    self.assertEqual(
+        test_compute._FindResourceByName(test_resources_dup_name, 'fake-instance', zone='fake-zone'),
+        gcp_mocks.FAKE_INSTANCE)
+    with self.assertRaises(errors.ResourceNotFoundError):
+      test_compute._FindResourceByName(test_resources, 'not-found')
+    with self.assertRaises(errors.AmbiguousIdentifierError):
+      test_compute._FindResourceByName(test_resources_dup_name, 'fake-instance')
+    # pylint: enable=protected-access
+
+  @typing.no_type_check
   @mock.patch('libcloudforensics.providers.gcp.internal.common.GoogleCloudComputeClient.GceApi')
   def testListInstances(self, mock_gce_api):
     """Test that instances of project are correctly listed."""
@@ -47,8 +71,8 @@ class GoogleCloudComputeTest(unittest.TestCase):
     instances.return_value.execute.return_value = gcp_mocks.MOCK_INSTANCES_AGGREGATED
     list_instances = gcp_mocks.FAKE_ANALYSIS_PROJECT.compute.ListInstances()
     self.assertEqual(1, len(list_instances))
-    self.assertEqual('fake-instance', list_instances['fake-instance'].name)
-    self.assertEqual('fake-zone', list_instances['fake-instance'].zone)
+    self.assertEqual('fake-instance', list_instances['0123456789012345678'].name)
+    self.assertEqual('fake-zone', list_instances['0123456789012345678'].zone)
 
   @typing.no_type_check
   @mock.patch('libcloudforensics.providers.gcp.internal.common.GoogleCloudComputeClient.BlockOperation')
@@ -66,15 +90,15 @@ class GoogleCloudComputeTest(unittest.TestCase):
   @typing.no_type_check
   @mock.patch('libcloudforensics.providers.gcp.internal.common.GoogleCloudComputeClient.GceApi')
   def testListDisks(self, mock_gce_api):
-    """Test that disks of instances are correctly listed."""
+    """Test that disks are correctly listed."""
     disks = mock_gce_api.return_value.disks.return_value.aggregatedList
     disks.return_value.execute.return_value = gcp_mocks.MOCK_DISKS_AGGREGATED
     list_disks = gcp_mocks.FAKE_ANALYSIS_PROJECT.compute.ListDisks()
     self.assertEqual(2, len(list_disks))
-    self.assertEqual('fake-disk', list_disks['fake-disk'].name)
-    self.assertEqual('fake-boot-disk', list_disks['fake-boot-disk'].name)
-    self.assertEqual('fake-zone', list_disks['fake-disk'].zone)
-    self.assertEqual('fake-zone', list_disks['fake-boot-disk'].zone)
+    self.assertEqual('fake-disk', list_disks['0123456789012345678'].name)
+    self.assertEqual('fake-boot-disk', list_disks['01234567890123456789'].name)
+    self.assertEqual('fake-zone', list_disks['0123456789012345678'].zone)
+    self.assertEqual('fake-zone', list_disks['01234567890123456789'].zone)
 
   @typing.no_type_check
   @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleCloudCompute.ListInstances')

@@ -47,6 +47,10 @@ FAKE_INSTANCE = compute.GoogleComputeInstance(
     FAKE_SOURCE_PROJECT.project_id, 'fake-zone', 'fake-instance',
     resource_id='0123456789012345678')
 
+FAKE_INSTANCE_NAME_DUP = compute.GoogleComputeInstance(
+    FAKE_SOURCE_PROJECT.project_id, 'fake-zone2', 'fake-instance',
+    resource_id='1234567890123456789')
+
 FAKE_DISK = compute.GoogleComputeDisk(
     FAKE_SOURCE_PROJECT.project_id, 'fake-zone', 'fake-disk')
 
@@ -136,23 +140,25 @@ MOCK_DISKS_AGGREGATED = {
         0: {
             'disks': [{
                 'name': FAKE_BOOT_DISK.name,
-                'zone': '/' + FAKE_BOOT_DISK.zone
+                'zone': '/' + FAKE_BOOT_DISK.zone,
+		'id': '01234567890123456789'
             }]
         },
         1: {
             'disks': [{
                 'name': FAKE_DISK.name,
-                'zone': '/' + FAKE_DISK.zone
+                'zone': '/' + FAKE_DISK.zone,
+		'id': '0123456789012345678'
             }]
         }
     }
 }
 
-MOCK_LIST_INSTANCES = {FAKE_INSTANCE.name: FAKE_INSTANCE}
+MOCK_LIST_INSTANCES = {'0123456789012345678': FAKE_INSTANCE}
 
 MOCK_LIST_DISKS = {
-    FAKE_DISK.name: FAKE_DISK,
-    FAKE_BOOT_DISK.name: FAKE_BOOT_DISK
+    '0123456789012345678': FAKE_DISK,
+    '01234567890123456789': FAKE_BOOT_DISK
 }
 
 MOCK_GCE_OPERATION_INSTANCES_LABELS_SUCCESS = {

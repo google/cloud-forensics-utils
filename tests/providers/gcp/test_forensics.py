@@ -112,8 +112,8 @@ class GCPForensicsTest(unittest.TestCase):
   def testCreateDiskCopy3(self, mock_list_disks, mock_list_instances):
     """Test that a disk from a remote project is duplicated and attached to
     an analysis project. """
-    mock_list_disks.return_value = gcp_mocks.MOCK_DISKS_AGGREGATED
-    mock_list_instances.return_value = gcp_mocks.MOCK_INSTANCES_AGGREGATED
+    mock_list_disks.return_value = gcp_mocks.MOCK_LIST_DISKS
+    mock_list_instances.return_value = gcp_mocks.MOCK_LIST_INSTANCES
 
     # create_disk_copy(
     #     src_proj,

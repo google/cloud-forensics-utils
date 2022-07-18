@@ -14,12 +14,13 @@
 # limitations under the License.
 """Google Compute Engine functionalities."""
 
+# pylint: disable=line-too-long
 import os
 import re
 import subprocess
 import time
 from collections import defaultdict
-from typing import Dict, Tuple, List, TYPE_CHECKING, Union, Optional, Any
+from typing import Any, Dict, List, Optional, Tuple, TypeVar, TYPE_CHECKING, Union
 
 from googleapiclient.errors import HttpError
 
@@ -32,6 +33,7 @@ from libcloudforensics import errors
 
 if TYPE_CHECKING:
   import googleapiclient
+# pylint: enable=line-too-long
 
 logging_utils.SetUpLogger(__name__)
 logger = logging_utils.GetLogger(__name__)
@@ -48,7 +50,10 @@ NON_HIERARCHICAL_FW_POLICY_LEVEL = 999
 
 # Will only matches IDs as names can't start with a number
 # https://cloud.google.com/compute/docs/naming-resources#resource-name-format
-RESOURCE_ID_REGEX = r'^\d{19}$'
+RESOURCE_ID_REGEX = r'^\d+$'
+
+ComputeResource = TypeVar(
+  'ComputeResource', bound='compute_base_resource.GoogleComputeBaseResource')
 
 
 class GoogleCloudCompute(common.GoogleCloudComputeClient):
@@ -77,6 +82,62 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     self._region_disks = {}  # type: Dict[str, GoogleRegionComputeDisk]
     super().__init__(self.project_id)
 
+  def _FindResourceByName(
+      self,
+      resources: Dict[str, ComputeResource],
+      name: str,
+      zone: Optional[str] = None,
+      region: Optional[str] = None
+  ) -> ComputeResource:
+    """A helper function for finding compute resources by name.
+
+    The resources can be zonal or regional.
+
+    Args:
+      resources: A dict of resources with resource IDs as keys and resource
+        objects as values.
+      name: The name of the resource to find.
+      zone: The zone containing the resource.
+      region: The region containing the resource.
+
+    Returns:
+      A subclass of 'compute_base_resource.GoogleComputeBaseResource' depending
+        on the resource type.
+
+    Raises:
+      ValueError: If both zone and region is provided.
+      ResourceNotFoundError: If the resource name is not found in resources.
+      AmbiguousIdentifierError: If name matches multiple resources.
+    """
+    if zone and region:
+      raise ValueError(
+          'The resource must be either zonal or regional: '
+          '_FindResourceByName is called with a zone and a region.')
+
+    if zone:
+      matches = [resource for resource in resources.values()
+                if resource.name == name and resource.zone == zone]
+    elif region:
+      matches = [resource for resource in resources.values()
+                if resource.name == name and resource.region == region]
+    else:
+      matches = [resource for resource in resources.values()
+                 if resource.name == name]
+
+    if not matches:
+      raise errors.ResourceNotFoundError(
+        f'Resource {name} was not found in project {self.project_id}',
+        __name__)
+    if len(matches) > 1:
+      location : List [str] = [
+          resource.zone or resource.region or '_' for resource in matches]
+      raise errors.AmbiguousIdentifierError(
+          f'Multiple resources found matching {name} in zones/regions '
+          f'{", ".join(location)} in project {self.project_id}. Either '
+          f'provide a resource ID or a zone argument.', __name__)
+
+    return matches.pop()
+
   def Instances(self,
                 refresh: bool = True) -> Dict[str, 'GoogleComputeInstance']:
     """Get all instances in the project.
@@ -85,7 +146,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       refresh (boolean): Optional. Returns refreshed result if True.
 
     Returns:
-      Dict[str, GoogleComputeInstance]: Dictionary mapping instance names
+      Dict[str, GoogleComputeInstance]: Dictionary mapping instance IDs
           (str) to their respective GoogleComputeInstance object.
     """
     if not refresh and self._instances:
@@ -100,7 +161,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       refresh (boolean): Optional. Returns refreshed result if True.
 
     Returns:
-      Dict[str, GoogleComputeDisk]: Dictionary mapping disk names (str) to
+      Dict[str, GoogleComputeDisk]: Dictionary mapping disk IDs (str) to
           their respective GoogleComputeDisk object.
     """
     if not refresh and self._disks:
@@ -117,7 +178,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       refresh: Returns refreshed result if True.
 
     Returns:
-      Dictionary mapping disk names (str) to their respective
+      Dictionary mapping disk IDs (str) to their respective
         GoogleRegionComputeDisk object.
     """
     if not refresh and self._region_disks:
@@ -129,7 +190,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     """List instances in project.
 
     Returns:
-      Dict[str, GoogleComputeInstance]: Dictionary mapping instance names (str)
+      Dict[str, GoogleComputeInstance]: Dictionary mapping instance IDs (str)
           to their respective GoogleComputeInstance object.
     """
 
@@ -146,7 +207,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
             name = instance['name']
             resource_id = instance['id']
             deletion_protection = instance.get('deletionProtection', False)
-            instances[name] = GoogleComputeInstance(
+            instances[resource_id] = GoogleComputeInstance(
                 self.project_id,
                 zone,
                 name,
@@ -252,16 +313,17 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
         gce_disk_client, 'aggregatedList', {'project': self.project_id})
 
     for response in responses:
-      for zone in response['items']:
-        try:
-          for disk in response['items'][zone]['disks']:
-            _, zone = disk['zone'].rsplit('/', 1)
-            name = disk['name']
-            disks[name] = GoogleComputeDisk(
-                self.project_id, zone, name, labels=disk.get('labels'))
-        except KeyError:
-          pass
-
+      # Disks.aggregatedList returns both zones and regions in items.
+      for location in response['items']:
+        for disk in response['items'][location].get('disks', []):
+          # Skip if regional disk, i.e. has no zone.
+          if not disk.get('zone'):
+            continue
+          name = disk['name']
+          resource_id = disk['id']
+          _, zone = disk['zone'].rsplit('/', 1)
+          disks[resource_id] = GoogleComputeDisk(
+              self.project_id, zone, name, labels=disk.get('labels'))
     return disks
 
   def ListComputeRegions(self) -> List[str]:
@@ -299,17 +361,22 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
         disks = response.get('items', [])
         for disk in disks:
           name = disk['name']
-          region_disks[name] = GoogleRegionComputeDisk(
+          resource_id = disk['id']
+          region_disks[resource_id] = GoogleRegionComputeDisk(
               self.project_id, region, name, labels=disk.get('labels'))
     return region_disks
 
-  def GetRegionDisk(self, disk_name: str) -> 'GoogleRegionComputeDisk':
+  def GetRegionDisk(
+      self,
+      disk_name: str,
+      region: Optional[str] = None) -> 'GoogleRegionComputeDisk':
     """Get regional disk in project.
 
     Regional disks API resource: https://cloud.google.com/compute/docs/reference/rest/v1/regionDisks#resource:-disk  # pylint: disable=line-too-long
 
     Args:
-      disk_name: name of the regional disk to get.
+      disk_name: Name or ID of the regional disk to get.
+      region: Compute region.
 
     Returns:
       Regional disk object.
@@ -317,21 +384,27 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     Raises:
       ResourceNotFoundError: When the specified disk cannot be found in project.
     """
-    region_disks = self.RegionDisks()
-    try:
-      return region_disks[disk_name]
-    except KeyError as e:
+    disks = self.RegionDisks()
+    if re.match(RESOURCE_ID_REGEX, disk_name):
+      disk = disks.get(disk_name)
+    else:
+      disk = self._FindResourceByName(disks, disk_name, region=region)
+    if not disk:
       raise errors.ResourceNotFoundError(
-          'Regional disk {0:s} was not found in project {1:s}'.format(
-              disk_name, self.project_id),
-          __name__) from e
+          f'Disk {disk_name} was not found in project '
+          f'{self.project_id}', __name__)
+    return disk
 
-  def GetInstance(self, instance_name: str) -> 'GoogleComputeInstance':
+  def GetInstance(
+      self,
+      instance_name: str,
+      zone: Optional[str] = None) -> 'GoogleComputeInstance':
     """Get instance from project.
 
     Args:
-      instance_name (str): The instance identifier, can be either an instance
+      instance_name: The instance identifier, can be either an instance
         name or ID.
+      zone: Compute zone.
 
     Returns:
       GoogleComputeInstance: A Google Compute Instance object.
@@ -343,24 +416,25 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     instances = self.Instances()
 
     if re.match(RESOURCE_ID_REGEX, instance_name):
-      id_match = [instance for instance in instances.values()
-                  if instance.resource_id == instance_name]
-      instance = id_match.pop() if id_match else None
-    else:
       instance = instances.get(instance_name)
+    else:
+      instance = self._FindResourceByName(instances, instance_name, zone)
 
     if not instance:
       raise errors.ResourceNotFoundError(
-          'Instance {0:s} was not found in project {1:s}'.format(
-              instance_name, self.project_id),
-          __name__)
+          f'Instance {instance_name} was not found in project '
+          f'{self.project_id}', __name__)
     return instance
 
-  def GetDisk(self, disk_name: str) -> 'GoogleComputeDisk':
+  def GetDisk(
+      self,
+      disk_name: str,
+      zone: Optional[str] = None) -> 'GoogleComputeDisk':
     """Get a GCP disk object.
 
     Args:
-      disk_name (str): Name of the disk.
+      disk_name: The disk identifier, can be either a disk name or ID.
+      zone: Compute zone.
 
     Returns:
       GoogleComputeDisk: Disk object.
@@ -370,13 +444,15 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     """
 
     disks = self.Disks()
-    try:
-      return disks[disk_name]
-    except KeyError as e:
+    if re.match(RESOURCE_ID_REGEX, disk_name):
+      disk = disks.get(disk_name)
+    else:
+      disk = self._FindResourceByName(disks, disk_name, zone)
+    if not disk:
       raise errors.ResourceNotFoundError(
-          'Disk {0:s} was not found in project {1:s}'.format(
-              disk_name, self.project_id),
-          __name__) from e
+          f'Disk {disk_name} was not found in project '
+          f'{self.project_id}', __name__)
+    return disk
 
   def CreateDiskFromSnapshot(
       self,
