@@ -26,7 +26,7 @@ import sshpubkeys
 from msrestazure import azure_exceptions
 from azure.storage import blob
 from azure.core import exceptions
-from azure.mgmt import compute as compute_sdk
+from azure.mgmt import compute as compute_sdk # type: ignore
 from azure.mgmt.compute.v2020_05_01 import models
 # pylint: enable=import-error
 

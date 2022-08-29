@@ -17,7 +17,7 @@
 from typing import TYPE_CHECKING, List
 
 # pylint: disable=import-error
-from azure.mgmt import resource
+from azure.mgmt import resource # type: ignore
 from msrestazure import azure_exceptions
 # pylint: enable=import-error
 
