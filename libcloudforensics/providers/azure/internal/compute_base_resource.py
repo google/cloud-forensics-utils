@@ -16,7 +16,9 @@
 
 from typing import Optional, List, TYPE_CHECKING
 
-from azure.mgmt import compute as compute_sdk  # pylint: disable=import-error
+# pylint: disable=import-error
+from azure.mgmt import compute as compute_sdk # type: ignore
+# pylint: enable=import-error
 
 from libcloudforensics import errors
 from libcloudforensics.providers.azure.internal import common
