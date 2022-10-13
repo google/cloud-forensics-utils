@@ -24,3 +24,4 @@ PyJWT<2  # Bad overlap in azure dependencies
 sshpubkeys
 requests
 kubernetes
+pyopenssl # Override the old pyopenssl version included in Jenkins runner
