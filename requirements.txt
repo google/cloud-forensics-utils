@@ -24,3 +24,6 @@ PyJWT<2  # Bad overlap in azure dependencies
 sshpubkeys
 requests
 kubernetes
+# pyopenssl: some environments include old versions which can cause issues with
+# packages installed by boto3
+pyopenssl
