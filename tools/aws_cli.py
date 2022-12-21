@@ -91,6 +91,8 @@ def CreateVolumeCopy(args: 'argparse.Namespace') -> None:
                                            volume_type=args.volume_type,
                                            src_profile=args.src_profile,
                                            dst_profile=args.dst_profile,
+                                           kms_key_id=args.kms_key_id,
+                                           delete=args.delete,
                                            tags=tags)
   logger.info(
       'Done! Volume {0:s} successfully created. You will find it in '

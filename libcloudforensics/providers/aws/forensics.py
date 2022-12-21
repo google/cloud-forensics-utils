@@ -41,6 +41,8 @@ def CreateVolumeCopy(zone: str,
                      volume_type: Optional[str] = None,
                      src_profile: Optional[str] = None,
                      dst_profile: Optional[str] = None,
+                     kms_key_id: Optional[str] = None,
+                     delete: Optional[bool] = True,
                      tags: Optional[Dict[str, str]] = None) -> 'ebs.AWSVolume':
   """Create a copy of an AWS EBS Volume.
 
@@ -100,6 +102,12 @@ def CreateVolumeCopy(zone: str,
     dst_profile (str): Optional. If the volume copy needs to be created in a
         different AWS account, you can specify a different profile name here
         (see example above).
+    kms_key_id (str): Optional. KMS Key Id of a shared key to use instead of 
+        creating a temporary key to encrypt the snapshot in the source account. 
+        The key needs to be shared with the destination account beforehand for 
+        this to be useful.
+    delete (bool): Optional. Whether or not to perform post-acquistion cleanup 
+        of snapshot created in the source account. Default is True.
     tags (Dict[str, str]): Optional. A dictionary of tags to add to the
           volume copy, for example {'TicketID': 'xxx'}.
 
@@ -119,7 +127,6 @@ def CreateVolumeCopy(zone: str,
 
   source_account = account.AWSAccount(zone, aws_profile=src_profile)
   destination_account = account.AWSAccount(zone, aws_profile=dst_profile)
-  kms_key_id = None
 
   try:
     if volume_id:
@@ -152,15 +159,21 @@ def CreateVolumeCopy(zone: str,
                       source_account_id, destination_account_id))
       if volume_to_copy.encrypted:
         logger.info(
-            'Encrypted volume detected, generating one-time use CMK key')
-        # Generate one-time use KMS key that will be shared with the
-        # destination account.
-        kms_key_id = source_account.kms.CreateKMSKey()
-        source_account.kms.ShareKMSKeyWithAWSAccount(
-            kms_key_id, destination_account_id)
+            'Encrypted volume detected.')
+        if kms_key_id != None:
+          logger.info('Encrypting snapshot with KMS Key: {0:s}'.format(kms_key_id))
+          temp_key = False
+        if kms_key_id == None:
+          logger.info('No KMS key ID provided - generating one-time use CMK key')
+          # Generate one-time use KMS key that will be shared with the
+          # destination account.
+          kms_key_id = source_account.kms.CreateKMSKey()
+          source_account.kms.ShareKMSKeyWithAWSAccount(
+              kms_key_id, destination_account_id)
+          temp_key = True
         # Create a copy of the initial snapshot and encrypts it with the
         # shared key
-        snapshot = snapshot.Copy(kms_key_id=kms_key_id, delete=True)
+        snapshot = snapshot.Copy(kms_key_id=kms_key_id, delete=delete)
       snapshot.ShareWithAWSAccount(destination_account_id)
       logger.info('Snapshot successfully shared with external account')
 
@@ -188,10 +201,11 @@ def CreateVolumeCopy(zone: str,
     logger.info('Volume {0:s} successfully copied to {1:s}'.format(
         volume_to_copy.volume_id, new_volume.volume_id))
     logger.info('Cleaning up...')
-
-    snapshot.Delete()
-    # Delete the one-time use KMS key, if one was generated
-    source_account.kms.DeleteKMSKey(kms_key_id)
+    if delete == True:
+      snapshot.Delete()
+    if temp_key == True:
+      # Delete the one-time use KMS key, if one was generated
+      source_account.kms.DeleteKMSKey(kms_key_id)
     logger.info('Done')
   except (errors.LCFError, RuntimeError) as exception:
     raise errors.ResourceCreationError(

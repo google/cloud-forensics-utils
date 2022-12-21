@@ -160,6 +160,11 @@ def Main() -> None:
                 ('--dst_profile', 'The name of the profile for the destination '
                                   'account, as defined in the AWS credentials '
                                   'file.', None),
+                ('--kms_key_id', 'Optional pre-shared KMS key to use instead of '
+                                 'creating a temporary KMS key.', None),
+                ('--delete', 'Boolean value for post-acquistion snapshot '
+                             'cleanup - True to delete source profile snapshots, '
+                             'False to leave them.', None),
                 ('--tags', 'A string dictionary of tags to add to the volume '
                            'copy. ', None)
             ])
