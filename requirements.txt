@@ -20,10 +20,11 @@ msrest
 msrestazure
 netaddr
 pycryptodome
-PyJWT<2  # Bad overlap in azure dependencies
+PyJWT
 sshpubkeys
 requests
 kubernetes
 # pyopenssl: some environments include old versions which can cause issues with
 # packages installed by boto3
 pyopenssl
+urllib3<1.27,>=1.21.1
