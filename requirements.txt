@@ -8,8 +8,8 @@ azure-mgmt-network
 azure-mgmt-resource
 azure-mgmt-storage
 azure-storage-blob
-boto3
-botocore
+boto3>=1.26.135
+botocore>=1.29.135
 google-api-core
 google-api-python-client
 # google-auth: We don't directly care about this but 2.0.0dev0 somehow gets

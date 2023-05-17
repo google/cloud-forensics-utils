@@ -25,7 +25,7 @@ jobs:
       run: pip install wheel
     - name: Install dependencies through setup.py
       run: python setup.py install
-    - name: Test through setup.py
+    - name: Test
       run: |
         pip install mock
         python -m unittest
