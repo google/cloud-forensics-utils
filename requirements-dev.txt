@@ -2,7 +2,6 @@
 coverage
 mock
 mypy
-nose
 pylint
 sphinx
 sphinx-autodoc-typehints
