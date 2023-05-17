@@ -27,4 +27,4 @@ jobs:
         pip install -r requirements-dev.txt
     - name: Test with nose
       run: |
-        nosetests -vv --with-coverage --cover-package=libcloudforensics
+        python -m coverage run -m unittest
