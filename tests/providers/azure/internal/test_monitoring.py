@@ -26,7 +26,7 @@ class AZMonitoringTest(unittest.TestCase):
   # pylint: disable=line-too-long
 
   @typing.no_type_check
-  @mock.patch('azure.mgmt.monitor.v2018_01_01.operations._metric_definitions_operations.MetricDefinitionsOperations.list')
+  @mock.patch('azure.mgmt.monitor.v2021_05_01.operations._metric_definitions_operations.MetricDefinitionsOperations.list')
   def testListAvailableMetricsForResource(self, mock_list_metrics):
     """Test that metrics are correctly listed."""
     mock_list_metrics.return_value = azure_mocks.MOCK_LIST_METRICS
@@ -36,7 +36,7 @@ class AZMonitoringTest(unittest.TestCase):
     self.assertIn('fake-metric', metrics)
 
   @typing.no_type_check
-  @mock.patch('azure.mgmt.monitor.v2018_01_01.operations._metrics_operations.MetricsOperations.list')
+  @mock.patch('azure.mgmt.monitor.v2021_05_01.operations._metrics_operations.MetricsOperations.list')
   def testGetMetricsForResource(self, mock_list_metrics_operations):
     """Test that metrics values are correctly retrieved."""
     mock_list_metrics_operations.return_value = azure_mocks.MOCK_METRIC_OPERATION

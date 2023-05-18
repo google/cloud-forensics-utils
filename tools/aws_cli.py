@@ -27,8 +27,6 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 from libcloudforensics.providers.aws.internal import account
-from libcloudforensics.providers.aws.internal import ec2
-from libcloudforensics.providers.aws.internal import iam
 from libcloudforensics.providers.aws.internal import log as aws_log
 from libcloudforensics.providers.aws import forensics
 from libcloudforensics import logging_utils
