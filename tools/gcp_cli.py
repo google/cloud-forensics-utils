@@ -196,7 +196,7 @@ def QueryLogs(args: 'argparse.Namespace') -> None:
   results = logs.ExecuteQuery(qfilter.split(',') if qfilter else None)
   logger.info('Found {0:d} log entries:'.format(len(results)))
   for line in results:
-    logger.info(json.dumps(line))
+    print(json.dumps(line))
 
 
 def CreateDiskFromGCSImage(args: 'argparse.Namespace') -> None:
