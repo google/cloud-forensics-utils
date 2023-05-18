@@ -17,7 +17,7 @@
 import datetime
 import json
 import os
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import TYPE_CHECKING, Tuple
 from libcloudforensics import errors
 from libcloudforensics import logging_utils
 from libcloudforensics.providers.aws.internal import common

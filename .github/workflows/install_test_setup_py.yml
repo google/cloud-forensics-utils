@@ -11,7 +11,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-        python-version: [3.7, 3.8, 3.9]
+        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11']
 
     steps:
     - uses: actions/checkout@v2
@@ -25,7 +25,7 @@ jobs:
       run: pip install wheel
     - name: Install dependencies through setup.py
       run: python setup.py install
-    - name: Test through setup.py
+    - name: Test
       run: |
-        pip install nose mock
-        nosetests -vv
+        pip install mock
+        python -m unittest
