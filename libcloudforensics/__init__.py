@@ -14,4 +14,4 @@
 # limitations under the License.
 """libcloud forensics module."""
 
-__version__ = '20220718'
+__version__ = '20230601'
