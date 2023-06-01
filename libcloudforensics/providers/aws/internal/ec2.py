@@ -247,7 +247,7 @@ class EC2:
 
           zone = instance['Placement']['AvailabilityZone']
           instance_id = instance['InstanceId']
-          vpc = instance['VpcId']
+          vpc = instance.get('VpcId', None)
           aws_instance = AWSInstance(
               self.aws_account, instance_id, zone[:-1], zone, vpc)
 
