@@ -14,8 +14,7 @@ google-api-core
 google-api-python-client
 # google-auth: We don't directly care about this but 2.0.0dev0 somehow gets
 # installed despite the pinning in google-api-core
-# google-auth<2.0.0.dev0
-google-auth
+google-auth<2.0dev
 httplib2
 msrest
 msrestazure
