@@ -45,7 +45,7 @@ REGEX_COMPUTE_RESOURCE_ID = re.compile(
 
 DEFAULT_DISK_COPY_PREFIX = 'evidence'
 
-UBUNTU_1804_SKU = '18.04-LTS'
+UBUNTU_2004_SKU = '20.04-LTS'
 
 
 def _ParseCredentialsFile(profile_name: str) -> Dict[str, Any]:
