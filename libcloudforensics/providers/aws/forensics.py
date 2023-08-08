@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Tuple, List, Optional, Dict, Any
 import random
 from time import sleep
 from libcloudforensics.providers.aws.internal.common import ALINUX2_BASE_FILTER
-from libcloudforensics.providers.aws.internal.common import UBUNTU_2004_FILTER
+from libcloudforensics.providers.aws.internal.common import UBUNTU_2204_FILTER
 from libcloudforensics.providers.aws.internal import account
 from libcloudforensics.providers.aws.internal import iam
 from libcloudforensics.providers.utils.storage_utils import SplitStoragePath
@@ -231,7 +231,7 @@ def StartAnalysisVm(
         of the VM. Can be one of 'standard'|'io1'|'gp2'|'sc1'|'st1'. The
         default is 'gp2'.
     ami (str): Optional. The Amazon Machine Image ID to use to create the VM.
-        Default is a version of Ubuntu 20.04.
+        Default is a version of Ubuntu 22.04.
     cpu_cores (int): Optional. The number of CPU cores to create the machine
         with. Default is 4.
     attach_volumes (List[Tuple[str, str]]): Optional. List of tuples
@@ -267,11 +267,11 @@ def StartAnalysisVm(
   aws_account = account.AWSAccount(
       default_availability_zone, aws_profile=dst_profile)
 
-  # If no AMI ID is given we use the default Ubuntu 20.04
+  # If no AMI ID is given we use the default Ubuntu 22.04
   # in the region requested.
   if not ami:
-    logger.info('No AMI provided, fetching one for Ubuntu 20.04')
-    qfilter = [{'Name': 'name', 'Values': [UBUNTU_2004_FILTER]}]
+    logger.info('No AMI provided, fetching one for Ubuntu 22.04')
+    qfilter = [{'Name': 'name', 'Values': [UBUNTU_2204_FILTER]}]
     ami_list = aws_account.ec2.ListImages(qfilter)
     # We should only get 1 AMI image back, if we get multiple we
     # have no way of knowing which one to use.
