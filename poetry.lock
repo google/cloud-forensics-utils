@@ -110,6 +110,7 @@ files = [
 azure-common = ">=1.1,<2.0"
 azure-mgmt-core = ">=1.3.2,<2.0.0"
 isodate = ">=0.6.1,<1.0.0"
+typing-extensions = {version = ">=4.3.0", markers = "python_version < \"3.8.0\""}
 
 [[package]]
 name = "azure-mgmt-network"
@@ -126,6 +127,7 @@ files = [
 azure-common = ">=1.1,<2.0"
 azure-mgmt-core = ">=1.3.2,<2.0.0"
 isodate = ">=0.6.1,<1.0.0"
+typing-extensions = {version = ">=4.3.0", markers = "python_version < \"3.8.0\""}
 
 [[package]]
 name = "azure-mgmt-resource"
@@ -142,6 +144,7 @@ files = [
 azure-common = ">=1.1,<2.0"
 azure-mgmt-core = ">=1.3.2,<2.0.0"
 isodate = ">=0.6.1,<1.0.0"
+typing-extensions = {version = ">=4.3.0", markers = "python_version < \"3.8.0\""}
 
 [[package]]
 name = "azure-mgmt-storage"
@@ -158,6 +161,7 @@ files = [
 azure-common = ">=1.1,<2.0"
 azure-mgmt-core = ">=1.3.2,<2.0.0"
 msrest = ">=0.7.1"
+typing-extensions = {version = ">=4.3.0", markers = "python_version < \"3.8.0\""}
 
 [[package]]
 name = "azure-storage-blob"
@@ -181,17 +185,17 @@ aio = ["azure-core[aio] (>=1.28.0,<2.0.0)"]
 
 [[package]]
 name = "boto3"
-version = "1.28.20"
+version = "1.28.21"
 description = "The AWS SDK for Python"
 optional = false
 python-versions = ">= 3.7"
 files = [
-    {file = "boto3-1.28.20-py3-none-any.whl", hash = "sha256:a654d57e3882e7fd2c1260d604a44364a2fed00da4f52faf37e5901e71145df1"},
-    {file = "boto3-1.28.20.tar.gz", hash = "sha256:e3c2e8e55c17af6671a5332d6ab4635ad9793c80d0ac6d78af7b30a994d0681b"},
+    {file = "boto3-1.28.21-py3-none-any.whl", hash = "sha256:28e1ea098e43e764d990b4466e377c322b5d57829e2eb1395eca52d4209a6c11"},
+    {file = "boto3-1.28.21.tar.gz", hash = "sha256:0ad6932b2469f4fa4e63f4baf8508ccc1b1bc215b9c835df73505aa85210fc27"},
 ]
 
 [package.dependencies]
-botocore = ">=1.31.20,<1.32.0"
+botocore = ">=1.31.21,<1.32.0"
 jmespath = ">=0.7.1,<2.0.0"
 s3transfer = ">=0.6.0,<0.7.0"
 
@@ -200,13 +204,13 @@ crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "botocore"
-version = "1.31.20"
+version = "1.31.21"
 description = "Low-level, data-driven core of boto 3."
 optional = false
 python-versions = ">= 3.7"
 files = [
-    {file = "botocore-1.31.20-py3-none-any.whl", hash = "sha256:be51c5352162700e7beb0aa27af394adbbf86f8e7a2ca0c437d448d0a7b2bdfb"},
-    {file = "botocore-1.31.20.tar.gz", hash = "sha256:485ef175cd011ebc965f4577d8cc02a226c46bd608dd2bb75ce6938328cff0fd"},
+    {file = "botocore-1.31.21-py3-none-any.whl", hash = "sha256:c20a5c46eaf49b18b76fdfaec5583320e18abd551b1bc3cd7b1e718372675e21"},
+    {file = "botocore-1.31.21.tar.gz", hash = "sha256:9a13736b16aea3f16829b00edfb2c656fee72ecbfe5eb396cc2f8632e31fd524"},
 ]
 
 [package.dependencies]
@@ -884,6 +888,7 @@ files = [
 
 [package.dependencies]
 cryptography = {version = ">=3.4.0", optional = true, markers = "extra == \"crypto\""}
+typing-extensions = {version = "*", markers = "python_version <= \"3.7\""}
 
 [package.extras]
 crypto = ["cryptography (>=3.4.0)"]
@@ -1164,5 +1169,5 @@ test = ["websockets"]
 
 [metadata]
 lock-version = "2.0"
-python-versions = "^3.11"
-content-hash = "2dbc3ef9fbb8a89321f4bca7aa494209070f954edcd26162f210a37825c7204a"
+python-versions = "^3.7"
+content-hash = "d8ae7efeea186ca8b55b0e9b1fb63212b7f4961bb1b352b9a45bfa1e7126e8ca"
