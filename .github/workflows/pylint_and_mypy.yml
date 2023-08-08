@@ -12,15 +12,21 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Set up Python 3.7
+    - name: Set up Python 3.8
       uses: actions/setup-python@v1
       with:
-        python-version: 3.7
-    - name: Install pylint and mypy
+        python-version: 3.8
+    - name: Install poetry
       run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install -r requirements-dev.txt
+        python -m pip install poetry
+    - name: Cache the virtualenv
+      uses: actions/cache@v2
+      with:
+        path: ./.venv
+        key: ${{ runner.os }}-venv-${{ hashFiles('**/poetry.lock') }}
+    - name: Install dependencies through Poetry
+      run: |
+          python -m poetry install --with dev
     - name: Run pylint on all *.py files
       run: |
         pylint tests libcloudforensics tools

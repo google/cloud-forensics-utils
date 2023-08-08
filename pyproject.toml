@@ -7,7 +7,7 @@ license = "Apache-2.0"
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = "^3.8"
 google-api-core = "^2.11.1"
 azure-common = "^1.1.28"
 azure-core = "^1.28.0"
@@ -33,8 +33,19 @@ kubernetes = "^27.2.0"
 pyopenssl = "^23.2.0"
 urllib3 = ">=1.21.1,<1.27"
 google-auth = "^2.22.0"
-mock = "^5.1.0"
 
+[tool.poetry.group.dev.dependencies]
+coverage = "^7.2.7"
+mock = "^5.1.0"
+mypy = "^1.4.1"
+pylint = "^2.17.5"
+sphinx = "^7.1.2"
+sphinx-autodoc-typehints = "^1.24.0"
+yapf = "^0.40.1"
+types-six = "^1.16.21.9"
+types-mock = "^5.1.0.1"
+sphinx-rtd-theme = "^1.2.2"
+wheel = "^0.41.1"
 
 [build-system]
 requires = ["poetry-core"]
