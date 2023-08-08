@@ -29,7 +29,7 @@ jobs:
           python -m poetry install --with dev
     - name: Run pylint on all *.py files
       run: |
-        pylint tests libcloudforensics tools
+        python -m poetry run pylint tests libcloudforensics tools
     - name: Run mypy on all *.py files
       run: |
-        mypy --ignore-missing-imports --strict --no-warn-unused-ignores -p tests -p libcloudforensics -p tools
+        python -m poetry run mypy --ignore-missing-imports --strict --no-warn-unused-ignores -p tests -p libcloudforensics -p tools
