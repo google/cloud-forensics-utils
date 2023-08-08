@@ -781,7 +781,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       disk_type: str = 'pd-standard',
       cpu_cores: int = 4,
       image_project: str = 'ubuntu-os-cloud',
-      image_family: str = 'ubuntu-2004-lts',
+      image_family: str = 'ubuntu-2204-lts',
       packages: Optional[List[str]] = None,
       zone: Optional[str] = None,
       data_disks: Optional[List[Union['GoogleComputeDisk',
@@ -790,7 +790,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     """Get or create a new virtual machine for analysis purposes.
 
     If none of the optional parameters are specified, then by default the
-    analysis VM that will be created will run Ubuntu 20.04 LTS. A default
+    analysis VM that will be created will run Ubuntu 22.04 LTS. A default
     set of forensic tools is also installed (a custom one may be provided
     using the 'packages' argument).
 
@@ -1230,6 +1230,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
         'ubuntu-1604',
         'ubuntu-1804',
         'ubuntu-2004',
+        'ubuntu-2204',
         'windows-10-x64-byol',
         'windows-10-x86-byol',
         'windows-2008r2',

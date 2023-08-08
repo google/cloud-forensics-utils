@@ -31,7 +31,7 @@ VOLUME = 'volume'
 SNAPSHOT = 'snapshot'
 
 # Default Amazon Machine Images to use for bootstrapping instances
-UBUNTU_2004_FILTER = 'ubuntu/images/hvm-ssd/ubuntu-bionic-20.04-amd64-server-20230725'  # pylint: disable=line-too-long
+UBUNTU_2204_FILTER = 'ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-20230728'  # pylint: disable=line-too-long
 ALINUX2_BASE_FILTER = 'amzn2-ami-hvm-2*-x86_64-gp2'
 
 

@@ -180,7 +180,7 @@ def Main() -> None:
                                        'Default is gp2', 'gp2'),
                 ('--cpu_cores', 'Instance CPU core count.', '4'),
                 ('--ami', 'AMI ID to use as base image. Will search '
-                          'Ubuntu 20.04 LTS server x86_64 for chosen region '
+                          'Ubuntu 22.04 LTS server x86_64 for chosen region '
                           'by default.', ''),
                 ('--ssh_key_name', 'SSH key pair name. This is the name of an '
                                    'existing SSH key pair in the AWS account '

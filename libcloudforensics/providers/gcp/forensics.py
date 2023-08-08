@@ -131,7 +131,7 @@ def StartAnalysisVm(
     cpu_cores: int = 4,
     attach_disks: Optional[List[str]] = None,
     image_project: str = 'ubuntu-os-cloud',
-    image_family: str = 'ubuntu-2004-lts'
+    image_family: str = 'ubuntu-2204-lts'
 ) -> Tuple['compute.GoogleComputeInstance', bool]:
   """Start a virtual machine for analysis purposes.
 

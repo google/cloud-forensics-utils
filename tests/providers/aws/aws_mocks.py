@@ -113,8 +113,8 @@ MOCK_DESCRIBE_INSTANCES_TAGS = {
 
 MOCK_DESCRIBE_IMAGES = {
     'Images' : [
-        {'Name': 'Ubuntu 20.04 LTS', 'Public': True},
-        {'Name': 'Ubuntu 20.04 with GUI', 'Public': False}
+        {'Name': 'Ubuntu 22.04 LTS', 'Public': True},
+        {'Name': 'Ubuntu 22.04 with GUI', 'Public': False}
     ]
 }
 

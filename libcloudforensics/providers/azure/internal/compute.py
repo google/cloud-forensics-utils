@@ -438,7 +438,7 @@ class AZCompute:
             'hardwareProfile': {'vmSize': instance_type},
             'storageProfile': {
                 'imageReference': {
-                    'sku': common.UBUNTU_2004_SKU,
+                    'sku': common.UBUNTU_2204_SKU,
                     'publisher': 'Canonical',
                     'version': 'latest',
                     'offer': 'UbuntuServer'}
