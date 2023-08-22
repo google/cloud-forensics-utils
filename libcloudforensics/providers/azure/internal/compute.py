@@ -441,7 +441,7 @@ class AZCompute:
                     'sku': common.UBUNTU_2204_SKU,
                     'publisher': 'Canonical',
                     'version': 'latest',
-                    'offer': 'UbuntuServer'}
+                    'offer': '0001-com-ubuntu-server-jammy'}
             },
             'osDisk': {
                 'caching': 'ReadWrite',

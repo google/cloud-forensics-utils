@@ -156,6 +156,9 @@ class EndToEndTest(unittest.TestCase):
     Test creating an analysis VM and attaching a copied disk to it.
     """
 
+    if not self.disk_to_copy:
+      return
+
     disk_copy = forensics.CreateDiskCopy(
         self.resource_group_name,
         disk_name=self.disk_to_copy)

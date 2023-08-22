@@ -91,8 +91,8 @@ def CreateVolumeCopy(zone: str,
     volume_id (str): Optional. ID of the volume to copy. If not set,
         then instance_id needs to be set and the boot volume will be copied.
     volume_type (str): Optional. The volume type for the volume to be
-        created. Can be one of 'standard'|'io1'|'gp2'|'sc1'|'st1'. The default
-        behavior is to use the same volume type as the source volume.
+        created. Can be one of 'standard'|'io1'|'gp2'|'gp3'|'sc1'|'st1'. The
+        default behavior is to use the same volume type as the source volume.
     src_profile (str): Optional. If the AWS account containing the volume
         that needs to be copied is different from the default account
         specified in the AWS credentials file then you can specify a
@@ -205,7 +205,7 @@ def StartAnalysisVm(
     vm_name: str,
     default_availability_zone: str,
     boot_volume_size: int,
-    boot_volume_type: str = 'gp2',
+    boot_volume_type: str = 'gp3',
     ami: Optional[str] = None,
     cpu_cores: int = 4,
     attach_volumes: Optional[List[Tuple[str, str]]] = None,
@@ -228,8 +228,8 @@ def StartAnalysisVm(
         new resources in.
     boot_volume_size (int): The size of the analysis VM boot volume (in GB).
     boot_volume_type (str): Optional. The volume type for the boot volume
-        of the VM. Can be one of 'standard'|'io1'|'gp2'|'sc1'|'st1'. The
-        default is 'gp2'.
+        of the VM. Can be one of 'standard'|'io1'|'gp2'|'gp3'|'sc1'|'st1'. The
+        default is 'gp3'.
     ami (str): Optional. The Amazon Machine Image ID to use to create the VM.
         Default is a version of Ubuntu 22.04.
     cpu_cores (int): Optional. The number of CPU cores to create the machine
