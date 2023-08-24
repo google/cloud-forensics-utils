@@ -8,16 +8,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
-      - name: Set up Python 3.7 🐍🐍🐍
+      - name: Set up Python 3.8 🐍🐍🐍
         uses: actions/setup-python@v1
         with:
-          python-version: 3.7
-      - name: Install dependencies
+          python-version: 3.8
+      - name: Install poetry
         run: |
-          pip install wheel
+          python -m pip install poetry
       - name: Build a binary wheel and source tarball
         run: |
-          python setup.py sdist bdist_wheel
+          python -m poetry build -f sdist
+          python -m poetry build -f wheel
       - name: Publish distribution 📦 to PyPI
         if: startsWith(github.event.ref, 'refs/tags')
         uses: pypa/gh-action-pypi-publish@release/v1
