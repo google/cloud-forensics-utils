@@ -5,6 +5,7 @@ set -e
 
 sudo apt-get update -q
 sudo apt-get install -y python3-pip
+sudo pip3 install poetry
 
 # Install libcloudforensics pinned requirements
-sudo pip3 install -r ../../requirements.txt --ignore-installed
+sudo python -m poetry install --with dev
