@@ -20,10 +20,21 @@ import mock
 
 from tests.providers.gcp import gcp_mocks
 
+from libcloudforensics.providers.gcp.internal import monitoring as gcp_monitoring
 
 class GoogleCloudMonitoringTest(unittest.TestCase):
   """Test Google Cloud Monitoring class."""
   # pylint: disable=line-too-long
+
+  def testInstanceGPUUsage(self):
+    services = gcp_monitoring.GoogleCloudMonitoring('fryy-investigations')
+    results = services.GetInstanceGPUUsage(['401643972889523114'])
+    print(results)
+
+  def testGetNodeAccelUsage(self):
+    services = gcp_monitoring.GoogleCloudMonitoring('fryy-investigations')
+    results = services.GetNodeAccelUsage()
+    print(results)
 
   @typing.no_type_check
   @mock.patch('libcloudforensics.providers.gcp.internal.monitoring.GoogleCloudMonitoring.GcmApi')
@@ -46,7 +57,8 @@ class GoogleCloudMonitoringTest(unittest.TestCase):
   def testBuildCpuUsageFilter(self):
     """Validates the query filter builder functionality"""
     # pylint: disable=protected-access
-    instances_filter = gcp_mocks.FAKE_MONITORING._BuildCpuUsageFilter(
+    instances_filter = gcp_mocks.FAKE_MONITORING._BuildUsageFilter(
+        'compute.googleapis.com/instance/cpu/utilization',
         ['0000000000000000001', '0000000000000000002'])
     self.assertEqual(
         instances_filter, ('metric.type = "compute.googleapis.com/instance/'
@@ -83,6 +95,54 @@ class GoogleCloudMonitoringTest(unittest.TestCase):
                 {
                   'timestamp': '2021-01-01T00:00:00.000000Z',
                   'cpu_usage': 0.1
+                }
+              ] * 24 * 7
+          }
+        ])
+
+  @typing.no_type_check
+  @mock.patch('libcloudforensics.providers.gcp.internal.monitoring.GoogleCloudMonitoring.GcmApi')
+  def testGetInstanceGpuUsage(self, mock_gcm_api):
+    """Validates the parsing of GPU usage metrics."""
+    services = mock_gcm_api.return_value.projects.return_value.timeSeries.return_value.list
+    services.return_value.execute.return_value = gcp_mocks.MOCK_GCM_METRICS_GPU_INSTANCE
+    gpu_usage = gcp_mocks.FAKE_MONITORING.GetInstanceGPUUsage()
+    self.assertEqual(1, len(gpu_usage))
+    self.assertListEqual(gpu_usage,
+        [
+          {
+            'gpu_name': 'NVIDIA L4 (0)',
+            'instance_id': '0000000000000000001',
+            'gpu_usage':
+              [
+                {
+                  'timestamp': '2021-01-01T00:00:00.000000Z',
+                  'gpu_usage': 0.1
+                }
+              ] * 24 * 7
+          }
+        ])
+
+  @typing.no_type_check
+  @mock.patch('libcloudforensics.providers.gcp.internal.monitoring.GoogleCloudMonitoring.GcmApi')
+  def testGetNodeGpuUsage(self, mock_gcm_api):
+    """Validates the parsing of GKE GPU usage metrics."""
+    services = mock_gcm_api.return_value.projects.return_value.timeSeries.return_value.list
+    services.return_value.execute.return_value = gcp_mocks.MOCK_GCM_METRICS_GPU_GKE_NODE
+    gpu_usage = gcp_mocks.FAKE_MONITORING.GetNodeAccelUsage()
+    self.assertEqual(1, len(gpu_usage))
+    self.assertListEqual(gpu_usage,
+        [
+          {
+            'gpu_name': 'Tesla T4',
+            'cluster_name': 'fake-cluster',
+            'container_name': 'fake-container',
+            'pod_name': 'fake-pod',
+            'gpu_usage':
+              [
+                {
+                  'timestamp': '2021-01-01T00:00:00.000000Z',
+                  'gpu_usage': 0.1
                 }
               ] * 24 * 7
           }
