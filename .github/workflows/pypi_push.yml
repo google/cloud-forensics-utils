@@ -15,12 +15,13 @@ jobs:
       - name: Install poetry
         run: |
           python -m pip install poetry
-      - name: Build a binary wheel and source tarball
+      - name: Install dependencies through Poetry
         run: |
-          python -m poetry build -f sdist
-          python -m poetry build -f wheel
+          python -m poetry install --with dev
       - name: Publish distribution 📦 to PyPI
         if: startsWith(github.event.ref, 'refs/tags')
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          password: ${{ secrets.pypi_deploy }}
+        env:
+          PYPI_TOKEN: ${{ secrets.pypi_deploy }}
+        run: |
+          poetry config pypi-token.pypi $PYPI_TOKEN
+          poetry publish --build
