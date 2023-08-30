@@ -273,7 +273,32 @@ class GoogleCloudMonitoring:
     return gpu_usage_instances
 
   def GetNodeAccelUsage(self, days: int = 7) -> List[Dict[str, Any]]:
-    """Returns Accelerator (GPU/TPU) usage for GKE nodes."""
+    """Returns GPU usage metrics for GKE nodes.
+
+    By default returns minute-wise usage for the last seven days for all
+    GKE nodes within a project.
+
+    Args:
+      days (int): Optional. The number of days to collect metrics for.
+
+    Returns:
+      List[Dict[str, Any]]: a list of GPU usage for each instance in the format
+        [
+          {
+            'gpu_name': str,
+            'cluster_name': str,
+            'container_name': str,
+            'pod_name': str,
+            'gpu_usage':
+            [
+              {
+                'timestamp': str,
+                'gpu_usage': float
+              },
+            ]
+          },
+        ]
+    """
     service = self.GcmApi()
     gcm_timeseries_client = service.projects().timeSeries() # pylint: disable=no-member
 
