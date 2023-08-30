@@ -667,10 +667,15 @@ def TriageInstance(project_id: str, instance_name: str) -> Dict[str, Any]:
     parsed_cpu = cpu_usage[0].get('cpu_usage', [])
 
 
-  gpu_usage = project.monitoring.GetCpuUsage(
+  gce_gpu_usage = project.monitoring.GetInstanceGPUUsage(
     instance_ids=[instance_info['id']])
-  if gpu_usage:
-    parsed_gpu = gpu_usage[0].get('gpu_usage', [])
+  if gce_gpu_usage:
+    parsed_gce_gpu = gce_gpu_usage
+
+
+  gke_gpu_usage = project.monitoring.GetNodeAccelUsage()
+  if gke_gpu_usage:
+    parsed_gke_gpu = gke_gpu_usage
 
   instance_triage = {
       'instance_info': {
@@ -692,8 +697,10 @@ def TriageInstance(project_id: str, instance_name: str) -> Dict[str, Any]:
                       }, {
                           'data_type': 'cpu_usage', 'values': parsed_cpu
                       }, {
-                          'data_type': 'gpu_usage', 'values': parsed_gpu
+                          'data_type': 'gce_gpu_usage', 'values': parsed_gce_gpu
                       }, {
+                          'data_type': 'gke_gpu_usage', 'values': parsed_gke_gpu
+                      }, {}
                           'data_type':
                               'ssh_auth',
                           'values':
