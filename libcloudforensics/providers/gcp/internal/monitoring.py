@@ -155,7 +155,8 @@ class GoogleCloudMonitoring:
         datetime.datetime.utcnow() - datetime.timedelta(days=days))
     end_time = common.FormatRFC3339(datetime.datetime.utcnow())
     period = aggregation_minutes * 60
-    instance_filter = self._BuildUsageFilter('compute.googleapis.com/instance/cpu/utilization', instance_ids)  # pylint: disable=line-too-long
+    instance_filter = self._BuildUsageFilter(
+      'compute.googleapis.com/instance/cpu/utilization', instance_ids)
 
     responses = common.ExecuteRequest(gcm_timeseries_client, 'list', {
         'name': 'projects/{0:s}'.format(self.project_id),
