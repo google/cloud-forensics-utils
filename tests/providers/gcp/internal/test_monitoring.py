@@ -20,21 +20,10 @@ import mock
 
 from tests.providers.gcp import gcp_mocks
 
-from libcloudforensics.providers.gcp.internal import monitoring as gcp_monitoring
 
 class GoogleCloudMonitoringTest(unittest.TestCase):
   """Test Google Cloud Monitoring class."""
   # pylint: disable=line-too-long
-
-  def testInstanceGPUUsage(self):
-    services = gcp_monitoring.GoogleCloudMonitoring('fryy-investigations')
-    results = services.GetInstanceGPUUsage(['401643972889523114'])
-    print(results)
-
-  def testGetNodeAccelUsage(self):
-    services = gcp_monitoring.GoogleCloudMonitoring('fryy-investigations')
-    results = services.GetNodeAccelUsage()
-    print(results)
 
   @typing.no_type_check
   @mock.patch('libcloudforensics.providers.gcp.internal.monitoring.GoogleCloudMonitoring.GcmApi')
@@ -142,7 +131,7 @@ class GoogleCloudMonitoringTest(unittest.TestCase):
               [
                 {
                   'timestamp': '2021-01-01T00:00:00.000000Z',
-                  'gpu_usage': 0.1
+                  'gpu_usage': 1
                 }
               ] * 24 * 7
           }

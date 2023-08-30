@@ -580,7 +580,7 @@ MOCK_GCM_METRICS_GPU_POINTS = [
             'endTime': '2021-01-01T00:00:00.000000Z'
         },
         'value': {
-            'int64Value': 0.100000000000000000
+            'int64Value': 1
         }
     }
 ] * 24 * 7

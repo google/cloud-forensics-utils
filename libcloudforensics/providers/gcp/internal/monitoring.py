@@ -192,13 +192,42 @@ class GoogleCloudMonitoring:
       self,
       instance_ids: Optional[List[str]] = None,
       days: int = 7) -> List[Dict[str, Any]]:
+    """Returns GPU usage metrics for compute instances.
+
+    By default returns minute-wise usage for the last seven days for all
+    instances within a project.
+
+    Args:
+      instance_ids list[str]: Optional. A list of instance IDs to collect
+        metrics for. When not provided will collect metrics for all instances
+        in the project.
+      days (int): Optional. The number of days to collect metrics for.
+
+    Returns:
+      List[Dict[str, Any]]: a list of GPU usage for each instance in the format
+        [
+          {
+            'gpu_name': str,
+            'instance_id': str,
+            'gpu_usage':
+            [
+              {
+                'timestamp': str,
+                'gpu_usage': float
+              },
+            ]
+          },
+        ]
+    """
     service = self.GcmApi()
-    gcm_timeseries_client = service.projects().timeSeries()
+    gcm_timeseries_client = service.projects().timeSeries() # pylint: disable=no-member
     start_time = common.FormatRFC3339(
         datetime.datetime.utcnow() - datetime.timedelta(days=days))
     end_time = common.FormatRFC3339(datetime.datetime.utcnow())
 
-    instance_filter = self._BuildUsageFilter('agent.googleapis.com/gpu/utilization" resource.type="gce_instance', instance_ids) # pylint: disable=line-too-long
+    instance_filter = self._BuildUsageFilter(
+        'agent.googleapis.com/gpu/utilization" resource.type="gce_instance',
+        instance_ids)
 
     responses = common.ExecuteRequest(
         gcm_timeseries_client,
@@ -226,22 +255,26 @@ class GoogleCloudMonitoring:
         instance_id = ts['resource']['labels']['instance_id']
         points = ts['points']
         gpu_usage = []
+        all_points_zero = True
         for point in points:
           gpu_usage.append({
               'timestamp': point['interval']['startTime'],
               'gpu_usage': point['value']['doubleValue']})
+          if point['value']['doubleValue'] != 0:
+            all_points_zero = False
 
-        gpu_usage_instances.append({
-            'gpu_name': gpu_name,
-            'instance_id': instance_id,
-            'gpu_usage': gpu_usage})
+        if not all_points_zero:
+          gpu_usage_instances.append({
+              'gpu_name': gpu_name,
+              'instance_id': instance_id,
+              'gpu_usage': gpu_usage})
 
     return gpu_usage_instances
 
   def GetNodeAccelUsage(self, days: int = 7) -> List[Dict[str, Any]]:
     """Returns Accelerator (GPU/TPU) usage for GKE nodes."""
     service = self.GcmApi()
-    gcm_timeseries_client = service.projects().timeSeries()
+    gcm_timeseries_client = service.projects().timeSeries() # pylint: disable=no-member
 
     start_time = common.FormatRFC3339(
         datetime.datetime.utcnow() - datetime.timedelta(days=days))
@@ -254,7 +287,8 @@ class GoogleCloudMonitoring:
             'name':
                 'projects/{0:s}'.format(self.project_id),
             'filter':
-                'metric.type="kubernetes.io/container/accelerator/duty_cycle" resource.type="k8s_container"', # pylint: disable=line-too-long
+                'metric.type="kubernetes.io/container/accelerator/duty_cycle" '
+                'resource.type="k8s_container"',
             'interval_startTime':
                 start_time,
             'interval_endTime':
@@ -272,16 +306,20 @@ class GoogleCloudMonitoring:
         pod_name = ts['resource']['labels']['pod_name']
         points = ts['points']
         gpu_usage = []
+        all_points_zero = True
         for point in points:
           gpu_usage.append({
               'timestamp': point['interval']['startTime'],
               'gpu_usage': point['value']['int64Value']})
+          if point['value']['int64Value'] != 0:
+            all_points_zero = False
 
-        gpu_usage_instances.append({
-            'gpu_name': gpu_name,
-            'cluster_name': cluster_name,
-            'container_name': container_name,
-            'pod_name': pod_name,
-            'gpu_usage': gpu_usage})
+        if not all_points_zero:
+          gpu_usage_instances.append({
+              'gpu_name': gpu_name,
+              'cluster_name': cluster_name,
+              'container_name': container_name,
+              'pod_name': pod_name,
+              'gpu_usage': gpu_usage})
 
     return gpu_usage_instances

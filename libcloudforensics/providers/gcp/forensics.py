@@ -666,6 +666,12 @@ def TriageInstance(project_id: str, instance_name: str) -> Dict[str, Any]:
   if cpu_usage:
     parsed_cpu = cpu_usage[0].get('cpu_usage', [])
 
+
+  gpu_usage = project.monitoring.GetCpuUsage(
+    instance_ids=[instance_info['id']])
+  if gpu_usage:
+    parsed_gpu = gpu_usage[0].get('gpu_usage', [])
+
   instance_triage = {
       'instance_info': {
           'instance_name': instance_info['name'],
@@ -685,8 +691,9 @@ def TriageInstance(project_id: str, instance_name: str) -> Dict[str, Any]:
                           'values': instance.GetNormalisedFirewalls()
                       }, {
                           'data_type': 'cpu_usage', 'values': parsed_cpu
-                      },
-                      {
+                      }, {
+                          'data_type': 'gpu_usage', 'values': parsed_gpu
+                      }, {
                           'data_type':
                               'ssh_auth',
                           'values':
