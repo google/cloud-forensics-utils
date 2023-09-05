@@ -700,7 +700,7 @@ def TriageInstance(project_id: str, instance_name: str) -> Dict[str, Any]:
                           'data_type': 'gce_gpu_usage', 'values': parsed_gce_gpu
                       }, {
                           'data_type': 'gke_gpu_usage', 'values': parsed_gke_gpu
-                      }, {}
+                      }, {
                           'data_type':
                               'ssh_auth',
                           'values':
