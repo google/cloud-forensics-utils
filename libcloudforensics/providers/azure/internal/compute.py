@@ -76,7 +76,7 @@ class AZCompute:
       if capacity_provider.registration_state == 'Registered':
         logger.debug('Microsoft.Capacity provider already registered')
         break
-      elif capacity_provider.registration_state == 'NotRegistered':
+      if capacity_provider.registration_state == 'NotRegistered':
         # This should only have to be done once per Subscription.
         logger.debug('Registering Microsoft.Capacity provider')
         resource_client.providers.register('Microsoft.Capacity')
