@@ -28,6 +28,8 @@ from azure.storage import blob
 from azure.core import exceptions
 from azure.mgmt import compute as compute_sdk # type: ignore
 from azure.mgmt.compute import models
+from azure.mgmt.resource import ResourceManagementClient
+from azure.mgmt.reservations import AzureReservationAPI
 # pylint: enable=import-error
 
 from libcloudforensics import logging_utils
@@ -64,6 +66,27 @@ class AZCompute:
         self.az_account.credentials,
         self.az_account.subscription_id
     )  # type: compute_sdk.ComputeManagementClient
+    self.quota_client = AzureReservationAPI(
+        credential=self.az_account.credentials)
+    resource_client = ResourceManagementClient(
+        credential=self.az_account.credentials,
+        subscription_id=self.az_account.subscription_id)
+    while True:
+      capacity_provider = resource_client.providers.get('Microsoft.Capacity')
+      if capacity_provider.registration_state == 'Registered':
+        logger.debug('Microsoft.Capacity provider already registered')
+        break
+      elif capacity_provider.registration_state == 'NotRegistered':
+        # This should only have to be done once per Subscription.
+        logger.debug('Registering Microsoft.Capacity provider')
+        resource_client.providers.register('Microsoft.Capacity')
+      elif capacity_provider.registration_state == 'Registering':
+        sleep(5)
+      else:
+        logger.warning(
+            'Unable to register Capacity provider: {0!s}'.format(
+                capacity_provider))
+
 
   def ListInstances(self,
                     resource_group_name: Optional[str] = None
@@ -424,7 +447,7 @@ class AZCompute:
                          '{0:s}'.format(str(exception))) from exception
 
     instance_type = self._GetInstanceType(
-        cpu_cores, memory_in_mb, premium_io=True)
+        cpu_cores, memory_in_mb, premium_io=True, region=region)
     startup_script = utils.ReadStartupScript(utils.FORENSICS_STARTUP_SCRIPT_AZ)
     if packages:
       startup_script = startup_script.replace('${packages[@]}', ' '.join(
@@ -514,11 +537,12 @@ class AZCompute:
 
     Returns:
       List[Dict[str, str]]: A list of available vm size. Each size is a
-          dictionary containing the name of the configuration, the number of
-          CPU cores, the amount of available memory (in MB), and whether it can
-          handle PremiumIO devices.
+          dictionary containing the name of the configuration, its famly,
+          the number of CPU cores, the amount of available memory (in MB),
+          and whether it can handle PremiumIO devices.
           e.g.: {
             'Name': 'Standard_B1ls',
+            'Family': 'standardB1lsFamily'
             'CPU': 1,
             'Memory': 512,
             'PremiumIO': True
@@ -544,6 +568,7 @@ class AZCompute:
       if cores and memory:
         vm_sizes.append({
             'Name': vm.name,
+            'Family': vm.family,
             'CPU': cores,
             'Memory': memory,
             'PremiumIO': prem_io
@@ -551,7 +576,11 @@ class AZCompute:
     return vm_sizes
 
   def _GetInstanceType(
-      self, cpu_cores: int, memory_in_mb: int, premium_io: bool = False) -> str:
+      self,
+      cpu_cores: int,
+      memory_in_mb: int,
+      premium_io: bool = False,
+      region: Optional[str] = None) -> str:
     """Returns an instance type for the given number of CPU cores / memory.
 
     Args:
@@ -559,6 +588,9 @@ class AZCompute:
       memory_in_mb (int): The amount of memory (in MB).
       premium_io (bool): Whether or not it requires the ability to support
         Premium IO storage (default False).
+      region (str): Optional. The region in which to create the disk. If not
+          provided, the disk will be created in the default_region associated to
+          the AZAccount object.
 
     Returns:
       str: The instance type for the given configuration.
@@ -566,16 +598,34 @@ class AZCompute:
     Raises:
       ValueError: If no instance type matches the requested configuration.
     """
-    vm_sizes = self.ListInstanceTypes()
+    if region is None:
+      region = self.az_account.default_region
+    vm_sizes = self.ListInstanceTypes(region=region)
+    family_quotas = {}
     for size in vm_sizes:
       if size['CPU'] == cpu_cores and size['Memory'] == memory_in_mb:
         if premium_io is True and size['PremiumIO'] is False:
           continue
+        if size['Family'] not in family_quotas:
+          logger.info('Fetching quota for family {0!s}'.format(size['Family']))
+          quota_response = self.quota_client.quota.get(
+              subscription_id=self.az_account.subscription_id,
+              provider_id='Microsoft.Compute',
+              location=region,
+              resource_name=size['Family'])
+          family_quotas[size['Family']] = (
+              quota_response.properties.limit > 0) and (
+                  quota_response.properties.current_value
+                  < quota_response.properties.limit)
+          if not family_quotas[size['Family']]:
+            continue
         instance_type = size['Name']  # type: str
+        logger.info('Selected Instance Type: {0!s}'.format(size))
         return instance_type
     raise ValueError(
         'No instance type found for the requested configuration: {0:d} CPU '
-        'cores, {1:d} MB memory.'.format(cpu_cores, memory_in_mb))
+        'cores, {1:d} MB memory, Premium IO: {2!s}.'.format(
+            cpu_cores, memory_in_mb, premium_io))
 
 
 class AZComputeVirtualMachine(compute_base_resource.AZComputeResource):
