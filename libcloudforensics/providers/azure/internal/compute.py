@@ -423,7 +423,8 @@ class AZCompute:
       raise RuntimeError('The provided public SSH key is invalid: '
                          '{0:s}'.format(str(exception))) from exception
 
-    instance_type = self._GetInstanceType(cpu_cores, memory_in_mb, premium_io=True)
+    instance_type = self._GetInstanceType(
+        cpu_cores, memory_in_mb, premium_io=True)
     startup_script = utils.ReadStartupScript(utils.FORENSICS_STARTUP_SCRIPT_AZ)
     if packages:
       startup_script = startup_script.replace('${packages[@]}', ' '.join(
