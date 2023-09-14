@@ -27,7 +27,7 @@ from msrestazure import azure_exceptions
 from azure.storage import blob
 from azure.core import exceptions
 from azure.mgmt import compute as compute_sdk # type: ignore
-from azure.mgmt.compute.v2020_05_01 import models
+from azure.mgmt.compute import models
 # pylint: enable=import-error
 
 from libcloudforensics import logging_utils
@@ -423,7 +423,7 @@ class AZCompute:
       raise RuntimeError('The provided public SSH key is invalid: '
                          '{0:s}'.format(str(exception))) from exception
 
-    instance_type = self._GetInstanceType(cpu_cores, memory_in_mb)
+    instance_type = self._GetInstanceType(cpu_cores, memory_in_mb, premium_io=True)
     startup_script = utils.ReadStartupScript(utils.FORENSICS_STARTUP_SCRIPT_AZ)
     if packages:
       startup_script = startup_script.replace('${packages[@]}', ' '.join(
@@ -514,27 +514,50 @@ class AZCompute:
     Returns:
       List[Dict[str, str]]: A list of available vm size. Each size is a
           dictionary containing the name of the configuration, the number of
-          CPU cores, and the amount of available memory (in MB).
-          E.g.: {'Name': 'Standard_B1ls', 'CPU': 1, 'Memory': 512}
+          CPU cores, the amount of available memory (in MB), and whether it can
+          handle PremiumIO devices.
+          e.g.: {
+            'Name': 'Standard_B1ls',
+            'CPU': 1,
+            'Memory': 512,
+            'PremiumIO': True
+          }
     """
     if not region:
       region = self.az_account.default_region
-    available_vms = self.compute_client.virtual_machine_sizes.list(region)
+    available_vms = self.compute_client.resource_skus.list(
+        filter='location eq \'{0:s}\''.format(region))
     vm_sizes = []
     for vm in available_vms:
-      vm_sizes.append({
-          'Name': vm.name,
-          'CPU': vm.number_of_cores,
-          'Memory': vm.memory_in_mb
-      })
+      cores = None
+      memory = None
+      prem_io = False
+      if vm.capabilities:
+        for capability in vm.capabilities:
+          if capability.name == 'vCPUs':
+            cores = int(capability.value)
+          if capability.name == 'MemoryGB':
+            memory = int(float(capability.value) * 1024)
+          if capability.name == 'PremiumIO':
+            prem_io = capability.value == 'True'
+      if cores and memory:
+        vm_sizes.append({
+            'Name': vm.name,
+            'CPU': cores,
+            'Memory': memory,
+            'PremiumIO': prem_io
+        })
     return vm_sizes
 
-  def _GetInstanceType(self, cpu_cores: int, memory_in_mb: int) -> str:
+  def _GetInstanceType(
+      self, cpu_cores: int, memory_in_mb: int, premium_io: bool = False) -> str:
     """Returns an instance type for the given number of CPU cores / memory.
 
     Args:
       cpu_cores (int): The number of CPU cores.
       memory_in_mb (int): The amount of memory (in MB).
+      premium_io (bool): Whether or not it requires the ability to support
+        Premium IO storage (default False).
 
     Returns:
       str: The instance type for the given configuration.
@@ -545,6 +568,8 @@ class AZCompute:
     vm_sizes = self.ListInstanceTypes()
     for size in vm_sizes:
       if size['CPU'] == cpu_cores and size['Memory'] == memory_in_mb:
+        if premium_io is True and size['PremiumIO'] is False:
+          continue
         instance_type = size['Name']  # type: str
         return instance_type
     raise ValueError(
