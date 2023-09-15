@@ -80,6 +80,8 @@ MOCK_REQUEST_INSTANCES = [[MOCK_INSTANCE]]
 MOCK_LIST_INSTANCES = {
     'fake-vm-name': FAKE_INSTANCE
 }
+MOCK_CAPACITY_PROVIDER = mock.Mock(registration_state='Registered')
+MOCK_QUOTA = mock.Mock(properties=mock.Mock(limit=1, current_value=0))
 
 MOCK_DISK = mock.Mock(
     id=RESOURCE_ID_PREFIX + 'fake-disk-name',
