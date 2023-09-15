@@ -614,9 +614,9 @@ class AZCompute:
               provider_id='Microsoft.Compute',
               location=region,
               resource_name=size['Family'])
-          if quota_response.properties and \
-              quota_response.properties.limit and \
-              quota_response.properties.current_value:
+          if hasattr(quota_response, 'properties') and \
+              hasattr(quota_response.properties, 'limit') and \
+              hasattr(quota_response.properties, 'current_value'):
             family_quotas[size['Family']] = (
                 quota_response.properties.limit > 0) and (
                     quota_response.properties.current_value
