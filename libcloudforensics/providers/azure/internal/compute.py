@@ -607,16 +607,20 @@ class AZCompute:
         if premium_io is True and size['PremiumIO'] is False:
           continue
         if size['Family'] not in family_quotas:
+          family_quotas[size['Family']] = False
           logger.info('Fetching quota for family {0!s}'.format(size['Family']))
           quota_response = self.quota_client.quota.get(
               subscription_id=self.az_account.subscription_id,
               provider_id='Microsoft.Compute',
               location=region,
               resource_name=size['Family'])
-          family_quotas[size['Family']] = (
-              quota_response.properties.limit > 0) and (
-                  quota_response.properties.current_value
-                  < quota_response.properties.limit)
+          if quota_response.properties and \
+              quota_response.properties.limit and \
+              quota_response.properties.current_value:
+            family_quotas[size['Family']] = (
+                quota_response.properties.limit > 0) and (
+                    quota_response.properties.current_value
+                    < quota_response.properties.limit)
           if not family_quotas[size['Family']]:
             continue
         instance_type = size['Name']  # type: str
