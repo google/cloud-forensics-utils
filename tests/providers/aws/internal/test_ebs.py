@@ -185,7 +185,7 @@ class EBSTest(unittest.TestCase):
     with self.assertRaises(ValueError) as error:
       aws_mocks.FAKE_AWS_ACCOUNT.ebs.CreateVolumeFromSnapshot(
           aws_mocks.FAKE_SNAPSHOT, volume_type='invalid-volume-type')
-    self.assertEqual('Volume type must be one of [standard, io1, gp2, sc1, '
+    self.assertEqual('Volume type must be one of [standard, io1, gp2, gp3, sc1, '
                      'st1]. Got: invalid-volume-type', str(error.exception))
 
   @typing.no_type_check

@@ -8,18 +8,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
-      - name: Set up Python 3.7 🐍🐍🐍
+      - name: Set up Python 3.8 🐍🐍🐍
         uses: actions/setup-python@v1
         with:
-          python-version: 3.7
-      - name: Install dependencies
+          python-version: 3.8
+      - name: Install poetry
         run: |
-          pip install wheel
-      - name: Build a binary wheel and source tarball
+          python -m pip install poetry
+      - name: Install dependencies through Poetry
         run: |
-          python setup.py sdist bdist_wheel
+          python -m poetry install --with dev
       - name: Publish distribution 📦 to PyPI
         if: startsWith(github.event.ref, 'refs/tags')
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          password: ${{ secrets.pypi_deploy }}
+        env:
+          PYPI_TOKEN: ${{ secrets.pypi_deploy }}
+        run: |
+          poetry config pypi-token.pypi $PYPI_TOKEN
+          poetry publish --build

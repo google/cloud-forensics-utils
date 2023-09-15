@@ -33,12 +33,6 @@ description = (
 )
 
 
-def parse_requirements(filename):
-  with open(filename) as requirements:
-    # Skipping -i https://pypi.org/simple
-    return requirements.readlines()[1:]
-
-
 setup(
     name='libcloudforensics',
     version=libcloudforensics.__version__,
@@ -62,6 +56,4 @@ setup(
     entry_points={'console_scripts': [
         'cloudforensics = tools.cli:Main']},
     zip_safe=False,
-    install_requires=[req for req in parse_requirements('requirements.txt')],
-    tests_require=[req for req in parse_requirements('requirements-dev.txt')],
 )

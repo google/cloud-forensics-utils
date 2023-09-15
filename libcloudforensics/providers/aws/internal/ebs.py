@@ -479,7 +479,7 @@ class EBS:
       snapshot: AWSSnapshot,
       volume_name: Optional[str] = None,
       volume_name_prefix: Optional[str] = None,
-      volume_type: str = 'gp2',
+      volume_type: str = 'gp3',
       kms_key_id: Optional[str] = None,
       tags: Optional[Dict[str, str]] = None) -> AWSVolume:
     """Create a new volume based on a snapshot.
@@ -489,8 +489,8 @@ class EBS:
       volume_name (str): Optional. String to use as new volume name.
       volume_name_prefix (str): Optional. String to prefix the volume name with.
       volume_type (str): Optional. The volume type for the volume to create.
-          Can be one of 'standard'|'io1'|'gp2'|'sc1'|'st1'. The default is
-          'gp2'.
+          Can be one of 'standard'|'io1'|'gp2'|'gp3'|'sc1'|'st1'. The default
+          is 'gp3'.
       kms_key_id (str): Optional. A KMS key id to encrypt the volume with.
       tags (Dict[str, str]): Optional. A dictionary of tags to add to the
           volume, for example {'TicketID': 'xxx'}. An entry for the volume
@@ -505,9 +505,9 @@ class EBS:
       ResourceCreationError: If the volume could not be created.
     """
 
-    if volume_type not in ['standard', 'io1', 'gp2', 'sc1', 'st1']:
-      raise ValueError('Volume type must be one of [standard, io1, gp2, sc1, '
-                       'st1]. Got: {0:s}'.format(volume_type))
+    if volume_type not in ['standard', 'io1', 'gp2', 'gp3', 'sc1', 'st1']:
+      raise ValueError('Volume type must be one of [standard, io1, gp2, gp3, '
+                       'sc1, st1]. Got: {0:s}'.format(volume_type))
 
     if not volume_name:
       volume_name = self._GenerateVolumeName(

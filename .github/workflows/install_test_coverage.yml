@@ -11,7 +11,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11']
+        python-version: ['3.8', '3.9', '3.10', '3.11']
 
     steps:
     - uses: actions/checkout@v2
@@ -22,11 +22,22 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install -r requirements-dev.txt
+    - name: Install poetry
+      run: |
+        python -m pip install poetry
+    - name: Cache the virtualenv
+      uses: actions/cache@v2
+      with:
+        path: ./.venv
+        key: ${{ runner.os }}-venv-${{ hashFiles('**/poetry.lock') }}
+    - name: Install dependencies through Poetry
+      run: |
+        python -m poetry install --with dev
+    - name: Install through setup.py
+      run: python setup.py install
     - name: Test
       run: |
-        python -m coverage run -m unittest
+        python -m poetry run python -m coverage run -m unittest
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1
       with:
