@@ -490,7 +490,8 @@ def Main() -> None:
             'Start the quarantining process for a GKE workload.',
             args=[
                 ('cluster', 'The name of the workload\'s GKE cluster.', ''),
-                ('location', 'The region/zone of the workload\'s GKE cluster.', ''),
+                ('location', 'The region/zone of the workload\'s GKE cluster.',
+                    ''),
                 ('workload', 'The name of the GKE workload to isolate.', ''),
                 ('namespace', 'The namespace of the workload.', ''),
                 ('--exempted_src_ips', 'Comma separated list of source IPs '
