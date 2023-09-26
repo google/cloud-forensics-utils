@@ -131,7 +131,7 @@ def StartAnalysisVm(
     cpu_cores: int = 4,
     attach_disks: Optional[List[str]] = None,
     image_project: str = 'ubuntu-os-cloud',
-    image_family: str = 'ubuntu-1804-lts'
+    image_family: str = 'ubuntu-2204-lts'
 ) -> Tuple['compute.GoogleComputeInstance', bool]:
   """Start a virtual machine for analysis purposes.
 
@@ -666,6 +666,17 @@ def TriageInstance(project_id: str, instance_name: str) -> Dict[str, Any]:
   if cpu_usage:
     parsed_cpu = cpu_usage[0].get('cpu_usage', [])
 
+
+  gce_gpu_usage = project.monitoring.GetInstanceGPUUsage(
+    instance_ids=[instance_info['id']])
+  if gce_gpu_usage:
+    parsed_gce_gpu = gce_gpu_usage
+
+
+  gke_gpu_usage = project.monitoring.GetNodeAccelUsage()
+  if gke_gpu_usage:
+    parsed_gke_gpu = gke_gpu_usage
+
   instance_triage = {
       'instance_info': {
           'instance_name': instance_info['name'],
@@ -685,8 +696,11 @@ def TriageInstance(project_id: str, instance_name: str) -> Dict[str, Any]:
                           'values': instance.GetNormalisedFirewalls()
                       }, {
                           'data_type': 'cpu_usage', 'values': parsed_cpu
-                      },
-                      {
+                      }, {
+                          'data_type': 'gce_gpu_usage', 'values': parsed_gce_gpu
+                      }, {
+                          'data_type': 'gke_gpu_usage', 'values': parsed_gke_gpu
+                      }, {
                           'data_type':
                               'ssh_auth',
                           'values':

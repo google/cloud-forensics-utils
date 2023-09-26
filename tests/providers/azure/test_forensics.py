@@ -30,6 +30,7 @@ class AZForensicsTest(unittest.TestCase):
   """Test Azure forensics file."""
   # pylint: disable=line-too-long, too-many-arguments
 
+  @mock.patch('azure.mgmt.resource.resources.v2022_09_01.operations.ProvidersOperations.get')
   @mock.patch('libcloudforensics.providers.azure.internal.compute.AZComputeDisk.GetDiskType')
   @mock.patch('libcloudforensics.providers.azure.internal.resource.AZResource.GetOrCreateResourceGroup')
   @mock.patch('libcloudforensics.providers.azure.internal.common.GetCredentials')
@@ -39,7 +40,7 @@ class AZForensicsTest(unittest.TestCase):
   @mock.patch('libcloudforensics.providers.azure.internal.compute.AZCompute.GetDisk')
   @mock.patch('libcloudforensics.providers.azure.internal.compute.AZComputeVirtualMachine.GetBootDisk')
   @mock.patch('libcloudforensics.providers.azure.internal.compute.AZCompute.GetInstance')
-  @mock.patch('azure.mgmt.compute.v2021_04_01.operations._disks_operations.DisksOperations.begin_create_or_update')
+  @mock.patch('azure.mgmt.compute.v2023_01_02.operations.DisksOperations.begin_create_or_update')
   @typing.no_type_check
   def testCreateDiskCopy1(self,
                           mock_create_disk,
@@ -51,12 +52,14 @@ class AZForensicsTest(unittest.TestCase):
                           mock_list_subscription_ids,
                           mock_credentials,
                           mock_resource_group,
-                          mock_disk_type):
+                          mock_disk_type,
+                          mock_provider):
     """Test that a disk copy is correctly created.
 
     CreateDiskCopy(zone, instance_name='fake-vm-name', region='fake-region').
     This should grab the boot disk of the instance.
     """
+    mock_provider.return_value = azure_mocks.MOCK_CAPACITY_PROVIDER
     mock_create_disk.return_value.done.return_value = True
     mock_create_disk.return_value.result.return_value = azure_mocks.MOCK_DISK_COPY
     mock_get_instance.return_value = azure_mocks.FAKE_INSTANCE
@@ -79,6 +82,7 @@ class AZForensicsTest(unittest.TestCase):
     self.assertIsInstance(disk_copy, compute.AZComputeDisk)
     self.assertEqual('fake_snapshot_name_f4c186ac_copy', disk_copy.name)
 
+  @mock.patch('azure.mgmt.resource.resources.v2022_09_01.operations.ProvidersOperations.get')
   @mock.patch('libcloudforensics.providers.azure.internal.compute.AZComputeDisk.GetDiskType')
   @mock.patch('libcloudforensics.providers.azure.internal.resource.AZResource.GetOrCreateResourceGroup')
   @mock.patch('libcloudforensics.providers.azure.internal.common.GetCredentials')
@@ -88,7 +92,7 @@ class AZForensicsTest(unittest.TestCase):
   @mock.patch('libcloudforensics.providers.azure.internal.compute.AZCompute.GetDisk')
   @mock.patch('libcloudforensics.providers.azure.internal.compute.AZComputeVirtualMachine.GetBootDisk')
   @mock.patch('libcloudforensics.providers.azure.internal.compute.AZCompute.GetInstance')
-  @mock.patch('azure.mgmt.compute.v2021_04_01.operations._disks_operations.DisksOperations.begin_create_or_update')
+  @mock.patch('azure.mgmt.compute.v2023_01_02.operations.DisksOperations.begin_create_or_update')
   @typing.no_type_check
   def testCreateDiskCopy2(self,
                           mock_create_disk,
@@ -100,11 +104,13 @@ class AZForensicsTest(unittest.TestCase):
                           mock_list_subscription_ids,
                           mock_credentials,
                           mock_resource_group,
-                          mock_disk_type):
+                          mock_disk_type,
+                          mock_provider):
     """Test that a disk copy is correctly created.
 
     CreateDiskCopy(zone, disk_name='fake-disk-name', region='fake-region').
     This should grab the disk 'fake-disk-name'."""
+    mock_provider.return_value = azure_mocks.MOCK_CAPACITY_PROVIDER
     mock_create_disk.return_value.done.return_value = True
     mock_create_disk.return_value.result.return_value = azure_mocks.MOCK_DISK_COPY
     mock_get_instance.return_value = azure_mocks.FAKE_INSTANCE
@@ -127,6 +133,7 @@ class AZForensicsTest(unittest.TestCase):
     self.assertIsInstance(disk_copy, compute.AZComputeDisk)
     self.assertEqual('fake_snapshot_name_f4c186ac_copy', disk_copy.name)
 
+  @mock.patch('azure.mgmt.resource.resources.v2022_09_01.operations.ProvidersOperations.get')
   @mock.patch('libcloudforensics.providers.azure.internal.compute.AZComputeDisk.GetDiskType')
   @mock.patch('libcloudforensics.providers.azure.internal.resource.AZResource.GetOrCreateResourceGroup')
   @mock.patch('libcloudforensics.providers.azure.internal.common.GetCredentials')
@@ -140,12 +147,14 @@ class AZForensicsTest(unittest.TestCase):
                           mock_list_subscription_ids,
                           mock_credentials,
                           mock_resource_group,
-                          mock_disk_type):
+                          mock_disk_type,
+                          mock_provider):
     """Test that a disk copy is correctly created.
 
     The first call should raise a RuntimeError in GetInstance as we are
     querying a non-existent instance. The second call should raise a
     RuntimeError in GetDisk as we are querying a non-existent disk."""
+    mock_provider.return_value = azure_mocks.MOCK_CAPACITY_PROVIDER
     mock_list_instances.return_value = {}
     mock_list_disk.return_value = {}
     mock_list_subscription_ids.return_value = ['fake-subscription-id']

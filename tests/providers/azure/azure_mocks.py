@@ -80,6 +80,8 @@ MOCK_REQUEST_INSTANCES = [[MOCK_INSTANCE]]
 MOCK_LIST_INSTANCES = {
     'fake-vm-name': FAKE_INSTANCE
 }
+MOCK_CAPACITY_PROVIDER = mock.Mock(registration_state='Registered')
+MOCK_QUOTA = mock.Mock(properties=mock.Mock(limit=1, current_value=0))
 
 MOCK_DISK = mock.Mock(
     id=RESOURCE_ID_PREFIX + 'fake-disk-name',
@@ -108,10 +110,21 @@ MOCK_LIST_DISKS = {
     'fake-boot-disk-name': FAKE_BOOT_DISK
 }
 
-MOCK_VM_SIZE = mock.Mock(
-    number_of_cores=4,
-    memory_in_mb=8192
-)
+MOCK_VM_SIZE = mock.Mock()
+MOCK_VM_VCPU_CAPABILITY = mock.Mock()
+MOCK_VM_VCPU_CAPABILITY.name = 'vCPUs'
+MOCK_VM_VCPU_CAPABILITY.value = '4'
+MOCK_VM_MEMORYGB_CAPABILITY = mock.Mock()
+MOCK_VM_MEMORYGB_CAPABILITY.name = 'MemoryGB'
+MOCK_VM_MEMORYGB_CAPABILITY.value = '8'
+MOCK_VM_PREMIUMIO_CAPABILITY = mock.Mock()
+MOCK_VM_PREMIUMIO_CAPABILITY.name = 'PremiumIO'
+MOCK_VM_PREMIUMIO_CAPABILITY.value = 'True'
+MOCK_VM_SIZE.capabilities = [
+    MOCK_VM_VCPU_CAPABILITY,
+    MOCK_VM_MEMORYGB_CAPABILITY,
+    MOCK_VM_PREMIUMIO_CAPABILITY
+]
 MOCK_VM_SIZE.name = 'fake-vm-type'
 MOCK_REQUEST_VM_SIZE = [MOCK_VM_SIZE]
 MOCK_LIST_VM_SIZES = [{

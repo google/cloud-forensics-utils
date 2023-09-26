@@ -1,0 +1,53 @@
+[tool.poetry]
+name = "libcloudforensics"
+version = "20230601"
+description = "libcloudforensics is a set of tools to help acquire forensic evidence from Cloud platforms."
+authors = ["cloud-forensics-utils development team <cloud-forensics-utils-dev@googlegroups.com>"]
+license = "Apache-2.0"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+google-api-core = "^2.11.1"
+azure-common = "^1.1.28"
+azure-core = "^1.28.0"
+azure-identity = "^1.13.0"
+azure-mgmt-compute = "^30.1.0"
+azure-mgmt-monitor = "^6.0.1"
+azure-mgmt-network = "^24.0.0"
+azure-mgmt-resource = "23.0.1"
+azure-mgmt-storage = "^21.0.0"
+azure-storage-blob = "^12.17.0"
+boto3 = "^1.28.20"
+botocore = ">=1.29.135"
+google-api-python-client = "^2.95.0"
+httplib2 = "^0.22.0"
+msrest = "^0.7.1"
+msrestazure = "^0.6.4"
+netaddr = "^0.8.0"
+pycryptodome = "^3.18.0"
+pyjwt = "^2.8.0"
+sshpubkeys = "^3.3.1"
+requests = "^2.31.0"
+kubernetes = "^27.2.0"
+pyopenssl = "^23.2.0"
+urllib3 = ">=1.21.1,<1.27"
+google-auth = "^2.22.0"
+azure-mgmt-reservations = "^2.3.0"
+
+[tool.poetry.group.dev.dependencies]
+coverage = "^7.2.7"
+mock = "^5.1.0"
+mypy = "^1.4.1"
+pylint = "^2.17.5"
+sphinx = "^7.1.2"
+sphinx-autodoc-typehints = "^1.24.0"
+yapf = "^0.40.1"
+types-six = "^1.16.21.9"
+types-mock = "^5.1.0.1"
+sphinx-rtd-theme = "^1.2.2"
+wheel = "^0.41.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

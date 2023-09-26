@@ -247,7 +247,7 @@ class EC2:
 
           zone = instance['Placement']['AvailabilityZone']
           instance_id = instance['InstanceId']
-          vpc = instance['VpcId']
+          vpc = instance.get('VpcId', None)
           aws_instance = AWSInstance(
               self.aws_account, instance_id, zone[:-1], zone, vpc)
 
@@ -379,7 +379,7 @@ class EC2:
       boot_volume_size: int,
       ami: str,
       cpu_cores: int,
-      boot_volume_type: str = 'gp2',
+      boot_volume_type: str = 'gp3',
       ssh_key_name: Optional[str] = None,
       tags: Optional[Dict[str, str]] = None,
       subnet_id: Optional[str] = None,
@@ -397,8 +397,8 @@ class EC2:
       ami (str): The Amazon Machine Image ID to use to create the VM.
       cpu_cores (int): Number of CPU cores for the analysis VM.
       boot_volume_type (str): Optional. The volume type for the boot volume
-          of the VM. Can be one of 'standard'|'io1'|'gp2'|'sc1'|'st1'. The
-          default is 'gp2'.
+          of the VM. Can be one of 'standard'|'io1'|'gp2'|'gp3'|'sc1'|'st1'. The
+          default is 'gp3'.
       ssh_key_name (str): Optional. A SSH key pair name linked to the AWS
           account to associate with the VM. If none provided, the VM can only
           be accessed through in-browser SSH from the AWS management console

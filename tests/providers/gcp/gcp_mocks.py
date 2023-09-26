@@ -573,6 +573,76 @@ MOCK_GCM_METRICS_CPU_POINTS = [
     }
 ] * 24 * 7
 
+MOCK_GCM_METRICS_GPU_POINTS = [
+    {
+        'interval': {
+            'startTime': '2021-01-01T00:00:00.000000Z',
+            'endTime': '2021-01-01T00:00:00.000000Z'
+        },
+        'value': {
+            'int64Value': 1
+        }
+    }
+] * 24 * 7
+
+MOCK_GCM_METRICS_GPU_GKE_NODE = {
+ 'timeSeries': [
+    {
+      'metric': {
+        'labels': {
+          'accelerator_id': 'GPU-bf97ab0c-2b63-df2f-97f7-43349526fefa',
+          'model': 'Tesla T4',
+          'make': 'nvidia'
+        },
+        'type': 'kubernetes.io/container/accelerator/duty_cycle'
+      },
+      'resource': {
+        'type': 'k8s_container',
+        'labels': {
+          'location': 'us-central1',
+          'project_id': 'fake-project',
+          'namespace_name': "default",
+          'pod_name': 'fake-pod',
+          'cluster_name': 'fake-cluster',
+          'container_name': 'fake-container'
+
+        }
+      },
+      'metricKind': 'GAUGE',
+      'valueType': 'INT64',
+      'points': MOCK_GCM_METRICS_GPU_POINTS
+    }
+ ],
+'unit': '%'
+}
+
+MOCK_GCM_METRICS_GPU_INSTANCE = {
+ 'timeSeries': [
+    {
+      'metric': {
+        'labels': {
+          'uuid': 'GPU-bf97ab0c-2b63-df2f-97f7-43349526fefa',
+          'gpu_number': '0',
+          'model': 'NVIDIA L4'
+        },
+        'type': 'agent.googleapis.com/gpu/utilization'
+      },
+      'resource': {
+        'type': 'gce_instance',
+        'labels': {
+          'instance_id': '0000000000000000001',
+          'zone': 'us-central1-a',
+          'project_id': 'fake-project'
+        }
+      },
+      'metricKind': 'GAUGE',
+      'valueType': 'DOUBLE',
+      'points': MOCK_GCM_METRICS_CPU_POINTS
+    }
+ ],
+'unit': '%'
+}
+
 MOCK_GCM_METRICS_CPU = {
     'timeSeries': [
         {
