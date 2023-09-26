@@ -54,20 +54,24 @@ class GkeCluster(cluster.K8sCluster, GoogleKubernetesEngine):
 
   Attributes:
     project_id (str): The GCP project name.
-    zone (str): The GCP zone for this project.
     cluster_id (str): The name of the GKE cluster.
+    location (str): The GCP region/zone for this cluster.
   """
 
-  def __init__(self, project_id: str, zone: str, cluster_id: str) -> None:
+  def __init__(
+      self,
+      project_id: str,
+      location: str,
+      cluster_id: str) -> None:
     """Creates a GKE cluster resource.
 
     Args:
       project_id (str): The GCP project name.
-      zone (str): The GCP zone for this project.
+      location (str): The GCP zone for this cluster.
       cluster_id (str): The name of the GKE cluster.
     """
     self.project_id = project_id
-    self.zone = zone
+    self.location = location
     self.cluster_id = cluster_id
     cluster.K8sCluster.__init__(self, self._GetK8sApiClient())
 
@@ -80,7 +84,7 @@ class GkeCluster(cluster.K8sCluster, GoogleKubernetesEngine):
     """
     return 'projects/{0:s}/locations/{1:s}/clusters/{2:s}'.format(
         self.project_id,
-        self.zone,
+        self.location,
         self.cluster_id,
     )
 
@@ -104,7 +108,7 @@ class GkeCluster(cluster.K8sCluster, GoogleKubernetesEngine):
     context = '_'.join([
         'gke',
         self.project_id,
-        self.zone,
+        self.location,
         self.name,
     ])
     # Build kubeconfig dict and load
@@ -160,11 +164,11 @@ class GkeCluster(cluster.K8sCluster, GoogleKubernetesEngine):
         'resource.type="{query_type:s}"\n'
         'resource.labels.project_id="{project_id:s}"\n'
         'resource.labels.cluster_name="{cluster_id:s}"\n'
-        'resource.labels.location="{zone:s}"\n'.format(
+        'resource.labels.location="{location:s}"\n'.format(
             query_type=query_type,
             project_id=self.project_id,
             cluster_id=self.cluster_id,
-            zone=self.zone))
+            location=self.location))
 
   def ClusterLogsQuery(
       self, workload: Optional[base.K8sWorkload] = None) -> str:

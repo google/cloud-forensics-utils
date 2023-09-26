@@ -219,11 +219,11 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
 
     return instances
 
-  def ListMIGSByInstanceName(self, zone: str) -> Dict[str, str]:
+  def ListMIGSByInstanceName(self, location: str) -> Dict[str, str]:
     """Gets a mapping from instance names to their managed instance group.
 
     Args:
-      zone (str): The zone in which to list managed instance groups.
+      location (str): The region/zone in which to list managed instance groups.
 
     Returns:
       Dict[str, str]: A mapping from instance names to their managed instance
@@ -233,7 +233,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       RuntimeError: If multiple managed instance groups are found for a single
           instance.
     """
-    groups = self.ListMIGS(zone)
+    groups = self.ListMIGS(location)
     groups_by_instance = {}
     for group_id, instances in groups.items():
       for instance in instances:
@@ -242,30 +242,57 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
         groups_by_instance[instance.name] = group_id
     return groups_by_instance
 
-  def ListMIGS(self, zone: str) -> Dict[str, List['GoogleComputeInstance']]:
+  def ListMIGS(self, location: str) -> Dict[str, List['GoogleComputeInstance']]:
     """Gets the managed instance groups in a particular zone.
 
     Returns a dictionary, with as keys the managed instance groups, and as
     values a list of instances belonging to the group.
 
     Args:
-      zone (str): The zone in which to list managed instance groups.
+      location (str): The region/zone in which to list managed instance groups.
 
     Returns:
       Dict[str, List[GoogleComputeInstance]]: A mapping from managed instance
           groups to their managed GCE instances.
     """
     groups_client = self.GceApi().instanceGroupManagers() # pylint: disable=no-member
-    responses = common.ExecuteRequest(
-        groups_client, 'list', {
-            'project': self.project_id,
-            'zone': zone,
-        })
-
     groups = defaultdict(list)
+    try:
+      responses = common.ExecuteRequest(
+          groups_client, 'list', {
+              'project': self.project_id,
+              'zone': location,
+          })
+    except HttpError as exception:
+      if exception.resp.status == 400:
+        # If the location provided was a region, we'll need to list all zonal
+        # MIGs for the region
+        zones_client = self.GceApi().zones() # pylint: disable=no-member
+        zone_responses = common.ExecuteRequest(
+            zones_client, 'list', {
+                'project': self.project_id,
+                'filter': f'name:{location}-*'
+            })
+        for response in zone_responses:
+          for zone in response.get('items', []):
+            group_responses = common.ExecuteRequest(
+                groups_client, 'list', {
+                    'project': self.project_id,
+                    'zone': zone['name'],
+                })
+            for response in group_responses:
+              for group in response.get('items', []):
+                instances = self._ListInstancesForMIG(
+                    zone['name'], group['name'])
+                groups[group['name']].extend(instances)
+        return groups
+      raise errors.ResourceNotFoundError(
+          f'Unable to list MIGs for {location}', __name__) from exception
+
     for response in responses:
       for group in response.get('items', []):
-        instances = self._ListInstancesForMIG(zone, group['name'])
+        instances = self._ListInstancesForMIG(
+            location, group['name'])
         groups[group['name']].extend(instances)
 
     return groups
