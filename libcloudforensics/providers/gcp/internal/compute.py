@@ -291,8 +291,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
 
     for response in responses:
       for group in response.get('items', []):
-        instances = self._ListInstancesForMIG(
-            location, group['name'])
+        instances = self._ListInstancesForMIG(location, group['name'])
         groups[group['name']].extend(instances)
 
     return groups

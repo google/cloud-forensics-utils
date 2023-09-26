@@ -54,15 +54,11 @@ class GkeCluster(cluster.K8sCluster, GoogleKubernetesEngine):
 
   Attributes:
     project_id (str): The GCP project name.
-    cluster_id (str): The name of the GKE cluster.
     location (str): The GCP region/zone for this cluster.
+    cluster_id (str): The name of the GKE cluster.
   """
 
-  def __init__(
-      self,
-      project_id: str,
-      location: str,
-      cluster_id: str) -> None:
+  def __init__(self, project_id: str, location: str, cluster_id: str) -> None:
     """Creates a GKE cluster resource.
 
     Args:
