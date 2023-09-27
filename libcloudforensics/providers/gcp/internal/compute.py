@@ -52,6 +52,11 @@ NON_HIERARCHICAL_FW_POLICY_LEVEL = 999
 # https://cloud.google.com/compute/docs/naming-resources#resource-name-format
 RESOURCE_ID_REGEX = r'^\d+$'
 
+ZONE_REGEX = re.compile(
+    r'\A(?P<zone>(?P<region>(?P<geo_tag>[a-zA-Z0-9]+)-[a-zA-Z0-9]+)'
+    r'-[a-zA-Z0-9]+)\Z'
+)
+
 ComputeResource = TypeVar(
   'ComputeResource', bound='compute_base_resource.GoogleComputeBaseResource')
 
@@ -257,42 +262,37 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     """
     groups_client = self.GceApi().instanceGroupManagers() # pylint: disable=no-member
     groups = defaultdict(list)
-    try:
-      responses = common.ExecuteRequest(
+    if re.match(ZONE_REGEX, location):
+      group_responses = common.ExecuteRequest(
           groups_client, 'list', {
               'project': self.project_id,
               'zone': location,
           })
-    except HttpError as exception:
-      if exception.resp.status == 400:
-        # If the location provided was a region, we'll need to list all zonal
-        # MIGs for the region
-        zones_client = self.GceApi().zones() # pylint: disable=no-member
-        zone_responses = common.ExecuteRequest(
-            zones_client, 'list', {
-                'project': self.project_id,
-                'filter': f'name:{location}-*'
-            })
-        for response in zone_responses:
-          for zone in response.get('items', []):
-            group_responses = common.ExecuteRequest(
-                groups_client, 'list', {
-                    'project': self.project_id,
-                    'zone': zone['name'],
-                })
-            for response in group_responses:
-              for group in response.get('items', []):
-                instances = self._ListInstancesForMIG(
-                    zone['name'], group['name'])
-                groups[group['name']].extend(instances)
-        return groups
-      raise errors.ResourceNotFoundError(
-          f'Unable to list MIGs for {location}', __name__) from exception
-
-    for response in responses:
-      for group in response.get('items', []):
-        instances = self._ListInstancesForMIG(location, group['name'])
-        groups[group['name']].extend(instances)
+      for response in group_responses:
+        for group in response.get('items', []):
+          instances = self._ListInstancesForMIG(location, group['name'])
+          groups[group['name']].extend(instances)
+    else:
+      # If the location provided was a region, we'll need to list all zonal
+      # MIGs for the region
+      zones_client = self.GceApi().zones() # pylint: disable=no-member
+      zone_responses = common.ExecuteRequest(
+          zones_client, 'list', {
+              'project': self.project_id,
+              'filter': f'name:{location}-*'
+          })
+      for response in zone_responses:
+        for zone in response.get('items', []):
+          group_responses = common.ExecuteRequest(
+              groups_client, 'list', {
+                  'project': self.project_id,
+                  'zone': zone['name'],
+              })
+          for response in group_responses:
+            for group in response.get('items', []):
+              instances = self._ListInstancesForMIG(
+                  zone['name'], group['name'])
+              groups[group['name']].extend(instances)
 
     return groups
 
