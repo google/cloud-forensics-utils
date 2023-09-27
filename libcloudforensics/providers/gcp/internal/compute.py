@@ -52,6 +52,11 @@ NON_HIERARCHICAL_FW_POLICY_LEVEL = 999
 # https://cloud.google.com/compute/docs/naming-resources#resource-name-format
 RESOURCE_ID_REGEX = r'^\d+$'
 
+ZONE_REGEX = re.compile(
+    r'\A(?P<zone>(?P<region>(?P<geo_tag>[a-zA-Z0-9]+)-[a-zA-Z0-9]+)'
+    r'-[a-zA-Z0-9]+)\Z'
+)
+
 ComputeResource = TypeVar(
   'ComputeResource', bound='compute_base_resource.GoogleComputeBaseResource')
 
@@ -219,11 +224,11 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
 
     return instances
 
-  def ListMIGSByInstanceName(self, zone: str) -> Dict[str, str]:
+  def ListMIGSByInstanceName(self, location: str) -> Dict[str, str]:
     """Gets a mapping from instance names to their managed instance group.
 
     Args:
-      zone (str): The zone in which to list managed instance groups.
+      location (str): The region/zone in which to list managed instance groups.
 
     Returns:
       Dict[str, str]: A mapping from instance names to their managed instance
@@ -233,7 +238,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       RuntimeError: If multiple managed instance groups are found for a single
           instance.
     """
-    groups = self.ListMIGS(zone)
+    groups = self.ListMIGS(location)
     groups_by_instance = {}
     for group_id, instances in groups.items():
       for instance in instances:
@@ -242,31 +247,52 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
         groups_by_instance[instance.name] = group_id
     return groups_by_instance
 
-  def ListMIGS(self, zone: str) -> Dict[str, List['GoogleComputeInstance']]:
+  def ListMIGS(self, location: str) -> Dict[str, List['GoogleComputeInstance']]:
     """Gets the managed instance groups in a particular zone.
 
     Returns a dictionary, with as keys the managed instance groups, and as
     values a list of instances belonging to the group.
 
     Args:
-      zone (str): The zone in which to list managed instance groups.
+      location (str): The region/zone in which to list managed instance groups.
 
     Returns:
       Dict[str, List[GoogleComputeInstance]]: A mapping from managed instance
           groups to their managed GCE instances.
     """
     groups_client = self.GceApi().instanceGroupManagers() # pylint: disable=no-member
-    responses = common.ExecuteRequest(
-        groups_client, 'list', {
-            'project': self.project_id,
-            'zone': zone,
-        })
-
     groups = defaultdict(list)
-    for response in responses:
-      for group in response.get('items', []):
-        instances = self._ListInstancesForMIG(zone, group['name'])
-        groups[group['name']].extend(instances)
+    if re.match(ZONE_REGEX, location):
+      group_responses = common.ExecuteRequest(
+          groups_client, 'list', {
+              'project': self.project_id,
+              'zone': location,
+          })
+      for response in group_responses:
+        for group in response.get('items', []):
+          instances = self._ListInstancesForMIG(location, group['name'])
+          groups[group['name']].extend(instances)
+    else:
+      # If the location provided was a region, we'll need to list all zonal
+      # MIGs for the region
+      zones_client = self.GceApi().zones() # pylint: disable=no-member
+      zone_responses = common.ExecuteRequest(
+          zones_client, 'list', {
+              'project': self.project_id,
+              'filter': f'name:{location}-*'
+          })
+      for response in zone_responses:
+        for zone in response.get('items', []):
+          group_responses = common.ExecuteRequest(
+              groups_client, 'list', {
+                  'project': self.project_id,
+                  'zone': zone['name'],
+              })
+          for response in group_responses:
+            for group in response.get('items', []):
+              instances = self._ListInstancesForMIG(
+                  zone['name'], group['name'])
+              groups[group['name']].extend(instances)
 
     return groups
 

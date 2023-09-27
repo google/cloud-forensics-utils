@@ -497,7 +497,7 @@ def CheckInstanceSSHAuth(project_id: str,
 
 
 def QuarantineGKEWorkload(project_id: str,
-                          zone: str,
+                          location: str,
                           cluster_id: str,
                           namespace: str,
                           workload_id: str,
@@ -506,7 +506,7 @@ def QuarantineGKEWorkload(project_id: str,
 
   Args:
     project_id (str): The GCP project ID.
-    zone (str): The zone in which the cluster resides.
+    location (str): The region/zone in which the cluster resides.
     cluster_id (str): The name of the Kubernetes cluster holding the workload.
     namespace (str): The Kubernetes namespace of the workload (e.g. 'default').
     workload_id (str): The name of the workload.
@@ -519,7 +519,7 @@ def QuarantineGKEWorkload(project_id: str,
   """
   logger.info('Starting GKE quarantining process...')
 
-  cluster = gke.GkeCluster(project_id, zone, cluster_id)
+  cluster = gke.GkeCluster(project_id, location, cluster_id)
   maybe_workload = cluster.FindWorkload(workload_id, namespace)
   if not maybe_workload:
     raise errors.ResourceNotFoundError(
@@ -547,7 +547,7 @@ def QuarantineGKEWorkload(project_id: str,
   def AbandonNodes() -> None:
     """Abandons the nodes from their respective managed instance groups."""
     compute_project = compute.GoogleCloudCompute(project_id)
-    groups_by_instance = compute_project.ListMIGSByInstanceName(zone)
+    groups_by_instance = compute_project.ListMIGSByInstanceName(location)
     for node in workload_nodes:
       if node.name in groups_by_instance:
         logger.info(
@@ -583,8 +583,8 @@ def QuarantineGKEWorkload(project_id: str,
     """Puts each node from the workload into network quarantine."""
     for node in workload_nodes:
       logger.info(
-          'Putting instance {0:s} into network quarantine...'.format(
-              workload_id))
+          ('Putting instance "{0:s}" from workload "{1:s}" into network'
+           ' quarantine...').format(node.name, workload_id))
       InstanceNetworkQuarantine(project_id, node.name,
                                 exempted_src_ips=exempted_src_ips)
 

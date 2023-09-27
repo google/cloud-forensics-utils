@@ -537,7 +537,7 @@ def GKEWorkloadQuarantine(args: 'argparse.Namespace') -> None:
   exempted_src_ips = None  # type: Optional[List[str]]
   if args.exempted_src_ips:
     exempted_src_ips = args.exempted_src_ips.split(',')
-  forensics.QuarantineGKEWorkload(args.project, args.zone, args.cluster,
+  forensics.QuarantineGKEWorkload(args.project, args.location, args.cluster,
                                   args.namespace, args.workload,
                                   exempted_src_ips=exempted_src_ips)
 
@@ -554,7 +554,7 @@ def GKEEnumerate(args: 'argparse.Namespace') -> None:
   """
   AssignProjectID(args)
 
-  cluster = gke.GkeCluster(args.project, args.zone, args.cluster)
+  cluster = gke.GkeCluster(args.project, args.location, args.cluster)
 
   enumerations = []  # type: List[k8s_enumerations.base.Enumeration[Any]]
 

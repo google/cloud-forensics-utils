@@ -490,7 +490,8 @@ def Main() -> None:
             'Start the quarantining process for a GKE workload.',
             args=[
                 ('cluster', 'The name of the workload\'s GKE cluster.', ''),
-                ('zone', 'The zone of the workload\'s GKE cluster.', ''),
+                ('location', 'The region/zone of the workload\'s GKE cluster.',
+                    ''),
                 ('workload', 'The name of the GKE workload to isolate.', ''),
                 ('namespace', 'The namespace of the workload.', ''),
                 ('--exempted_src_ips', 'Comma separated list of source IPs '
@@ -501,7 +502,7 @@ def Main() -> None:
             'Enumerate a GKE cluster or one of its objects.',
             args=[
                 ('cluster', 'The name of the GKE cluster.', ''),
-                ('zone', 'The zone of the GKE cluster.', ''),
+                ('location', 'The region/zone of the GKE cluster.', None),
                 ('--workload', 'The name of the workload to enumerate.', ''),
                 ('--service', 'The name of the service to enumerate.', None),
                 ('--node', 'The name of the node to enumerate.', None),
