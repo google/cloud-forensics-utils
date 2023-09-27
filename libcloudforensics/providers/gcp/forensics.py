@@ -583,8 +583,8 @@ def QuarantineGKEWorkload(project_id: str,
     """Puts each node from the workload into network quarantine."""
     for node in workload_nodes:
       logger.info(
-          'Putting workload {0:s} into network quarantine...'.format(
-              workload_id))
+          ('Putting instance "{0:s}" from workload "{1:s}" into network'
+           ' quarantine...').format(node.name, workload_id))
       InstanceNetworkQuarantine(project_id, node.name,
                                 exempted_src_ips=exempted_src_ips)
 
