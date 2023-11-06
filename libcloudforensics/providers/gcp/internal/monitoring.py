@@ -91,6 +91,90 @@ class GoogleCloudMonitoring:
               ret[service] = int(val)
     return ret
 
+
+  def GetNetworkData(
+      self, instance_ids: Optional[List[str]] = None,
+      days: int = 2) -> List[Dict[str, Any]]:
+    """Returns outbound network metrics for compute instances.
+
+    By default returns usage for the last two days for the given instance.
+
+    Args:
+      instance_ids list[str]: Optional. A list of instance IDs to collect
+        metrics for. When not provided will collect metrics for all instances
+        in the project.
+      days (int): Optional. The number of days to collect metrics for.
+
+    Returns:
+      List[Dict[str, Any]]: a list of network usage for each instance in the format
+        [
+          {
+            'instance_name': str,
+            'instance_id': str,
+            'cpu_usage':
+            [
+              {
+                'timestamp': str,
+                'cpu_usage': float
+              },
+            ]
+          },
+        ]
+    """
+    service = self.GcmApi()
+    gcm_timeseries_client = service.projects().timeSeries() # pylint: disable=no-member
+    start_time = common.FormatRFC3339(
+        datetime.datetime.utcnow() - datetime.timedelta(days=days))
+    end_time = common.FormatRFC3339(datetime.datetime.utcnow())
+
+    network_filter = [
+        'metric.type=',
+        '"compute.googleapis.com/instance/network/sent_bytes_count" ',
+        'resource.type="gce_instance"'
+    ]
+
+    if instance_ids:
+      network_filter.append(
+          ' AND (resource.label.instance_id = "{0:s}"'.format(instance_ids[0]))
+      if len(instance_ids) > 1:
+        for instance_name in instance_ids[1:]:
+          network_filter.append(
+              ' OR resource.label.instance_id = "{0:s}"'.format(instance_name))
+
+    responses = common.ExecuteRequest(
+        gcm_timeseries_client,
+        'list',
+        {
+            'name': 'projects/{0:s}'.format(self.project_id),
+            'filter': ''.join(network_filter),
+            'interval_startTime': start_time,
+            'interval_endTime': end_time,
+            'aggregation_groupByFields': 'metadata.system_labels.name',
+            'aggregation_alignmentPeriod': '60s',
+            'aggregation_perSeriesAligner': 'ALIGN_RATE',
+            'aggregation_crossSeriesReducer': 'REDUCE_SUM'
+        })
+
+    network_data = []
+
+    for response in responses:
+      time_series = response.get('timeSeries', [])
+      for ts in time_series:
+        instance_name = response['timeSeries'][0]['metadata'][
+            'systemLabels']['name']
+        points = ts['points']
+        data = []
+        for point in points:
+          data.append({
+              'timestamp': point['interval']['startTime'],
+              'bytes': point['value']['doubleValue']})
+
+        network_data.append({
+            'instance_name': instance_name,
+            'network_usage': data})
+
+    return network_data
+
   def _BuildUsageFilter(
       self, metric_type: str, instance_ids: Optional[List[str]]) -> str:
     """Builds a metrics query filter based on a list of instance IDs.

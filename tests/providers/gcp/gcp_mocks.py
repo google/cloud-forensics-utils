@@ -373,6 +373,43 @@ MOCK_STACKDRIVER_METRIC = 6693417
 MOCK_COMPUTE_METRIC = 8093
 MOCK_LOGGING_METRIC = 1
 
+MOCK_GM_NETWORK_DATA = {
+    'timeSeries': [{
+        'metric': {
+            'type': 'compute.googleapis.com/instance/network/sent_bytes_count'
+        },
+        'resource': {
+            'type': 'gce_instance',
+            'labels': {
+                'project_id': 'fake-target-project'
+            }
+        },
+        'metricKind': 'GAUGE',
+        'valueType': 'DOUBLE',
+        'points': [
+        {
+          "interval": {
+            "startTime": "2021-04-07T00:00:00Z",
+            "endTime": "2021-04-07T00:00:00Z"
+          },
+          "value": {
+            "doubleValue": 27.25
+          }
+        },
+        {
+          "interval": {
+            "startTime": "2021-04-06T00:05:00Z",
+            "endTime": "2021-04-06T00:05:00Z"
+          },
+          "value": {
+            "doubleValue": 104.2
+          }
+        }],
+        'metadata': {'systemLabels': {'name': 'instance-a'}}
+    }],
+    'unit': 'By/s'
+}
+
 MOCK_GCM_METRICS_COUNT = {
     'timeSeries': [{
         'metric': {

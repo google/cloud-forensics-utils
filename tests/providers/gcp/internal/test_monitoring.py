@@ -43,6 +43,32 @@ class GoogleCloudMonitoringTest(unittest.TestCase):
                      gcp_mocks.MOCK_LOGGING_METRIC)
 
   @typing.no_type_check
+  @mock.patch('libcloudforensics.providers.gcp.internal.monitoring.GoogleCloudMonitoring.GcmApi')
+  def testNetworkUsage(self, mock_gcm_api):
+    """Validates the parsing of Network usage metrics."""
+    services = mock_gcm_api.return_value.projects.return_value.timeSeries.return_value.list
+    services.return_value.execute.return_value = gcp_mocks.MOCK_GM_NETWORK_DATA
+    network_usage = gcp_mocks.FAKE_MONITORING.GetNetworkData()
+    self.assertEqual(1, len(network_usage))
+    self.assertListEqual(network_usage,
+        [
+          {
+            'instance_name': 'instance-a',
+            'network_usage': [
+              {
+                'timestamp': '2021-04-07T00:00:00Z',
+                'bytes': 27.25
+              },
+              {
+                'timestamp': '2021-04-06T00:05:00Z',
+                'bytes': 104.2
+              },
+            ]
+          }
+        ])
+
+
+  @typing.no_type_check
   def testBuildCpuUsageFilter(self):
     """Validates the query filter builder functionality"""
     # pylint: disable=protected-access
