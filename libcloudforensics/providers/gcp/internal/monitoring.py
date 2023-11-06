@@ -106,16 +106,16 @@ class GoogleCloudMonitoring:
       days (int): Optional. The number of days to collect metrics for.
 
     Returns:
-      List[Dict[str, Any]]: a list of network usage for each instance in the format
+      List[Dict[str, Any]]: a list of network usage for each instance
+      in the format
         [
           {
             'instance_name': str,
-            'instance_id': str,
-            'cpu_usage':
+            'network_usage':
             [
               {
                 'timestamp': str,
-                'cpu_usage': float
+                'bytes': float
               },
             ]
           },
