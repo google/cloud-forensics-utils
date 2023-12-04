@@ -15,9 +15,12 @@
 """Google Kubernetes Engine functionalities."""
 from typing import Optional, TYPE_CHECKING, Any, Dict
 
+from googleapiclient.errors import HttpError
+
 from kubernetes import client
 from kubernetes.config import kube_config
 
+from libcloudforensics import errors
 from libcloudforensics import logging_utils
 from libcloudforensics.providers.gcp.internal import common
 from libcloudforensics.providers.kubernetes import base
@@ -143,7 +146,17 @@ class GkeCluster(cluster.K8sCluster, GoogleKubernetesEngine):
     """
     clusters = self.GkeApi().projects().locations().clusters()  # pylint: disable=no-member
     request = clusters.get(name=self.name)
-    response = request.execute()  # type: Dict[str, Any]
+    try:
+      response = request.execute()  # type: Dict[str, Any]
+    except HttpError as exception:
+      if exception.resp.status == 404:
+        raise errors.ResourceNotFoundError(
+          '{0:s} not found: {1!s}'.format(self.name, exception),
+          __name__) from exception
+      raise errors.ResourceNotFoundError(
+        'Unknown error occured when getting cluster {0:s}: {1!s}'.format(
+            self.name, exception),
+        __name__) from exception
     return response
 
   def _MakeQuery(self, query_type: str) -> str:
