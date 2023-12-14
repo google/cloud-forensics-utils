@@ -18,6 +18,9 @@ import typing
 import unittest
 import mock
 
+from googleapiclient.errors import HttpError
+
+from libcloudforensics import errors
 from libcloudforensics.providers.gcp.internal import gke
 import libcloudforensics.providers.kubernetes.cluster as k8s
 
@@ -43,3 +46,9 @@ class GoogleKubernetesEngineTest(unittest.TestCase):
 
     clusters_api.get.assert_called_once_with(name=cluster.name)
     self.assertEqual({'key': 'ddbjnaxz'}, get_operation_result)
+
+    # Test error case
+    clusters_api.get.return_value.execute.side_effect = HttpError(
+        resp=mock.Mock(status=404), content=b'Cluster not found')
+    with self.assertRaises(errors.ResourceNotFoundError):
+      cluster.GetOperation()
