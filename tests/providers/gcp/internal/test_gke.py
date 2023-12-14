@@ -14,9 +14,9 @@
 # limitations under the License.
 """Tests for the gcp module - gke.py"""
 
-import mock
 import typing
 import unittest
+import mock
 
 from googleapiclient.errors import HttpError
 
