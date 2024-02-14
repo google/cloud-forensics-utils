@@ -48,7 +48,7 @@ class GoogleCloudSQL:
     return common.CreateService(
         'sqladmin', self.SQLADMIN_API_VERSION)
 
-  def ListCloudSQLInstances(self) -> List[Dict[str, Any]]:
+  def ListCloudSQLInstances(self) -> List[Dict[str, Any]] | Any:
     """List instances of Google CloudSQL within a project.
 
     Returns:

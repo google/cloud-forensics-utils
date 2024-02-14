@@ -126,7 +126,7 @@ class GoogleCloudStorage:
         ret[item['role']].append(member)
     return ret
 
-  def ListBuckets(self) -> List[Dict[str, Any]]:
+  def ListBuckets(self) -> List[Dict[str, Any]] | Any:
     """List buckets in a Google Cloud project.
 
     Returns:
@@ -138,7 +138,7 @@ class GoogleCloudStorage:
     objects = request.execute()  # type: Dict[str, Any]
     return objects.get('items', [])
 
-  def ListBucketObjects(self, bucket: str) -> List[Dict[str, Any]]:
+  def ListBucketObjects(self, bucket: str) -> List[Dict[str, Any]] | Any:
     """List objects (with metadata) in a Google Cloud Storage bucket.
 
     Args:

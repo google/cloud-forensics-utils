@@ -47,7 +47,7 @@ class GoogleBigQuery:
 
     return common.CreateService('bigquery', _BIGQUERY_API_VERSION)
 
-  def ListBigQueryJobs(self) -> List[Dict[str, Any]]:
+  def ListBigQueryJobs(self) -> List[Dict[str, Any]] | Any:
     """List jobs of Google BigQuery within a project.
 
     Returns:
