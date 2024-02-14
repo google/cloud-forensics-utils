@@ -48,7 +48,7 @@ class GoogleCloudSQL:
     return common.CreateService(
         'sqladmin', self.SQLADMIN_API_VERSION)
 
-  def ListCloudSQLInstances(self) -> List[Dict[str, Any]] | Any:
+  def ListCloudSQLInstances(self) -> List[Dict[str, Any]]:
     """List instances of Google CloudSQL within a project.
 
     Returns:
@@ -56,5 +56,5 @@ class GoogleCloudSQL:
     """
     gcsql_instances = self.GoogleCloudSQLApi().instances() # pylint: disable=no-member
     request = gcsql_instances.list(project=self.project_id)
-    instances = request.execute()  # type: Dict[str, Any]
-    return instances.get('items', [])
+    instances: List[Dict[str, Any]] = request.execute().get('items', [])
+    return instances

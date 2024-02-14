@@ -47,7 +47,7 @@ class GoogleBigQuery:
 
     return common.CreateService('bigquery', _BIGQUERY_API_VERSION)
 
-  def ListBigQueryJobs(self) -> List[Dict[str, Any]] | Any:
+  def ListBigQueryJobs(self) -> List[Dict[str, Any]]:
     """List jobs of Google BigQuery within a project.
 
     Returns:
@@ -55,5 +55,5 @@ class GoogleBigQuery:
     """
     bq_jobs = self.GoogleBigQueryApi().jobs()  # pylint: disable=no-member
     request = bq_jobs.list(projectId=self.project_id, projection='full')
-    jobs = request.execute()  # type: Dict[str, Any]
-    return jobs.get('jobs', [])
+    jobs: List[Dict[str, Any]] = request.execute().get('jobs', [])
+    return jobs
