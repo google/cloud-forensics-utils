@@ -135,8 +135,8 @@ class GoogleCloudStorage:
     """
     gcs_buckets = self.GcsApi().buckets() # pylint: disable=no-member
     request = gcs_buckets.list(project=self.project_id)
-    objects = request.execute()  # type: Dict[str, Any]
-    return objects.get('items', [])
+    objects: List[Dict[str, Any]] = request.execute().get('items', [])
+    return objects
 
   def ListBucketObjects(self, bucket: str) -> List[Dict[str, Any]]:
     """List objects (with metadata) in a Google Cloud Storage bucket.
@@ -152,8 +152,8 @@ class GoogleCloudStorage:
       bucket = bucket[5:]
     gcs_objects = self.GcsApi().objects() # pylint: disable=no-member
     request = gcs_objects.list(bucket=bucket)
-    objects = request.execute()  # type: Dict[str, Any]
-    return objects.get('items', [])
+    objects: List[Dict[str, Any]] = request.execute().get('items', [])
+    return objects
 
   def DeleteObject(self, gcs_path: str) -> None:
     """Deletes an object in a Google Cloud Storage bucket.

@@ -130,7 +130,8 @@ MOCK_REQUEST_VM_SIZE = [MOCK_VM_SIZE]
 MOCK_LIST_VM_SIZES = [{
     'Name': 'fake-vm-type',
     'CPU': 4,
-    'Memory': 8192
+    'Memory': 8192,
+    'Family': 'standardB1lsFamily'
 }]
 
 MOCK_ANALYSIS_INSTANCE = mock.Mock(

@@ -55,5 +55,5 @@ class GoogleBigQuery:
     """
     bq_jobs = self.GoogleBigQueryApi().jobs()  # pylint: disable=no-member
     request = bq_jobs.list(projectId=self.project_id, projection='full')
-    jobs = request.execute()  # type: Dict[str, Any]
-    return jobs.get('jobs', [])
+    jobs: List[Dict[str, Any]] = request.execute().get('jobs', [])
+    return jobs
