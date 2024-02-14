@@ -10,14 +10,15 @@ readme = "README.md"
 python = "^3.8"
 google-api-core = "^2.11.1"
 azure-common = "^1.1.28"
-azure-core = "^1.28.0"
+azure-core = "^1.29.4"
 azure-identity = "^1.13.0"
 azure-mgmt-compute = "^30.1.0"
 azure-mgmt-monitor = "^6.0.1"
 azure-mgmt-network = "^24.0.0"
-azure-mgmt-resource = "23.0.1"
+azure-mgmt-reservations = "^2.3.0"
+azure-mgmt-resource = "^23.0.1"
 azure-mgmt-storage = "^21.0.0"
-azure-storage-blob = "^12.17.0"
+azure-storage-blob = "^12.18.1"
 boto3 = "^1.28.20"
 botocore = ">=1.29.135"
 google-api-python-client = "^2.95.0"
@@ -36,7 +37,6 @@ urllib3 = [
   {version = ">=1.25.4,<2.1", python = ">=3.10"}
 ]
 google-auth = "^2.22.0"
-azure-mgmt-reservations = "^2.3.0"
 
 [tool.poetry.group.dev.dependencies]
 coverage = "^7.2.7"
