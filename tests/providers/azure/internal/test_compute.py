@@ -293,14 +293,14 @@ class AZComputeTest(unittest.TestCase):
 
   @mock.patch('azure.mgmt.reservations.operations.QuotaOperations.get')
   @mock.patch('azure.mgmt.resource.resources.v2022_09_01.operations.ProvidersOperations.get')
-  @mock.patch('libcloudforensics.providers.azure.internal.compute.AZCompute.ListInstanceTypes')
+  @mock.patch('azure.mgmt.compute.v2021_07_01.operations.ResourceSkusOperations.list')
   @typing.no_type_check
   def testGetInstanceType(self, mock_list_instance_types, mock_provider, mock_quota):
     """Test that the instance type given a configuration is correct."""
     mock_quota.return_value = azure_mocks.MOCK_QUOTA
     mock_provider.return_value = azure_mocks.MOCK_CAPACITY_PROVIDER
     # pylint: disable=protected-access
-    mock_list_instance_types.return_value = azure_mocks.MOCK_LIST_VM_SIZES
+    mock_list_instance_types.return_value = azure_mocks.MOCK_REQUEST_VM_SIZE
     instance_type = azure_mocks.FAKE_ACCOUNT.compute._GetInstanceType(4, 8192)
     self.assertEqual('fake-vm-type', instance_type)
 
