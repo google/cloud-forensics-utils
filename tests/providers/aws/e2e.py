@@ -298,7 +298,7 @@ class CopyEBSSnapshotToS3E2ETest(unittest.TestCase):
     except (OSError, RuntimeError, ValueError) as exception:
       raise unittest.SkipTest(str(exception))
     self.zone = project_info['zone']
-    self.aws_account = account.AWSAccount(self.zone)
+    self.aws_account: account.AWSAccount = account.AWSAccount(self.zone)
     self.subnet_id = project_info.get('subnet_id', None)
     self.security_group_id = project_info.get('security_group_id', None)
     self.s3_destination = project_info.get('s3_destination', None)
@@ -307,9 +307,10 @@ class CopyEBSSnapshotToS3E2ETest(unittest.TestCase):
     if not self.s3_destination.startswith('s3://'):
       self.s3_destination = 's3://' + self.s3_destination
     path_components = SplitStoragePath(self.s3_destination)
-    self.bucket = path_components[0]
-    self.object_path = path_components[1]
-    self.directory = '{0:s}/{1:s}/'.format(self.object_path, self.snapshot_id)
+    self.bucket: str = path_components[0]
+    self.object_path: str = path_components[1]
+    self.directory: str = '{0:s}/{1:s}/'.format(
+        self.object_path, self.snapshot_id)
 
     super().setUp()
 
@@ -333,15 +334,15 @@ class CopyEBSSnapshotToS3E2ETest(unittest.TestCase):
       self.assertTrue(self.aws_account.s3.CheckForObject(
           self.bucket, self.directory + file))
 
-  def tearDown(self):
+  def tearDown(self) -> None:
     """Remove the created resources."""
     for file in self.expected_filenames:
       try:
         self.aws_account.s3.RmObject(
             self.bucket, self.directory + file)
-      except Exception as error:
+      except Exception as error:  # pylint: disable=broad-exception-caught
         logger.exception(
-            f'Error cleaning up {file}: {str(error)}', exc_info=True)
+            'Error cleaning up %s: {%s}', file, str(error), exc_info=True)
 
 
 class S3EndToEndTest(unittest.TestCase):
