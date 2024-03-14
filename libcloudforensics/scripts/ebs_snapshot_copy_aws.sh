@@ -12,10 +12,21 @@ function ebsCopy {{
 	snapshot=$1
 	bucket=$2
 
+	echo snapshot: "$snapshot"
+	echo bucket: "$bucket"
+
+	# Install utilities
+	amazon-linux-extras install epel -y
+	yum install jq dc3dd -y
+
 	# Get details about self
 	region=$(curl -s http://169.254.169.254/latest/meta-data/placement/region)
 	az=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone)
 	instance=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+
+	echo region: "$region"
+	echo az: "$az"
+	echo instance: "$instance"
 
 	# create the new volume
 	volume=$(aws ec2 --region $region create-volume --availability-zone $az --snapshot-id $snapshot --tag-specification 'ResourceType=volume,Tags=[{{Key=Name,Value=volumeToCopy}}]' | jq -r .VolumeId)
@@ -44,9 +55,11 @@ function ebsCopy {{
 	aws ec2 --region $region delete-volume --volume-id $volume
 }}
 
-amazon-linux-extras install epel -y
-yum install jq dc3dd -y
+ebsCopy $snapshot $bucket 2> /tmp/err > /tmp/out
 
-ebsCopy $snapshot $bucket
+aws s3 cp /tmp/out $bucket/$snapshot/instance_copy_stdout.txt
+aws s3 cp /tmp/err $bucket/$snapshot/instance_copy_stderr.txt
+
+sleep 5
 
 poweroff

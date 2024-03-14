@@ -440,7 +440,8 @@ def CopyEBSSnapshotToS3Process(
   curr_wait = 0
   success = False
   prefix = '{0:s}/{1:s}/'.format(object_path, snapshot_id)
-  files = ['image.bin', 'log.txt', 'hlog.txt', 'mlog.txt']
+  files = ['image.bin', 'log.txt', 'hlog.txt', 'mlog.txt',
+           'instance_copy_stdout.txt', 'instance_copy_stderr.txt']
 
   logger.info('Transfer expected to take {0:d} seconds'.
     format(snapshot_size * transfer_speed))
