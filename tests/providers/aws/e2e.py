@@ -286,21 +286,32 @@ class CopyEBSSnapshotToS3E2ETest(unittest.TestCase):
   guidelines in https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html # pylint: disable=line-too-long
   """
 
-  @classmethod
+  expected_filenames = ['image.bin', 'log.txt', 'hlog.txt', 'mlog.txt',
+                        'instance_copy_stdout.txt', 'instance_copy_stderr.txt']
+
   @typing.no_type_check
   @IgnoreWarnings
-  def setUpClass(cls):
+  def setUp(self):
     try:
       project_info = utils.ReadProjectInfo(
           ['s3_destination', 'zone', 'snapshot_id'])
     except (OSError, RuntimeError, ValueError) as exception:
       raise unittest.SkipTest(str(exception))
-    cls.zone = project_info['zone']
-    cls.aws = account.AWSAccount(cls.zone)
-    cls.subnet_id = project_info.get('subnet_id', None)
-    cls.security_group_id = project_info.get('security_group_id', None)
-    cls.s3_destination = project_info.get('s3_destination', None)
-    cls.snapshot_id = project_info.get('snapshot_id', None)
+    self.zone = project_info['zone']
+    self.aws_account = account.AWSAccount(self.zone)
+    self.subnet_id = project_info.get('subnet_id', None)
+    self.security_group_id = project_info.get('security_group_id', None)
+    self.s3_destination = project_info.get('s3_destination', None)
+    self.snapshot_id = project_info.get('snapshot_id', None)
+
+    if not self.s3_destination.startswith('s3://'):
+      self.s3_destination = 's3://' + self.s3_destination
+    path_components = SplitStoragePath(self.s3_destination)
+    self.bucket = path_components[0]
+    self.object_path = path_components[1]
+    self.directory = '{0:s}/{1:s}/'.format(self.object_path, self.snapshot_id)
+
+    super().setUp()
 
   @typing.no_type_check
   @IgnoreWarnings
@@ -309,13 +320,6 @@ class CopyEBSSnapshotToS3E2ETest(unittest.TestCase):
 
     Test copying an EBS snapshot into S3.
     """
-
-    if not self.s3_destination.startswith('s3://'):
-      self.s3_destination = 's3://' + self.s3_destination
-    path_components = SplitStoragePath(self.s3_destination)
-    bucket = path_components[0]
-    object_path = path_components[1]
-
     forensics.CopyEBSSnapshotToS3(
       self.s3_destination,
       self.snapshot_id,
@@ -325,22 +329,19 @@ class CopyEBSSnapshotToS3E2ETest(unittest.TestCase):
       security_group_id=self.security_group_id,
       cleanup_iam=True)
 
-    aws_account = account.AWSAccount(self.zone)
-    directory = '{0:s}/{1:s}/'.format(object_path, self.snapshot_id)
-    self.assertEqual(
-      aws_account.s3.CheckForObject(bucket, directory + 'image.bin'), True)
-    self.assertEqual(
-      aws_account.s3.CheckForObject(bucket, directory + 'log.txt'), True)
-    self.assertEqual(
-      aws_account.s3.CheckForObject(bucket, directory + 'hlog.txt'), True)
-    self.assertEqual(
-      aws_account.s3.CheckForObject(bucket, directory + 'mlog.txt'), True)
+    for file in self.expected_filenames:
+      self.assertTrue(self.aws_account.s3.CheckForObject(
+          self.bucket, self.directory + file))
 
-    # Cleanup
-    aws_account.s3.RmObject(bucket, directory + 'image.bin')
-    aws_account.s3.RmObject(bucket, directory + 'log.txt')
-    aws_account.s3.RmObject(bucket, directory + 'hlog.txt')
-    aws_account.s3.RmObject(bucket, directory + 'mlog.txt')
+  def tearDown(self):
+    """Remove the created resources."""
+    for file in self.expected_filenames:
+      try:
+        self.aws_account.s3.RmObject(
+            self.bucket, self.directory + file)
+      except Exception as error:
+        logger.exception(
+            f'Error cleaning up {file}: {str(error)}', exc_info=True)
 
 
 class S3EndToEndTest(unittest.TestCase):
