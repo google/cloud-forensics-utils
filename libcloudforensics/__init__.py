@@ -14,4 +14,5 @@
 # limitations under the License.
 """libcloud forensics module."""
 
-__version__ = '20240325'
+# Since moving to poetry, version number tracked in pyproject.toml
+#__version__ = '20240325'
