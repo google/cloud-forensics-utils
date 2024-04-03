@@ -106,7 +106,8 @@ def CreateDiskCopy(
   except HttpError as exception:
     if exception.resp.status == 403:
       raise errors.CredentialsConfigurationError(
-          'Make sure you have the appropriate permissions on the project',
+          'Make sure you have the appropriate permissions on the project: '
+          '{0!s}'.format(exception),
           __name__) from exception
     if exception.resp.status == 404:
       raise errors.ResourceNotFoundError(
