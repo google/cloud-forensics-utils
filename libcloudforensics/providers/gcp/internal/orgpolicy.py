@@ -58,14 +58,14 @@ class GoogleOrgPolicy:
     """Retrieve all Organisation Constraints for a project.
 
     Returns:
-        Dict[str, Any]: The policy details.
+        List[Dict[str, Any]]: The policy details.
 
     Raises:
       HttpError: on exception.
     """
     service = self.OrgPolicyApi().projects().constraints() # pylint: disable=no-member
     parent = 'projects/{0:s}'.format(self.project_id)
-    constraints: List[Dict[str, Any]] = {}
+    constraints: Dict[str, Any] = {}
     try:
       request = service.list(parent=parent)
       constraints = request.execute()
@@ -73,7 +73,8 @@ class GoogleOrgPolicy:
       if he.status_code == 404:
         return []
       raise he
-    return constraints.get("constraints", [])
+    ret: List[Dict[str, Any]] = constraints.get("constraints", [])
+    return ret
 
   def GetOrgPolicyForProject(self, policy_name: str) -> Dict[str, Any]:
     """Retrieve a particuar Organisation Policy for a resource.
@@ -91,7 +92,7 @@ class GoogleOrgPolicy:
     request = 'projects/{0:s}/policies/{1:s}'.format(
         self.project_id, policy_name)
     try:
-      response = service.get(name=request).execute()
+      response: Dict[str, Any] = service.get(name=request).execute()
     except google_api_errors.HttpError as he:
       if he.status_code == 404:
         return {}
@@ -114,10 +115,11 @@ class GoogleOrgPolicy:
     """
     service = self.OrgPolicyApi().projects().policies() # pylint: disable=no-member
     parent = 'projects/{0:s}'.format(self.project_id)
-    response = service.create(parent=parent, body=policy).execute()
+    response: Dict[str, Any] = service.create(parent=parent,
+                                              body=policy).execute()
     return response
 
-  def DeleteOrgPolicyForProject(self, policy_name: str):
+  def DeleteOrgPolicyForProject(self, policy_name: str) -> None:
     """Delete a particular Organisation Policy for a resource.
 
     Args:
