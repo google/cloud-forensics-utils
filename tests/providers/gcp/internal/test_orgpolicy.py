@@ -20,7 +20,6 @@ import mock
 
 from tests.providers.gcp import gcp_mocks
 
-from libcloudforensics.providers.gcp.internal import orgpolicy as gcp_orgpolicy
 
 class OrgPolicyTest(unittest.TestCase):
   """Test Google Organisztion Policy class."""
@@ -35,7 +34,7 @@ class OrgPolicyTest(unittest.TestCase):
     api_get_policy = mock_orgpolicy_api.return_value.projects.return_value.policies
     api_get_policy.return_value.get.return_value.execute.return_value = gcp_mocks.MOCK_ORGPOLICY_PROJECT_POLICY_GET
     policy = 'iam.allowedPolicyMemberDomains'
-    result = gcp_mocks.FAKE_ORGPOLICY.getOrgPolicyForProject(policy)
+    result = gcp_mocks.FAKE_ORGPOLICY.GetOrgPolicyForProject(policy)
     self.assertIn(policy, result['name'])
     self.assertEqual('CK+jABCDEFGHlQ0=', result['etag'])
     self.assertEqual('CK+jABCDEFGHlQ0=', result['spec']['etag'])
@@ -48,7 +47,6 @@ class OrgPolicyTest(unittest.TestCase):
     """Test OrgPolicy Get Org Constraints operation."""
     api_get_policy = mock_orgpolicy_api.return_value.projects.return_value.constraints
     api_get_policy.return_value.list.return_value.execute.return_value = gcp_mocks.MOCK_ORGCONSTRAINTS_LIST
-    result = gcp_mocks.FAKE_ORGPOLICY.getOrgConstraintsForProject()
+    result = gcp_mocks.FAKE_ORGPOLICY.GetOrgConstraintsForProject()
     self.assertEqual(1, len(result))
     self.assertIn('compute.storageResourceUseRestrictions', result[0]['name'])
-
