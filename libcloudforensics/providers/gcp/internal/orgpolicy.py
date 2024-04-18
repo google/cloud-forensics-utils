@@ -59,6 +59,9 @@ class GoogleOrgPolicy:
 
     Returns:
         Dict[str, Any]: The policy details.
+
+    Raises:
+      HttpError: on exception.
     """
     service = self.OrgPolicyApi().projects().constraints()
     parent = 'projects/{0:s}'.format(self.project_id)
@@ -72,7 +75,6 @@ class GoogleOrgPolicy:
       raise(he)
     return constraints.get("constraints", [])
   
-
   def getOrgPolicyForProject(self, policy_name: str) -> Dict[str, Any]:
     """Retrieve a particuar Organisation Policy for a resource.
 
@@ -81,6 +83,9 @@ class GoogleOrgPolicy:
 
     Returns:
         Dict[str, Any]: The policy details.
+
+    Raises:
+      HttpError: on exception.
     """
     service = self.OrgPolicyApi().projects().policies()
     request = 'projects/{0:s}/policies/{1:s}'.format(self.project_id, policy_name)
@@ -92,8 +97,8 @@ class GoogleOrgPolicy:
       raise(he)
     return response
   
-  def setOrgPolicyForProject(self, policy: Dict[str, Any]) -> Dict[str, Any]:
-    """Set a particuarly Organisation Policy for a resource.
+  def setOrgProjectPolicyForProject(self, policy: Dict[str, Any]) -> Dict[str, Any]:
+    """Set a particular Organisation Policy for a resource.
 
     Args:
         policy (Dict[str, Any]) : The policy to create, as per
@@ -101,6 +106,9 @@ class GoogleOrgPolicy:
 
     Returns:
         Dict[str, Any]: The policy details.
+
+    Raises:
+      HttpError: on exception.
     """
     service = self.OrgPolicyApi().projects().policies()
     parent = 'projects/{0:s}'.format(self.project_id)
@@ -108,12 +116,15 @@ class GoogleOrgPolicy:
     return response
 
   def deleteOrgPolicyForProject(self, policy_name: str):
-    """Delete a particuarly Organisation Policy for a resource.
+    """Delete a particular Organisation Policy for a resource.
 
     Args:
         policy_name (str): The policy to retrieve.
+
+    Raises:
+      HttpError: on exception.
     """
     service = self.OrgPolicyApi().projects().policies()
     request = 'projects/{0:s}/policies/{1:s}'.format(self.project_id, policy_name)
     response = service.delete(name=request).execute()
-    return response
+    return
