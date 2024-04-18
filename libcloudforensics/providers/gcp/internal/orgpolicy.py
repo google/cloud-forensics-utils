@@ -130,4 +130,3 @@ class GoogleOrgPolicy:
     request = 'projects/{0:s}/policies/{1:s}'.format(
         self.project_id, policy_name)
     service.delete(name=request).execute()
-    return
