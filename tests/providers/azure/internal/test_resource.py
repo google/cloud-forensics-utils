@@ -22,17 +22,17 @@ from tests.providers.azure import azure_mocks
 
 
 class AZResourceTest(unittest.TestCase):
-    """Test Azure monitoring class."""
+  """Test Azure monitoring class."""
 
-    # pylint: disable=line-too-long
+  # pylint: disable=line-too-long
 
-    @mock.patch(
-        "azure.mgmt.resource.subscriptions.v2022_12_01.operations._operations.SubscriptionsOperations.list"
-    )
-    @typing.no_type_check
-    def testListSubscriptionIDs(self, mock_list):
-        """Test that subscription IDs are correctly listed"""
-        mock_list.return_value = azure_mocks.MOCK_LIST_IDS
-        subscription_ids = azure_mocks.FAKE_ACCOUNT.resource.ListSubscriptionIDs()
-        self.assertEqual(2, len(subscription_ids))
-        self.assertEqual("fake-subscription-id-1", subscription_ids[0])
+  @mock.patch(
+      "azure.mgmt.resource.subscriptions.v2022_12_01.operations._operations.SubscriptionsOperations.list"
+  )
+  @typing.no_type_check
+  def testListSubscriptionIDs(self, mock_list):
+    """Test that subscription IDs are correctly listed"""
+    mock_list.return_value = azure_mocks.MOCK_LIST_IDS
+    subscription_ids = azure_mocks.FAKE_ACCOUNT.resource.ListSubscriptionIDs()
+    self.assertEqual(2, len(subscription_ids))
+    self.assertEqual("fake-subscription-id-1", subscription_ids[0])
