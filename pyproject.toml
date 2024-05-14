@@ -30,10 +30,10 @@ python = "^3.8"
 # pyjwt = "^2.8.0"
 # sshpubkeys = "^3.3.1"
 # requests = "^2.31.0"
-# kubernetes = "^27.2.0"
-# pyopenssl = "^23.2.0"
+kubernetes = "^27.2.0"
+pyopenssl = "^23.2.0"
 urllib3 = "*"
-# google-auth = "^2.22.0"
+google-auth = "^2.22.0"
 
 [tool.poetry.group.dev.dependencies]
 coverage = "^7.2.7"
