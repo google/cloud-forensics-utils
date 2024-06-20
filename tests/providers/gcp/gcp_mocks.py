@@ -28,6 +28,7 @@ from libcloudforensics.providers.gcp.internal import cloudsql as gcp_cloudsql
 from libcloudforensics.providers.gcp.internal import cloudresourcemanager as gcp_resourcemanager
 from libcloudforensics.providers.gcp.internal import serviceusage as gcp_serviceusage
 from libcloudforensics.providers.gcp.internal import bigquery as gcp_bigquery
+from libcloudforensics.providers.gcp.internal import orgpolicy as gcp_orgpolicy
 # pylint: enable=line-too-long
 
 FAKE_ANALYSIS_PROJECT = gcp_project.GoogleCloudProject(
@@ -96,6 +97,7 @@ FAKE_CLOUDSQLINSTANCE = gcp_cloudsql.GoogleCloudSQL('fake-target-project')
 FAKE_CLOUD_RESOURCE_MANAGER = gcp_resourcemanager.GoogleCloudResourceManager('fake-project')
 FAKE_SERVICE_USAGE = gcp_serviceusage.GoogleServiceUsage('fake-project')
 FAKE_BIGQUERY = gcp_bigquery.GoogleBigQuery('fake-target-project')
+FAKE_ORGPOLICY = gcp_orgpolicy.GoogleOrgPolicy('fake-project')
 # pylint: enable=line-too-long
 
 # Mock struct to mimic GCP's API responses
@@ -1089,4 +1091,33 @@ MOCK_IAM_POLICY = {
       ]
     }
   ]
+}
+
+MOCK_ORGCONSTRAINTS_LIST = {
+  "constraints": [
+    {
+      "name": "projects/fake-project/constraints/compute.storageResourceUseRestrictions",
+      "displayName": "Compute Storage resource use restrictions (Compute Engine disks, images, and snapshots)",
+      "description": "This list constraint defines a set of projects that are allowed to use Compute Engine's storage resources. By default, anyone with appropriate Cloud IAM permissions can access Compute Engine resources. When using this constraint, users must have Cloud IAM permissions, and they must not be restricted by the constraint to access the resource. Projects, folders, and organizations specified in allowed or denied lists must be in the form: under:projects/PROJECT_ID, under:folders/FOLDER_ID, under:organizations/ORGANIZATION_ID. ",
+      "constraintDefault": "ALLOW",
+      "listConstraint": {
+        "supportsUnder": True
+      }
+    },
+  ]
+}
+
+MOCK_ORGPOLICY_PROJECT_POLICY_GET = {
+  "name": "projects/012345678901/policies/iam.allowedPolicyMemberDomains",
+  "spec": {
+    "etag": "CK+jABCDEFGHlQ0=",
+    "updateTime": "2023-03-21T20:21:03.027616Z",
+    "rules": [
+      {
+        "allowAll": True
+      }
+    ],
+    "inheritFromParent": True
+  },
+  "etag": "CK+jABCDEFGHlQ0="
 }
