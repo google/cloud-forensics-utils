@@ -6,6 +6,9 @@ authors = ["cloud-forensics-utils development team <cloud-forensics-utils-dev@go
 license = "Apache-2.0"
 readme = "README.md"
 
+[tool.poetry.scripts]
+cloudforensics = "tools.cli:Main"
+
 [tool.poetry.dependencies]
 python = "^3.8"
 google-api-core = "*"
