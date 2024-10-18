@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "libcloudforensics"
-version = "20240325"
+version = "20241018"
 description = "libcloudforensics is a set of tools to help acquire forensic evidence from Cloud platforms."
 authors = ["cloud-forensics-utils development team <cloud-forensics-utils-dev@googlegroups.com>"]
 license = "Apache-2.0"
