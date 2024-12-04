@@ -26,8 +26,8 @@ class AZStorageTest(unittest.TestCase):
   """Test Azure storage class."""
   # pylint: disable=line-too-long
 
-  @mock.patch('azure.mgmt.storage.v2023_01_01.operations._storage_accounts_operations.StorageAccountsOperations.list_keys')
-  @mock.patch('azure.mgmt.storage.v2023_01_01.operations._storage_accounts_operations.StorageAccountsOperations.begin_create')
+  @mock.patch('azure.mgmt.storage.v2023_05_01.operations._storage_accounts_operations.StorageAccountsOperations.list_keys')
+  @mock.patch('azure.mgmt.storage.v2023_05_01.operations._storage_accounts_operations.StorageAccountsOperations.begin_create')
   @typing.no_type_check
   def testCreateStorageAccount(self, mock_create, mock_list_keys):
     """Test that a storage account is created and its information retrieved"""

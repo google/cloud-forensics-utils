@@ -172,7 +172,7 @@ def CreateService(
   """
 
   try:
-    credentials, _ = default()
+    credentials, _ = default()  # type: ignore [no-untyped-call]
   except DefaultCredentialsError as exception:
     raise errors.CredentialsConfigurationError(
         'Could not get application default credentials. Have you run $ gcloud '
