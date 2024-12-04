@@ -505,7 +505,7 @@ def AssignProjectID(args: 'argparse.Namespace') -> None:
         from the gcloud environment.
   """
   if not args.project:
-    _, project_id = default()
+    _, project_id = default()  # type: ignore [no-untyped-call]
     if project_id:
       args.project = project_id
     else:

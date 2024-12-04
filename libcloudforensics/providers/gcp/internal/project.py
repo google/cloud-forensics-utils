@@ -66,7 +66,7 @@ class GoogleCloudProject:
     if project_id:
       self.project_id = project_id
     else:
-      _, project_id = default()
+      _, project_id = default()  # type: ignore [no-untyped-call]
       if project_id:
         self.project_id = project_id
       else:
