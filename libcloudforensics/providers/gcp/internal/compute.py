@@ -191,6 +191,19 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     self._region_disks = self.ListRegionDisks()
     return self._region_disks
 
+  def GetProjectMetadata(self) -> Dict[str, Any]:
+    """Get API operation object for the project level metadata.
+
+    Returns:
+      Dict: An API operation object for the Google Compute Engine
+          project-level metadata.
+          https://cloud.google.com/compute/docs/reference/rest/v1/projects/get#response-body
+    """
+    gce_projects_client = self.GceApi().projects() # pylint: disable=no-member
+    request = gce_projects_client.get(project=self.project_id)
+    response = request.execute()  # type: Dict[str, Any]
+    return response
+
   def ListInstances(self) -> Dict[str, 'GoogleComputeInstance']:
     """List instances in project.
 
@@ -1358,19 +1371,6 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
     gce_instance_client = self.GceApi().instances() # pylint: disable=no-member
     request = gce_instance_client.get(
         instance=self.name, project=self.project_id, zone=self.zone)
-    response = request.execute()  # type: Dict[str, Any]
-    return response
-
-  def GetProjectMetadata(self) -> Dict[str, Any]:
-    """Get API operation object for the project level metadata for the Compute API.
-
-    Returns:
-      Dict: An API operation object for the Google Compute Engine
-          project-level metadata.
-          https://cloud.google.com/compute/docs/reference/rest/v1/projects/get#response-body
-    """
-    gce_projects_client = self.GceApi().projects() # pylint: disable=no-member
-    request = gce_projects_client.get(project=self.project_id)
     response = request.execute()  # type: Dict[str, Any]
     return response
 
