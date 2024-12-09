@@ -231,7 +231,8 @@ class GoogleCloudResourceManager:
       self, resource: str, policy: Dict[str, Any],
       etag: Optional[str] = None) -> Dict[str, Any]:
     """Updates the specified Policy on the resource.
-    Creates a new Policy for that Constraint on the resource if one does not exist.
+    Creates a new Policy for that Constraint on the resource if one does
+    not exist.
     
 
     Args:
@@ -302,9 +303,9 @@ class GoogleCloudResourceManager:
     body = {'constraint': constraint}
     if etag:
       body['etag'] = etag
-    response = resource_client.clearOrgPolicy(resource=resource,
-                                              body=body).execute()
+    response: Dict = resource_client.clearOrgPolicy(
+        resource=resource, body=body).execute()
     if not response:
       return True
-    logger.warning("Unable to delete Org Policy: {0:s}".format(response))
+    logger.warning("Unable to delete Org Policy: {0}".format(response))
     return False
