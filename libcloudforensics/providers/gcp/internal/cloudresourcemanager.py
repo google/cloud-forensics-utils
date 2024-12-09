@@ -165,7 +165,7 @@ class GoogleCloudResourceManager:
 
     return response
 
-  def GetOrgPolicy(self, resource, constraint: str) -> Dict[str, Any]:
+  def GetOrgPolicy(self, resource: str, constraint: str) -> Dict[str, Any]:
     """Gets a particular Org Policy on a resource.
 
     Args:
@@ -194,7 +194,7 @@ class GoogleCloudResourceManager:
     self.RESOURCE_MANAGER_API_VERSION = 'v1'  # pylint: disable=invalid-name
     service = self.GrmApi()
     resource_client = getattr(service, resource_type)()
-    response = resource_client.getOrgPolicy(
+    response: Dict[str, Any] = resource_client.getOrgPolicy(
         resource=resource, body={'constraint': constraint}
     ).execute()
     return response
@@ -224,7 +224,8 @@ class GoogleCloudResourceManager:
     self.RESOURCE_MANAGER_API_VERSION = 'v1'
     service = self.GrmApi()
     resource_client = getattr(service, resource_type)()
-    response = resource_client.listOrgPolicies(resource=resource).execute()
+    response: Dict[str, Any] = resource_client.listOrgPolicies(
+        resource=resource).execute()
     return response
 
   def SetOrgPolicy(
@@ -265,12 +266,12 @@ class GoogleCloudResourceManager:
     body = {'policy': policy}
     if etag:
       body['policy']['etag'] = etag
-    response = resource_client.setOrgPolicy(resource=resource,
+    response: Dict[str, Any] = resource_client.setOrgPolicy(resource=resource,
                                             body=body).execute()
     return response
 
   def DeleteOrgPolicy(
-      self, resource, constraint: str, etag: Optional[str] = None) -> bool:
+      self, resource: str, constraint: str, etag: Optional[str] = None) -> bool:
     """Removes a particular Org Policy on a resource.
 
     Args:
@@ -303,7 +304,7 @@ class GoogleCloudResourceManager:
     body = {'constraint': constraint}
     if etag:
       body['etag'] = etag
-    response: Dict = resource_client.clearOrgPolicy(
+    response: Dict[str, Any] = resource_client.clearOrgPolicy(
         resource=resource, body=body).execute()
     if not response:
       return True
