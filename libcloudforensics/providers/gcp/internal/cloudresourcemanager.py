@@ -306,4 +306,5 @@ class GoogleCloudResourceManager:
                                               body=body).execute()
     if not response:
       return True
+    logger.warning("Unable to delete Org Policy: {0:s}".format(response))
     return False
