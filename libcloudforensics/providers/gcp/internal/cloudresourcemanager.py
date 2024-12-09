@@ -191,7 +191,7 @@ class GoogleCloudResourceManager:
       constraint = 'constraints/' + constraint
 
     # Override API version, since this doesn't exist in v2 or v3
-    self.RESOURCE_MANAGER_API_VERSION = 'v1'
+    self.RESOURCE_MANAGER_API_VERSION = 'v1'  # pylint: disable=invalid-name
     service = self.GrmApi()
     resource_client = getattr(service, resource_type)()
     response = resource_client.getOrgPolicy(

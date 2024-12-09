@@ -167,7 +167,7 @@ class GoogleCloudResourceManagerTest(unittest.TestCase):
     """Validates the SetOrgPolicy function"""
     api_set_org_policy = mock_grm_api.return_value.projects.return_value.setOrgPolicy
     api_set_org_policy.return_value.execute.return_value = gcp_mocks.MOCK_ORG_POLICY
-    response = gcp_mocks.FAKE_CLOUD_RESOURCE_MANAGER.SetOrgPolicy(
+    gcp_mocks.FAKE_CLOUD_RESOURCE_MANAGER.SetOrgPolicy(
         'projects/000000000000',
         {
             'constraint': 'constraints/compute.storageResourceUseRestrictions',
@@ -194,7 +194,7 @@ class GoogleCloudResourceManagerTest(unittest.TestCase):
     """Validates the DeleteOrgPolicy function"""
     api_delete_org_policy = mock_grm_api.return_value.projects.return_value.clearOrgPolicy
     api_delete_org_policy.return_value.execute.return_value = True
-    response = gcp_mocks.FAKE_CLOUD_RESOURCE_MANAGER.DeleteOrgPolicy(
+    gcp_mocks.FAKE_CLOUD_RESOURCE_MANAGER.DeleteOrgPolicy(
         'projects/000000000000',
         'fake-policy',
         'abc123'
