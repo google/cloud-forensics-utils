@@ -130,3 +130,76 @@ class GoogleCloudResourceManagerTest(unittest.TestCase):
           }
         ]
       })
+
+  @typing.no_type_check
+  @mock.patch('libcloudforensics.providers.gcp.internal.cloudresourcemanager.GoogleCloudResourceManager.GrmApi')
+  def testGetOrgPolicy(self, mock_grm_api):
+    """Validates the GetOrgPolicy function"""
+    api_get_org_policy = mock_grm_api.return_value.projects.return_value.getOrgPolicy
+    api_get_org_policy.return_value.execute.return_value = gcp_mocks.MOCK_ORG_POLICY
+    response = gcp_mocks.FAKE_CLOUD_RESOURCE_MANAGER.GetOrgPolicy(
+        'projects/000000000000', 'fake-policy')
+    api_get_org_policy.assert_called_with(
+        resource='projects/000000000000',
+        body={'constraint': 'constraints/fake-policy'})
+    self.assertEqual(response, {
+    'constraint': 'constraints/testpolicy',
+    'etag': 'abcdefghijk='
+    })
+
+
+  @typing.no_type_check
+  @mock.patch('libcloudforensics.providers.gcp.internal.cloudresourcemanager.GoogleCloudResourceManager.GrmApi')
+  def testListOrgPolicy(self, mock_grm_api):
+    """Validates the ListOrgPolicy function"""
+    api_list_org_policy = mock_grm_api.return_value.projects.return_value.listOrgPolicies
+    api_list_org_policy.return_value.execute.return_value = gcp_mocks.MOCK_ORG_POLICIES
+    response = gcp_mocks.FAKE_CLOUD_RESOURCE_MANAGER.ListOrgPolicy(
+        'projects/000000000000'
+    )
+    api_list_org_policy.assert_called_with(
+        resource='projects/000000000000')
+    self.assertEqual(len(response.get('policies', [])), 2)
+
+  @typing.no_type_check
+  @mock.patch('libcloudforensics.providers.gcp.internal.cloudresourcemanager.GoogleCloudResourceManager.GrmApi')
+  def testSetOrgPolicy(self, mock_grm_api):
+    """Validates the SetOrgPolicy function"""
+    api_set_org_policy = mock_grm_api.return_value.projects.return_value.setOrgPolicy
+    api_set_org_policy.return_value.execute.return_value = gcp_mocks.MOCK_ORG_POLICY
+    gcp_mocks.FAKE_CLOUD_RESOURCE_MANAGER.SetOrgPolicy(
+        'projects/000000000000',
+        {
+            'constraint': 'constraints/compute.storageResourceUseRestrictions',
+            'listPolicy': {
+                'inheritFromParent': False, 'allValues': 'ALLOW'
+            }
+        },
+        'abc123')
+    api_set_org_policy.assert_called_with(
+        resource='projects/000000000000',
+        body={
+          'policy': {
+            'constraint': 'constraints/compute.storageResourceUseRestrictions',
+            'listPolicy': {
+                'inheritFromParent': False, 'allValues': 'ALLOW'
+            },
+            'etag': 'abc123'
+          }
+        })
+
+  @typing.no_type_check
+  @mock.patch('libcloudforensics.providers.gcp.internal.cloudresourcemanager.GoogleCloudResourceManager.GrmApi')
+  def testDeleteOrgPolicy(self, mock_grm_api):
+    """Validates the DeleteOrgPolicy function"""
+    api_delete_org_policy = mock_grm_api.return_value.projects.return_value.clearOrgPolicy
+    api_delete_org_policy.return_value.execute.return_value = True
+    gcp_mocks.FAKE_CLOUD_RESOURCE_MANAGER.DeleteOrgPolicy(
+        'projects/000000000000',
+        'fake-policy',
+        'abc123'
+    )
+    api_delete_org_policy.assert_called_with(
+        resource='projects/000000000000',
+        body={'constraint': 'constraints/fake-policy', 'etag': 'abc123'}
+        )

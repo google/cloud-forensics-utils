@@ -1090,3 +1090,15 @@ MOCK_IAM_POLICY = {
     }
   ]
 }
+
+MOCK_ORG_POLICY = {
+    'constraint': 'constraints/testpolicy',
+    'etag': 'abcdefghijk='
+}
+
+MOCK_ORG_POLICIES = {
+    'policies': [
+        {'constraint': 'constraints/compute.requireShieldedVm', 'etag': 'abcdefghijk', 'updateTime': '2024-12-02T03:38:34.276794Z', 'booleanPolicy': {}},
+        {'constraint': 'constraints/compute.storageResourceUseRestrictions', 'etag': 'abcdefghijk', 'updateTime': '2024-12-06T02:01:04.737315Z', 'listPolicy': {'allValues': 'ALLOW'}},
+    ]
+}
