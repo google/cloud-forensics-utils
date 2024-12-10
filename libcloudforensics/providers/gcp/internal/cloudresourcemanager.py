@@ -283,7 +283,7 @@ class GoogleCloudResourceManager:
         Not sending an etag will cause the Policy to be cleared blindly.
 
     Returns:
-      bool: True if successful, 
+      bool: True if successful, False otherwise.
 
     Raises:
       TypeError: if an invalid resource type is provided.
