@@ -1794,6 +1794,26 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
     """
     return str(self.GetOperation()['status'])
 
+  def Suspend(self) -> None:
+    """
+    Suspends the instance.
+
+    Raises:
+      errors.InstanceStateChangeError: If the Suspend operation is unsuccessful
+    """
+
+    logger.info('Suspending instance "{0:s}"'.format(self.name))
+    try:
+      gce_instance_client = self.GceApi().instances() # pylint: disable=no-member
+      request = gce_instance_client.suspend(
+          project=self.project_id, instance=self.name, zone=self.zone)
+      response = request.execute()
+      self.BlockOperation(response, zone=self.zone)
+    except HttpError as exception:
+      raise errors.InstanceStateChangeError(
+          'Could not suspend instance: {0:s}'.format(str(exception)), __name__)
+
+
   def Stop(self) -> None:
     """
     Stops the instance.
