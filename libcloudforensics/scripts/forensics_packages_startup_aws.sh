@@ -38,4 +38,8 @@ for try in $(seq 1 ${max_retry}); do
   err "Failed to install forensics packages, retrying in 5 seconds."
 done;
 
+# Install container-explorer
+wget -P /tmp/ https://raw.githubusercontent.com/google/container-explorer/main/script/setup.sh
+bash /tmp/setup.sh install
+
 (exit ${exit_code})
