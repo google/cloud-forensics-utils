@@ -10,7 +10,7 @@ readme = "README.md"
 cloudforensics = "tools.cli:Main"
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.9"
 google-api-core = "*"
 azure-common = "^1.1.28"
 azure-core = "^1.29.4"
@@ -40,6 +40,7 @@ urllib3 = [
   {version = ">=1.25.4,<2.1", python = ">=3.10"}
 ]
 google-auth = "^2.22.0"
+setuptools = "^75.8.0"
 
 [tool.poetry.group.dev.dependencies]
 coverage = "^7.2.7"
@@ -53,6 +54,7 @@ types-six = "^1.16.21.9"
 types-mock = "^5.1.0.1"
 sphinx-rtd-theme = "^1.2.2"
 wheel = "^0.41.1"
+setuptools = "^75.8.0"
 
 [build-system]
 requires = ["poetry-core"]

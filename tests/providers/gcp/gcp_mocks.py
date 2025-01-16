@@ -240,6 +240,18 @@ MOCK_GCE_OPERATION_INSTANCES_GET = {
         'initializeParams': {
             'diskName': FAKE_DISK.name
         }
+    },
+    {
+        'kind': 'compute#attachedDisk',
+        'type': 'SCRATCH',
+        'mode': 'READ_WRITE',
+        'savedState': 'DISK_SAVED_STATE_UNSPECIFIED',
+        'deviceName': 'local-ssd-0',
+        'index': 1,
+        'boot': False,
+        'autoDelete': True,
+        'interface': 'NVME',
+        'diskSizeGb': '375'
     }],
     'networkInterfaces': MOCK_NETWORK_INTERFACES,
     'metadata': {

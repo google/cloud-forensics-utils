@@ -11,7 +11,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-        python-version: ['3.8', '3.9', '3.10', '3.11']
+        python-version: ['3.9', '3.10', '3.11', '3.12']
 
     steps:
     - uses: actions/checkout@v2
@@ -19,8 +19,8 @@ jobs:
       uses: actions/setup-python@v1
       with:
         python-version: ${{ matrix.python-version }}
-    - name: Update PIP and install crypto package
-      run: python -m pip install -U pip && pip install cryptography
+    - name: Update PIP and install crypto and setuptools
+      run: python -m pip install -U pip && pip install cryptography && pip install setuptools
     - name: Install poetry
       run: |
         python -m pip install poetry
