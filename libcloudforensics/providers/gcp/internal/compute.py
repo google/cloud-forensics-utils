@@ -1382,10 +1382,16 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
 
     Raises:
       ResourceNotFoundError: If no boot disk could be found.
+      InvalidNameError: If the boot disk Source could not be found.
     """
 
     for disk in self.GetValue('disks'):
       if disk['boot']:
+        if 'source' not in disk:
+          raise errors.InvalidNameError(
+              'Boot disk has no source attribute: {0:s}'.format(
+                  self.name),
+              __name__)
         disk_name = disk['source'].split('/')[-1]
         return GoogleCloudCompute(self.project_id).GetDisk(disk_name=disk_name)
     raise errors.ResourceNotFoundError(
@@ -1406,7 +1412,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
     """
 
     for disk in self.GetValue('disks'):
-      if disk['source'].split('/')[-1] == disk_name:
+      if disk.get('source', '').split('/')[-1] == disk_name:
         return GoogleCloudCompute(self.project_id).GetDisk(disk_name=disk_name)
     raise errors.ResourceNotFoundError(
         'Disk {0:s} was not found in instance {1:s}'.format(
@@ -1423,7 +1429,9 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
 
     disks = {}
     disk_names = [
-        disk['source'].split('/')[-1] for disk in self.GetValue('disks')
+        disk['source'].split('/')[-1]
+        for disk in self.GetValue('disks')
+        if disk.get('source', None)
     ]
     for name in disk_names:
       disks[name] = self.GetDisk(name)
@@ -1507,7 +1515,7 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
     gce_instance_client = self.GceApi().instances() # pylint: disable=no-member
     device_name = None
     for disk_dict in self.GetValue('disks'):
-      if disk_dict['source'].split('/')[-1] == disk.name:
+      if disk_dict.get('source', '').split('/')[-1] == disk.name:
         device_name = disk_dict['deviceName']
     request = gce_instance_client.detachDisk(
         instance=self.name,
@@ -1541,7 +1549,9 @@ class GoogleComputeInstance(compute_base_resource.GoogleComputeBaseResource):
     disks_to_delete = []
     if delete_disks:
       disks_to_delete = [
-          disk['source'].split('/')[-1] for disk in self.GetValue('disks')
+          disk['source'].split('/')[-1]
+          for disk in self.GetValue('disks')
+          if disk.get('source', None)
       ]
 
     gce_instance_client = self.GceApi().instances() # pylint: disable=no-member
