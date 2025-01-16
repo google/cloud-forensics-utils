@@ -54,6 +54,7 @@ types-six = "^1.16.21.9"
 types-mock = "^5.1.0.1"
 sphinx-rtd-theme = "^1.2.2"
 wheel = "^0.41.1"
+setuptools = "^75.8.0"
 
 [build-system]
 requires = ["poetry-core"]
