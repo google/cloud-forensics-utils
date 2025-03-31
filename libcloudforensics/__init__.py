@@ -16,4 +16,4 @@
 
 # Since moving to poetry, ensure the version number tracked in pyproject.toml is
 # also updated
-__version__ = '20250116'
+__version__ = '20250331'

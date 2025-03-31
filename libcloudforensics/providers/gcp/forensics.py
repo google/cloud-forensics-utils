@@ -85,6 +85,11 @@ def CreateDiskCopy(
     if not disk_type:
       disk_type = disk_to_copy.GetDiskType()
 
+    if disk_type.startswith('hyperdisk'):
+      logger.debug(
+          'Disk type is {0:s}, using pd-standard instead.'.format(disk_type))
+      disk_type = 'pd-standard'
+
     logger.info('Disk copy of {0:s} started...'.format(disk_to_copy.name))
     snapshot, created = disk_to_copy.Snapshot()
     logger.debug('Snapshot created: {0:s}'.format(snapshot.name))

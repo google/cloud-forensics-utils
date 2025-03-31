@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "libcloudforensics"
-version = "20250116"
+version = "20250331"
 description = "libcloudforensics is a set of tools to help acquire forensic evidence from Cloud platforms."
 authors = ["cloud-forensics-utils development team <cloud-forensics-utils-dev@googlegroups.com>"]
 license = "Apache-2.0"
@@ -46,7 +46,7 @@ setuptools = "^75.8.0"
 coverage = "^7.2.7"
 mock = "^5.1.0"
 mypy = "^1.4.1"
-pylint = "^2.17.5"
+pylint = "^3.3.6"
 sphinx = "^7.1.2"
 sphinx-autodoc-typehints = "^1.24.0"
 yapf = "^0.40.1"
