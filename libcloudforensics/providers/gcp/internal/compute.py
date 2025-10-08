@@ -2289,6 +2289,7 @@ class GoogleComputeImage(compute_base_resource.GoogleComputeBaseResource):
     build_args = [
         '-source_image={0:s}'.format(self.name),
         '-destination_uri={0:s}'.format(full_path),
+        '-timeout=86400s',
         '-client_id=api',
     ]
     if image_format:

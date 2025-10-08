@@ -177,4 +177,3 @@ class GCPForensicsTest(unittest.TestCase):
         gcs_output_folder=f'gs://{dest_bucket_name}/{"/path/to/directory/"}',
         image_format='qcow2',
         output_name=mock_disk_obj.name)
-  
