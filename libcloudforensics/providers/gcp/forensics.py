@@ -18,6 +18,7 @@ import base64
 import random
 import re
 import subprocess
+import time
 from typing import List, Tuple, Optional, Dict, Any, Union, Sequence
 
 from google.auth.exceptions import DefaultCredentialsError
@@ -90,7 +91,22 @@ def CreateDiskCopy(
       disk_type = 'pd-standard'
 
     logger.info('Disk copy of {0:s} started...'.format(disk_to_copy.name))
-    snapshot, created = disk_to_copy.Snapshot()
+
+    attempts = 0
+    max_attempts = 5
+    backoff = 1
+    while attempts < max_attempts:
+      try:
+        attempts += 1
+        snapshot, created = disk_to_copy.Snapshot()
+        break
+      except RuntimeError as exception:
+        if 'RESOURCE_OPERATION_RATE_EXCEEDED' not in str(exception) or attempts >= max_attempts:
+          raise exception
+        logger.debug('Snapshot creation throttled: Pausing {0:d} seconds'.format(backoff))
+        time.sleep(backoff)
+        backoff ** 2
+
     logger.debug('Snapshot created: {0:s}'.format(snapshot.name))
     new_disk = dst_project.compute.CreateDiskFromSnapshot(
         snapshot, disk_name_prefix='evidence', disk_type=disk_type)
