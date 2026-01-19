@@ -30,7 +30,7 @@ class AZForensicsTest(unittest.TestCase):
   """Test Azure forensics file."""
   # pylint: disable=line-too-long, too-many-arguments
 
-  @mock.patch('azure.mgmt.resource.resources.v2022_09_01.operations.ProvidersOperations.get')
+  @mock.patch('azure.mgmt.resource.resources.v2025_03_01.operations.ProvidersOperations.get')
   @mock.patch('libcloudforensics.providers.azure.internal.compute.AZComputeDisk.GetDiskType')
   @mock.patch('libcloudforensics.providers.azure.internal.resource.AZResource.GetOrCreateResourceGroup')
   @mock.patch('libcloudforensics.providers.azure.internal.common.GetCredentials')
@@ -82,7 +82,7 @@ class AZForensicsTest(unittest.TestCase):
     self.assertIsInstance(disk_copy, compute.AZComputeDisk)
     self.assertEqual('fake_snapshot_name_f4c186ac_copy', disk_copy.name)
 
-  @mock.patch('azure.mgmt.resource.resources.v2022_09_01.operations.ProvidersOperations.get')
+  @mock.patch('azure.mgmt.resource.resources.v2025_03_01.operations.ProvidersOperations.get')
   @mock.patch('libcloudforensics.providers.azure.internal.compute.AZComputeDisk.GetDiskType')
   @mock.patch('libcloudforensics.providers.azure.internal.resource.AZResource.GetOrCreateResourceGroup')
   @mock.patch('libcloudforensics.providers.azure.internal.common.GetCredentials')
@@ -133,7 +133,7 @@ class AZForensicsTest(unittest.TestCase):
     self.assertIsInstance(disk_copy, compute.AZComputeDisk)
     self.assertEqual('fake_snapshot_name_f4c186ac_copy', disk_copy.name)
 
-  @mock.patch('azure.mgmt.resource.resources.v2022_09_01.operations.ProvidersOperations.get')
+  @mock.patch('azure.mgmt.resource.resources.v2025_03_01.operations.ProvidersOperations.get')
   @mock.patch('libcloudforensics.providers.azure.internal.compute.AZComputeDisk.GetDiskType')
   @mock.patch('libcloudforensics.providers.azure.internal.resource.AZResource.GetOrCreateResourceGroup')
   @mock.patch('libcloudforensics.providers.azure.internal.common.GetCredentials')
