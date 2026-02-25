@@ -345,9 +345,10 @@ def Main() -> None:
                 ('metrics', 'A comma separated list of metrics to query for '
                             'the resource.', None),
                 ('--from_date', 'A start date from which to lookup the '
-                                'metrics. Format: %Y-%m-%dT%H:%M:%SZ', None),
+                                'metrics. Format: %%Y-%%m-%%dT%%H:%%M:%%SZ',
+                                None),
                 ('--to_date', 'An end date until which to lookup the metrics.'
-                              'Format: %Y-%m-%dT%H:%M:%SZ', None),
+                              'Format: %%Y-%%m-%%dT%%H:%%M:%%SZ', None),
                 ('--interval', 'An interval for the metrics, e.g. PT1H will '
                                'output metrics values with one hour '
                                'granularity.', None),
