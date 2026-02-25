@@ -5,6 +5,10 @@ description = "libcloudforensics is a set of tools to help acquire forensic evid
 authors = ["cloud-forensics-utils development team <cloud-forensics-utils-dev@googlegroups.com>"]
 license = "Apache-2.0"
 readme = "README.md"
+packages = [
+    { include = "libcloudforensics" },
+    { include = "tools" },
+]
 
 [tool.poetry.scripts]
 cloudforensics = "tools.cli:Main"
