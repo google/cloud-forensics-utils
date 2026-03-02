@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "libcloudforensics"
-version = "20250721"
+version = "20260109"
 description = "libcloudforensics is a set of tools to help acquire forensic evidence from Cloud platforms."
 authors = ["cloud-forensics-utils development team <cloud-forensics-utils-dev@googlegroups.com>"]
 license = "Apache-2.0"
@@ -10,7 +10,7 @@ readme = "README.md"
 cloudforensics = "tools.cli:Main"
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = ">=3.11"
 google-api-core = "*"
 azure-common = "^1.1.28"
 azure-core = "^1.29.4"
@@ -35,10 +35,7 @@ sshpubkeys = "^3.3.1"
 requests = "^2.31.0"
 kubernetes = "^27.2.0"
 pyopenssl = "^23.2.0"
-urllib3 = [
-  {version = ">=1.25.4,<1.27", python = "<3.10"},
-  {version = ">=1.25.4,<2.1", python = ">=3.10"}
-]
+urllib3 = ">=2.6.0"
 google-auth = "^2.22.0"
 setuptools = "^75.8.0"
 
