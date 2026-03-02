@@ -30,7 +30,7 @@ class AZComputeTest(unittest.TestCase):
   """Test Azure compute class."""
   # pylint: disable=line-too-long
 
-  @mock.patch('azure.mgmt.resource.resources.v2022_09_01.operations.ProvidersOperations.get')
+  @mock.patch('azure.mgmt.resource.resources.v2025_03_01.operations.ProvidersOperations.get')
   @mock.patch('libcloudforensics.providers.azure.internal.common.ExecuteRequest')
   @typing.no_type_check
   def testListInstances(self, mock_request, mock_provider):
@@ -59,7 +59,7 @@ class AZComputeTest(unittest.TestCase):
     mock_request.assert_called_with(
         mock.ANY, 'list', {'resource_group_name': instance.resource_group_name})
 
-  @mock.patch('azure.mgmt.resource.resources.v2022_09_01.operations.ProvidersOperations.get')
+  @mock.patch('azure.mgmt.resource.resources.v2025_03_01.operations.ProvidersOperations.get')
   @mock.patch('libcloudforensics.providers.azure.internal.common.ExecuteRequest')
   @typing.no_type_check
   def testListDisks(self, mock_request, mock_provider):
@@ -91,7 +91,7 @@ class AZComputeTest(unittest.TestCase):
         'list_by_resource_group',
         {'resource_group_name': disk.resource_group_name})
 
-  @mock.patch('azure.mgmt.resource.resources.v2022_09_01.operations.ProvidersOperations.get')
+  @mock.patch('azure.mgmt.resource.resources.v2025_03_01.operations.ProvidersOperations.get')
   @mock.patch('libcloudforensics.providers.azure.internal.compute.AZCompute.ListInstances')
   @typing.no_type_check
   def testGetInstance(self, mock_list_instances, mock_provider):
@@ -107,7 +107,7 @@ class AZComputeTest(unittest.TestCase):
     self.assertEqual('fake-region', instance.region)
     self.assertEqual(['fake-zone'], instance.zones)
 
-  @mock.patch('azure.mgmt.resource.resources.v2022_09_01.operations.ProvidersOperations.get')
+  @mock.patch('azure.mgmt.resource.resources.v2025_03_01.operations.ProvidersOperations.get')
   @mock.patch('libcloudforensics.providers.azure.internal.compute.AZCompute.ListDisks')
   @typing.no_type_check
   def testGetDisk(self, mock_list_disks, mock_provider):
@@ -123,7 +123,7 @@ class AZComputeTest(unittest.TestCase):
     self.assertEqual('fake-region', disk.region)
     self.assertEqual(['fake-zone'], disk.zones)
 
-  @mock.patch('azure.mgmt.resource.resources.v2022_09_01.operations.ProvidersOperations.get')
+  @mock.patch('azure.mgmt.resource.resources.v2025_03_01.operations.ProvidersOperations.get')
   @mock.patch('azure.mgmt.compute.v2023_10_02.operations.DisksOperations.begin_create_or_update')
   @typing.no_type_check
   def testCreateDiskFromSnapshot(self, mock_create_disk, mock_provider):
@@ -185,7 +185,7 @@ class AZComputeTest(unittest.TestCase):
         'fake_snapshot_name_c4a46ad7_copy',
         expected_args)
 
-  @mock.patch('azure.mgmt.resource.resources.v2022_09_01.operations.ProvidersOperations.get')
+  @mock.patch('azure.mgmt.resource.resources.v2025_03_01.operations.ProvidersOperations.get')
   @mock.patch('azure.storage.blob._container_client.ContainerClient.create_container')
   @mock.patch('azure.storage.blob._generated._azure_blob_storage.AzureBlobStorage.__init__')
   @mock.patch('azure.storage.blob._blob_service_client.BlobServiceClient.get_blob_client')
@@ -233,7 +233,7 @@ class AZComputeTest(unittest.TestCase):
         'fake_snapshot_name_c4a46ad7_copy',
         mock.ANY)
 
-  @mock.patch('azure.mgmt.resource.resources.v2022_09_01.operations.ProvidersOperations.get')
+  @mock.patch('azure.mgmt.resource.resources.v2025_03_01.operations.ProvidersOperations.get')
   @mock.patch('sshpubkeys.SSHKey.parse')
   @mock.patch('libcloudforensics.scripts.utils.ReadStartupScript')
   @mock.patch('libcloudforensics.providers.azure.internal.compute.AZCompute.GetInstance')
@@ -278,7 +278,7 @@ class AZComputeTest(unittest.TestCase):
     self.assertEqual('fake-analysis-vm-name', vm.name)
     self.assertTrue(created)
 
-  @mock.patch('azure.mgmt.resource.resources.v2022_09_01.operations.ProvidersOperations.get')
+  @mock.patch('azure.mgmt.resource.resources.v2025_03_01.operations.ProvidersOperations.get')
   @mock.patch('libcloudforensics.providers.azure.internal.compute.AZCompute.ListInstanceTypes')
   @typing.no_type_check
   def testListVMSizes(self, mock_list, mock_provider):
@@ -292,7 +292,7 @@ class AZComputeTest(unittest.TestCase):
     self.assertEqual(8192, available_vms[0]['Memory'])
 
   @mock.patch('azure.mgmt.reservations.operations.QuotaOperations.get')
-  @mock.patch('azure.mgmt.resource.resources.v2022_09_01.operations.ProvidersOperations.get')
+  @mock.patch('azure.mgmt.resource.resources.v2025_03_01.operations.ProvidersOperations.get')
   @mock.patch('azure.mgmt.compute.v2021_07_01.operations.ResourceSkusOperations.list')
   @typing.no_type_check
   def testGetInstanceType(self, mock_list_instance_types, mock_provider, mock_quota):
@@ -313,7 +313,7 @@ class AZVirtualMachineTest(unittest.TestCase):
   """Test Azure virtual machine class."""
   # pylint: disable=line-too-long
 
-  @mock.patch('azure.mgmt.resource.resources.v2022_09_01.operations.ProvidersOperations.get')
+  @mock.patch('azure.mgmt.resource.resources.v2025_03_01.operations.ProvidersOperations.get')
   @mock.patch('libcloudforensics.providers.azure.internal.compute.AZCompute.ListDisks')
   @mock.patch('azure.mgmt.compute.v2023_09_01.operations.VirtualMachinesOperations.get')
   @typing.no_type_check
@@ -344,7 +344,7 @@ class AZVirtualMachineTest(unittest.TestCase):
         '/subscriptions/sub/resourceGroups/fake-resource-group/providers/'
         'Microsoft.Compute/type/fake-vm-name', str(error.exception))
 
-  @mock.patch('azure.mgmt.resource.resources.v2022_09_01.operations.ProvidersOperations.get')
+  @mock.patch('azure.mgmt.resource.resources.v2025_03_01.operations.ProvidersOperations.get')
   @mock.patch('libcloudforensics.providers.azure.internal.compute.AZCompute.ListDisks')
   @mock.patch('azure.mgmt.compute.v2023_09_01.operations.VirtualMachinesOperations.get')
   @typing.no_type_check
