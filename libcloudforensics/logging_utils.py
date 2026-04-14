@@ -99,6 +99,7 @@ class Formatter(logging.Formatter):
       if loglevel_color:
         message = loglevel_color + message + RESET_SEQ
       record.msg = message
+      record.args = ()
     return super().format(record)
 
 

@@ -43,7 +43,8 @@ def CreateDiskCopy(
     zone: str,
     instance_name: Optional[str] = None,
     disk_name: Optional[str] = None,
-    disk_type: Optional[str] = None) -> 'compute.GoogleComputeDisk':
+    disk_type: Optional[str] = None,
+    src_zone: Optional[str] = None) -> 'compute.GoogleComputeDisk':
   """Creates a copy of a Google Compute Disk.
 
   Args:
@@ -56,6 +57,8 @@ def CreateDiskCopy(
     disk_type (str): Optional. URL of the disk type resource describing
         which disk type to use to create the disk. The default behavior is to
         use the same disk type as the source disk.
+    src_zone (str): Optional. Zone where the source disk is located. If None,
+        the default zone will be used.
 
   Returns:
     GoogleComputeDisk: A Google Compute Disk object.
@@ -73,9 +76,9 @@ def CreateDiskCopy(
 
   try:
     if disk_name:
-      disk_to_copy = src_project.compute.GetDisk(disk_name)
+      disk_to_copy = src_project.compute.GetDisk(disk_name, zone=src_zone)
     elif instance_name:
-      instance = src_project.compute.GetInstance(instance_name)
+      instance = src_project.compute.GetInstance(instance_name, zone=src_zone)
       disk_to_copy = instance.GetBootDisk()
     else:
       raise ValueError(
