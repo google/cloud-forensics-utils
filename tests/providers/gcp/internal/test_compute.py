@@ -212,9 +212,11 @@ class GoogleCloudComputeTest(unittest.TestCase):
         str(context.exception))
 
   @typing.no_type_check
+  @mock.patch('libcloudforensics.providers.gcp.internal.common.GoogleCloudComputeClient.GceApi')
   @mock.patch('libcloudforensics.providers.gcp.internal.common.ExecuteRequest')
-  def testListSnapshots(self, mock_execute):
+  def testListSnapshots(self, mock_execute, mock_gce_api):
     """Test that snapshots of project are correctly listed."""
+    mock_gce_api.return_value.snapshots.return_value = mock.Mock()
     mock_execute.return_value = [{'items': [{'name': 'fake-snapshot'}]}]
 
     # Test without zone
