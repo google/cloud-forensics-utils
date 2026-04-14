@@ -594,6 +594,7 @@ class GoogleComputeInstanceTest(unittest.TestCase):
     self.assertEqual(['fake-boot-disk', 'fake-disk'], list(disks.keys()))
     mock_get_disk.assert_has_calls([mock.call('fake-boot-disk'), mock.call('fake-disk')])
 
+  @typing.no_type_check
   @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleCloudCompute.ListDisks')
   @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleComputeInstance.GetOperation')
   @mock.patch('libcloudforensics.providers.gcp.internal.common.GoogleCloudComputeClient.GceApi')
