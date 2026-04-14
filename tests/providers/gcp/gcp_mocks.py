@@ -74,6 +74,25 @@ FAKE_LOG_LIST = [
     'projects/fake-target-project/logs/OSConfigAgent'
 ]
 
+FAKE_DISK_LIST = [
+    {
+        'name':
+            'fake-boot-disk',
+        'zone':
+            'https://www.googleapis.com/compute/v1/projects/fake-source-project/zones/fake-zone',
+        'id':
+            '01234567890123456789'
+    },
+    {
+        'name':
+            'fake-disk',
+        'zone':
+            'https://www.googleapis.com/compute/v1/projects/fake-source-project/zones/fake-zone',
+        'id':
+            '0123456789012345678'
+    }
+]
+
 STARTUP_SCRIPT = 'scripts/startup.sh'
 
 FAKE_LOG_ENTRIES = [{
@@ -141,14 +160,14 @@ MOCK_DISKS_AGGREGATED = {
             'disks': [{
                 'name': FAKE_BOOT_DISK.name,
                 'zone': '/' + FAKE_BOOT_DISK.zone,
-		'id': '01234567890123456789'
+  'id': '01234567890123456789'
             }]
         },
         1: {
             'disks': [{
                 'name': FAKE_DISK.name,
                 'zone': '/' + FAKE_DISK.zone,
-		'id': '0123456789012345678'
+  'id': '0123456789012345678'
             }]
         }
     }
@@ -1039,48 +1058,48 @@ MOCK_COMPUTE_IMAGE = {
 }
 
 MOCK_BIGQUERY_JOBS = {
-	"etag": "ABCde1FGHiJklmn23op4rs==",
-	"kind": "bigquery#jobList",
-	"jobs": [{
-		"id": "fake-target-project:europe-west1.bquxjob_12345678_abcdefghij1k",
-		"kind": "bigquery#job",
-		"jobReference": {
-			"projectId": "fake-target-project",
-			"jobId": "bquxjob_12345678_abcdefghij1k",
-			"location": "europe-west1"
-		},
-		"state": "DONE",
-		"statistics": {
-			"creationTime": "1640804415278",
-			"startTime": "1640804415351",
-			"endTime": "1640804415457",
-			"totalBytesProcessed": "0",
-			"query": {
-				"totalBytesProcessed": "0",
-				"totalBytesBilled": "0",
-				"cacheHit": True,
-				"statementType": "SELECT"
-			}
-		},
-		"configuration": {
-			"query": {
-				"query": "SELECT * FROM `fake-target-project.fake-target-project-dataset.fake-target-project-table`",
-				"destinationTable": {
-					"projectId": "fake-target-project",
-					"datasetId": "_1a2b34c567890d1efghi2j345678kl9012mn34c5",
-					"tableId": "anona1234c5d67890123efg45678hij90kl23mnoprst"
-				},
-				"writeDisposition": "WRITE_TRUNCATE",
-				"priority": "INTERACTIVE",
-				"useLegacySql": False
-			},
-			"jobType": "QUERY"
-		},
-		"status": {
-			"state": "DONE"
-		},
-		"user_email": "fake-user-email@test.com"
-	}]
+ "etag": "ABCde1FGHiJklmn23op4rs==",
+ "kind": "bigquery#jobList",
+ "jobs": [{
+  "id": "fake-target-project:europe-west1.bquxjob_12345678_abcdefghij1k",
+  "kind": "bigquery#job",
+  "jobReference": {
+   "projectId": "fake-target-project",
+   "jobId": "bquxjob_12345678_abcdefghij1k",
+   "location": "europe-west1"
+  },
+  "state": "DONE",
+  "statistics": {
+   "creationTime": "1640804415278",
+   "startTime": "1640804415351",
+   "endTime": "1640804415457",
+   "totalBytesProcessed": "0",
+   "query": {
+    "totalBytesProcessed": "0",
+    "totalBytesBilled": "0",
+    "cacheHit": True,
+    "statementType": "SELECT"
+   }
+  },
+  "configuration": {
+   "query": {
+    "query": "SELECT * FROM `fake-target-project.fake-target-project-dataset.fake-target-project-table`",
+    "destinationTable": {
+     "projectId": "fake-target-project",
+     "datasetId": "_1a2b34c567890d1efghi2j345678kl9012mn34c5",
+     "tableId": "anona1234c5d67890123efg45678hij90kl23mnoprst"
+    },
+    "writeDisposition": "WRITE_TRUNCATE",
+    "priority": "INTERACTIVE",
+    "useLegacySql": False
+   },
+   "jobType": "QUERY"
+  },
+  "status": {
+   "state": "DONE"
+  },
+  "user_email": "fake-user-email@test.com"
+ }]
 }
 
 MOCK_IAM_POLICY = {

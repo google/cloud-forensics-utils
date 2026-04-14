@@ -211,7 +211,7 @@ class GoogleCloudComputeTest(unittest.TestCase):
         'Unknown error occurred when creating disk from Snapshot',
         str(context.exception))
 
-@typing.no_type_check
+  @typing.no_type_check
   @mock.patch('libcloudforensics.providers.gcp.internal.common.ExecuteRequest')
   def testListSnapshots(self, mock_execute):
     """Test that snapshots of project are correctly listed."""
@@ -239,16 +239,6 @@ class GoogleCloudComputeTest(unittest.TestCase):
     expected_filter = '(name ~ "snapshot.*") (sourceDisk ~ ".*/zones/us-central1-a/disks/.*")'
     mock_execute.assert_called_with(
         mock.ANY, 'list', {'project': 'fake-source-project', 'filter': expected_filter})
-
-    # other network issue should fail the disk creation
-    disks.return_value.insert.return_value.execute.side_effect = HttpError(
-        resp=mock.Mock(status=418), content=b'I am a teapot')
-    with self.assertRaises(errors.ResourceCreationError) as context:
-      _ = gcp_mocks.FAKE_ANALYSIS_PROJECT.compute.CreateDiskFromSnapshot(
-          gcp_mocks.FAKE_SNAPSHOT, gcp_mocks.FAKE_DISK.name)
-    self.assertIn(
-        'Unknown error occurred when creating disk from Snapshot',
-        str(context.exception))
 
   @typing.no_type_check
   @mock.patch('libcloudforensics.providers.gcp.internal.common.GoogleCloudComputeClient.GceApi')
@@ -568,6 +558,7 @@ class GoogleComputeInstanceTest(unittest.TestCase):
   @typing.no_type_check
   @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleCloudCompute.GetDisk')
   @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleComputeInstance.GetOperation')
+  def testGetDisk(self, mock_get_operation, mock_get_disk):
     """Test that a disk is retrieved by its name, if existing."""
     mock_get_operation.return_value = gcp_mocks.MOCK_GCE_OPERATION_INSTANCES_GET
     mock_get_disk.return_value = gcp_mocks.FAKE_DISK
@@ -589,18 +580,18 @@ class GoogleComputeInstanceTest(unittest.TestCase):
       gcp_mocks.FAKE_INSTANCE.GetDisk('non-existent-disk')
 
   @typing.no_type_check
-  @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleCloudCompute.ListDisks')
   @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleComputeInstance.GetOperation')
-  def testListDisks(self, mock_get_operation, mock_list_disks):
+  @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleComputeInstance.GetDisk')
+  def testListDisks(self, mock_get_disk, mock_get_operation):
     """Test that all disks of an instance are correctly retrieved."""
     mock_get_operation.return_value = gcp_mocks.MOCK_GCE_OPERATION_INSTANCES_GET
-    mock_list_disks.return_value = gcp_mocks.MOCK_LIST_DISKS
+    mock_get_disk.side_effect = [gcp_mocks.FAKE_BOOT_DISK, gcp_mocks.FAKE_DISK]
 
     disks = gcp_mocks.FAKE_INSTANCE.ListDisks()
     self.assertEqual(2, len(disks))
     self.assertEqual(['fake-boot-disk', 'fake-disk'], list(disks.keys()))
+    mock_get_disk.assert_has_calls([mock.call('fake-boot-disk'), mock.call('fake-disk')])
 
-  @typing.no_type_check
   @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleCloudCompute.ListDisks')
   @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleComputeInstance.GetOperation')
   @mock.patch('libcloudforensics.providers.gcp.internal.common.GoogleCloudComputeClient.GceApi')
@@ -615,6 +606,7 @@ class GoogleComputeInstanceTest(unittest.TestCase):
 
     mock_disk_delete = mock_gce_api.return_value.disks.return_value.delete
     mock_disk_delete.return_value.execute.return_value = None
+    mock_gce_api.return_value.disks.return_value.get.return_value.execute.side_effect = gcp_mocks.FAKE_DISK_LIST
 
     gcp_mocks.FAKE_INSTANCE.Delete(delete_disks=True)
     calls = [

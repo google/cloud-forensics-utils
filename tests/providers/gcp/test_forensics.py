@@ -62,7 +62,7 @@ class GCPForensicsTest(unittest.TestCase):
                                         gcp_mocks.FAKE_ANALYSIS_PROJECT.project_id,
                                         zone=gcp_mocks.FAKE_INSTANCE.zone,
                                         instance_name=gcp_mocks.FAKE_INSTANCE.name)
-    mock_get_instance.assert_called_with(gcp_mocks.FAKE_INSTANCE.name)
+    mock_get_instance.assert_called_with(gcp_mocks.FAKE_INSTANCE.name, zone=None)
     mock_get_disk.assert_not_called()
     self.assertIsInstance(new_disk, compute.GoogleComputeDisk)
     self.assertTrue(new_disk.name.startswith('evidence-'))
@@ -99,7 +99,7 @@ class GCPForensicsTest(unittest.TestCase):
                                         gcp_mocks.FAKE_ANALYSIS_PROJECT.project_id,
                                         zone=gcp_mocks.FAKE_INSTANCE.zone,
                                         disk_name=gcp_mocks.FAKE_DISK.name)
-    mock_get_disk.assert_called_with(gcp_mocks.FAKE_DISK.name)
+    mock_get_disk.assert_called_with(gcp_mocks.FAKE_DISK.name, zone=None)
     mock_get_boot_disk.assert_not_called()
     self.assertIsInstance(new_disk, compute.GoogleComputeDisk)
     self.assertTrue(new_disk.name.startswith('evidence-'))
@@ -107,13 +107,20 @@ class GCPForensicsTest(unittest.TestCase):
     self.assertTrue(new_disk.name.endswith('-copy'))
 
   @typing.no_type_check
+  @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleCloudCompute.GetInstance')
+  @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleCloudCompute.GetDisk')
   @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleCloudCompute.ListInstances')
   @mock.patch('libcloudforensics.providers.gcp.internal.compute.GoogleCloudCompute.ListDisks')
-  def testCreateDiskCopy3(self, mock_list_disks, mock_list_instances):
+  def testCreateDiskCopy3(self, mock_list_disks, mock_list_instances,
+                          mock_get_disk, mock_get_instance):
     """Test that a disk from a remote project is duplicated and attached to
     an analysis project. """
     mock_list_disks.return_value = gcp_mocks.MOCK_LIST_DISKS
     mock_list_instances.return_value = gcp_mocks.MOCK_LIST_INSTANCES
+    mock_get_disk.side_effect = errors.ResourceNotFoundError(
+        'Disk not found', __name__)
+    mock_get_instance.side_effect = errors.ResourceNotFoundError(
+        'Instance not found', __name__)
 
     # create_disk_copy(
     #     src_proj,

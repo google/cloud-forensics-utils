@@ -161,8 +161,8 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
       Optional[Dict[str, Any]]: The resource metadata if found, None otherwise.
     """
     client = getattr(self.GceApi(), resource_type)()
-    param_name = resource_type
     if zone or region:
+      param_name = resource_type[:-1] if resource_type.endswith('s') else resource_type
       if resource_type == 'instanceGroupManagers':
         param_name = 'instanceGroupManager'
       elif resource_type == 'regionDisks':
