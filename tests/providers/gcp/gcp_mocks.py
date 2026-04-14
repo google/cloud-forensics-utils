@@ -74,6 +74,7 @@ FAKE_LOG_LIST = [
     'projects/fake-target-project/logs/OSConfigAgent'
 ]
 
+# pylint: disable=line-too-long
 FAKE_DISK_LIST = [
     {
         'name':
@@ -92,6 +93,7 @@ FAKE_DISK_LIST = [
             '0123456789012345678'
     }
 ]
+# pylint: enable=line-too-long
 
 STARTUP_SCRIPT = 'scripts/startup.sh'
 

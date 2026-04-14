@@ -475,7 +475,7 @@ def VMRemoveServiceAccount(
   # Get the initial powered state of the instance
   initial_state = instance.GetPowerState()
 
-  if not initial_state in valid_starting_states:
+  if initial_state not in valid_starting_states:
     logger.error(
         'Instance "{0:s}" is currently {1:s} which is an invalid '
         'state for this operation'.format(instance_name, initial_state))
@@ -483,7 +483,7 @@ def VMRemoveServiceAccount(
 
   try:
     # Stop the instance if it is not already (or on the way)....
-    if not initial_state in ('TERMINATED', 'STOPPING'):
+    if initial_state not in ('TERMINATED', 'STOPPING'):
       instance.Stop()
 
     # Remove the service account

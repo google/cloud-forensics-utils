@@ -564,13 +564,13 @@ class GoogleComputeInstanceTest(unittest.TestCase):
     """Test that a disk is retrieved by its name, if existing."""
     mock_get_operation.return_value = gcp_mocks.MOCK_GCE_OPERATION_INSTANCES_GET
     mock_get_disk.return_value = gcp_mocks.FAKE_DISK
- 
+
     # Normal disk
     disk = gcp_mocks.FAKE_INSTANCE.GetDisk(gcp_mocks.FAKE_DISK.name)
     self.assertIsInstance(disk, compute.GoogleComputeDisk)
     self.assertEqual('fake-disk', disk.name)
     mock_get_disk.assert_called_with(disk_name='fake-disk', zone='fake-zone')
- 
+
     # Boot disk
     mock_get_disk.return_value = gcp_mocks.FAKE_BOOT_DISK
     disk = gcp_mocks.FAKE_INSTANCE.GetDisk(gcp_mocks.FAKE_BOOT_DISK.name)
