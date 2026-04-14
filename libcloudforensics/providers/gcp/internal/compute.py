@@ -20,7 +20,7 @@ import re
 import subprocess
 import time
 from collections import defaultdict
-from typing import Any, Dict, List, Optional, Tuple, TypeVar, TYPE_CHECKING, Union
+from typing import Any, cast, Dict, List, Optional, Tuple, TypeVar, TYPE_CHECKING, Union
 
 from googleapiclient.errors import HttpError
 
@@ -176,7 +176,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
         kwargs['region'] = region
 
       try:
-        return client.get(**kwargs).execute()
+        return cast(Dict[str, Any], client.get(**kwargs).execute())
       except HttpError as e:
         if e.resp.status == 404:
           return None
@@ -206,7 +206,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
         for location in response.get('items', {}):
           items = response['items'][location].get(res_type_in_resp, [])
           if items:
-            return items[0]
+            return cast(Dict[str, Any], items[0])
     return None
 
 
