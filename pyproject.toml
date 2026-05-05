@@ -38,10 +38,10 @@ pyjwt = "^2.8.0"
 sshpubkeys = "^3.3.1"
 requests = "^2.31.0"
 kubernetes = "^27.2.0"
-pyopenssl = "^23.2.0"
+pyopenssl = ">=23.2,<27.0"
 urllib3 = ">=2.6.0"
 google-auth = "^2.22.0"
-setuptools = "^75.8.0"
+setuptools = ">=75.8,<79.0"
 
 [tool.poetry.group.dev.dependencies]
 coverage = "^7.2.7"
@@ -54,8 +54,8 @@ yapf = "^0.40.1"
 types-six = "^1.16.21.9"
 types-mock = "^5.1.0.1"
 sphinx-rtd-theme = "^1.2.2"
-wheel = "^0.41.1"
-setuptools = "^75.8.0"
+wheel = ">=0.41.1,<0.47.0"
+setuptools = ">=75.8,<79.0"
 
 [build-system]
 requires = ["poetry-core"]
