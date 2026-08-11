@@ -16,8 +16,10 @@ packages=(
   htop
   jq
   libbde-tools
+  libbtrfs-dev
   libfsapfs-tools
   libfvde-tools
+  libgpgme-dev
   ncdu
   plaso-tools
   sleuthkit
