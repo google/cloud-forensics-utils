@@ -1385,7 +1385,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
           image. For supported versions please see:
           https://cloud.google.com/sdk/gcloud/reference/compute/images/import#--os  # pylint: disable=line-too-long
           For known limitations please see:
-          https://googlecloudplatform.github.io/compute-image-tools/image-import.html#compatibility-and-known-limitations  # pylint: disable=line-too-long
+          https://googlecloudplatform.github.io/compute-image-import/image-import.html  # pylint: disable=line-too-long
       guest_environment (bool): Optional. Install Google Guest Environment on a
           bootable image. Relevant only if image is bootable. Default True.
 
@@ -1473,7 +1473,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     build_body = {
         'steps': [{
             'args': args_list,
-            'name': 'gcr.io/compute-image-tools/gce_vm_image_import:release',
+            'name': 'gcr.io/compute-image-import/gce_vm_image_import:release',
             'env': ['BUILD_ID=$BUILD_ID']
         }],
         'timeout': '86400s',
@@ -2451,7 +2451,7 @@ class GoogleComputeImage(compute_base_resource.GoogleComputeBaseResource):
         'timeout': '86400s',
         'steps': [{
             'args': build_args,
-            'name': 'gcr.io/compute-image-tools/gce_vm_image_export:release',
+            'name': 'gcr.io/compute-image-import/gce_vm_image_export:release',
             'env': []
         }],
         'tags': ['gce-daisy', 'gce-daisy-image-export']
