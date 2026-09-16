@@ -2407,7 +2407,8 @@ class GoogleComputeImage(compute_base_resource.GoogleComputeBaseResource):
       self,
       gcs_output_folder: str,
       image_format: str,
-      output_name: Optional[str]) -> str:
+      output_name: Optional[str],
+      zone: str='us-central1-a') -> str:
     """Export compute image to Google Cloud Storage.
     
     Exported image is compressed and stored in .tar.gz format.
@@ -2417,6 +2418,7 @@ class GoogleComputeImage(compute_base_resource.GoogleComputeBaseResource):
       image_format (str): The image format to use for the export.
       output_name (str): Optional. Name of the output file. Name will be
           appended with .tar.gz. Default is [image_name].tar.gz.
+      zone: GCP zone in which to launch the cloudbuild instance.
     Returns:
       str: The full path of the exported image.
     Raises:
@@ -2441,6 +2443,7 @@ class GoogleComputeImage(compute_base_resource.GoogleComputeBaseResource):
         '-destination_uri={0:s}'.format(full_path),
         '-timeout=86400s',
         '-client_id=api',
+        '-zone={0:s}'.format(zone),
     ]
     if image_format:
       build_args.append('-format={0:s}'.format(image_format))
