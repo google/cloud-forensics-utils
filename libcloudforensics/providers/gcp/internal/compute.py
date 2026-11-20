@@ -739,6 +739,7 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
     # Safe to unpack, response is not paged.
     return common.ExecuteRequest(disk_types_client, 'get', params)[0]
 
+  # pylint: disable=line-too-long
   def GetImageFamily(self, image_family: str,
                      project: Optional[str] = None) -> Dict[str, Any]:
     """Get image family API object in specified project.
@@ -749,16 +750,18 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
 
     Returns:
       The selected image family API resource:
-      https://cloud.google.com/compute/docs/reference/rest/v1/images/getFromFamily  # pylint: disable=line-too-long
+      https://cloud.google.com/compute/docs/reference/rest/v1/images/getFromFamily
 
     Raises:
       HttpError if getting image object for the given image family name fails.
     """
+    # pylint: enable=line-too-long
     images_client = self.GceApi().images() # pylint: disable=no-member
     params = {'project': project, 'family': image_family}
     # Safe to unpack, response is not paged.
     return common.ExecuteRequest(images_client, 'getFromFamily', params)[0]
 
+  # pylint: disable=line-too-long
   def GetNetwork(self, network_name: str) -> Dict[str, Any]:
     """Get selected network API object in specified project.
 
@@ -767,11 +770,12 @@ class GoogleCloudCompute(common.GoogleCloudComputeClient):
 
     Returns:
       The selected network API resource:
-      https://cloud.google.com/compute/docs/reference/rest/v1/networks  # pylint: disable=line-too-long
+      https://cloud.google.com/compute/docs/reference/rest/v1/networks
 
     Raises:
       HttpError if getting network object for the given machine-type name fails.
     """
+    # pylint: enable=line-too-long
     networks_client = self.GceApi().networks() # pylint: disable=no-member
     params = {
         'project': self.project_id,
@@ -2328,13 +2332,15 @@ class GoogleRegionComputeDisk(compute_base_resource.GoogleComputeBaseResource):
     super().__init__(
         project_id=project_id, zone='', name=name, region=region, **kwargs)
 
+  # pylint: disable=line-too-long
   def GetOperation(self) -> Dict[str, Any]:
     """Get API operation object for the regional disk.
 
     Returns:
       An API operation object for a Google Regional Compute Engine disk.
-          https://cloud.google.com/compute/docs/reference/rest/v1/regionDisks/get#response-body  # pylint: disable=line-too-long
+          https://cloud.google.com/compute/docs/reference/rest/v1/regionDisks/get#response-body
     """
+    # pylint: enable=line-too-long
     gce_disk_client = self.GceApi().regionDisks() # pylint: disable=no-member
     param = {
         'project': self.project_id, 'region': self.region, 'disk': self.name

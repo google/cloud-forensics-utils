@@ -271,7 +271,13 @@ def StartAnalysisVm(  # pylint: disable=too-many-arguments,too-many-positional-a
   # in the region requested.
   if not ami:
     logger.info('No AMI provided, fetching one for Ubuntu 22.04')
-    qfilter = [{'Name': 'name', 'Values': [UBUNTU_2204_FILTER]}]
+    # Restrict to Canonical's official AWS account so an attacker cannot
+    # publish a public AMI with a matching Name and have it selected here.
+    # https://ubuntu.com/aws/docs/aws-how-to/instances/find-ubuntu-images/
+    qfilter = [
+        {'Name': 'name', 'Values': [UBUNTU_2204_FILTER]},
+        {'Name': 'owner-id', 'Values': ['099720109477']}
+    ]
     ami_list = aws_account.ec2.ListImages(qfilter)
     # We should only get 1 AMI image back, if we get multiple we
     # have no way of knowing which one to use.
