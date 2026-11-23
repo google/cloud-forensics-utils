@@ -16,10 +16,10 @@
 
 import typing
 import unittest
-import mock
+from unittest import mock
 
-from tests.providers.gcp import gcp_mocks
 from libcloudforensics.providers.utils.storage_utils import SplitStoragePath
+from tests.providers.gcp import gcp_mocks
 
 
 class GoogleCloudStorageTest(unittest.TestCase):

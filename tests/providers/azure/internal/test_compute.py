@@ -16,10 +16,9 @@
 
 import typing
 import unittest
-import mock
+from unittest import mock
 
 from azure.mgmt.compute import models  # pylint: disable=import-error
-
 
 from libcloudforensics import errors
 from libcloudforensics.providers.azure.internal import compute

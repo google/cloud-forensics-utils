@@ -16,13 +16,11 @@
 
 import typing
 import unittest
-import mock
+from unittest import mock
 
 from libcloudforensics import errors
-from libcloudforensics.providers.azure.internal import compute
-
 from libcloudforensics.providers.azure import forensics
-
+from libcloudforensics.providers.azure.internal import compute
 from tests.providers.azure import azure_mocks
 
 

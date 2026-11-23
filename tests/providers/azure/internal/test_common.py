@@ -17,7 +17,7 @@
 import os
 import typing
 import unittest
-import mock
+from unittest import mock
 
 from libcloudforensics import errors
 from libcloudforensics.providers.azure.internal import common
