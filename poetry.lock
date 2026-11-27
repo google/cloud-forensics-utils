@@ -1215,23 +1215,6 @@ files = [
 ]
 
 [[package]]
-name = "mock"
-version = "5.2.0"
-description = "Rolling backport of unittest.mock for all Pythons"
-optional = false
-python-versions = ">=3.6"
-groups = ["dev"]
-files = [
-    {file = "mock-5.2.0-py3-none-any.whl", hash = "sha256:7ba87f72ca0e915175596069dbbcc7c75af7b5e9b9bc107ad6349ede0819982f"},
-    {file = "mock-5.2.0.tar.gz", hash = "sha256:4e460e818629b4b173f32d08bf30d3af8123afbb8e04bb5707a1fd4799e503f0"},
-]
-
-[package.extras]
-build = ["blurb", "twine", "wheel"]
-docs = ["sphinx"]
-test = ["pytest", "pytest-cov"]
-
-[[package]]
 name = "msal"
 version = "1.34.0"
 description = "The Microsoft Authentication Library (MSAL) for Python library enables your app to access the Microsoft Cloud by supporting authentication of users with Microsoft Azure Active Directory accounts (AAD) and Microsoft Accounts (MSA) using industry standard OAuth2 and OpenID Connect."
@@ -2195,18 +2178,6 @@ files = [
 ]
 
 [[package]]
-name = "types-mock"
-version = "5.2.0.20250924"
-description = "Typing stubs for mock"
-optional = false
-python-versions = ">=3.9"
-groups = ["dev"]
-files = [
-    {file = "types_mock-5.2.0.20250924-py3-none-any.whl", hash = "sha256:23617ffb4cf948c085db69ec90bd474afbce634ef74995045ae0a5748afbe57d"},
-    {file = "types_mock-5.2.0.20250924.tar.gz", hash = "sha256:953197543b4183f00363e8e626f6c7abea1a3f7a4dd69d199addb70b01b6bb35"},
-]
-
-[[package]]
 name = "types-six"
 version = "1.17.0.20251009"
 description = "Typing stubs for six"
@@ -2335,4 +2306,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11"
-content-hash = "60e4f8ab6df86e93af49013ed6744e2ad65c4c1118c312f8bb82b4c920cf1c36"
+content-hash = "633f499b71a4e8d04e0c608d01af33cc731c75dbbc771100492628913b305ea8"

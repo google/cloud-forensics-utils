@@ -17,7 +17,7 @@
 
 import typing
 import unittest
-import mock
+from unittest import mock
 
 from libcloudforensics import errors
 from tests.providers.gcp import gcp_mocks

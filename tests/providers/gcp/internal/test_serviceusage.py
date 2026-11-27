@@ -15,8 +15,7 @@
 """Tests for the gcp module - serviceusage.py"""
 import typing
 import unittest
-
-import mock
+from unittest import mock
 
 from tests.providers.gcp import gcp_mocks
 

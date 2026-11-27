@@ -16,13 +16,13 @@
 
 import typing
 import unittest
-import mock
+from unittest import mock
 
 from googleapiclient.errors import HttpError
 
+import libcloudforensics.providers.kubernetes.cluster as k8s
 from libcloudforensics import errors
 from libcloudforensics.providers.gcp.internal import gke
-import libcloudforensics.providers.kubernetes.cluster as k8s
 
 
 class GoogleKubernetesEngineTest(unittest.TestCase):

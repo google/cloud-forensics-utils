@@ -14,7 +14,7 @@
 # limitations under the License.
 """Azure mocks used across tests."""
 
-import mock
+from unittest import mock
 
 from libcloudforensics.providers.azure.internal import account
 from libcloudforensics.providers.azure.internal import compute

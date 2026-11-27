@@ -14,13 +14,13 @@
 # limitations under the License.
 """AWS mocks used across tests."""
 
-import mock
+from unittest import mock
 
 from libcloudforensics.providers.aws.internal import account
 from libcloudforensics.providers.aws.internal import ebs
 from libcloudforensics.providers.aws.internal import ec2
-from libcloudforensics.providers.aws.internal import s3
 from libcloudforensics.providers.aws.internal import log as aws_log
+from libcloudforensics.providers.aws.internal import s3
 
 with mock.patch('boto3.session.Session._setup_loader') as mock_session:
   mock_session.return_value = None

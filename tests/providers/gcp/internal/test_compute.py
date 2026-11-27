@@ -17,13 +17,14 @@
 import os
 import typing
 import unittest
-import mock
+from unittest import mock
+
 import six
 from googleapiclient.errors import HttpError
 
 from libcloudforensics import errors
-from libcloudforensics.scripts import utils
 from libcloudforensics.providers.gcp.internal import compute
+from libcloudforensics.scripts import utils
 from tests.providers.gcp import gcp_mocks
 
 

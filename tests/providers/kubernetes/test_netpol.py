@@ -16,8 +16,8 @@
 
 import typing
 import unittest
+from unittest import mock
 
-import mock
 from kubernetes import client
 
 from libcloudforensics.providers.kubernetes import netpol

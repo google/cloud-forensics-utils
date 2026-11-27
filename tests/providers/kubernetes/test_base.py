@@ -16,8 +16,8 @@
 
 import typing
 import unittest
+from unittest import mock
 
-import mock
 from kubernetes import client
 
 import libcloudforensics.providers.kubernetes.cluster as k8s_cluster

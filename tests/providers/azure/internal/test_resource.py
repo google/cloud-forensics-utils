@@ -16,7 +16,7 @@
 
 import typing
 import unittest
-import mock
+from unittest import mock
 
 from tests.providers.azure import azure_mocks
 
